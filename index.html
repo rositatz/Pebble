@@ -542,6 +542,17 @@
 </footer>
 
 <script>
+  // Siempre empezar arriba al refrescar
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
+  window.onload = () => {
+    window.scrollTo(0, 0);
+  };
+</script>
+
+<script>
   // Scroll reveal
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
