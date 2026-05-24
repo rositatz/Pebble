@@ -114,6 +114,7 @@ body {
 .auth-form { display: flex; flex-direction: column; gap: var(--s4); }
 .auth-form.hidden { display: none; }
 .auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.auth-row .auth-field {  min-width: 0;}
 
 .auth-field { display: flex; flex-direction: column; gap: var(--s1); }
 .auth-label {
@@ -121,6 +122,7 @@ body {
   letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary);
 }
 .auth-input {
+  width: 100%;
   background: var(--surf-2); border: 1px solid var(--border2);
   color: var(--text-primary); font-family: var(--font-body); font-size: 0.9rem;
   padding: 12px 14px; border-radius: var(--r-sm); outline: none;
