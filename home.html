@@ -617,7 +617,6 @@ body {
       <span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span>
     </a>
     <div class="app-nav-actions">
-      <!-- ── REEMPLAZAR onclick por window.location.href='./notificaciones.html' ── -->
       <button class="nav-icon-btn" onclick="window.location.href='https://pebble-sage.vercel.app/notificaciones.html'" aria-label="Notificaciones">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -931,16 +930,17 @@ function switchTab(tab) {
 }
 
 function goTo(page) {
-  // ── REEMPLAZAR cada caso por window.location.href = './nombrePagina.html' cuando estén listas ──
   const map = {
-    gemelo:        './gemelo.html',
-    matches:       './matches.html',
-    chats:         './chats.html',
-    notificaciones:'./notificaciones.html',
-    perfil:        './perfil.html',
+    gemelo: './gemelo.html',
+    matches: './matches.html',
+    chats: './chats.html',
+    notificaciones: './notificaciones.html',
+    perfil: './perfil.html',
   };
+
   const url = map[page];
-  if (url) alert(`Próximamente: ${url}\nDescomentá: window.location.href = '${url}'`);
+
+  if (url) window.location.href = url;
 }
 
 init();
