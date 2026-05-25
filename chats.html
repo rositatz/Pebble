@@ -296,9 +296,14 @@ html, body {
 .bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
+#loadingOverlay.hide{opacity:0;pointer-events:none}
+.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+<div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
 <!-- Top nav -->
 <nav class="app-nav" aria-label="Navegación">
@@ -920,6 +925,10 @@ onAuthStateChanged(auth, async user => {
       });
     }
   } catch(e) { console.warn('Error cargando chats:', e); }
+
+  // Quitar overlay cuando todo esté listo
+  const el = document.getElementById('loadingOverlay');
+  if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
 });
 
 // Guardar mensajes de una conversación

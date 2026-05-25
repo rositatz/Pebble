@@ -635,9 +635,32 @@ body {
 .fu:nth-child(5){animation-delay:.21s}.fu:nth-child(6){animation-delay:.25s}
 .fu:nth-child(7){animation-delay:.29s}.fu:nth-child(8){animation-delay:.33s}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ── Loading overlay ── */
+#loadingOverlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.3s ease;
+}
+#loadingOverlay.hide { opacity: 0; pointer-events: none; }
+.loading-spinner {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid var(--border2);
+  border-top-color: var(--orange);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.app-main { opacity: 0; transition: opacity 0.35s ease; }
+.app-main.visible { opacity: 1; }
 </style>
 </head>
 <body>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay">
+  <div class="loading-spinner"></div>
+</div>
 
 <!-- Top Nav -->
 <nav class="app-nav" aria-label="Navegación">
@@ -1604,6 +1627,16 @@ const db   = getFirestore(app);
 
 let uid = null;
 
+function mostrarPagina() {
+  const overlay = document.getElementById('loadingOverlay');
+  const main    = document.querySelector('.app-main');
+  if (overlay) {
+    overlay.classList.add('hide');
+    setTimeout(() => overlay.remove(), 350);
+  }
+  if (main) main.classList.add('visible');
+}
+
 function calcAge(fechaNac) {
   const b = new Date(fechaNac), hoy = new Date();
   let a = hoy.getFullYear() - b.getFullYear();
@@ -1673,6 +1706,8 @@ onAuthStateChanged(auth, async user => {
         document.querySelectorAll('.interest-chip.selected').length;
     }
   } catch(err) { console.warn('Error cargando perfil:', err); }
+
+  mostrarPagina();
 });
 
 // ── Guardar en Firestore (llamados desde el script principal) ──

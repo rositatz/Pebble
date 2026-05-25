@@ -490,9 +490,14 @@ body {
 .fu:nth-child(4){animation-delay:.19s}
 .fu:nth-child(5){animation-delay:.24s}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
+#loadingOverlay.hide{opacity:0;pointer-events:none}
+.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+<div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
 <!-- Top nav -->
 <nav class="app-nav" aria-label="Navegación">
@@ -1053,7 +1058,11 @@ function sortMatches(mode, btn) {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
-onAuthStateChanged(auth, user => { if (!user) window.location.href = './home.html'; });
+onAuthStateChanged(auth, user => {
+  if (!user) { window.location.href = './home.html'; return; }
+  const el = document.getElementById('loadingOverlay');
+  if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
+});
 </script>
 </body>
 </html>
