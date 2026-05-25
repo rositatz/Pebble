@@ -1448,6 +1448,10 @@ function saveInfo() {
   if (age)    metaParts.push(`${age} años`);
   document.getElementById('heroMeta').textContent = metaParts.join(' · ');
 
+  // Guardar en Firestore
+  if (typeof window._db_saveInfo === 'function') {
+    window._db_saveInfo({ nombre, fechaNac, ciudad, genero, pronombres: pronomb, orientacion: orient, busco });
+  }
   cancelEdit('info');
   showToast('Información guardada');
 }
@@ -1460,6 +1464,9 @@ function saveBio() {
   const vBio = document.getElementById('vBio');
   vBio.textContent = text || 'Sin descripción todavía.';
   if (!text) vBio.classList.add('empty'); else vBio.classList.remove('empty');
+  if (typeof window._db_saveBio === 'function') {
+    window._db_saveBio(text);
+  }
   cancelEdit('bio');
   showToast('Bio actualizada');
 }
@@ -1486,6 +1493,9 @@ function toggleInterest(el) {
   el.classList.toggle('selected');
   document.getElementById('interestCount').textContent =
     document.querySelectorAll('.interest-chip.selected').length;
+  if (typeof window._db_saveIntereses === 'function') {
+    window._db_saveIntereses();
+  }
 }
 
 function openCustomInput() {
@@ -1514,6 +1524,9 @@ function addCustomInterest() {
   addBtn.parentNode.insertBefore(chip, addBtn);
   document.getElementById('interestCount').textContent =
     document.querySelectorAll('.interest-chip.selected').length;
+  if (typeof window._db_saveIntereses === 'function') {
+    window._db_saveIntereses();
+  }
   closeCustomInput();
 }
 
@@ -1573,6 +1586,8 @@ document.getElementById('bioCount').textContent = document.getElementById('eBio'
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -1583,37 +1598,99 @@ const firebaseConfig = {
   appId:             "1:56434257024:web:3e2625f73bad3d4c004a65"
 };
 
-const auth = getAuth(initializeApp(firebaseConfig));
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
-// Proteger la página y poblar nombre del usuario autenticado
-onAuthStateChanged(auth, user => {
-  if (!user) {
-    window.location.href = './home.html';
-    return;
-  }
+let uid = null;
 
-  // Nombre completo (displayName de Firebase, o parte del email como fallback)
-  const nombreCompleto = user.displayName || user.email.split('@')[0];
+function calcAge(fechaNac) {
+  const b = new Date(fechaNac), hoy = new Date();
+  let a = hoy.getFullYear() - b.getFullYear();
+  const m = hoy.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < b.getDate())) a--;
+  return a;
+}
 
-  // Iniciales: hasta 2 letras (ej. "María Rosi" → "MR", "Lucía" → "LU")
-  const partes = nombreCompleto.trim().split(/\s+/);
-  const iniciales = partes.length >= 2
+function aplicarNombre(nombre) {
+  const partes = nombre.trim().split(/\s+/);
+  const ini    = partes.length >= 2
     ? (partes[0][0] + partes[1][0]).toUpperCase()
-    : nombreCompleto.substring(0, 2).toUpperCase();
+    : nombre.substring(0, 2).toUpperCase();
+  document.getElementById('heroName').textContent     = nombre;
+  document.getElementById('heroInitials').textContent = ini;
+  document.getElementById('vNombre').textContent      = partes[0];
+  document.getElementById('eNombre').value            = nombre;
+}
 
-  // Primer nombre para el campo de vista
-  const primerNombre = partes[0];
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = './home.html'; return; }
+  uid = user.uid;
 
-  // Hero
-  document.getElementById('heroName').textContent     = nombreCompleto;
-  document.getElementById('heroInitials').textContent = iniciales;
+  // Nombre base desde Firebase Auth
+  aplicarNombre(user.displayName || user.email.split('@')[0]);
 
-  // Sección "Información básica" — vista y edición
-  document.getElementById('vNombre').textContent = primerNombre;
-  document.getElementById('eNombre').value       = nombreCompleto;
+  // ── Cargar datos guardados de Firestore ──
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', uid));
+    if (!snap.exists()) return;
+    const d = snap.data();
+
+    // Nombre (si fue editado por el usuario)
+    if (d.nombre) aplicarNombre(d.nombre);
+
+    // Información básica
+    if (d.fechaNac)    document.getElementById('eFechaNac').value              = d.fechaNac;
+    if (d.ciudad)    { document.getElementById('vCiudad').textContent          = d.ciudad;       document.getElementById('eCiudad').value       = d.ciudad; }
+    if (d.genero)    { document.getElementById('vGenero').textContent          = d.genero;       document.getElementById('eGenero').value       = d.genero; }
+    if (d.pronombres){ document.getElementById('vPronombres').textContent      = d.pronombres;   document.getElementById('ePronombres').value   = d.pronombres; }
+    if (d.orientacion){document.getElementById('vOrientacion').textContent     = d.orientacion;  document.getElementById('eOrientacion').value  = d.orientacion; }
+    if (d.busco)     { document.getElementById('vBusco').textContent           = d.busco;        document.getElementById('eBusco').value        = d.busco; }
+
+    // Bio
+    if (d.bio) {
+      document.getElementById('vBio').textContent     = d.bio;
+      document.getElementById('eBio').value           = d.bio;
+      document.getElementById('bioCount').textContent = d.bio.length;
+    }
+
+    // Hero meta: ciudad + edad
+    const metaParts = [];
+    if (d.ciudad)   metaParts.push(d.ciudad);
+    if (d.fechaNac) metaParts.push(`${calcAge(d.fechaNac)} años`);
+    if (metaParts.length) document.getElementById('heroMeta').textContent = metaParts.join(' · ');
+
+    // Edad en campo de vista
+    if (d.fechaNac) document.getElementById('vEdad').textContent = `${calcAge(d.fechaNac)} años`;
+
+    // Intereses
+    if (Array.isArray(d.intereses) && d.intereses.length) {
+      document.querySelectorAll('.interest-chip.selected').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.interest-chip:not(.add-chip)').forEach(chip => {
+        if (d.intereses.includes(chip.textContent.trim())) chip.classList.add('selected');
+      });
+      document.getElementById('interestCount').textContent =
+        document.querySelectorAll('.interest-chip.selected').length;
+    }
+  } catch(err) { console.warn('Error cargando perfil:', err); }
 });
 
-// Exponer logout para que handleLogout() pueda llamarlo
+// ── Guardar en Firestore (llamados desde el script principal) ──
+window._db_saveInfo = async (data) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), data, { merge: true });
+};
+window._db_saveBio = async (bio) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), { bio }, { merge: true });
+};
+window._db_saveIntereses = async () => {
+  if (!uid) return;
+  const intereses = [...document.querySelectorAll('.interest-chip.selected:not(.add-chip)')]
+    .map(c => c.textContent.trim());
+  await setDoc(doc(db, 'usuarios', uid), { intereses }, { merge: true });
+};
+
 window.doLogout = () => signOut(auth);
 </script>
 </body>

@@ -703,22 +703,33 @@ function sendPanelMsg() {
   const input = document.getElementById('panelInput');
   const text  = input.value.trim();
   if (!text || !curPerson) return;
-  const p  = people[curPerson];
-  const md = p[curMode];
-  const t  = nowTime();
+  const p       = people[curPerson];
+  const md      = p[curMode];
+  const persona = curPerson;
+  const mode    = curMode;
+  const t       = nowTime();
   md.msgs.push({ from: 'me', text, time: t });
   renderMessages();
   input.value = ''; panelResize(input);
   setTimeout(scrollBottom, 40);
 
+  // Guardar mensaje del usuario en Firestore
+  if (typeof window._db_saveChat === 'function') {
+    window._db_saveChat(persona, mode, [...md.msgs]);
+  }
+
   setTimeout(() => {
     addTyping();
     setTimeout(() => {
       removeTyping();
-      const reply = autoReply(text, curPerson, curMode);
+      const reply = autoReply(text, persona, mode);
       md.msgs.push({ from: 'them', text: reply, time: nowTime() });
       renderMessages();
       setTimeout(scrollBottom, 40);
+      // Guardar respuesta automática en Firestore
+      if (typeof window._db_saveChat === 'function') {
+        window._db_saveChat(persona, mode, [...md.msgs]);
+      }
     }, 1100 + Math.random() * 700);
   }, 300);
 }
@@ -881,8 +892,42 @@ function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
-onAuthStateChanged(auth, user => { if (!user) window.location.href = './home.html'; });
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let uid = null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = './home.html'; return; }
+  uid = user.uid;
+
+  // ── Cargar conversaciones guardadas de Firestore ──
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      ['sofia', 'mateo', 'valentina'].forEach(id => {
+        ['real', 'gemelo'].forEach(mode => {
+          const key = `chats_${id}_${mode}`;
+          if (Array.isArray(d[key]) && d[key].length > 0) {
+            people[id][mode].msgs = d[key];
+            refreshListItem(id);
+          }
+        });
+      });
+    }
+  } catch(e) { console.warn('Error cargando chats:', e); }
+});
+
+// Guardar mensajes de una conversación
+window._db_saveChat = async (personaId, mode, msgs) => {
+  if (!uid) return;
+  const key = `chats_${personaId}_${mode}`;
+  await setDoc(doc(db, 'usuarios', uid), { [key]: msgs }, { merge: true });
+};
 </script>
 </body>
 </html>
