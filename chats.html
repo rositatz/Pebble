@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pebble — Chats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange:        #FF751F;
+  --orange-mid:    #FF9700;
+  --orange-light:  #FFBB30;
+  --bg:            #EEEDEC;
+  --surf-1:        #FFFFFF;
+  --surf-2:        #F5F4F3;
+  --surf-dark:     #000000;
+  --border:        rgba(0,0,0,0.08);
+  --border2:       rgba(0,0,0,0.13);
+  --text-primary:  #000000;
+  --text-secondary:#4D4D4D;
+  --text-muted:    rgba(0,0,0,0.35);
+  --text-inv:      #EEEDEC;
+  --font-display:  'Bricolage Grotesque', sans-serif;
+  --font-serif:    'Inria Serif', serif;
+  --font-body:     'Open Sans', sans-serif;
+  --nav-top: 62px;
+  --nav-bot: 68px;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
+}
+html, body {
+  height: 100%; overflow: hidden;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top nav ── */
+.app-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--nav-top);
+  background: var(--surf-1); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+}
+.nav-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+.nav-actions { display: flex; align-items: center; gap: 6px; }
+.nav-icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: background 0.2s, color 0.2s;
+  position: relative; text-decoration: none;
+}
+.nav-icon-btn:hover { background: var(--surf-2); color: var(--text-primary); }
+.nav-icon-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.notif-pip { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--surf-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 0.78rem; font-weight: 800;
+  color: var(--text-inv); text-decoration: none; flex-shrink: 0; transition: opacity 0.2s;
+}
+.nav-avatar:hover { opacity: 0.8; }
+
+/* ── Page content ── */
+.page-content {
+  position: fixed; top: var(--nav-top); bottom: var(--nav-bot); left: 0; right: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+
+/* ── Search ── */
+.search-wrap { padding: 12px 16px 10px; background: var(--surf-1); border-bottom: 1px solid var(--border); }
+.search-input-wrap { position: relative; }
+.search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; fill: none; stroke: var(--text-muted);
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
+.search-input {
+  width: 100%; padding: 9px 12px 9px 36px;
+  border: 1.5px solid var(--border2); border-radius: 22px;
+  font-family: var(--font-body); font-size: 0.875rem;
+  background: var(--surf-2); color: var(--text-primary); outline: none; transition: border-color 0.18s;
+}
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: var(--orange); background: var(--surf-1); }
+
+/* ── Conv count ── */
+.conv-count { padding: 10px 16px 6px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+
+/* ── Conversation list ── */
+.conv-list { background: var(--surf-1); }
+.conv-item {
+  display: flex; gap: 12px; padding: 13px 16px;
+  border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; touch-action: manipulation;
+}
+.conv-item:hover { background: var(--surf-2); }
+.conv-item:last-child { border-bottom: none; }
+.conv-av {
+  width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: #fff; margin-top: 2px;
+}
+.conv-content { flex: 1; min-width: 0; }
+.conv-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
+.conv-name { font-family: var(--font-display); font-size: 0.98rem; font-weight: 800; letter-spacing: -0.01em; flex-shrink: 0; }
+.conv-afinidad { font-size: 0.68rem; font-weight: 700; color: var(--orange); background: rgba(255,117,31,0.1); border-radius: 10px; padding: 1px 7px; flex-shrink: 0; }
+.conv-time { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
+.conv-preview-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.conv-preview { font-size: 0.82rem; color: var(--text-secondary); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-preview.bold { color: var(--text-primary); font-weight: 600; }
+.conv-unread { min-width: 20px; height: 20px; border-radius: 10px; background: var(--orange); color: #fff; font-size: 0.68rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px; flex-shrink: 0; }
+.conv-modes { display: flex; gap: 6px; }
+.conv-mode-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 14px; font-size: 0.7rem; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--text-muted);
+  transition: all 0.18s; touch-action: manipulation;
+}
+.conv-mode-btn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.conv-mode-btn.mode-active { background: var(--surf-dark); color: var(--text-inv); border-color: var(--surf-dark); }
+.conv-mode-btn.mode-locked { opacity: 0.45; cursor: default; }
+
+/* ── Chat panel ── */
+.chat-panel {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg); display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.chat-panel.open { transform: translateX(0); }
+
+.panel-nav {
+  background: var(--surf-1); border-bottom: 1px solid var(--border);
+  flex-shrink: 0; height: var(--nav-top);
+  display: flex; align-items: center; gap: 8px; padding: 0 12px 0 8px;
+}
+.panel-back {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: background 0.2s; flex-shrink: 0;
+}
+.panel-back:hover { background: var(--surf-2); }
+.panel-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.panel-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.88rem; font-weight: 800; color: #fff; }
+.panel-person { flex: 1; min-width: 0; }
+.panel-person-name { font-family: var(--font-display); font-size: 0.95rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+.panel-person-meta { font-size: 0.68rem; color: var(--text-muted); }
+.panel-mode-seg { display: flex; background: var(--surf-2); border-radius: 20px; padding: 2px; flex-shrink: 0; }
+.panel-mode-btn {
+  padding: 5px 11px; border-radius: 18px; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 0.72rem; font-weight: 600;
+  color: var(--text-muted); background: none; transition: all 0.18s;
+  white-space: nowrap; touch-action: manipulation;
+  display: flex; align-items: center; gap: 4px;
+}
+.panel-mode-btn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.panel-mode-btn.active { background: var(--surf-dark); color: #fff; }
+.panel-mode-btn.locked { opacity: 0.4; cursor: not-allowed; }
+
+.panel-mode-bar {
+  padding: 7px 16px; border-bottom: 1px solid rgba(255,117,31,0.14);
+  background: rgba(255,117,31,0.06);
+  font-size: 0.72rem; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+}
+.panel-mode-bar svg { width: 13px; height: 13px; fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.panel-mode-bar.real-bar { background: rgba(0,0,0,0.025); border-bottom-color: var(--border); }
+.panel-mode-bar.real-bar svg { stroke: var(--text-secondary); }
+
+.panel-messages { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+.panel-msgs-inner {
+  max-width: 720px; width: 100%; margin: 0 auto;
+  padding: 16px 16px 16px; display: flex; flex-direction: column; gap: 6px;
+}
+
+/* Day sep */
+.day-sep { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; }
+.day-sep-line { flex: 1; height: 1px; background: var(--border2); }
+.day-sep-text { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+
+/* Bubbles */
+.pmsg { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+.pmsg.them { justify-content: flex-start; }
+.pmsg.me   { justify-content: flex-end; }
+.pmsg-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; color: #fff; align-self: flex-end; margin-bottom: 2px; }
+.pmsg-av-sp { width: 28px; flex-shrink: 0; }
+.pbubble { padding: 10px 14px; border-radius: 18px; max-width: min(72%, 460px); font-size: 0.875rem; line-height: 1.6; word-wrap: break-word; }
+.pmsg.them .pbubble { background: var(--surf-1); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text-primary); }
+.pmsg.me .pbubble { background: var(--surf-dark); border-bottom-right-radius: 4px; color: var(--text-inv); }
+.pmsg.them.is-gemelo .pbubble { border-left: 3px solid var(--orange); }
+.pmsg-time { font-size: 0.6rem; color: var(--text-muted); align-self: flex-end; margin-bottom: 4px; flex-shrink: 0; }
+.pmsg.me .pmsg-time { order: -1; }
+
+/* Gemelo tag inside bubble */
+.gemelo-tag { display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange); margin-bottom: 5px; }
+
+/* Typing */
+.typing-bubble { background: var(--surf-1); border: 1px solid var(--border); border-radius: 18px; border-bottom-left-radius: 4px; padding: 12px 16px; display: flex; gap: 5px; align-items: center; }
+.typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: typing-bounce 1.2s infinite ease-in-out; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-6px); } }
+
+/* Panel input */
+.panel-input-wrap { background: var(--surf-1); border-top: 1px solid var(--border); padding: 10px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.panel-input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border2); border-radius: 22px; font-family: var(--font-body); font-size: 0.88rem; color: var(--text-primary); background: var(--surf-2); outline: none; resize: none; transition: border-color 0.18s; line-height: 1.4; max-height: 100px; overflow-y: hidden; }
+.panel-input::placeholder { color: var(--text-muted); }
+.panel-input:focus { border-color: var(--orange); background: var(--surf-1); }
+.panel-send-btn { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; background: var(--surf-dark); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; touch-action: manipulation; }
+.panel-send-btn:hover { background: var(--orange); }
+.panel-send-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Lock toast */
+.lock-toast {
+  position: fixed; bottom: calc(var(--nav-bot) + 14px); left: 50%; transform: translateX(-50%) translateY(16px);
+  z-index: 600; background: var(--surf-dark); color: var(--text-inv);
+  border-radius: var(--r-lg); padding: 10px 16px; font-size: 0.8rem; font-weight: 500;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2); opacity: 0; transition: all 0.25s ease;
+  white-space: nowrap; pointer-events: none;
+}
+.lock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.lock-toast svg { width: 15px; height: 15px; fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ── Bottom nav ── */
+.app-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; height: var(--nav-bot); background: var(--surf-1); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; padding-bottom: env(safe-area-inset-bottom, 0); }
+.bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; background: none; border: none; cursor: pointer; color: var(--text-muted); text-decoration: none; transition: color 0.2s; touch-action: manipulation; min-height: 48px; }
+.bnav-item:hover { color: var(--text-secondary); }
+.bnav-item.active { color: var(--orange); }
+.bnav-icon { position: relative; line-height: 1; }
+.bnav-icon svg { width: 22px; height: 22px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bnav-pip { position: absolute; top: -3px; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
+.bnav-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.bnav-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; background: none; border: none; cursor: pointer; text-decoration: none; touch-action: manipulation; min-height: 48px; }
+.bnav-center-orb { width: 50px; height: 50px; border-radius: 50%; background: var(--surf-dark); display: flex; align-items: center; justify-content: center; margin-top: -20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); border: 3px solid var(--bg); transition: transform 0.2s, box-shadow 0.2s; }
+.bnav-center:hover .bnav-center-orb { transform: scale(1.08); }
+.bnav-center-orb svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<nav class="app-nav" aria-label="Navegación">
+  <div class="nav-title">Chats</div>
+  <div class="nav-actions">
+    <a href="./notificaciones.html" class="nav-icon-btn" aria-label="Notificaciones">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="notif-pip"></span>
+    </a>
+    <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+  </div>
+</nav>
+
+<!-- Page content -->
+<div class="page-content">
+  <div class="search-wrap">
+    <div class="search-input-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" class="search-input" placeholder="Buscar conversación..." oninput="filterConvs(this.value)" autocomplete="off"/>
+    </div>
+  </div>
+
+  <div class="conv-count">3 conversaciones activas</div>
+
+  <div class="conv-list" id="convList">
+
+    <!-- Sofía -->
+    <div class="conv-item" id="conv-sofia" onclick="openChat('sofia', event)">
+      <div class="conv-av" style="background:linear-gradient(135deg,#FF9700,#FF751F)">S</div>
+      <div class="conv-content">
+        <div class="conv-top">
+          <span class="conv-name">Sofía</span>
+          <span class="conv-afinidad">87%</span>
+          <span class="conv-time" id="sofia-time">11:02</span>
+        </div>
+        <div class="conv-preview-row">
+          <span class="conv-preview bold" id="sofia-preview">Jaja, espera ¿eso fue en serio?</span>
+          <span class="conv-unread" id="sofia-unread">2</span>
+        </div>
+        <div class="conv-modes">
+          <button class="conv-mode-btn mode-active" id="sofia-btn-real" onclick="listSwitch(event,'sofia','real')">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Real
+          </button>
+          <button class="conv-mode-btn" id="sofia-btn-gemelo" onclick="listSwitch(event,'sofia','gemelo')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Gemelo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Valentina -->
+    <div class="conv-item" id="conv-valentina" onclick="openChat('valentina', event)">
+      <div class="conv-av" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">V</div>
+      <div class="conv-content">
+        <div class="conv-top">
+          <span class="conv-name">Valentina</span>
+          <span class="conv-afinidad">76%</span>
+          <span class="conv-time" id="valentina-time">Ayer</span>
+        </div>
+        <div class="conv-preview-row">
+          <span class="conv-preview bold" id="valentina-preview">Le interesan los proyectos con impacto real…</span>
+          <span class="conv-unread" id="valentina-unread">1</span>
+        </div>
+        <div class="conv-modes">
+          <button class="conv-mode-btn mode-active" id="valentina-btn-gemelo" onclick="listSwitch(event,'valentina','gemelo')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Gemelo
+          </button>
+          <button class="conv-mode-btn mode-locked" id="valentina-btn-real" onclick="lockTap(event,'valentina')">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Real · 80%
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lucas -->
+    <div class="conv-item" id="conv-lucas" onclick="openChat('lucas', event)">
+      <div class="conv-av" style="background:linear-gradient(135deg,#0ea5e9,#2563eb)">L</div>
+      <div class="conv-content">
+        <div class="conv-top">
+          <span class="conv-name">Lucas</span>
+          <span class="conv-afinidad">54%</span>
+          <span class="conv-time" id="lucas-time">Lun</span>
+        </div>
+        <div class="conv-preview-row">
+          <span class="conv-preview" id="lucas-preview">Todavía estamos en etapa temprana…</span>
+          <span class="conv-unread" id="lucas-unread" style="display:none">0</span>
+        </div>
+        <div class="conv-modes">
+          <button class="conv-mode-btn mode-active" id="lucas-btn-gemelo" onclick="listSwitch(event,'lucas','gemelo')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Gemelo
+          </button>
+          <button class="conv-mode-btn mode-locked" id="lucas-btn-real" onclick="lockTap(event,'lucas')">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Real · 80%
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chatPanel">
+  <div class="panel-nav">
+    <button class="panel-back" onclick="closeChat()" aria-label="Volver">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="panel-av" id="panelAv"></div>
+    <div class="panel-person">
+      <div class="panel-person-name" id="panelName"></div>
+      <div class="panel-person-meta" id="panelMeta"></div>
+    </div>
+    <div class="panel-mode-seg">
+      <button class="panel-mode-btn active" id="pmBtnGemelo" onclick="switchPanelMode('gemelo')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Gemelo
+      </button>
+      <button class="panel-mode-btn" id="pmBtnReal" onclick="switchPanelMode('real')">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Real
+      </button>
+    </div>
+  </div>
+
+  <div class="panel-mode-bar" id="panelModeBar">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <span id="panelModeBarText"></span>
+  </div>
+
+  <div class="panel-messages" id="panelMessages">
+    <div class="panel-msgs-inner" id="panelMsgsInner"></div>
+  </div>
+
+  <div class="panel-input-wrap">
+    <textarea class="panel-input" id="panelInput" rows="1" placeholder="Escribir mensaje..."
+      onkeydown="handlePanelKey(event)" oninput="panelResize(this)"></textarea>
+    <button class="panel-send-btn" onclick="sendPanelMsg()" aria-label="Enviar">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Lock toast -->
+<div class="lock-toast" id="lockToast">
+  <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  Necesitás 80% de afinidad para chatear directamente
+</div>
+
+<!-- Bottom nav -->
+<nav class="app-bottom-nav" aria-label="Navegación inferior">
+  <a href="./home.html" class="bnav-item" aria-label="Inicio">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    <span class="bnav-label">Inicio</span>
+  </a>
+  <a href="./matches.html" class="bnav-item" aria-label="Matches">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+    <span class="bnav-label">Matches</span>
+  </a>
+  <a href="./gemelo.html" class="bnav-center" aria-label="Gemelo">
+    <div class="bnav-center-orb">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    </div>
+    <span class="bnav-center-label">Gemelo</span>
+  </a>
+  <a href="./chats.html" class="bnav-item active" aria-label="Chats" aria-current="page">
+    <span class="bnav-icon">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="bnav-pip"></span>
+    </span>
+    <span class="bnav-label">Chats</span>
+  </a>
+  <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    <span class="bnav-label">Perfil</span>
+  </a>
+</nav>
+
+<script>
+const people = {
+  sofia: {
+    name: 'Sofía', initials: 'S',
+    color: 'linear-gradient(135deg,#FF9700,#FF751F)',
+    age: 26, city: 'Buenos Aires', afinidad: 87,
+    realUnlocked: true, currentMode: 'real',
+    gemelo: {
+      lastTime: '10:47', unread: 0,
+      msgs: [
+        { from: 'them', text: 'Hola, soy el gemelo de Sofía. Puedo ayudarte a conocerla antes de chatear directamente.', time: '10:30' },
+        { from: 'me', text: '¿Qué tipo de música le gusta realmente?', time: '10:32' },
+        { from: 'them', text: 'Jazz sobre todo — Coltrane, Miles Davis, Bill Evans. Pero también le llega el post-rock instrumental. El silencio entre las notas le importa tanto como las notas mismas.', time: '10:33' },
+        { from: 'me', text: '¿Cómo reacciona si uno la lleva a un lugar desconocido en la primera cita?', time: '10:40' },
+        { from: 'them', text: 'Le encanta, siempre que no sea forzado. Odia el protocolo pero adora la sorpresa genuina. Si el lugar la representa, vas muy bien.', time: '10:41' },
+        { from: 'them', text: 'Escuché algo de Explosions in the Sky hace poco. ¿Los conocés?', time: '10:47' },
+      ]
+    },
+    real: {
+      lastTime: '11:02', unread: 2,
+      msgs: [
+        { from: 'them', text: '¡Hola! Nuestros gemelos me dijeron que tenemos mucho en común 😄', time: '10:55' },
+        { from: 'me', text: 'Sí, vi que ambos tenemos una obsesión bastante seria con el jazz.', time: '10:56' },
+        { from: 'them', text: 'Serious es poco. Fui a ver a Brad Mehldau el mes pasado y me quedé llorando en el taxi de vuelta. Lo digo sin vergüenza.', time: '10:58' },
+        { from: 'me', text: 'Eso es exactamente lo que tiene que hacer la música buena. ¿Alguna vez escuchaste "Anything Goes" en vivo?', time: '11:00' },
+        { from: 'them', text: 'Jaja, espera ¿eso fue en serio?', time: '11:02' },
+      ]
+    }
+  },
+  valentina: {
+    name: 'Valentina', initials: 'V',
+    color: 'linear-gradient(135deg,#7c3aed,#a855f7)',
+    age: 24, city: 'Córdoba', afinidad: 76,
+    realUnlocked: false, currentMode: 'gemelo',
+    gemelo: {
+      lastTime: 'Ayer', unread: 1,
+      msgs: [
+        { from: 'them', text: 'Hola, soy el gemelo de Valentina. Podemos explorar la conexión antes del chat directo.', time: '09:00' },
+        { from: 'me', text: '¿Qué es lo que más valora en una relación?', time: '09:05' },
+        { from: 'them', text: 'La honestidad cruda por sobre la amabilidad de fachada. Prefiere que le digan algo incómodo con respeto a que le doren la píldora.', time: '09:07' },
+        { from: 'me', text: '¿Trabaja en algo creativo?', time: '09:15' },
+        { from: 'them', text: 'Diseño UX. Y trabaja como voluntaria en una ONG de educación rural los fines de semana.', time: '09:16' },
+        { from: 'them', text: 'Le interesan los proyectos con impacto real, no solo los que quedan bien en LinkedIn.', time: '09:20' },
+      ]
+    },
+    real: { lastTime: null, unread: 0, msgs: [] }
+  },
+  lucas: {
+    name: 'Lucas', initials: 'L',
+    color: 'linear-gradient(135deg,#0ea5e9,#2563eb)',
+    age: 28, city: 'Rosario', afinidad: 54,
+    realUnlocked: false, currentMode: 'gemelo',
+    gemelo: {
+      lastTime: 'Lun', unread: 0,
+      msgs: [
+        { from: 'them', text: 'Hola, soy el gemelo de Lucas. Recién empezamos a conocernos, así que mi información sobre él es limitada todavía.', time: '15:30' },
+        { from: 'me', text: '¿Qué hace en su tiempo libre?', time: '15:32' },
+        { from: 'them', text: 'Le gusta escalar en roca los fines de semana y hace fotografía análoga. Tiene paciencia para las cosas lentas.', time: '15:33' },
+        { from: 'them', text: 'Todavía estamos en etapa temprana. ¿Querés que profundice en algún tema?', time: '15:35' },
+      ]
+    },
+    real: { lastTime: null, unread: 0, msgs: [] }
+  }
+};
+
+let curPerson = null;
+let curMode   = null;
+
+/* ── Open chat panel ── */
+function openChat(id, e) {
+  if (e && e.target.closest('.conv-mode-btn')) return;
+  const p = people[id];
+  curPerson = id;
+  curMode   = p.currentMode;
+
+  document.getElementById('panelAv').style.background = p.color;
+  document.getElementById('panelAv').textContent = p.initials;
+  document.getElementById('panelName').textContent = p.name;
+  document.getElementById('panelMeta').textContent = `${p.age} años · ${p.city} · ${p.afinidad}% afinidad`;
+
+  const realBtn = document.getElementById('pmBtnReal');
+  realBtn.classList.toggle('locked', !p.realUnlocked);
+
+  syncPanelModeBtns();
+  updateModeBar();
+  renderMessages();
+
+  document.getElementById('chatPanel').classList.add('open');
+  setTimeout(scrollBottom, 60);
+
+  // clear unread
+  p.gemelo.unread = 0;
+  if (p.real) p.real.unread = 0;
+  refreshListItem(id);
+}
+
+function closeChat() {
+  document.getElementById('chatPanel').classList.remove('open');
+  curPerson = null; curMode = null;
+}
+
+/* ── Panel mode switch ── */
+function switchPanelMode(mode) {
+  const p = people[curPerson];
+  if (mode === 'real' && !p.realUnlocked) { showToast(); return; }
+  curMode = mode;
+  p.currentMode = mode;
+  syncPanelModeBtns();
+  updateModeBar();
+  renderMessages();
+  setTimeout(scrollBottom, 40);
+  refreshListItem(curPerson);
+}
+
+function syncPanelModeBtns() {
+  document.getElementById('pmBtnGemelo').classList.toggle('active', curMode === 'gemelo');
+  document.getElementById('pmBtnReal').classList.toggle('active', curMode === 'real');
+}
+
+function updateModeBar() {
+  const p = people[curPerson];
+  const bar  = document.getElementById('panelModeBar');
+  const text = document.getElementById('panelModeBarText');
+  if (curMode === 'gemelo') {
+    bar.className = 'panel-mode-bar';
+    bar.querySelector('svg').innerHTML = '<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>';
+    text.textContent = `Hablás con el gemelo de ${p.name}. Conocela antes de conectar directamente.`;
+  } else {
+    bar.className = 'panel-mode-bar real-bar';
+    bar.querySelector('svg').innerHTML = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
+    text.textContent = `Chat directo con ${p.name}. Lo que escribas lo ve ella.`;
+  }
+}
+
+/* ── Render messages ── */
+function renderMessages() {
+  const p   = people[curPerson];
+  const md  = p[curMode];
+  const con = document.getElementById('panelMsgsInner');
+  const isG = curMode === 'gemelo';
+  con.innerHTML = '';
+
+  const sep = document.createElement('div');
+  sep.className = 'day-sep';
+  sep.innerHTML = '<div class="day-sep-line"></div><span class="day-sep-text">Hoy</span><div class="day-sep-line"></div>';
+  con.appendChild(sep);
+
+  (md.msgs || []).forEach(msg => addMsgEl(con, msg, p, isG));
+}
+
+function addMsgEl(container, msg, p, isG) {
+  const isMe = msg.from === 'me';
+  const div  = document.createElement('div');
+  div.className = `pmsg ${isMe ? 'me' : 'them'}${(!isMe && isG) ? ' is-gemelo' : ''}`;
+
+  if (isMe) {
+    div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${esc(msg.text)}</div>`;
+  } else {
+    const tag = isG ? `<span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>` : '';
+    div.innerHTML = `
+      <div class="pmsg-av" style="background:${p.color}">${p.initials}</div>
+      <div class="pbubble">${tag}${esc(msg.text)}</div>
+      <span class="pmsg-time">${msg.time}</span>`;
+  }
+  container.appendChild(div);
+}
+
+/* ── Send message ── */
+function sendPanelMsg() {
+  const input = document.getElementById('panelInput');
+  const text  = input.value.trim();
+  if (!text || !curPerson) return;
+  const p  = people[curPerson];
+  const md = p[curMode];
+  const t  = nowTime();
+  md.msgs.push({ from: 'me', text, time: t });
+  renderMessages();
+  input.value = ''; panelResize(input);
+  setTimeout(scrollBottom, 40);
+
+  setTimeout(() => {
+    addTyping();
+    setTimeout(() => {
+      removeTyping();
+      const reply = autoReply(text, curPerson, curMode);
+      md.msgs.push({ from: 'them', text: reply, time: nowTime() });
+      renderMessages();
+      setTimeout(scrollBottom, 40);
+    }, 1100 + Math.random() * 700);
+  }, 300);
+}
+
+function addTyping() {
+  const p   = people[curPerson];
+  const con = document.getElementById('panelMsgsInner');
+  const div = document.createElement('div');
+  div.id = 'ptyping'; div.className = 'pmsg them';
+  div.innerHTML = `<div class="pmsg-av" style="background:${p.color}">${p.initials}</div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  con.appendChild(div);
+  scrollBottom();
+}
+function removeTyping() { const el = document.getElementById('ptyping'); if (el) el.remove(); }
+
+/* ── Auto replies ── */
+function autoReply(text, id, mode) {
+  const t = text.toLowerCase();
+  const p = people[id];
+  if (mode === 'gemelo') {
+    if (t.includes('gusta') || t.includes('hobby') || t.includes('interés') || t.includes('pasión')) {
+      const m = { sofia: 'Le apasiona el jazz en vivo — Coltrane la cambió a los 19. También escribe, aunque no lo muestra fácilmente. Y el cine de autor: Bergman, Kieślowski.', valentina: 'Diseño UX, voluntariado en educación rural y fotografía de viaje. Se mueve por lo que deja huella, no por lo que queda bien en el CV.', lucas: 'Escala en roca los fines de semana y hace fotografía análoga. Le gusta que las cosas tomen tiempo — dice que la velocidad arruina la mayoría de las cosas buenas.' };
+      return m[id] || `Puedo decirte más sobre ${p.name} si me hacés preguntas más específicas.`;
+    }
+    if (t.includes('consejo') || t.includes('primer') || t.includes('cómo') || t.includes('hablar')) {
+      const m = { sofia: 'Arrancá con algo concreto, no con "hola ¿cómo estás?". Una referencia específica a algo de ella funciona mucho mejor que cualquier protocolo de app.', valentina: 'Sé directo. Odia el rodeo. Si tenés algo genuino que decir, decilo. Si no tenés nada, mejor esperá.', lucas: 'Ve despacio. No le tires todo junto. Le gusta que la conversación sea recíproca y tenga espacio para respirar.' };
+      return m[id] || `Puedo darte consejos más específicos si me contás qué querés lograr con ${p.name}.`;
+    }
+    if (t.includes('familia') || t.includes('relación') || t.includes('pareja')) {
+      const m = { sofia: 'Tiene buena relación con su familia pero necesita espacio propio. No le gustan las personas demasiado dependientes, le resulta sofocante.', valentina: 'Valora mucho la independencia, tanto en ella como en una pareja. Quiere alguien que tenga su propio mundo.', lucas: 'Es reservado en ese tema. Lo que sé es que valora la coherencia — que la persona sea lo mismo en público y en privado.' };
+      return m[id] || 'Es un tema que todavía no conozco bien. Seguí preguntando, voy aprendiendo.';
+    }
+    return `Esa es una buena pregunta. Con cada conversación aprendo más sobre ${p.name}. ¿Querés que profundice en algún aspecto específico de su personalidad?`;
+  } else {
+    const banks = {
+      sofia: ['¿En serio? Ahora tengo que escuchar eso. Tengo una playlist de jazz-cine que armé con todo lo que me fue cambiando la cabeza 🎷', 'Jajaja exacto. Hay algo en el silencio que dice más que las notas.', 'Buena onda. ¿Y qué onda vos? ¿Salís a shows o más escuchás en casa?', '¡Ay dios! Eso es exactamente lo que digo siempre y nadie me entiende 😭', 'Sí, totalmente. Igual me quedé pensando en lo que dijiste antes...'],
+      valentina: ['Sí, algo así. Igual prefiero que lo veamos en persona, es más fácil explicarlo.', 'Exacto, ¡alguien que lo entiende! La mayoría piensa que estoy exagerando.', '¿Vos también? Qué interesante. ¿De dónde venís?', 'Me parece bien. ¿Tenés tiempo el finde para tomar algo?'],
+      lucas: ['Sí, exacto. Ojalá más gente lo entendiera.', '¿En serio? Yo también. La última vez que fui fue increíble.', 'Buena. ¿Y qué hacés normalmente los fines de semana?', 'Tiene sentido. Yo pienso lo mismo.']
+    };
+    const arr = banks[id] || ['Jaja sí. ¿Y vos qué hacés?'];
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+}
+
+/* ── List mode switch ── */
+function listSwitch(e, id, mode) {
+  e.stopPropagation();
+  const p = people[id];
+  if (mode === 'real' && !p.realUnlocked) { showToast(); return; }
+  p.currentMode = mode;
+  refreshListItem(id);
+}
+function lockTap(e, id) { e.stopPropagation(); showToast(); }
+
+function refreshListItem(id) {
+  const p  = people[id];
+  const md = p[p.currentMode];
+
+  const previewEl = document.getElementById(`${id}-preview`);
+  const timeEl    = document.getElementById(`${id}-time`);
+  const unreadEl  = document.getElementById(`${id}-unread`);
+
+  if (previewEl) {
+    const msgs = md.msgs || [];
+    const last = msgs.length ? msgs[msgs.length - 1] : null;
+    previewEl.textContent = last ? (last.text.length > 55 ? last.text.slice(0, 55) + '…' : last.text) : 'Sin mensajes';
+    previewEl.className = 'conv-preview' + (md.unread > 0 ? ' bold' : '');
+  }
+  if (timeEl) timeEl.textContent = md.lastTime || '';
+  if (unreadEl) { unreadEl.textContent = md.unread; unreadEl.style.display = md.unread > 0 ? '' : 'none'; }
+
+  // mode buttons highlight
+  const gBtn = document.getElementById(`${id}-btn-gemelo`);
+  const rBtn = document.getElementById(`${id}-btn-real`);
+  if (gBtn) gBtn.classList.toggle('mode-active', p.currentMode === 'gemelo');
+  if (rBtn && !rBtn.classList.contains('mode-locked')) rBtn.classList.toggle('mode-active', p.currentMode === 'real');
+}
+
+/* ── Search ── */
+function filterConvs(q) {
+  const ql = q.toLowerCase();
+  document.querySelectorAll('.conv-item').forEach(el => {
+    const name = el.querySelector('.conv-name').textContent.toLowerCase();
+    el.style.display = (!ql || name.includes(ql)) ? '' : 'none';
+  });
+}
+
+/* ── Lock toast ── */
+let toastTimer = null;
+function showToast() {
+  const el = document.getElementById('lockToast');
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ── Helpers ── */
+function scrollBottom() {
+  const el = document.getElementById('panelMessages');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+function nowTime() { return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); }
+function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function handlePanelKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPanelMsg(); } }
+function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+
+// Init unread badges
+['sofia','valentina','lucas'].forEach(id => refreshListItem(id));
+</script>
+</body>
+</html>
