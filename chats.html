@@ -165,14 +165,17 @@ html, body {
 .panel-mode-btn.locked { opacity: 0.4; cursor: not-allowed; }
 
 .panel-mode-bar {
-  padding: 7px 16px; border-bottom: 1px solid rgba(255,117,31,0.14);
-  background: rgba(255,117,31,0.06);
-  font-size: 0.72rem; color: var(--text-secondary);
-  display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+  padding: 9px 16px; border-bottom: 1px solid var(--border);
+  font-size: 0.73rem; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
-.panel-mode-bar svg { width: 13px; height: 13px; fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-.panel-mode-bar.real-bar { background: rgba(0,0,0,0.025); border-bottom-color: var(--border); }
-.panel-mode-bar.real-bar svg { stroke: var(--text-secondary); }
+.panel-mode-bar svg { width: 13px; height: 13px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.panel-mode-bar.gemelo-bar { background: var(--surf-dark); border-bottom-color: rgba(255,117,31,0.3); color: rgba(255,255,255,0.8); }
+.panel-mode-bar.gemelo-bar svg { stroke: var(--orange); }
+.panel-mode-bar.real-bar { background: rgba(34,197,94,0.07); border-bottom-color: rgba(34,197,94,0.2); color: var(--text-secondary); }
+.panel-mode-bar.real-bar svg { stroke: #22c55e; }
+.mode-bar-badge { font-size: 0.62rem; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+.pmsg-av-ai { outline: 2px solid var(--orange); outline-offset: 1px; }
+.pmsg-av-ai svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
 .panel-messages { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
 .panel-msgs-inner {
@@ -318,9 +321,9 @@ html, body {
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             Gemelo
           </button>
-          <button class="conv-mode-btn mode-locked" id="valentina-btn-real" onclick="lockTap(event,'valentina')">
-            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Real · 80%
+          <button class="conv-mode-btn" id="valentina-btn-real" onclick="listSwitch(event,'valentina','real')">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Real
           </button>
         </div>
       </div>
@@ -378,10 +381,7 @@ html, body {
     </div>
   </div>
 
-  <div class="panel-mode-bar" id="panelModeBar">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-    <span id="panelModeBarText"></span>
-  </div>
+  <div class="panel-mode-bar" id="panelModeBar"></div>
 
   <div class="panel-messages" id="panelMessages">
     <div class="panel-msgs-inner" id="panelMsgsInner"></div>
@@ -464,7 +464,7 @@ const people = {
     name: 'Valentina', initials: 'V',
     color: 'linear-gradient(135deg,#7c3aed,#a855f7)',
     age: 24, city: 'Córdoba', afinidad: 76,
-    realUnlocked: false, currentMode: 'gemelo',
+    realUnlocked: true, currentMode: 'gemelo',
     gemelo: {
       lastTime: 'Ayer', unread: 1,
       msgs: [
@@ -476,7 +476,14 @@ const people = {
         { from: 'them', text: 'Le interesan los proyectos con impacto real, no solo los que quedan bien en LinkedIn.', time: '09:20' },
       ]
     },
-    real: { lastTime: null, unread: 0, msgs: [] }
+    real: {
+      lastTime: 'Ayer', unread: 0,
+      msgs: [
+        { from: 'them', text: 'Hola 🙂 Tu gemelo y el mío me contaron que hay mucha compatibilidad. Me pareció bien que nos presentaran directamente.', time: '09:45' },
+        { from: 'me', text: 'Sí, me alegra. ¿Cómo te cayó la idea de los gemelos digitales?', time: '09:47' },
+        { from: 'them', text: 'Al principio rara jaja. Pero me gustó que el mío me preguntó cosas de verdad antes de presentarme. Se siente menos al azar que otras apps.', time: '09:50' },
+      ]
+    }
   },
   lucas: {
     name: 'Lucas', initials: 'L',
@@ -551,17 +558,23 @@ function syncPanelModeBtns() {
 }
 
 function updateModeBar() {
-  const p = people[curPerson];
-  const bar  = document.getElementById('panelModeBar');
-  const text = document.getElementById('panelModeBarText');
+  const p   = people[curPerson];
+  const bar = document.getElementById('panelModeBar');
+  const inp = document.getElementById('panelInput');
   if (curMode === 'gemelo') {
-    bar.className = 'panel-mode-bar';
-    bar.querySelector('svg').innerHTML = '<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>';
-    text.textContent = `Hablás con el gemelo de ${p.name}. Conocela antes de conectar directamente.`;
+    bar.className = 'panel-mode-bar gemelo-bar';
+    bar.innerHTML = `
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      <span style="flex:1">Hablás con el <strong style="color:#fff">gemelo de ${esc(p.name)}</strong> · Modo práctica</span>
+      <span class="mode-bar-badge" style="background:var(--orange);color:#fff">IA</span>`;
+    inp.placeholder = `Preguntale algo al gemelo de ${p.name}...`;
   } else {
     bar.className = 'panel-mode-bar real-bar';
-    bar.querySelector('svg').innerHTML = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
-    text.textContent = `Chat directo con ${p.name}. Lo que escribas lo ve ella.`;
+    bar.innerHTML = `
+      <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;display:inline-block"></span>
+      <span style="flex:1">Chat real con <strong>${esc(p.name)}</strong></span>
+      <span class="mode-bar-badge" style="background:rgba(34,197,94,0.15);color:#16a34a">En línea</span>`;
+    inp.placeholder = `Escribile a ${p.name}...`;
   }
 }
 
@@ -588,11 +601,17 @@ function addMsgEl(container, msg, p, isG) {
 
   if (isMe) {
     div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${esc(msg.text)}</div>`;
+  } else if (isG) {
+    div.innerHTML = `
+      <div class="pmsg-av pmsg-av-ai" style="background:${p.color}">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div class="pbubble"><span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
+      <span class="pmsg-time">${msg.time}</span>`;
   } else {
-    const tag = isG ? `<span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>` : '';
     div.innerHTML = `
       <div class="pmsg-av" style="background:${p.color}">${p.initials}</div>
-      <div class="pbubble">${tag}${esc(msg.text)}</div>
+      <div class="pbubble">${esc(msg.text)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
   }
   container.appendChild(div);
@@ -625,10 +644,15 @@ function sendPanelMsg() {
 
 function addTyping() {
   const p   = people[curPerson];
+  const isG = curMode === 'gemelo';
   const con = document.getElementById('panelMsgsInner');
   const div = document.createElement('div');
-  div.id = 'ptyping'; div.className = 'pmsg them';
-  div.innerHTML = `<div class="pmsg-av" style="background:${p.color}">${p.initials}</div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  div.id = 'ptyping';
+  div.className = `pmsg them${isG ? ' is-gemelo' : ''}`;
+  const av = isG
+    ? `<div class="pmsg-av pmsg-av-ai" style="background:${p.color}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>`
+    : `<div class="pmsg-av" style="background:${p.color}">${p.initials}</div>`;
+  div.innerHTML = `${av}<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
   con.appendChild(div);
   scrollBottom();
 }
