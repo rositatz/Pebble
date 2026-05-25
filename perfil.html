@@ -1553,8 +1553,7 @@ function showToast(msg) {
 ══════════════════════════════ */
 function handleLogout() {
   if (confirm('¿Querés cerrar sesión?')) {
-    localStorage.removeItem('pebble_user');
-    // REEMPLAZAR: window.location.href = './home.html';
+    localStorage.removeItem('pebble_session');
     window.location.href = './home.html';
   }
 }
