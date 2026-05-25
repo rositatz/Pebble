@@ -272,7 +272,7 @@ html, body {
         Mensual · $5/mes
       </button>
       <button class="period-seg-btn" id="segAnual" onclick="setPeriod('anual')">
-        Anual · $4/mes <span class="save">(-20%)</span>
+        Anual · $50/año <span class="save">(-17%)</span>
       </button>
     </div>
 
@@ -420,10 +420,11 @@ function setPeriod(p) {
   const isAnual = p === 'anual';
   document.getElementById('segMensual').classList.toggle('active', !isAnual);
   document.getElementById('segAnual').classList.toggle('active', isAnual);
-  document.getElementById('summaryPrice').textContent  = isAnual ? '$48' : '$5';
-  document.getElementById('summaryPriceNote').textContent = isAnual ? '/año · $4/mes' : '/mes';
-  document.getElementById('payBtnAmount').textContent  = isAnual ? '$48' : '$5';
-  document.getElementById('payBtn').querySelector('span').lastChild.textContent = isAnual ? '$48/año' : '$5/mes';
+  document.getElementById('summaryPrice').textContent     = isAnual ? '$50' : '$5';
+  document.getElementById('summaryPriceNote').textContent = isAnual ? '/año' : '/mes';
+  document.getElementById('payBtnText').innerHTML =
+    isAnual ? 'Pagar <span id="payBtnAmount">$50</span>/año'
+            : 'Pagar <span id="payBtnAmount">$5</span>/mes';
 }
 
 // ── Card number formatting ──

@@ -213,7 +213,7 @@ html, body {
   <div class="period-toggle">
     <button class="period-btn active" id="btnMensual" onclick="setPeriod('mensual')">Mensual</button>
     <button class="period-btn" id="btnAnual" onclick="setPeriod('anual')">
-      Anual <span class="period-save-badge">-20%</span>
+      Anual <span class="period-save-badge">-17%</span>
     </button>
   </div>
 
@@ -341,8 +341,8 @@ function setPeriod(p) {
   const ctaEl   = document.getElementById('premiumCta');
 
   if (p === 'anual') {
-    priceEl.textContent = '$4';
-    noteEl.textContent  = '$48 / año · ahorrás $12';
+    priceEl.textContent = '$50';
+    noteEl.textContent  = 'por año · ahorrás $10';
     ctaEl.textContent   = 'Empezar con Premium anual →';
     ctaEl.href = './pago.html?periodo=anual';
   } else {
