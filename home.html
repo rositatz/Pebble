@@ -514,9 +514,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
 }
+#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
+#loadingOverlay.hide{opacity:0;pointer-events:none}
+.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+<div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
 <!-- ══════════════════════════════════════
      AUTH GATE
@@ -938,6 +943,10 @@ const facebookProvider = new FacebookAuthProvider();
 onAuthStateChanged(auth, user => {
   if (user) showApp(user);
   else      showGate();
+
+  // Quitar el overlay una vez que Firebase resolvió el estado
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) { overlay.classList.add('hide'); setTimeout(() => overlay.remove(), 350); }
 });
 
 // ── LOGIN con email/contraseña ──
