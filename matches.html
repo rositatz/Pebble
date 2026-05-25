@@ -575,7 +575,7 @@ body {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Perfil
       </button>
-      <button class="btn-chat" onclick="goTo('chats')" aria-label="Hablar con Sofía">
+      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=sofia'" aria-label="Hablar con Sofía">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Escribirle a Sofía
       </button>
@@ -623,7 +623,7 @@ body {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Perfil
       </button>
-      <button class="btn-chat" onclick="goTo('chats')" aria-label="Hablar con Mateo">
+      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=mateo'" aria-label="Hablar con Mateo">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Escribirle a Mateo
       </button>
@@ -671,7 +671,7 @@ body {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Perfil
       </button>
-      <button class="btn-chat" onclick="goTo('chats')" aria-label="Hablar con Valentina">
+      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=valentina'" aria-label="Hablar con Valentina">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Escribirle a Valentina
       </button>
@@ -719,7 +719,7 @@ body {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Perfil
       </button>
-      <button class="btn-chat" onclick="goTo('chats')" aria-label="Hablar con Lucía">
+      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=lucia'" aria-label="Hablar con Lucía">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Escribirle a Lucía
       </button>
@@ -761,7 +761,7 @@ body {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Perfil
       </button>
-      <button class="btn-chat" onclick="goTo('chats')" aria-label="Hablar con Agustín">
+      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=agustin'" aria-label="Hablar con Agustín">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Escribirle a Agustín
       </button>
@@ -785,9 +785,9 @@ body {
 
     <div class="modal-cta-row">
       <button class="btn-profile" style="flex:1" onclick="closeModal()" aria-label="Cerrar perfil">Cerrar</button>
-      <button class="btn-chat" style="flex:2" id="modal-chat-btn" onclick="goTo('chats')" aria-label="Ir al chat">
+      <button class="btn-chat" style="flex:2" id="modal-chat-btn" aria-label="Ir al chat">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Escribirle
+        <span id="modal-chat-label">Escribirle</span>
       </button>
     </div>
   </div>
@@ -1000,7 +1000,8 @@ function openProfile(id) {
   }
 
   document.getElementById('modal-body').innerHTML = html;
-  document.getElementById('modal-chat-btn').textContent = `Escribirle a ${p.name}`;
+  document.getElementById('modal-chat-label').textContent = `Escribirle a ${p.name}`;
+  document.getElementById('modal-chat-btn').onclick = () => { window.location.href = `./chats.html?persona=${id}`; };
 
   // Open modal
   const overlay = document.getElementById('modal');
@@ -1046,6 +1047,13 @@ function sortMatches(mode, btn) {
   }
   sorted.forEach(c => { c.style.opacity='0'; list.appendChild(c); requestAnimationFrame(() => { c.style.transition='opacity 0.3s'; c.style.opacity='1'; }); });
 }
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
+onAuthStateChanged(auth, user => { if (!user) window.location.href = './home.html'; });
 </script>
 </body>
 </html>

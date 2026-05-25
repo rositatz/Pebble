@@ -1553,8 +1553,11 @@ function showToast(msg) {
 ══════════════════════════════ */
 function handleLogout() {
   if (confirm('¿Querés cerrar sesión?')) {
-    localStorage.removeItem('pebble_session');
-    window.location.href = './home.html';
+    if (typeof doLogout === 'function') {
+      doLogout().then(() => { window.location.href = './home.html'; });
+    } else {
+      window.location.href = './home.html';
+    }
   }
 }
 
@@ -1564,6 +1567,31 @@ function handleLogout() {
 renderPhotoGrid();
 // init bio char count
 document.getElementById('bioCount').textContent = document.getElementById('eBio').value.length;
+</script>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+  authDomain:        "pebble-78e95.firebaseapp.com",
+  projectId:         "pebble-78e95",
+  storageBucket:     "pebble-78e95.firebasestorage.app",
+  messagingSenderId: "56434257024",
+  appId:             "1:56434257024:web:3e2625f73bad3d4c004a65"
+};
+
+const auth = getAuth(initializeApp(firebaseConfig));
+
+// Proteger la página: si no hay sesión activa → login
+onAuthStateChanged(auth, user => {
+  if (!user) window.location.href = './home.html';
+});
+
+// Exponer logout para que handleLogout() pueda llamarlo
+window.doLogout = () => signOut(auth);
 </script>
 </body>
 </html>

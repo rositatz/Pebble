@@ -546,11 +546,10 @@ body {
           <label class="auth-label" for="si-pass">Contraseña</label>
           <input class="auth-input" type="password" id="si-pass" placeholder="••••••••" autocomplete="current-password"/>
         </div>
-        <button type="button" class="auth-btn" onclick="mockLogin()">Entrar</button>
+        <button type="button" class="auth-btn" onclick="doLogin()">Entrar</button>
         <div class="auth-divider">o continuá con</div>
         <div class="auth-social">
-          <!-- ── REEMPLAZAR onclick por OAuth real (Google, Facebook, Apple) ── -->
-          <button type="button" class="auth-social-btn" onclick="mockLogin()" aria-label="Google">
+          <button type="button" class="auth-social-btn" onclick="doLoginGoogle()" aria-label="Google">
             <svg width="15" height="15" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
             Google
           </button>
@@ -586,7 +585,7 @@ body {
           <label class="auth-label" for="su-pass">Contraseña</label>
           <input class="auth-input" type="password" id="su-pass" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
         </div>
-        <button type="button" class="auth-btn" onclick="mockSignup()">Crear cuenta</button>
+        <button type="button" class="auth-btn" onclick="doSignup()">Crear cuenta</button>
         <div class="auth-divider">o continuá con</div>
         <div class="auth-social">
           <button type="button" class="auth-social-btn" onclick="mockSignup()" aria-label="Google">
@@ -872,61 +871,20 @@ body {
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════
-// AUTH — SIMULADA
-// Puntos de integración con backend:
-//   init()     → verificar token en cookie/localStorage → GET /api/me
-//   mockLogin()→ POST /api/login o /api/register → guardar token → showApp(user)
-//   logout()   → DELETE /api/session → removeItem → showGate()
-// ══════════════════════════════════════════════════════
-const STORAGE_KEY = 'pebble_session';
-
-function init() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) { try { showApp(JSON.parse(raw)); } catch { showGate(); } }
-  else { showGate(); }
-}
-
+// Funciones de UI (no-módulo, accesibles desde onclick en HTML)
 function showGate() {
   document.getElementById('auth-gate').classList.remove('hidden');
   const s = document.getElementById('app-shell');
   s.classList.remove('visible'); s.style.display = 'none';
 }
-
 function showApp(user) {
   document.getElementById('auth-gate').classList.add('hidden');
   const s = document.getElementById('app-shell');
   s.style.display = 'flex'; s.classList.add('visible');
-  // ── REEMPLAZAR por nombre real del backend ──
-  const nombre = user?.nombre || 'Usuario';
+  const nombre = user?.displayName || user?.email?.split('@')[0] || 'Usuario';
   document.getElementById('user-name').textContent = nombre;
   document.getElementById('nav-avatar').textContent = nombre[0].toUpperCase();
 }
-
-function mockLogin() {
-  // ── Login: guarda sesión y muestra la app ──
-  const nombre = (document.getElementById('si-email')?.value || '').split('@')[0] || 'Usuario';
-  const user = { nombre };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  showApp(user);
-}
-
-function mockSignup() {
-  // ── Registro nuevo: guarda sesión y redirige a elegir plan ──
-  const nombre =
-    document.getElementById('su-name')?.value.trim() ||
-    'Usuario';
-  const user = { nombre, isNew: true };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-  window.location.href = './planes.html';
-}
-
-function logout() {
-  // ── REEMPLAZAR por invalidación real de token ──
-  localStorage.removeItem(STORAGE_KEY);
-  showGate();
-}
-
 function switchTab(tab) {
   const isSignin = tab === 'signin';
   document.getElementById('form-signin').classList.toggle('hidden', !isSignin);
@@ -938,23 +896,133 @@ function switchTab(tab) {
   document.getElementById('auth-switch-text').innerHTML = isSignin
     ? '¿No tenés cuenta? <button onclick="switchTab(\'signup\')">Crear una</button>'
     : '¿Ya tenés cuenta? <button onclick="switchTab(\'signin\')">Iniciar sesión</button>';
+  clearAuthError();
 }
-
 function goTo(page) {
-  const map = {
-    gemelo: './gemelo.html',
-    matches: './matches.html',
-    chats: './chats.html',
-    notificaciones: './notificaciones.html',
-    perfil: './perfil.html',
-  };
-
+  const map = { gemelo:'./gemelo.html', matches:'./matches.html', chats:'./chats.html', notificaciones:'./notificaciones.html', perfil:'./perfil.html' };
   const url = map[page];
-
   if (url) window.location.href = url;
 }
+function showAuthError(msg) {
+  let el = document.getElementById('auth-error');
+  if (!el) {
+    el = document.createElement('p');
+    el.id = 'auth-error';
+    el.style.cssText = 'color:#ef4444;font-size:0.78rem;text-align:center;margin-top:-6px;font-family:var(--font-body)';
+    document.querySelector('.auth-card').appendChild(el);
+  }
+  el.textContent = msg;
+}
+function clearAuthError() {
+  const el = document.getElementById('auth-error');
+  if (el) el.textContent = '';
+}
+function setBtnLoading(btnEl, loading) {
+  btnEl.disabled = loading;
+  if (loading) { btnEl.dataset.orig = btnEl.textContent; btnEl.textContent = 'Cargando…'; }
+  else { btnEl.textContent = btnEl.dataset.orig || btnEl.textContent; }
+}
+// Las funciones doLogin/doSignup/doLoginGoogle/doLogout las expone el módulo de abajo
+</script>
 
-init();
+<script type="module">
+import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         signInWithPopup, GoogleAuthProvider,
+         onAuthStateChanged, signOut, updateProfile }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+  authDomain:        "pebble-78e95.firebaseapp.com",
+  projectId:         "pebble-78e95",
+  storageBucket:     "pebble-78e95.firebasestorage.app",
+  messagingSenderId: "56434257024",
+  appId:             "1:56434257024:web:3e2625f73bad3d4c004a65"
+};
+
+const app      = initializeApp(firebaseConfig);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// ── Sesión persistente: Firebase la maneja sola ──
+onAuthStateChanged(auth, user => {
+  if (user) showApp(user);
+  else      showGate();
+});
+
+// ── LOGIN con email/contraseña ──
+window.doLogin = async function() {
+  const email = document.getElementById('si-email').value.trim();
+  const pass  = document.getElementById('si-pass').value;
+  const btn   = document.querySelector('#form-signin .auth-btn');
+  clearAuthError();
+  if (!email || !pass) { showAuthError('Completá email y contraseña.'); return; }
+  setBtnLoading(btn, true);
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged se encarga de mostrar la app
+  } catch (err) {
+    showAuthError(loginMsg(err.code));
+    setBtnLoading(btn, false);
+  }
+};
+
+// ── REGISTRO con email/contraseña ──
+window.doSignup = async function() {
+  const nombre = document.getElementById('su-name').value.trim();
+  const email  = document.getElementById('su-email').value.trim();
+  const pass   = document.getElementById('su-pass').value;
+  const btn    = document.querySelector('#form-signup .auth-btn');
+  clearAuthError();
+  if (!nombre || !email || !pass) { showAuthError('Completá todos los campos.'); return; }
+  setBtnLoading(btn, true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: nombre });
+    window.location.href = './planes.html';
+  } catch (err) {
+    showAuthError(signupMsg(err.code));
+    setBtnLoading(btn, false);
+  }
+};
+
+// ── LOGIN / REGISTRO con Google (popup) ──
+window.doLoginGoogle = async function() {
+  clearAuthError();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const isNew  = result._tokenResponse?.isNewUser;
+    if (isNew) window.location.href = './planes.html';
+    // Si ya tenía cuenta, onAuthStateChanged lo lleva a la app
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user') showAuthError('No se pudo iniciar con Google.');
+  }
+};
+
+// ── LOGOUT (lo llama perfil.html vía window) ──
+window.doLogout = async function() {
+  await signOut(auth);
+};
+
+// ── Mensajes de error legibles ──
+function loginMsg(code) {
+  return {
+    'auth/invalid-credential':   'Email o contraseña incorrectos.',
+    'auth/user-not-found':       'No existe una cuenta con ese email.',
+    'auth/wrong-password':       'Contraseña incorrecta.',
+    'auth/invalid-email':        'El email no es válido.',
+    'auth/too-many-requests':    'Demasiados intentos. Intentá más tarde.',
+    'auth/user-disabled':        'Esta cuenta fue deshabilitada.',
+  }[code] || 'Ocurrió un error. Intentá de nuevo.';
+}
+function signupMsg(code) {
+  return {
+    'auth/email-already-in-use': 'Ya existe una cuenta con ese email.',
+    'auth/weak-password':        'La contraseña debe tener al menos 6 caracteres.',
+    'auth/invalid-email':        'El email no es válido.',
+  }[code] || 'Ocurrió un error al crear la cuenta.';
+}
 </script>
 </body>
 </html>
