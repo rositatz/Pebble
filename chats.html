@@ -614,10 +614,13 @@ function openChat(id, e) {
   document.getElementById('chatPanel').classList.add('open');
   setTimeout(scrollBottom, 60);
 
-  // clear unread
+  // Marcar como leído (en memoria y en Firestore)
   p.gemelo.unread = 0;
   if (p.real) p.real.unread = 0;
   refreshListItem(id);
+  if (typeof window._db_marcarLeido === 'function') {
+    window._db_marcarLeido(id);
+  }
 }
 
 function closeChat() {
@@ -916,11 +919,16 @@ onAuthStateChanged(auth, async user => {
       const d = snap.data();
       ['sofia', 'mateo', 'valentina'].forEach(id => {
         ['real', 'gemelo'].forEach(mode => {
-          const key = `chats_${id}_${mode}`;
-          if (Array.isArray(d[key]) && d[key].length > 0) {
-            people[id][mode].msgs = d[key];
-            refreshListItem(id);
+          const msgKey   = `chats_${id}_${mode}`;
+          const leidoKey = `leido_${id}_${mode}`;
+          if (Array.isArray(d[msgKey]) && d[msgKey].length > 0) {
+            people[id][mode].msgs = d[msgKey];
           }
+          // Si ya abrió este chat antes → sin badge de no leídos
+          if (d[leidoKey]) {
+            people[id][mode].unread = 0;
+          }
+          refreshListItem(id);
         });
       });
     }
@@ -930,6 +938,15 @@ onAuthStateChanged(auth, async user => {
   const el = document.getElementById('loadingOverlay');
   if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
 });
+
+// Marcar conversación como leída
+window._db_marcarLeido = async (personaId) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), {
+    [`leido_${personaId}_real`]:   true,
+    [`leido_${personaId}_gemelo`]: true,
+  }, { merge: true });
+};
 
 // Guardar mensajes de una conversación
 window._db_saveChat = async (personaId, mode, msgs) => {
