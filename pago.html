@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pebble — Checkout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange:        #FF751F;
+  --orange-mid:    #FF9700;
+  --bg:            #EEEDEC;
+  --surf-1:        #FFFFFF;
+  --surf-2:        #F5F4F3;
+  --surf-dark:     #000000;
+  --border:        rgba(0,0,0,0.08);
+  --border2:       rgba(0,0,0,0.13);
+  --text-primary:  #000000;
+  --text-secondary:#4D4D4D;
+  --text-muted:    rgba(0,0,0,0.35);
+  --text-inv:      #EEEDEC;
+  --font-display:  'Bricolage Grotesque', sans-serif;
+  --font-serif:    'Inria Serif', serif;
+  --font-body:     'Open Sans', sans-serif;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
+  --green: #22c55e;
+}
+html, body {
+  min-height: 100%; background: var(--bg);
+  color: var(--text-primary); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top nav ── */
+.topbar {
+  background: var(--surf-1); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; height: 62px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-back {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: background 0.2s; text-decoration: none;
+}
+.topbar-back:hover { background: var(--surf-2); }
+.topbar-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.topbar-title {
+  font-family: var(--font-display); font-size: 0.98rem; font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.topbar-secure {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.72rem; color: var(--green); font-weight: 600;
+}
+.topbar-secure svg { width: 14px; height: 14px; fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Main ── */
+.main { max-width: 480px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Plan summary card ── */
+.summary-card {
+  background: var(--surf-dark); border-radius: var(--r-xl);
+  padding: 20px; display: flex; flex-direction: column; gap: 14px;
+}
+.summary-top {
+  display: flex; align-items: center; gap: 12px;
+}
+.summary-orb {
+  width: 46px; height: 46px; border-radius: 50%; background: var(--orange);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.summary-orb svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.summary-plan-name {
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 800;
+  color: #fff; letter-spacing: -0.01em;
+}
+.summary-plan-sub { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 1px; }
+.summary-price-wrap { margin-left: auto; text-align: right; }
+.summary-price {
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+  color: #fff; letter-spacing: -0.03em;
+}
+.summary-price-note { font-size: 0.68rem; color: rgba(255,255,255,0.35); margin-top: 1px; }
+
+/* Period toggle inside card */
+.period-seg {
+  display: flex; background: rgba(255,255,255,0.06); border-radius: 22px; padding: 3px;
+}
+.period-seg-btn {
+  flex: 1; padding: 7px 12px; border-radius: 20px; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 0.75rem; font-weight: 600;
+  color: rgba(255,255,255,0.45); background: none; transition: all 0.2s;
+  text-align: center; touch-action: manipulation;
+}
+.period-seg-btn.active { background: var(--orange); color: #fff; }
+.period-seg-btn .save { font-size: 0.62rem; opacity: 0.85; }
+
+/* Summary features */
+.summary-features { display: flex; flex-direction: column; gap: 7px; }
+.summary-feat {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 0.79rem; color: rgba(255,255,255,0.6);
+}
+.summary-feat svg { width: 13px; height: 13px; fill: none; stroke: var(--orange); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ── Form card ── */
+.form-card {
+  background: var(--surf-1); border-radius: var(--r-xl);
+  border: 1px solid var(--border); padding: 20px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.form-card-title {
+  font-family: var(--font-display); font-size: 0.9rem; font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Form fields */
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.field-input-wrap { position: relative; }
+.field-input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border2);
+  border-radius: var(--r-md); font-family: var(--font-body); font-size: 0.9rem;
+  color: var(--text-primary); background: var(--surf-2); outline: none;
+  transition: border-color 0.18s, background 0.18s;
+  letter-spacing: 0.02em;
+}
+.field-input:focus { border-color: var(--orange); background: var(--surf-1); }
+.field-input.has-icon { padding-right: 44px; }
+.field-icon {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; display: flex; align-items: center;
+}
+.field-icon svg { width: 18px; height: 18px; fill: none; stroke: var(--text-muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.field-brand { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text-muted); }
+
+/* Row: two fields side by side */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Card visual preview */
+.card-preview {
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+  border-radius: var(--r-lg); padding: 18px 18px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.card-preview-chip {
+  width: 32px; height: 22px; border-radius: 4px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  opacity: 0.9;
+}
+.card-preview-number {
+  font-family: 'Courier New', monospace; font-size: 1.05rem;
+  color: rgba(255,255,255,0.85); letter-spacing: 0.14em; word-spacing: 0.3em;
+}
+.card-preview-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+.card-preview-label { font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 3px; }
+.card-preview-value { font-size: 0.78rem; color: rgba(255,255,255,0.8); letter-spacing: 0.04em; }
+.card-preview-brand { font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.7); align-self: center; }
+
+/* ── Pay button ── */
+.pay-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 16px 20px; border-radius: var(--r-lg); border: none;
+  background: var(--surf-dark); color: #fff;
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 800;
+  letter-spacing: -0.01em; cursor: pointer; transition: all 0.2s;
+  touch-action: manipulation; position: relative; overflow: hidden;
+}
+.pay-btn:hover { background: var(--orange); }
+.pay-btn:active { transform: scale(0.98); }
+.pay-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pay-btn-spinner {
+  width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Trust strip ── */
+.trust-strip {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.trust-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.7rem; color: var(--text-muted); font-weight: 500;
+}
+.trust-item svg { width: 13px; height: 13px; fill: none; stroke: var(--text-muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Cancel note */
+.cancel-note {
+  text-align: center; font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;
+}
+.cancel-note a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Success overlay ── */
+.success-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--surf-dark);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 32px;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+}
+.success-overlay.show { opacity: 1; pointer-events: all; }
+.success-check {
+  width: 72px; height: 72px; border-radius: 50%; background: var(--green);
+  display: flex; align-items: center; justify-content: center;
+  transform: scale(0.6); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.success-overlay.show .success-check { transform: scale(1); }
+.success-check svg { width: 36px; height: 36px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.success-title {
+  font-family: var(--font-display); font-size: 1.8rem; font-weight: 800;
+  color: #fff; letter-spacing: -0.03em; text-align: center;
+}
+.success-sub {
+  font-family: var(--font-serif); font-style: italic; font-weight: 300;
+  font-size: 1rem; color: rgba(255,255,255,0.55); text-align: center;
+  line-height: 1.65;
+}
+.success-dots { display: flex; gap: 6px; }
+.success-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.success-dot.active { background: var(--orange); }
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <a href="./planes.html" class="topbar-back" aria-label="Volver">
+    <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+  </a>
+  <span class="topbar-title">Checkout</span>
+  <div class="topbar-secure">
+    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Pago seguro
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Plan summary -->
+  <div class="summary-card">
+    <div class="summary-top">
+      <div class="summary-orb">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div>
+        <div class="summary-plan-name">Pebble Premium</div>
+        <div class="summary-plan-sub">Acceso completo a todas las funciones</div>
+      </div>
+      <div class="summary-price-wrap">
+        <div class="summary-price" id="summaryPrice">$5</div>
+        <div class="summary-price-note" id="summaryPriceNote">/mes</div>
+      </div>
+    </div>
+
+    <!-- Period toggle -->
+    <div class="period-seg">
+      <button class="period-seg-btn active" id="segMensual" onclick="setPeriod('mensual')">
+        Mensual · $5/mes
+      </button>
+      <button class="period-seg-btn" id="segAnual" onclick="setPeriod('anual')">
+        Anual · $4/mes <span class="save">(-20%)</span>
+      </button>
+    </div>
+
+    <!-- Features recap -->
+    <div class="summary-features">
+      <div class="summary-feat">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Interacciones ilimitadas con tu gemelo
+      </div>
+      <div class="summary-feat">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Chat con el gemelo de tus matches
+      </div>
+      <div class="summary-feat">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Matches y estadísticas ilimitadas
+      </div>
+      <div class="summary-feat">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Cancelás cuando quieras
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment form -->
+  <div class="form-card">
+    <div class="form-card-title">Datos de pago</div>
+
+    <!-- Card visual preview -->
+    <div class="card-preview">
+      <div class="card-preview-chip"></div>
+      <div class="card-preview-number" id="cardPreviewNumber">•••• •••• •••• ••••</div>
+      <div class="card-preview-bottom">
+        <div>
+          <div class="card-preview-label">Titular</div>
+          <div class="card-preview-value" id="cardPreviewName">NOMBRE APELLIDO</div>
+        </div>
+        <div>
+          <div class="card-preview-label">Vence</div>
+          <div class="card-preview-value" id="cardPreviewExpiry">MM/AA</div>
+        </div>
+        <div class="card-preview-brand" id="cardPreviewBrand"></div>
+      </div>
+    </div>
+
+    <!-- Card number -->
+    <div class="field-group">
+      <label class="field-label" for="cardNumber">Número de tarjeta</label>
+      <div class="field-input-wrap">
+        <input class="field-input has-icon" id="cardNumber" type="text"
+          inputmode="numeric" placeholder="1234 5678 9012 3456"
+          maxlength="19" autocomplete="cc-number"
+          oninput="formatCardNumber(this)" onkeydown="return onlyDigits(event)"/>
+        <div class="field-icon" id="cardIcon">
+          <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expiry + CVV -->
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label" for="expiry">Vencimiento</label>
+        <input class="field-input" id="expiry" type="text"
+          inputmode="numeric" placeholder="MM/AA" maxlength="5"
+          autocomplete="cc-exp"
+          oninput="formatExpiry(this)" onkeydown="return onlyDigitsSlash(event)"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="cvv">CVV</label>
+        <div class="field-input-wrap">
+          <input class="field-input has-icon" id="cvv" type="text"
+            inputmode="numeric" placeholder="•••" maxlength="4"
+            autocomplete="cc-csc"
+            oninput="this.value=this.value.replace(/\D/g,'')"
+            onkeydown="return onlyDigits(event)"/>
+          <div class="field-icon">
+            <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cardholder name -->
+    <div class="field-group">
+      <label class="field-label" for="cardName">Nombre en la tarjeta</label>
+      <input class="field-input" id="cardName" type="text"
+        placeholder="Tal como aparece en la tarjeta"
+        autocomplete="cc-name" style="text-transform:uppercase"
+        oninput="updateCardPreview()"/>
+    </div>
+
+  </div>
+
+  <!-- Pay button -->
+  <button class="pay-btn" id="payBtn" onclick="processPayment()">
+    <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    <span id="payBtnText">Pagar <span id="payBtnAmount">$5</span>/mes</span>
+  </button>
+
+  <!-- Trust strip -->
+  <div class="trust-strip">
+    <div class="trust-item">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      SSL cifrado
+    </div>
+    <div class="trust-item">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Datos protegidos
+    </div>
+    <div class="trust-item">
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg>
+      Cancelás cuando quieras
+    </div>
+  </div>
+
+  <!-- Cancel note -->
+  <p class="cancel-note">
+    Al confirmar aceptás los <a href="#">Términos</a> y la <a href="#">Política de privacidad</a>.<br>
+    Podés cancelar en cualquier momento desde tu perfil.
+  </p>
+
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-check">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="success-title">¡Listo, sos Premium!</div>
+  <p class="success-sub">Tu gemelo ya tiene acceso a todas las funciones.<br>Redirigiendo a tu inicio…</p>
+  <div class="success-dots">
+    <div class="success-dot active" id="dot1"></div>
+    <div class="success-dot" id="dot2"></div>
+    <div class="success-dot" id="dot3"></div>
+  </div>
+</div>
+
+<script>
+// ── Read ?periodo=anual from URL ──
+const params = new URLSearchParams(location.search);
+if (params.get('periodo') === 'anual') setPeriod('anual');
+
+function setPeriod(p) {
+  const isAnual = p === 'anual';
+  document.getElementById('segMensual').classList.toggle('active', !isAnual);
+  document.getElementById('segAnual').classList.toggle('active', isAnual);
+  document.getElementById('summaryPrice').textContent  = isAnual ? '$48' : '$5';
+  document.getElementById('summaryPriceNote').textContent = isAnual ? '/año · $4/mes' : '/mes';
+  document.getElementById('payBtnAmount').textContent  = isAnual ? '$48' : '$5';
+  document.getElementById('payBtn').querySelector('span').lastChild.textContent = isAnual ? '$48/año' : '$5/mes';
+}
+
+// ── Card number formatting ──
+function onlyDigits(e) {
+  if (['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) return true;
+  return /\d/.test(e.key);
+}
+function onlyDigitsSlash(e) {
+  if (['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) return true;
+  return /[\d/]/.test(e.key);
+}
+
+function formatCardNumber(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 16);
+  input.value = v.replace(/(.{4})/g, '$1 ').trim();
+
+  // Detect brand
+  const brand = detectBrand(v);
+  document.getElementById('cardPreviewBrand').textContent = brand;
+  document.getElementById('cardIcon').innerHTML = getBrandIcon(brand);
+
+  // Update preview
+  const padded = v.padEnd(16, '•');
+  document.getElementById('cardPreviewNumber').textContent =
+    padded.replace(/(.{4})/g, '$1 ').trim();
+}
+
+function formatExpiry(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+  input.value = v;
+  document.getElementById('cardPreviewExpiry').textContent = v || 'MM/AA';
+}
+
+function updateCardPreview() {
+  const name = document.getElementById('cardName').value.trim().toUpperCase();
+  document.getElementById('cardPreviewName').textContent = name || 'NOMBRE APELLIDO';
+}
+
+function detectBrand(n) {
+  if (/^4/.test(n)) return 'VISA';
+  if (/^5[1-5]/.test(n)) return 'MASTERCARD';
+  if (/^3[47]/.test(n)) return 'AMEX';
+  return '';
+}
+
+function getBrandIcon(brand) {
+  const map = {
+    VISA: '<span class="field-brand" style="color:#1a1f71">VISA</span>',
+    MASTERCARD: '<svg viewBox="0 0 38 24" width="38" height="24"><rect x="0" y="0" width="18" height="24" rx="3" fill="#EB001B"/><rect x="20" y="0" width="18" height="24" rx="3" fill="#F79E1B"/><rect x="13" y="0" width="12" height="24" rx="0" fill="#FF5F00" opacity="0.85"/></svg>',
+    AMEX: '<span class="field-brand" style="color:#2E77BC">AMEX</span>',
+  };
+  return map[brand] || '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
+}
+
+// ── Payment processing (UI only) ──
+function processPayment() {
+  const btn = document.getElementById('payBtn');
+  const txt = document.getElementById('payBtnText');
+  btn.disabled = true;
+  txt.innerHTML = '<div class="pay-btn-spinner"></div> Procesando…';
+
+  setTimeout(() => {
+    btn.style.background = 'var(--green)';
+    txt.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Confirmado!';
+
+    setTimeout(() => {
+      const overlay = document.getElementById('successOverlay');
+      overlay.classList.add('show');
+
+      // Animate dots
+      let step = 0;
+      const dots = ['dot1','dot2','dot3'];
+      const dotTimer = setInterval(() => {
+        dots.forEach((d,i) => document.getElementById(d).classList.toggle('active', i === step % 3));
+        step++;
+      }, 500);
+
+      setTimeout(() => {
+        clearInterval(dotTimer);
+        window.location.href = './home.html';
+      }, 2400);
+    }, 600);
+  }, 1800);
+}
+</script>
+</body>
+</html>

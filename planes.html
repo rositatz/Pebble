@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pebble — Elegí tu plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange:        #FF751F;
+  --orange-mid:    #FF9700;
+  --orange-light:  #FFBB30;
+  --bg:            #EEEDEC;
+  --surf-1:        #FFFFFF;
+  --surf-2:        #F5F4F3;
+  --surf-dark:     #000000;
+  --border:        rgba(0,0,0,0.08);
+  --border2:       rgba(0,0,0,0.13);
+  --text-primary:  #000000;
+  --text-secondary:#4D4D4D;
+  --text-muted:    rgba(0,0,0,0.35);
+  --text-inv:      #EEEDEC;
+  --font-display:  'Bricolage Grotesque', sans-serif;
+  --font-serif:    'Inria Serif', serif;
+  --font-body:     'Open Sans', sans-serif;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
+}
+html, body {
+  min-height: 100%; background: var(--bg);
+  color: var(--text-primary); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top bar ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); padding: 18px 24px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800;
+  letter-spacing: -0.03em; text-decoration: none; color: var(--text-primary);
+}
+.logo span { color: var(--orange); }
+.skip-link {
+  font-size: 0.82rem; color: var(--text-muted); text-decoration: none;
+  font-weight: 500; transition: color 0.18s;
+}
+.skip-link:hover { color: var(--text-primary); }
+
+/* ── Headline ── */
+.main { max-width: 520px; margin: 0 auto; padding: 32px 20px 48px; }
+.headline { text-align: center; margin-bottom: 32px; }
+.headline h1 {
+  font-family: var(--font-display); font-size: 2rem; font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 10px;
+}
+.headline h1 em { font-style: normal; color: var(--orange); }
+.headline p {
+  font-family: var(--font-serif); font-style: italic; font-weight: 300;
+  font-size: 1rem; color: var(--text-secondary); line-height: 1.65;
+}
+
+/* ── Period toggle ── */
+.period-toggle {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; background: var(--surf-1); border: 1px solid var(--border2);
+  border-radius: 22px; padding: 3px; margin-bottom: 20px;
+  width: fit-content; margin-left: auto; margin-right: auto;
+}
+.period-btn {
+  padding: 7px 20px; border-radius: 20px; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
+  color: var(--text-muted); background: none; transition: all 0.2s;
+  white-space: nowrap;
+}
+.period-btn.active { background: var(--surf-dark); color: #fff; }
+.period-save-badge {
+  font-size: 0.65rem; font-weight: 700; background: rgba(34,197,94,0.15);
+  color: #16a34a; padding: 2px 7px; border-radius: 10px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  margin-left: 6px; display: inline-block; vertical-align: middle;
+}
+
+/* ── Plan cards ── */
+.plans-stack { display: flex; flex-direction: column; gap: 14px; }
+
+.plan-card {
+  border-radius: var(--r-xl); padding: 24px;
+  display: flex; flex-direction: column; gap: 0;
+  position: relative; overflow: hidden;
+}
+.plan-card.free-card {
+  background: var(--surf-1); border: 1.5px solid var(--border2);
+}
+.plan-card.premium-card {
+  background: var(--surf-dark); border: 1.5px solid transparent;
+}
+
+/* Recommended badge */
+.recommended-badge {
+  position: absolute; top: 18px; right: 18px;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 4px 10px; border-radius: 20px;
+  background: var(--orange); color: #fff;
+}
+
+/* Plan header */
+.plan-header { margin-bottom: 20px; }
+.plan-name {
+  font-family: var(--font-display); font-size: 0.78rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px;
+}
+.free-card .plan-name { color: var(--text-muted); }
+.premium-card .plan-name { color: rgba(255,255,255,0.45); }
+.plan-price-row { display: flex; align-items: baseline; gap: 4px; }
+.plan-price {
+  font-family: var(--font-display); font-weight: 800; letter-spacing: -0.04em;
+}
+.plan-price.big { font-size: 2.6rem; }
+.free-card .plan-price { color: var(--text-primary); }
+.premium-card .plan-price { color: #fff; }
+.plan-price-period { font-size: 0.82rem; font-weight: 400; }
+.free-card .plan-price-period { color: var(--text-muted); }
+.premium-card .plan-price-period { color: rgba(255,255,255,0.4); }
+.plan-price-note { font-size: 0.72rem; margin-top: 4px; }
+.free-card .plan-price-note { color: var(--text-muted); }
+.premium-card .plan-price-note { color: rgba(255,255,255,0.35); }
+
+/* Feature list */
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
+.plan-feature {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 0.85rem; line-height: 1.4;
+}
+.feat-icon {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; margin-top: 1px;
+}
+.feat-icon svg { width: 10px; height: 10px; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.feat-ok .feat-icon { background: rgba(255,117,31,0.12); }
+.feat-ok .feat-icon svg { stroke: var(--orange); }
+.feat-ok .feat-text { color: var(--text-secondary); }
+.premium-card .feat-ok .feat-icon { background: rgba(255,117,31,0.25); }
+.premium-card .feat-ok .feat-text { color: rgba(255,255,255,0.75); }
+.feat-no .feat-icon { background: var(--surf-2); }
+.feat-no .feat-icon svg { stroke: var(--text-muted); }
+.feat-no .feat-text { color: var(--text-muted); text-decoration: line-through; text-decoration-color: rgba(0,0,0,0.15); }
+
+/* Divider */
+.plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+.premium-card .plan-divider { background: rgba(255,255,255,0.08); }
+
+/* CTA button */
+.plan-cta {
+  display: block; width: 100%; padding: 14px 20px; border-radius: var(--r-lg);
+  font-family: var(--font-body); font-size: 0.92rem; font-weight: 700;
+  text-align: center; cursor: pointer; text-decoration: none;
+  border: none; transition: all 0.2s; touch-action: manipulation;
+}
+.free-card .plan-cta {
+  background: var(--surf-2); color: var(--text-secondary);
+  border: 1.5px solid var(--border2);
+}
+.free-card .plan-cta:hover { background: var(--surf-dark); color: #fff; border-color: var(--surf-dark); }
+.premium-card .plan-cta {
+  background: var(--orange); color: #fff;
+  box-shadow: 0 4px 20px rgba(255,117,31,0.35);
+}
+.premium-card .plan-cta:hover { background: #e85e0a; box-shadow: 0 6px 24px rgba(255,117,31,0.45); }
+
+/* Footer note */
+.plans-footer {
+  text-align: center; font-size: 0.75rem; color: var(--text-muted);
+  margin-top: 20px; line-height: 1.6;
+}
+.plans-footer a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Guarantee strip */
+.guarantee {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin-top: 28px; flex-wrap: wrap;
+}
+.guarantee-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; color: var(--text-muted); font-weight: 500;
+}
+.guarantee-item svg { width: 14px; height: 14px; fill: none; stroke: var(--text-muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <a class="logo" href="./home.html">Pe<span>bb</span>le</a>
+  <a class="skip-link" href="./home.html">Continuar gratis →</a>
+</div>
+
+<div class="main">
+
+  <!-- Headline -->
+  <div class="headline">
+    <h1>Elegí cómo<br>usar <em>Pebble</em></h1>
+    <p>Tu gemelo empieza a trabajar desde el primer día. Podés cambiar de plan cuando quieras.</p>
+  </div>
+
+  <!-- Period toggle -->
+  <div class="period-toggle">
+    <button class="period-btn active" id="btnMensual" onclick="setPeriod('mensual')">Mensual</button>
+    <button class="period-btn" id="btnAnual" onclick="setPeriod('anual')">
+      Anual <span class="period-save-badge">-20%</span>
+    </button>
+  </div>
+
+  <!-- Plan cards -->
+  <div class="plans-stack">
+
+    <!-- Premium (shown first — featured) -->
+    <div class="plan-card premium-card">
+      <span class="recommended-badge">Recomendado</span>
+      <div class="plan-header">
+        <div class="plan-name">Premium</div>
+        <div class="plan-price-row">
+          <div class="plan-price big" id="premiumPrice">$5</div>
+          <div class="plan-price-period">/mes</div>
+        </div>
+        <div class="plan-price-note" id="premiumNote">Facturado mensualmente</div>
+      </div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Interacciones ilimitadas con tu gemelo</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Matches ilimitados activos</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Hablar con el gemelo de tus matches</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Afinidad detallada con razones</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Estadísticas avanzadas de tu gemelo</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Fotos desbloqueadas desde el primer match</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Mayor visibilidad en la plataforma</span>
+        </li>
+      </ul>
+      <a href="./pago.html" class="plan-cta" id="premiumCta">Empezar con Premium →</a>
+    </div>
+
+    <!-- Free -->
+    <div class="plan-card free-card">
+      <div class="plan-header">
+        <div class="plan-name">Gratuito</div>
+        <div class="plan-price-row">
+          <div class="plan-price big">$0</div>
+        </div>
+        <div class="plan-price-note">Para siempre</div>
+      </div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Gemelo digital activo</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">10 interacciones / día</span>
+        </li>
+        <li class="plan-feature feat-ok">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="feat-text">Hasta 2 matches activos</span>
+        </li>
+        <li class="plan-feature feat-no">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          <span class="feat-text">Interacciones ilimitadas</span>
+        </li>
+        <li class="plan-feature feat-no">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          <span class="feat-text">Hablar con gemelo de matches</span>
+        </li>
+        <li class="plan-feature feat-no">
+          <div class="feat-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          <span class="feat-text">Estadísticas avanzadas</span>
+        </li>
+      </ul>
+      <a href="./home.html" class="plan-cta">Continuar gratis</a>
+    </div>
+
+  </div>
+
+  <!-- Guarantees -->
+  <div class="guarantee">
+    <div class="guarantee-item">
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Pago seguro
+    </div>
+    <div class="guarantee-item">
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg>
+      Cancelás cuando quieras
+    </div>
+    <div class="guarantee-item">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      Sin permanencia
+    </div>
+  </div>
+
+  <p class="plans-footer">
+    Al suscribirte aceptás los <a href="#">Términos de servicio</a> y la <a href="#">Política de privacidad</a>.
+  </p>
+
+</div>
+
+<script>
+let currentPeriod = 'mensual';
+
+function setPeriod(p) {
+  currentPeriod = p;
+  document.getElementById('btnMensual').classList.toggle('active', p === 'mensual');
+  document.getElementById('btnAnual').classList.toggle('active', p === 'anual');
+
+  const priceEl = document.getElementById('premiumPrice');
+  const noteEl  = document.getElementById('premiumNote');
+  const ctaEl   = document.getElementById('premiumCta');
+
+  if (p === 'anual') {
+    priceEl.textContent = '$4';
+    noteEl.textContent  = '$48 / año · ahorrás $12';
+    ctaEl.textContent   = 'Empezar con Premium anual →';
+    ctaEl.href = './pago.html?periodo=anual';
+  } else {
+    priceEl.textContent = '$5';
+    noteEl.textContent  = 'Facturado mensualmente';
+    ctaEl.textContent   = 'Empezar con Premium →';
+    ctaEl.href = './pago.html';
+  }
+}
+</script>
+</body>
+</html>
