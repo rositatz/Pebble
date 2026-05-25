@@ -69,6 +69,29 @@ body {
 }
 .nav-logo .bb  { color: var(--orange); }
 .nav-logo .rest{ color: var(--text-primary); }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.nav-icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); position: relative;
+  transition: background 0.2s, color 0.2s; touch-action: manipulation;
+}
+.nav-icon-btn:hover { background: var(--surf-2); color: var(--text-primary); }
+.notif-pip {
+  position: absolute; top: 8px; right: 8px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--orange); border: 2px solid var(--surf-1);
+}
+.nav-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 0.85rem; font-weight: 800;
+  color: #fff; cursor: pointer; border: 2px solid transparent;
+  transition: border-color 0.2s; touch-action: manipulation; text-decoration: none;
+}
+.nav-avatar:hover { border-color: var(--orange); }
 
 /* ── Main ── */
 .app-main {
@@ -463,8 +486,14 @@ body {
     </a>
     <span class="nav-title">Matches</span>
   </div>
-  <a href="./home.html" class="nav-logo" aria-label="Pebble"><span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span></a>
-  <div style="width:80px"></div>
+  <a href="./home.html" class="nav-logo" aria-label="Pebble"><span class="rest">Pe</span><span class="bb">bb</span><span class="rest">le</span></a>
+  <div class="nav-actions">
+    <button class="nav-icon-btn" onclick="window.location.href='./notificaciones.html'" aria-label="Notificaciones">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="notif-pip"></span>
+    </button>
+    <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+  </div>
 </nav>
 
 <!-- Main -->
@@ -754,7 +783,7 @@ body {
   <a href="./matches.html"        class="bnav-item active" aria-label="Matches" aria-current="page"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span><span class="bnav-label">Matches</span></a>
   <a href="./gemelo.html"         class="bnav-center" aria-label="Gemelo"><div class="bnav-center-orb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><span class="bnav-center-label">Gemelo</span></a>
   <a href="./chats.html"          class="bnav-item" aria-label="Chats"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="bnav-label">Chats</span></a>
-  <a href="./notificaciones.html" class="bnav-item" aria-label="Notificaciones"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span><span class="bnav-label">Notif.</span></a>
+  <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="bnav-label">Perfil</span></a>
 </nav>
 
 <script>

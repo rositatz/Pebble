@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pebble — Mi Perfil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange:        #FF751F;
+  --orange-mid:    #FF9700;
+  --orange-light:  #FFBB30;
+  --bg:            #EEEDEC;
+  --surf-1:        #FFFFFF;
+  --surf-2:        #F5F4F3;
+  --surf-dark:     #000000;
+  --border:        rgba(0,0,0,0.08);
+  --border2:       rgba(0,0,0,0.13);
+  --text-primary:  #000000;
+  --text-secondary:#4D4D4D;
+  --text-muted:    rgba(0,0,0,0.35);
+  --text-inv:      #EEEDEC;
+  --font-display:  'Bricolage Grotesque', sans-serif;
+  --font-serif:    'Inria Serif', serif;
+  --font-body:     'Open Sans', sans-serif;
+  --nav-top: 62px;
+  --nav-bot: 68px;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px; line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top nav ── */
+.app-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--nav-top);
+  background: var(--surf-1);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+}
+.nav-left { display: flex; align-items: center; gap: 12px; }
+.nav-back {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  transition: background 0.2s, color 0.2s;
+  touch-action: manipulation; text-decoration: none;
+}
+.nav-back:hover { background: var(--surf-2); color: var(--text-primary); }
+.nav-title {
+  font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.nav-logo {
+  font-family: var(--font-display); font-size: 1.35rem; font-weight: 800;
+  letter-spacing: -0.02em; text-decoration: none;
+}
+.nav-logo .bb   { color: var(--orange); }
+.nav-logo .rest { color: var(--text-primary); }
+
+/* ── Main ── */
+.app-main {
+  margin-top: var(--nav-top);
+  margin-bottom: var(--nav-bot);
+  max-width: 780px; width: 100%;
+  margin-left: auto; margin-right: auto;
+  padding: 28px 24px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surf-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.card-pad { padding: 24px; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.section-title {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--text-primary);
+}
+.section-title-inv {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--text-inv);
+}
+.section-sub {
+  font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;
+}
+.section-sub-inv { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+/* ── Btn edit toggle ── */
+.btn-edit {
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
+  padding: 6px 14px; border-radius: 20px;
+  background: none; border: 1px solid var(--border2);
+  color: var(--text-secondary); cursor: pointer;
+  transition: all 0.18s; touch-action: manipulation;
+}
+.btn-edit:hover { border-color: var(--orange); color: var(--orange); }
+.btn-edit.active { background: var(--text-primary); border-color: var(--text-primary); color: #fff; }
+.btn-save {
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
+  padding: 6px 16px; border-radius: 20px;
+  background: var(--orange); border: none; color: #fff; cursor: pointer;
+  transition: opacity 0.18s; touch-action: manipulation;
+}
+.btn-save:hover { opacity: 0.88; }
+.btn-cancel {
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 500;
+  padding: 6px 12px; border-radius: 20px;
+  background: none; border: 1px solid var(--border2);
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-cancel:hover { color: var(--text-secondary); }
+.edit-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ── Hero ── */
+.hero-inner {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 24px 24px;
+  gap: 14px;
+}
+.hero-avatar-wrap { position: relative; }
+.hero-avatar {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 2.2rem; font-weight: 800;
+  color: #fff; overflow: hidden; border: 3px solid var(--surf-1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+.hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.hero-avatar-btn {
+  position: absolute; bottom: 0; right: 0;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--text-primary); border: 2.5px solid var(--surf-1);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.2s;
+  touch-action: manipulation;
+}
+.hero-avatar-btn:hover { background: var(--orange); }
+.hero-avatar-btn svg { width: 15px; height: 15px; stroke: #fff; fill: none; }
+.hero-name {
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+  letter-spacing: -0.02em; text-align: center;
+}
+.hero-meta {
+  font-size: 0.83rem; color: var(--text-secondary); text-align: center;
+}
+.plan-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+}
+.plan-badge.free {
+  background: var(--surf-2); border: 1px solid var(--border2);
+  color: var(--text-secondary);
+}
+.plan-badge.premium {
+  background: var(--text-primary); color: var(--text-inv);
+}
+.plan-badge svg { width: 12px; height: 12px; }
+
+/* ── Photo grid ── */
+.photo-section { padding: 24px; }
+.photo-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 120px 120px;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.photo-slot {
+  border-radius: var(--r-md);
+  background: var(--surf-2);
+  border: 1.5px dashed var(--border2);
+  position: relative; overflow: hidden;
+  cursor: pointer; transition: border-color 0.2s;
+  touch-action: manipulation;
+}
+.photo-slot:first-child { grid-row: 1 / 3; }
+.photo-slot.filled { border-style: solid; border-color: var(--border); }
+.photo-slot.filled:hover .photo-overlay { opacity: 1; }
+.photo-slot:not(.filled):hover { border-color: var(--orange); }
+.photo-slot img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block;
+}
+.photo-empty-icon {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px;
+}
+.photo-empty-icon svg { width: 22px; height: 22px; stroke: var(--text-muted); fill: none; }
+.photo-empty-icon span { font-size: 0.68rem; color: var(--text-muted); font-weight: 500; }
+.photo-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.photo-action-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.35);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.18s;
+  touch-action: manipulation;
+}
+.photo-action-btn:hover { background: rgba(255,255,255,0.3); }
+.photo-action-btn svg { width: 15px; height: 15px; stroke: #fff; fill: none; }
+.photo-main-badge {
+  position: absolute; top: 8px; left: 8px;
+  background: var(--orange); color: #fff;
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 20px;
+  pointer-events: none;
+}
+.photos-tip {
+  font-size: 0.73rem; color: var(--text-muted);
+}
+
+/* ── Info fields ── */
+.info-section { padding: 24px; }
+.field-list { display: flex; flex-direction: column; }
+.field-row {
+  display: flex; align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.field-row:last-child { border-bottom: none; }
+.field-label {
+  font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  width: 90px; flex-shrink: 0;
+}
+.field-value {
+  flex: 1; font-size: 0.9rem; color: var(--text-primary);
+}
+.field-value.empty { color: var(--text-muted); font-style: italic; }
+.field-lock {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.03em;
+  padding: 3px 8px; border-radius: 20px; flex-shrink: 0;
+}
+.field-lock.visible {
+  background: #e8f5e9; color: #2e7d32;
+}
+.field-lock.hidden {
+  background: var(--surf-2); color: var(--text-muted);
+}
+.field-lock svg { width: 10px; height: 10px; fill: none; stroke: currentColor; flex-shrink: 0; }
+
+/* Edit form */
+.edit-form { display: flex; flex-direction: column; gap: 14px; }
+.edit-form.hidden { display: none; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label {
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--border2); border-radius: var(--r-md);
+  font-family: var(--font-body); font-size: 0.9rem; color: var(--text-primary);
+  background: var(--surf-1); outline: none;
+  transition: border-color 0.18s;
+  -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--orange);
+}
+.form-textarea { resize: none; min-height: 100px; line-height: 1.6; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.char-count {
+  font-size: 0.7rem; color: var(--text-muted); text-align: right;
+}
+
+/* ── Privacy toggles ── */
+.privacy-section { padding: 24px; }
+.privacy-intro {
+  font-size: 0.82rem; color: var(--text-secondary);
+  line-height: 1.55; margin-bottom: 20px;
+  padding: 12px 14px; border-radius: var(--r-md);
+  background: var(--surf-2); border-left: 3px solid var(--orange);
+}
+.privacy-list { display: flex; flex-direction: column; }
+.privacy-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.privacy-row:last-child { border-bottom: none; }
+.privacy-info { flex: 1; min-width: 0; }
+.privacy-label {
+  font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
+  display: block; margin-bottom: 2px;
+}
+.privacy-desc {
+  font-size: 0.73rem; color: var(--text-muted);
+}
+
+/* Toggle switch */
+.toggle-wrap { flex-shrink: 0; }
+.toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-label {
+  display: flex; align-items: center; cursor: pointer;
+  width: 44px; height: 24px;
+  background: var(--border2); border-radius: 12px;
+  position: relative; transition: background 0.22s;
+}
+.toggle-input:checked + .toggle-label { background: var(--orange); }
+.toggle-label::after {
+  content: ''; position: absolute; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: transform 0.22s;
+}
+.toggle-input:checked + .toggle-label::after { transform: translateX(20px); }
+
+/* ── Interests ── */
+.interests-section { padding: 24px; }
+.interest-cat { margin-bottom: 18px; }
+.interest-cat:last-child { margin-bottom: 0; }
+.interest-cat-label {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 9px; display: block;
+}
+.interest-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.interest-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 13px; border-radius: 20px;
+  border: 1.5px solid var(--border2); background: var(--surf-1);
+  font-size: 0.78rem; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.18s; touch-action: manipulation;
+  user-select: none;
+}
+.interest-chip:hover { border-color: var(--orange); color: var(--text-primary); }
+.interest-chip.selected {
+  background: var(--text-primary); border-color: var(--text-primary); color: #fff;
+}
+.interest-chip-icon { font-size: 0.9rem; line-height: 1; }
+.interests-hint {
+  font-size: 0.73rem; color: var(--text-muted);
+  margin-top: 16px;
+}
+.interests-count {
+  font-size: 0.73rem; color: var(--text-muted);
+  text-align: right; margin-top: 6px;
+}
+.interests-count span { color: var(--orange); font-weight: 600; }
+
+/* ── Gemelo digital ── */
+.twin-card {
+  background: var(--surf-dark);
+  border: none;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+.twin-inner { padding: 24px; }
+.twin-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 20px;
+}
+.twin-header-info { flex: 1; min-width: 0; }
+.btn-edit-twin {
+  flex-shrink: 0;
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
+  padding: 7px 16px; border-radius: 20px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; cursor: pointer; text-decoration: none;
+  transition: all 0.2s; touch-action: manipulation;
+  display: inline-block;
+}
+.btn-edit-twin:hover { background: var(--orange); border-color: var(--orange); }
+
+.twin-traits { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+.trait-pill {
+  padding: 5px 12px; border-radius: 20px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  font-size: 0.75rem; font-weight: 500; color: rgba(255,255,255,0.8);
+}
+.twin-quote {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 0.88rem; line-height: 1.65;
+  color: rgba(255,255,255,0.55);
+  padding: 14px 16px;
+  border-left: 2px solid var(--orange);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: rgba(255,255,255,0.04);
+  margin-bottom: 20px;
+}
+.twin-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.twin-stat {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 12px 8px; border-radius: var(--r-md);
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  gap: 3px;
+}
+.twin-stat-value {
+  font-family: var(--font-display); font-size: 1.3rem; font-weight: 800;
+  color: var(--orange); letter-spacing: -0.02em;
+}
+.twin-stat-label {
+  font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+  text-align: center;
+}
+.twin-progress { margin-top: 20px; }
+.twin-progress-label {
+  display: flex; justify-content: space-between;
+  font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-bottom: 7px;
+}
+.twin-progress-label span:first-child { color: rgba(255,255,255,0.65); font-weight: 600; }
+.twin-progress-track {
+  height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.twin-progress-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--orange), var(--orange-light));
+  transition: width 0.6s ease;
+}
+.twin-actions { display: flex; gap: 8px; margin-top: 20px; }
+.twin-action-btn {
+  flex: 1; padding: 10px 16px; border-radius: var(--r-md);
+  font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.18s; touch-action: manipulation;
+  text-align: center; border: none;
+}
+.twin-action-primary {
+  background: var(--orange); color: #fff;
+}
+.twin-action-primary:hover { background: var(--orange-mid); }
+.twin-action-secondary {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.8);
+}
+.twin-action-secondary:hover { background: rgba(255,255,255,0.14); }
+
+/* ── Plan card ── */
+.plan-section { padding: 24px; }
+.plan-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.plan-opt {
+  border-radius: var(--r-lg); padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  border: 1.5px solid var(--border2); background: var(--surf-2);
+  transition: all 0.2s;
+}
+.plan-opt.current {
+  border-color: var(--orange); background: var(--surf-1);
+  box-shadow: 0 0 0 2px rgba(255,117,31,0.12);
+}
+.plan-opt-name {
+  font-family: var(--font-display); font-size: 0.85rem; font-weight: 800;
+  letter-spacing: -0.01em; color: var(--text-primary);
+}
+.plan-opt-price {
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+  letter-spacing: -0.03em; color: var(--text-primary);
+}
+.plan-opt-price span { font-size: 0.7rem; font-weight: 400; color: var(--text-muted); }
+.plan-opt-items { display: flex; flex-direction: column; gap: 7px; }
+.plan-opt-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 0.75rem; color: var(--text-secondary);
+}
+.plan-opt-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+.plan-opt-item.yes svg { stroke: var(--orange); }
+.plan-opt-item.no { color: var(--text-muted); }
+.plan-opt-item.no svg { stroke: var(--text-muted); }
+.plan-opt-tag {
+  display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
+  padding: 3px 9px; border-radius: 20px; align-self: flex-start;
+  background: var(--orange); color: #fff;
+}
+.plan-current-tag {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
+  padding: 3px 9px; border-radius: 20px; align-self: flex-start;
+  background: var(--surf-dark); color: #fff;
+}
+.btn-upgrade {
+  width: 100%; margin-top: 14px;
+  padding: 12px; border-radius: var(--r-md);
+  background: var(--text-primary); border: none; color: #fff;
+  font-family: var(--font-display); font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; transition: opacity 0.18s;
+  touch-action: manipulation;
+}
+.btn-upgrade:hover { opacity: 0.82; }
+
+/* ── Account section ── */
+.account-section { padding: 24px; }
+.account-list { display: flex; flex-direction: column; margin-top: 4px; }
+.account-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: opacity 0.18s;
+  touch-action: manipulation; text-decoration: none;
+}
+.account-item:last-child { border-bottom: none; }
+.account-item:hover { opacity: 0.72; }
+.account-item-left { display: flex; align-items: center; gap: 12px; }
+.account-icon {
+  width: 36px; height: 36px; border-radius: var(--r-md);
+  background: var(--surf-2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.account-icon svg { width: 16px; height: 16px; stroke: var(--text-secondary); fill: none; }
+.account-label {
+  font-size: 0.88rem; font-weight: 500; color: var(--text-primary);
+}
+.account-label.danger { color: #c0392b; }
+.account-icon.danger svg { stroke: #c0392b; }
+.account-icon.danger { background: #fdf2f1; }
+.account-chevron { width: 16px; height: 16px; stroke: var(--text-muted); fill: none; }
+
+/* ── Bottom nav ── */
+.app-bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  height: var(--nav-bot);
+  background: var(--surf-1); border-top: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.bnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; padding: 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); text-decoration: none;
+  transition: color 0.2s; touch-action: manipulation; min-height: 48px;
+}
+.bnav-item:hover { color: var(--text-secondary); }
+.bnav-item.active { color: var(--orange); }
+.bnav-icon { position: relative; line-height: 1; }
+.bnav-icon svg { width: 22px; height: 22px; display: block; }
+.bnav-pip { position: absolute; top: -3px; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
+.bnav-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.bnav-center {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; padding: 8px;
+  background: none; border: none; cursor: pointer;
+  text-decoration: none; touch-action: manipulation; min-height: 48px;
+}
+.bnav-center-orb {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  margin-top: -20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  border: 3px solid var(--bg);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.bnav-center:hover .bnav-center-orb { transform: scale(1.08); background: var(--orange); box-shadow: 0 6px 28px rgba(255,117,31,0.4); }
+.bnav-center-orb svg { width: 22px; height: 22px; }
+.bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
+.bnav-center:hover .bnav-center-label { color: var(--orange); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: calc(var(--nav-bot) + 16px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text-primary); color: var(--text-inv);
+  padding: 10px 20px; border-radius: 24px;
+  font-size: 0.82rem; font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  opacity: 0; transition: all 0.3s ease; z-index: 500;
+  white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Misc ── */
+.hidden { display: none !important; }
+@keyframes fade-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.fu { opacity:0; animation: fade-up 0.35s ease forwards; }
+.fu:nth-child(1){animation-delay:.04s}.fu:nth-child(2){animation-delay:.09s}
+.fu:nth-child(3){animation-delay:.13s}.fu:nth-child(4){animation-delay:.17s}
+.fu:nth-child(5){animation-delay:.21s}.fu:nth-child(6){animation-delay:.25s}
+.fu:nth-child(7){animation-delay:.29s}.fu:nth-child(8){animation-delay:.33s}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="app-nav" aria-label="Navegación">
+  <div class="nav-left">
+    <a href="./home.html" class="nav-back" aria-label="Volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+    </a>
+    <span class="nav-title">Mi perfil</span>
+  </div>
+  <a href="./home.html" class="nav-logo" aria-label="Pebble">
+    <span class="rest">Pe</span><span class="bb">bb</span><span class="rest">le</span>
+  </a>
+</nav>
+
+<main class="app-main">
+
+  <!-- ① Hero -->
+  <div class="card fu">
+    <div class="hero-inner">
+      <div class="hero-avatar-wrap">
+        <div class="hero-avatar" id="heroAvatar">
+          <span id="heroInitials">MR</span>
+          <img id="heroImg" src="" alt="Foto de perfil" style="display:none;"/>
+        </div>
+        <button class="hero-avatar-btn" onclick="document.getElementById('mainPhotoInput').click()" aria-label="Cambiar foto principal">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <input type="file" id="mainPhotoInput" accept="image/*" hidden/>
+      </div>
+      <div style="text-align:center">
+        <h1 class="hero-name" id="heroName">María Rosi</h1>
+        <p class="hero-meta" id="heroMeta">Buenos Aires · 23 años</p>
+      </div>
+      <span class="plan-badge free" id="heroPlanBadge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Plan gratuito
+      </span>
+    </div>
+  </div>
+
+  <!-- ② Fotos -->
+  <div class="card fu">
+    <div class="photo-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Fotos</h2>
+          <p class="section-sub">La primera foto es tu imagen principal en los matches</p>
+        </div>
+      </div>
+      <div class="photo-grid" id="photoGrid">
+        <!-- Se renderizan por JS -->
+      </div>
+      <p class="photos-tip">Podés subir hasta 6 fotos · Hacé clic en una foto para cambiarla o eliminarla</p>
+    </div>
+  </div>
+
+  <!-- ③ Información básica -->
+  <div class="card fu">
+    <div class="info-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Información básica</h2>
+          <p class="section-sub">Lo que otros ven en tu perfil</p>
+        </div>
+        <button class="btn-edit" id="btnEditInfo" onclick="toggleEdit('info')">Editar</button>
+      </div>
+
+      <!-- Vista -->
+      <div id="infoView" class="field-list">
+        <div class="field-row">
+          <span class="field-label">Nombre</span>
+          <span class="field-value" id="vNombre">María</span>
+          <span class="field-lock visible" id="lockNombre">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Visible
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Edad</span>
+          <span class="field-value" id="vEdad">23 años</span>
+          <span class="field-lock visible" id="lockEdad">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Visible
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Ciudad</span>
+          <span class="field-value" id="vCiudad">Buenos Aires</span>
+          <span class="field-lock visible" id="lockCiudad">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Visible
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Género</span>
+          <span class="field-value" id="vGenero">Mujer</span>
+          <span class="field-lock hidden" id="lockGenero">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Al conectar
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Pronombres</span>
+          <span class="field-value" id="vPronombres">ella / her</span>
+          <span class="field-lock hidden" id="lockPronombres">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Al conectar
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Orientación</span>
+          <span class="field-value" id="vOrientacion">Bisexual</span>
+          <span class="field-lock hidden" id="lockOrientacion">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Al conectar
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Busco</span>
+          <span class="field-value" id="vBusco">Algo serio</span>
+          <span class="field-lock visible" id="lockBusco">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Visible
+          </span>
+        </div>
+      </div>
+
+      <!-- Edición -->
+      <div id="infoEdit" class="edit-form hidden">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre</label>
+            <input class="form-input" id="eNombre" type="text" value="María" maxlength="40"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de nacimiento</label>
+            <input class="form-input" id="eFechaNac" type="date" value="2001-09-15"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ciudad</label>
+          <input class="form-input" id="eCiudad" type="text" value="Buenos Aires" maxlength="60" placeholder="Tu ciudad"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Género</label>
+            <select class="form-select" id="eGenero">
+              <option>Mujer</option>
+              <option>Hombre</option>
+              <option>No binario</option>
+              <option>Género fluido</option>
+              <option>Prefiero no decir</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pronombres (opcional)</label>
+            <input class="form-input" id="ePronombres" type="text" value="ella / her" maxlength="30" placeholder="ej. ella/her"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Orientación (opcional)</label>
+            <select class="form-select" id="eOrientacion">
+              <option>Heterosexual</option>
+              <option selected>Bisexual</option>
+              <option>Gay / Lesbiana</option>
+              <option>Pansexual</option>
+              <option>Asexual</option>
+              <option>Prefiero no decir</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Busco</label>
+            <select class="form-select" id="eBusco">
+              <option selected>Algo serio</option>
+              <option>Algo casual</option>
+              <option>Nuevas amistades</option>
+              <option>Sin definir</option>
+            </select>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-cancel" onclick="cancelEdit('info')">Cancelar</button>
+          <button class="btn-save" onclick="saveInfo()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ Bio -->
+  <div class="card fu">
+    <div class="info-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Sobre mí</h2>
+          <p class="section-sub">Tu descripción personal</p>
+        </div>
+        <button class="btn-edit" id="btnEditBio" onclick="toggleEdit('bio')">Editar</button>
+      </div>
+
+      <div id="bioView">
+        <p id="vBio" style="font-size:0.9rem;line-height:1.65;color:var(--text-secondary)">
+          Me gusta la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Trabajo en comunicación y en mi tiempo libre pinto y voy a shows. Busco algo que valga la pena construir.
+        </p>
+      </div>
+
+      <div id="bioEdit" class="hidden" style="margin-top:4px">
+        <div class="form-group">
+          <textarea class="form-textarea" id="eBio" maxlength="500" oninput="updateCharCount(this,'bioCount')">Me gusta la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Trabajo en comunicación y en mi tiempo libre pinto y voy a shows. Busco algo que valga la pena construir.</textarea>
+          <div class="char-count"><span id="bioCount">207</span>/500</div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-cancel" onclick="cancelEdit('bio')">Cancelar</button>
+          <button class="btn-save" onclick="saveBio()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ Intereses -->
+  <div class="card fu">
+    <div class="interests-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Intereses</h2>
+          <p class="section-sub">Elegí hasta 10</p>
+        </div>
+        <span class="interests-count"><span id="interestCount">4</span>/10</span>
+      </div>
+
+      <div class="interest-cat">
+        <span class="interest-cat-label">🎵 Música</span>
+        <div class="interest-chips">
+          <div class="interest-chip selected" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎷</span>Jazz</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🤘</span>Rock</div>
+          <div class="interest-chip selected" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎸</span>Indie</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎧</span>Electrónica</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎤</span>Pop</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🪗</span>Folklore</div>
+        </div>
+      </div>
+
+      <div class="interest-cat">
+        <span class="interest-cat-label">🎬 Arte &amp; Cultura</span>
+        <div class="interest-chips">
+          <div class="interest-chip selected" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎥</span>Cine</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎭</span>Teatro</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🖼</span>Museos</div>
+          <div class="interest-chip selected" onclick="toggleInterest(this)"><span class="interest-chip-icon">📚</span>Literatura</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">📷</span>Fotografía</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎨</span>Pintura</div>
+        </div>
+      </div>
+
+      <div class="interest-cat">
+        <span class="interest-cat-label">⚡ Deportes & Outdoor</span>
+        <div class="interest-chips">
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🧘</span>Yoga</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🏃</span>Running</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">⛺</span>Trekking</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🚴</span>Ciclismo</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🏊</span>Natación</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">⚽</span>Fútbol</div>
+        </div>
+      </div>
+
+      <div class="interest-cat">
+        <span class="interest-cat-label">✈️ Viajes</span>
+        <div class="interest-chips">
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎒</span>Mochilera</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🏖</span>Playas</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">⛰</span>Montaña</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🚗</span>Road trips</div>
+        </div>
+      </div>
+
+      <div class="interest-cat">
+        <span class="interest-cat-label">☕ Gastronomía</span>
+        <div class="interest-chips">
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">👨‍🍳</span>Cocinar</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🍷</span>Vinos</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">☕</span>Café</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🍜</span>Restaurantes</div>
+        </div>
+      </div>
+
+      <div class="interest-cat">
+        <span class="interest-cat-label">💻 Tech & otros</span>
+        <div class="interest-chips">
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🎮</span>Gaming</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🔬</span>Ciencia</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🌱</span>Plantas</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🐾</span>Mascotas</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🧘</span>Mindfulness</div>
+          <div class="interest-chip" onclick="toggleInterest(this)"><span class="interest-chip-icon">🤝</span>Voluntariado</div>
+        </div>
+      </div>
+
+      <p class="interests-tip" style="font-size:0.73rem;color:var(--text-muted);margin-top:16px">
+        Tus intereses se comparten con tu gemelo digital y ayudan a encontrar personas compatibles.
+      </p>
+    </div>
+  </div>
+
+  <!-- ⑥ Privacidad -->
+  <div class="card fu">
+    <div class="privacy-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Privacidad</h2>
+          <p class="section-sub">Qué información ven antes de que conecten sus gemelos</p>
+        </div>
+      </div>
+      <div class="privacy-intro">
+        En Pebble tu información se revela de forma progresiva. Controlá qué ven los demás desde el primer momento y qué queda reservado para cuando la conexión entre gemelos lo justifique.
+      </div>
+      <div class="privacy-list">
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar mi nombre</span>
+            <span class="privacy-desc">Tu nombre real aparece en tu tarjeta antes de conectar</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privNombre" checked onchange="updatePrivacyBadge('Nombre', this.checked)"/>
+            <label class="toggle-label" for="privNombre"></label>
+          </div>
+        </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar mi edad</span>
+            <span class="privacy-desc">Tu edad es visible en el feed de descubrimiento</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privEdad" checked onchange="updatePrivacyBadge('Edad', this.checked)"/>
+            <label class="toggle-label" for="privEdad"></label>
+          </div>
+        </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar mi ciudad</span>
+            <span class="privacy-desc">Tu ciudad aparece en tu tarjeta en el feed</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privCiudad" checked onchange="updatePrivacyBadge('Ciudad', this.checked)"/>
+            <label class="toggle-label" for="privCiudad"></label>
+          </div>
+        </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar mis fotos</span>
+            <span class="privacy-desc">Si lo desactivás, los demás ven solo tu inicial hasta conectar</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privFotos" checked/>
+            <label class="toggle-label" for="privFotos"></label>
+          </div>
+        </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar mi bio</span>
+            <span class="privacy-desc">Tu descripción es visible en tu perfil antes de conectar</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privBio" checked/>
+            <label class="toggle-label" for="privBio"></label>
+          </div>
+        </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar género e identidad</span>
+            <span class="privacy-desc">Solo visible para personas con las que tu gemelo ya conectó</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privGenero"/>
+            <label class="toggle-label" for="privGenero"></label>
+          </div>
+        </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar orientación</span>
+            <span class="privacy-desc">Solo visible para personas con las que tu gemelo ya conectó</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privOrientacion"/>
+            <label class="toggle-label" for="privOrientacion"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ Gemelo digital -->
+  <div class="twin-card fu">
+    <div class="twin-inner">
+      <div class="twin-header">
+        <div class="twin-header-info">
+          <h2 class="section-title-inv">Mi gemelo digital</h2>
+          <p class="section-sub-inv">Cómo te representa Pebble antes de que hables</p>
+        </div>
+        <a href="./gemelo.html" class="btn-edit-twin">Editar</a>
+      </div>
+
+      <div class="twin-traits">
+        <span class="trait-pill">Empática</span>
+        <span class="trait-pill">Directa</span>
+        <span class="trait-pill">Curiosa</span>
+        <span class="trait-pill">Humor seco</span>
+        <span class="trait-pill">Profundidad emocional</span>
+        <span class="trait-pill">Introvertida social</span>
+      </div>
+
+      <div class="twin-quote">
+        "Cuando algo me importa, lo digo aunque cueste. Prefiero una conversación incómoda a un silencio cómodo. Y si hay música de por medio, ya sé que vamos a llevarnos bien."
+      </div>
+
+      <div class="twin-stats">
+        <div class="twin-stat">
+          <span class="twin-stat-value">12</span>
+          <span class="twin-stat-label">Conversaciones activas</span>
+        </div>
+        <div class="twin-stat">
+          <span class="twin-stat-value">87%</span>
+          <span class="twin-stat-label">Mayor afinidad</span>
+        </div>
+        <div class="twin-stat">
+          <span class="twin-stat-value">3</span>
+          <span class="twin-stat-label">Conexiones desbloqueadas</span>
+        </div>
+      </div>
+
+      <div class="twin-progress">
+        <div class="twin-progress-label">
+          <span>Completitud del gemelo</span>
+          <span>78%</span>
+        </div>
+        <div class="twin-progress-track">
+          <div class="twin-progress-fill" style="width:78%"></div>
+        </div>
+      </div>
+
+      <div class="twin-actions">
+        <a href="./gemelo.html" class="twin-action-btn twin-action-primary" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:7px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar gemelo
+        </a>
+        <button class="twin-action-btn twin-action-secondary" onclick="showToast('Ver conversación del gemelo — próximamente')">
+          Ver conversaciones
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ Plan -->
+  <div class="card fu">
+    <div class="plan-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Tu plan</h2>
+          <p class="section-sub">Actualmente en el plan gratuito</p>
+        </div>
+      </div>
+      <div class="plan-cards">
+        <div class="plan-opt current">
+          <span class="plan-current-tag">Actual</span>
+          <div class="plan-opt-name">Gratuito</div>
+          <div class="plan-opt-price">$0</div>
+          <div class="plan-opt-items">
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Gemelo digital
+            </div>
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              10 interacciones / día
+            </div>
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Ver historial
+            </div>
+            <div class="plan-opt-item no">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Interacciones ilimitadas
+            </div>
+            <div class="plan-opt-item no">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Mayor visibilidad
+            </div>
+          </div>
+        </div>
+        <div class="plan-opt">
+          <span class="plan-opt-tag">Premium</span>
+          <div class="plan-opt-name">Premium</div>
+          <div class="plan-opt-price">$5<span> / mes</span></div>
+          <div class="plan-opt-items">
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Todo lo gratuito
+            </div>
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Interacciones ilimitadas
+            </div>
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Mayor visibilidad
+            </div>
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Gemelo avanzado
+            </div>
+            <div class="plan-opt-item yes">
+              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Simulaciones ilimitadas
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-upgrade" onclick="showToast('Próximamente: checkout de Premium')">
+        Pasarte a Premium — $5/mes
+      </button>
+    </div>
+  </div>
+
+  <!-- ⑨ Cuenta -->
+  <div class="card fu" style="margin-bottom: 8px">
+    <div class="account-section">
+      <h2 class="section-title" style="margin-bottom:6px">Cuenta</h2>
+      <div class="account-list">
+        <a href="#" class="account-item" onclick="showToast('Próximamente: cambio de contraseña'); return false;">
+          <div class="account-item-left">
+            <div class="account-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <span class="account-label">Cambiar contraseña</span>
+          </div>
+          <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="#" class="account-item" onclick="showToast('Próximamente: configuración de notificaciones'); return false;">
+          <div class="account-item-left">
+            <div class="account-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <span class="account-label">Notificaciones</span>
+          </div>
+          <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="#" class="account-item" onclick="showToast('Próximamente: configuración de privacidad avanzada'); return false;">
+          <div class="account-item-left">
+            <div class="account-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <span class="account-label">Privacidad avanzada</span>
+          </div>
+          <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="#" class="account-item" onclick="showToast('Próximamente: ayuda y soporte'); return false;">
+          <div class="account-item-left">
+            <div class="account-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <span class="account-label">Ayuda y soporte</span>
+          </div>
+          <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+        <a href="#" class="account-item" onclick="handleLogout(); return false;">
+          <div class="account-item-left">
+            <div class="account-icon danger">
+              <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            <span class="account-label danger">Cerrar sesión</span>
+          </div>
+          <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Bottom nav -->
+<nav class="app-bottom-nav" aria-label="Navegación inferior">
+  <a href="./home.html" class="bnav-item" aria-label="Inicio">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    <span class="bnav-label">Inicio</span>
+  </a>
+  <a href="./matches.html" class="bnav-item" aria-label="Matches">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+    <span class="bnav-label">Matches</span>
+  </a>
+  <a href="./gemelo.html" class="bnav-center" aria-label="Gemelo">
+    <div class="bnav-center-orb">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    </div>
+    <span class="bnav-center-label">Gemelo</span>
+  </a>
+  <a href="./chats.html" class="bnav-item" aria-label="Chats">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+    <span class="bnav-label">Chats</span>
+  </a>
+  <a href="./perfil.html" class="bnav-item active" aria-label="Mi perfil" aria-current="page">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    <span class="bnav-label">Perfil</span>
+  </a>
+</nav>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden file inputs for photo slots -->
+<input type="file" id="photoInput0" accept="image/*" hidden/>
+<input type="file" id="photoInput1" accept="image/*" hidden/>
+<input type="file" id="photoInput2" accept="image/*" hidden/>
+<input type="file" id="photoInput3" accept="image/*" hidden/>
+<input type="file" id="photoInput4" accept="image/*" hidden/>
+<input type="file" id="photoInput5" accept="image/*" hidden/>
+
+<script>
+/* ══════════════════════════════
+   PHOTOS
+══════════════════════════════ */
+const MAX_PHOTOS = 6;
+// In-memory store for this session — REEMPLAZAR con URLs del backend
+let photos = new Array(MAX_PHOTOS).fill(null);
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < MAX_PHOTOS; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot' + (photos[i] ? ' filled' : '');
+    slot.dataset.index = i;
+
+    if (photos[i]) {
+      const img = document.createElement('img');
+      img.src = photos[i];
+      img.alt = i === 0 ? 'Foto principal' : `Foto ${i + 1}`;
+      slot.appendChild(img);
+
+      if (i === 0) {
+        const badge = document.createElement('div');
+        badge.className = 'photo-main-badge';
+        badge.textContent = 'Principal';
+        slot.appendChild(badge);
+      }
+
+      const overlay = document.createElement('div');
+      overlay.className = 'photo-overlay';
+      overlay.innerHTML = `
+        <button class="photo-action-btn" onclick="changePhoto(${i})" title="Cambiar foto">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        ${i > 0 ? `<button class="photo-action-btn" onclick="setMainPhoto(${i})" title="Hacer principal">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </button>` : ''}
+        <button class="photo-action-btn" onclick="removePhoto(${i})" title="Eliminar foto">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>`;
+      slot.appendChild(overlay);
+    } else {
+      slot.innerHTML = `
+        <div class="photo-empty-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>${i === 0 ? 'Foto principal' : 'Agregar foto'}</span>
+        </div>`;
+      slot.addEventListener('click', () => changePhoto(i));
+    }
+
+    grid.appendChild(slot);
+  }
+
+  // update hero avatar with main photo
+  const heroImg  = document.getElementById('heroImg');
+  const heroInit = document.getElementById('heroInitials');
+  if (photos[0]) {
+    heroImg.src = photos[0];
+    heroImg.style.display = 'block';
+    heroInit.style.display = 'none';
+  } else {
+    heroImg.style.display = 'none';
+    heroInit.style.display = '';
+  }
+}
+
+function changePhoto(index) {
+  const input = document.getElementById(`photoInput${index}`);
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    photos[index] = url;
+    renderPhotoGrid();
+    showToast('Foto actualizada');
+    input.value = '';
+  };
+  input.click();
+}
+
+function removePhoto(index) {
+  photos[index] = null;
+  // compact: shift remaining photos down
+  photos = [...photos.filter(Boolean), ...new Array(MAX_PHOTOS - photos.filter(Boolean).length).fill(null)];
+  renderPhotoGrid();
+  showToast('Foto eliminada');
+}
+
+function setMainPhoto(index) {
+  const tmp = photos[0];
+  photos[0] = photos[index];
+  photos[index] = tmp;
+  renderPhotoGrid();
+  showToast('Foto principal actualizada');
+}
+
+// Main avatar change (hero button)
+document.getElementById('mainPhotoInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  photos[0] = url;
+  renderPhotoGrid();
+  showToast('Foto principal actualizada');
+  e.target.value = '';
+});
+
+/* ══════════════════════════════
+   EDIT TOGGLES
+══════════════════════════════ */
+function toggleEdit(section) {
+  const view = document.getElementById(section + 'View');
+  const edit = document.getElementById(section + 'Edit');
+  const btn  = document.getElementById('btnEdit' + section.charAt(0).toUpperCase() + section.slice(1));
+  if (!view || !edit) return;
+  const isEditing = !edit.classList.contains('hidden');
+  if (isEditing) {
+    cancelEdit(section);
+  } else {
+    view.style.display = 'none';
+    edit.classList.remove('hidden');
+    if (btn) { btn.textContent = 'Cancelar'; btn.classList.add('active'); }
+  }
+}
+
+function cancelEdit(section) {
+  const view = document.getElementById(section + 'View');
+  const edit = document.getElementById(section + 'Edit');
+  const btn  = document.getElementById('btnEdit' + section.charAt(0).toUpperCase() + section.slice(1));
+  if (!view || !edit) return;
+  view.style.display = '';
+  edit.classList.add('hidden');
+  if (btn) { btn.textContent = 'Editar'; btn.classList.remove('active'); }
+}
+
+/* ══════════════════════════════
+   SAVE INFO
+══════════════════════════════ */
+function saveInfo() {
+  const nombre   = document.getElementById('eNombre').value.trim();
+  const fechaNac = document.getElementById('eFechaNac').value;
+  const ciudad   = document.getElementById('eCiudad').value.trim();
+  const genero   = document.getElementById('eGenero').value;
+  const pronomb  = document.getElementById('ePronombres').value.trim();
+  const orient   = document.getElementById('eOrientacion').value;
+  const busco    = document.getElementById('eBusco').value;
+
+  // Calculate age
+  const age = fechaNac ? (() => {
+    const b = new Date(fechaNac);
+    const today = new Date();
+    let a = today.getFullYear() - b.getFullYear();
+    const m = today.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < b.getDate())) a--;
+    return a;
+  })() : null;
+
+  // Update view
+  document.getElementById('vNombre').textContent    = nombre || '—';
+  document.getElementById('vEdad').textContent      = age ? `${age} años` : '—';
+  document.getElementById('vCiudad').textContent    = ciudad || '—';
+  document.getElementById('vGenero').textContent    = genero || '—';
+  document.getElementById('vPronombres').textContent= pronomb || '—';
+  document.getElementById('vOrientacion').textContent= orient || '—';
+  document.getElementById('vBusco').textContent     = busco || '—';
+
+  // Update hero
+  document.getElementById('heroName').textContent = nombre || '—';
+  const metaParts = [];
+  if (ciudad) metaParts.push(ciudad);
+  if (age)    metaParts.push(`${age} años`);
+  document.getElementById('heroMeta').textContent = metaParts.join(' · ');
+
+  cancelEdit('info');
+  showToast('Información guardada');
+}
+
+/* ══════════════════════════════
+   SAVE BIO
+══════════════════════════════ */
+function saveBio() {
+  const text = document.getElementById('eBio').value.trim();
+  const vBio = document.getElementById('vBio');
+  vBio.textContent = text || 'Sin descripción todavía.';
+  if (!text) vBio.classList.add('empty'); else vBio.classList.remove('empty');
+  cancelEdit('bio');
+  showToast('Bio actualizada');
+}
+
+function updateCharCount(textarea, counterId) {
+  document.getElementById(counterId).textContent = textarea.value.length;
+}
+// init bio count
+document.getElementById('eBio').dispatchEvent(new Event('input'));
+
+/* ══════════════════════════════
+   INTERESTS
+══════════════════════════════ */
+const MAX_INTERESTS = 10;
+
+function toggleInterest(el) {
+  const isSelected = el.classList.contains('selected');
+  const current = document.querySelectorAll('.interest-chip.selected').length;
+  if (!isSelected && current >= MAX_INTERESTS) {
+    showToast('Máximo 10 intereses');
+    return;
+  }
+  el.classList.toggle('selected');
+  document.getElementById('interestCount').textContent =
+    document.querySelectorAll('.interest-chip.selected').length;
+}
+
+/* ══════════════════════════════
+   PRIVACY BADGES
+══════════════════════════════ */
+const privacyFieldMap = {
+  Nombre: 'lockNombre',
+  Edad:   'lockEdad',
+  Ciudad: 'lockCiudad',
+};
+
+function updatePrivacyBadge(field, isVisible) {
+  const lockId = privacyFieldMap[field];
+  if (!lockId) return;
+  const lock = document.getElementById(lockId);
+  if (!lock) return;
+  lock.className = 'field-lock ' + (isVisible ? 'visible' : 'hidden');
+  lock.querySelector('svg').outerHTML = `<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;fill:none;stroke:currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+  lock.lastChild.textContent = isVisible ? ' Visible' : ' Al conectar';
+}
+
+/* ══════════════════════════════
+   TOAST
+══════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+/* ══════════════════════════════
+   LOGOUT
+══════════════════════════════ */
+function handleLogout() {
+  if (confirm('¿Querés cerrar sesión?')) {
+    localStorage.removeItem('pebble_user');
+    // REEMPLAZAR: window.location.href = './home.html';
+    window.location.href = './home.html';
+  }
+}
+
+/* ══════════════════════════════
+   INIT
+══════════════════════════════ */
+renderPhotoGrid();
+// init bio char count
+document.getElementById('bioCount').textContent = document.getElementById('eBio').value.length;
+</script>
+</body>
+</html>
