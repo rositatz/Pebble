@@ -399,6 +399,22 @@ body {
   color: var(--orange);
 }
 
+/* Profile photos grid */
+.profile-photos-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 110px 110px;
+  gap: 6px;
+}
+.profile-photo-thumb {
+  border-radius: var(--r-md); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 1.8rem; font-weight: 800;
+  color: rgba(255,255,255,0.35); letter-spacing: -0.02em;
+  user-select: none;
+}
+.profile-photo-thumb:first-child { grid-row: 1 / 3; font-size: 2.8rem; }
+
 /* Gemelo chat preview */
 .gemelo-preview {
   background: var(--surf-2); border-radius: var(--r-lg);
@@ -799,6 +815,13 @@ const profiles = {
   sofia: {
     name:'Sofía', age:26, city:'Buenos Aires', score:92,
     av:'S', color:'linear-gradient(135deg,#FF9700,#FF751F)',
+    photos:[
+      'linear-gradient(145deg,#FF9700,#FF751F)',
+      'linear-gradient(145deg,#FFD580,#FF9700)',
+      'linear-gradient(145deg,#FF751F,#c74b00)',
+      'linear-gradient(145deg,#FFBB30,#FF9700)',
+      'linear-gradient(145deg,#ff9a3c,#e05000)',
+    ],
     bio:'Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.',
     compat:[
       { label:'Gustos musicales', pct:95 },
@@ -817,6 +840,13 @@ const profiles = {
   mateo: {
     name:'Mateo', age:28, city:'Buenos Aires', score:87,
     av:'M', color:'linear-gradient(135deg,#555,#888)',
+    photos:[
+      'linear-gradient(145deg,#555,#888)',
+      'linear-gradient(145deg,#888,#aaa)',
+      'linear-gradient(145deg,#3a3a3a,#666)',
+      'linear-gradient(145deg,#777,#999)',
+      'linear-gradient(145deg,#444,#777)',
+    ],
     bio:'Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.',
     compat:[
       { label:'Humor y referencias culturales', pct:90 },
@@ -833,6 +863,13 @@ const profiles = {
   valentina: {
     name:'Valentina', age:24, city:'CABA', score:81,
     av:'V', color:'linear-gradient(135deg,#FFBB30,#FF9700)',
+    photos:[
+      'linear-gradient(145deg,#FFBB30,#FF9700)',
+      'linear-gradient(145deg,#FFD580,#FFBB30)',
+      'linear-gradient(145deg,#FF9700,#e07800)',
+      'linear-gradient(145deg,#ffd060,#ffaa00)',
+      'linear-gradient(145deg,#FFB300,#FF8C00)',
+    ],
     bio:'Artista visual y fotógrafa. Hace yoga todos los días y cree que la calma no es aburrimiento. Le gustan los domingos sin plan y las conversaciones que duran hasta tarde.',
     compat:[
       { label:'Expresión creativa', pct:85 },
@@ -849,6 +886,13 @@ const profiles = {
   lucia: {
     name:'Lucía', age:27, city:'Buenos Aires', score:76,
     av:'L', color:'linear-gradient(135deg,#333,#555)',
+    photos:[
+      'linear-gradient(145deg,#333,#555)',
+      'linear-gradient(145deg,#555,#777)',
+      'linear-gradient(145deg,#222,#444)',
+      'linear-gradient(145deg,#444,#666)',
+      'linear-gradient(145deg,#3a3a3a,#5a5a5a)',
+    ],
     bio:'Psicóloga. Lee todo lo que puede y cocina cuando necesita pensar. Le gustan las conversaciones honestas y los planes que empiezan en un bar y terminan caminando.',
     compat:[
       { label:'Curiosidad intelectual', pct:80 },
@@ -864,6 +908,13 @@ const profiles = {
   agustin: {
     name:'Agustín', age:29, city:'Buenos Aires', score:71,
     av:'A', color:'linear-gradient(135deg,#222,#3A3A3A)',
+    photos:[
+      'linear-gradient(145deg,#222,#3A3A3A)',
+      'linear-gradient(145deg,#3A3A3A,#555)',
+      'linear-gradient(145deg,#111,#2a2a2a)',
+      'linear-gradient(145deg,#2a2a2a,#444)',
+      'linear-gradient(145deg,#333,#4a4a4a)',
+    ],
     bio:'Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin mucha planificación y los asados que se alargan hasta la madrugada. Tiene energía para todo.',
     compat:[
       { label:'Actitud ante la vida', pct:74 },
@@ -936,6 +987,17 @@ function openProfile(id) {
     html += `<div class="preview-bubble ${b.side}">${b.text}</div>`;
   });
   html += `</div></div>`;
+
+  // Photos
+  if (p.photos && p.photos.length) {
+    html += `<div>
+      <p class="modal-section-title">Fotos</p>
+      <div class="profile-photos-grid">`;
+    p.photos.forEach(bg => {
+      html += `<div class="profile-photo-thumb" style="background:${bg}"></div>`;
+    });
+    html += `</div></div>`;
+  }
 
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-chat-btn').textContent = `Escribirle a ${p.name}`;

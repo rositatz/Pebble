@@ -220,6 +220,54 @@ html, body {
 .panel-send-btn:hover { background: var(--orange); }
 .panel-send-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
+/* ── Person profile overlay ── */
+.profile-overlay {
+  position: fixed; inset: 0; z-index: 700;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.profile-overlay.open { transform: translateY(0); }
+.profile-overlay-nav {
+  background: var(--surf-1); border-bottom: 1px solid var(--border);
+  height: var(--nav-top); display: flex; align-items: center;
+  padding: 0 16px 0 8px; gap: 8px; flex-shrink: 0;
+}
+.profile-overlay-back {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: background 0.2s;
+}
+.profile-overlay-back:hover { background: var(--surf-2); }
+.profile-overlay-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.profile-overlay-title { font-family: var(--font-display); font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
+.profile-overlay-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.profile-overlay-inner { max-width: 720px; margin: 0 auto; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Profile hero */
+.po-hero { display: flex; gap: 16px; align-items: center; }
+.po-hero-av { width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: #fff; }
+.po-hero-info { flex: 1; }
+.po-hero-name { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.po-hero-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+.po-hero-score { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--orange); letter-spacing: -0.02em; }
+.po-hero-score span { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.02em; display: block; text-align: center; }
+
+/* Profile section */
+.po-section { background: var(--surf-1); border-radius: var(--r-xl); padding: 18px; border: 1px solid var(--border); }
+.po-section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+.po-bio { font-family: var(--font-serif); font-style: italic; font-size: 0.93rem; font-weight: 300; color: var(--text-secondary); line-height: 1.7; }
+.po-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.po-chip { padding: 5px 12px; border-radius: 20px; background: var(--surf-2); border: 1px solid var(--border2); font-size: 0.78rem; color: var(--text-secondary); }
+.po-chip.shared { background: rgba(255,117,31,0.08); border-color: rgba(255,117,31,0.25); color: var(--orange); }
+
+/* Photos grid */
+.po-photos-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 110px 110px; gap: 6px; }
+.po-photo { border-radius: var(--r-md); }
+.po-photo:first-child { grid-row: 1 / 3; }
+
 /* Lock toast */
 .lock-toast {
   position: fixed; bottom: calc(var(--nav-bot) + 14px); left: 50%; transform: translateX(-50%) translateY(16px);
@@ -273,7 +321,7 @@ html, body {
     </div>
   </div>
 
-  <div class="conv-count">2 conversaciones activas</div>
+  <div class="conv-count">3 conversaciones activas</div>
 
   <div class="conv-list" id="convList">
 
@@ -296,6 +344,32 @@ html, body {
             Real
           </button>
           <button class="conv-mode-btn" id="sofia-btn-gemelo" onclick="listSwitch(event,'sofia','gemelo')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Gemelo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mateo -->
+    <div class="conv-item" id="conv-mateo" onclick="openChat('mateo', event)">
+      <div class="conv-av" style="background:linear-gradient(135deg,#1e293b,#475569)">M</div>
+      <div class="conv-content">
+        <div class="conv-top">
+          <span class="conv-name">Mateo</span>
+          <span class="conv-afinidad">83%</span>
+          <span class="conv-time" id="mateo-time">19:45</span>
+        </div>
+        <div class="conv-preview-row">
+          <span class="conv-preview bold" id="mateo-preview">(La tengo para esta semana si no la viste, avisame)</span>
+          <span class="conv-unread" id="mateo-unread">1</span>
+        </div>
+        <div class="conv-modes">
+          <button class="conv-mode-btn mode-active" id="mateo-btn-real" onclick="listSwitch(event,'mateo','real')">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Real
+          </button>
+          <button class="conv-mode-btn" id="mateo-btn-gemelo" onclick="listSwitch(event,'mateo','gemelo')">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             Gemelo
           </button>
@@ -338,8 +412,8 @@ html, body {
     <button class="panel-back" onclick="closeChat()" aria-label="Volver">
       <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
     </button>
-    <div class="panel-av" id="panelAv"></div>
-    <div class="panel-person">
+    <div class="panel-av" id="panelAv" onclick="openPersonProfile()" style="cursor:pointer" title="Ver perfil"></div>
+    <div class="panel-person" onclick="openPersonProfile()" style="cursor:pointer">
       <div class="panel-person-name" id="panelName"></div>
       <div class="panel-person-meta" id="panelMeta"></div>
     </div>
@@ -367,6 +441,19 @@ html, body {
     <button class="panel-send-btn" onclick="sendPanelMsg()" aria-label="Enviar">
       <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
+  </div>
+</div>
+
+<!-- Person profile overlay -->
+<div class="profile-overlay" id="profileOverlay">
+  <div class="profile-overlay-nav">
+    <button class="profile-overlay-back" onclick="closePersonProfile()" aria-label="Volver al chat">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="profile-overlay-title" id="poTitle"></span>
+  </div>
+  <div class="profile-overlay-body">
+    <div class="profile-overlay-inner" id="poInner"></div>
   </div>
 </div>
 
@@ -411,6 +498,10 @@ const people = {
     name: 'Sofía', initials: 'S',
     color: 'linear-gradient(135deg,#FF9700,#FF751F)',
     age: 26, city: 'Buenos Aires', afinidad: 87,
+    bio: 'Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.',
+    interests: ['Jazz','Cine independiente','Viajes','Lectura','Naturaleza','Música en vivo'],
+    sharedInterests: ['Jazz','Cine independiente','Naturaleza'],
+    photos: ['linear-gradient(145deg,#FF9700,#FF751F)','linear-gradient(145deg,#FFD580,#FF9700)','linear-gradient(145deg,#FF751F,#c74b00)','linear-gradient(145deg,#FFBB30,#FF9700)','linear-gradient(145deg,#ff9a3c,#e05000)'],
     realUnlocked: true, currentMode: 'real',
     gemelo: {
       lastTime: '10:47', unread: 0,
@@ -434,10 +525,42 @@ const people = {
       ]
     }
   },
+  mateo: {
+    name: 'Mateo', initials: 'M',
+    color: 'linear-gradient(135deg,#1e293b,#475569)',
+    age: 28, city: 'Buenos Aires', afinidad: 83,
+    bio: 'Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.',
+    interests: ['Cine de autor','Música','Running','Cocina','Series','Tecnología'],
+    sharedInterests: ['Cine de autor','Música'],
+    photos: ['linear-gradient(145deg,#1e293b,#475569)','linear-gradient(145deg,#334155,#64748b)','linear-gradient(145deg,#0f172a,#334155)','linear-gradient(145deg,#475569,#94a3b8)','linear-gradient(145deg,#1e3a5f,#2563eb)'],
+    realUnlocked: true, currentMode: 'real',
+    gemelo: {
+      lastTime: '18:03', unread: 0,
+      msgs: [
+        { from: 'them', text: 'Hola, soy el gemelo de Mateo. Puedo contarte más sobre él antes de que hablen directamente.', time: '18:00' },
+        { from: 'me', text: '¿Qué tipo de cine le gusta?', time: '18:02' },
+        { from: 'them', text: 'Cine de autor principalmente — Jarmusch, Kaurismäki, Haneke. No es snob, le puede entrar cualquier cosa bien hecha. Le molesta el mal gusto más que el cine comercial.', time: '18:03' },
+      ]
+    },
+    real: {
+      lastTime: '19:45', unread: 1,
+      msgs: [
+        { from: 'them', text: '¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.', time: '19:30' },
+        { from: 'me', text: 'Es de las mejores. La vi tres veces, cada vez encontrás algo nuevo.', time: '19:32' },
+        { from: 'them', text: 'Exacto. ¿Viste la de Kaurismäki nueva? Fallen Leaves.', time: '19:40' },
+        { from: 'them', text: '(La tengo para esta semana si no la viste, avisame)', time: '19:45' },
+      ]
+    }
+  },
+
   valentina: {
     name: 'Valentina', initials: 'V',
     color: 'linear-gradient(135deg,#7c3aed,#a855f7)',
     age: 24, city: 'Córdoba', afinidad: 76,
+    bio: 'Diseñadora UX y fotógrafa. Trabaja de voluntaria en una ONG de educación rural los fines de semana. Prefiere la honestidad incómoda a la amabilidad de fachada.',
+    interests: ['Diseño UX','Fotografía','Voluntariado','Educación','Naturaleza','Viajes'],
+    sharedInterests: ['Fotografía','Naturaleza'],
+    photos: ['linear-gradient(145deg,#7c3aed,#a855f7)','linear-gradient(145deg,#a855f7,#c084fc)','linear-gradient(145deg,#6d28d9,#8b5cf6)','linear-gradient(145deg,#9333ea,#c084fc)','linear-gradient(145deg,#7e22ce,#a21caf)'],
     realUnlocked: true, currentMode: 'gemelo',
     gemelo: {
       lastTime: 'Ayer', unread: 1,
@@ -688,6 +811,42 @@ function filterConvs(q) {
   });
 }
 
+/* ── Person profile overlay ── */
+function openPersonProfile() {
+  if (!curPerson) return;
+  const p = people[curPerson];
+  document.getElementById('poTitle').textContent = p.name;
+
+  const sharedSet = new Set(p.sharedInterests || []);
+  const interestChips = (p.interests || []).map(i =>
+    `<span class="po-chip${sharedSet.has(i) ? ' shared' : ''}">${esc(i)}</span>`
+  ).join('');
+
+  const photosHtml = (p.photos || []).map(bg =>
+    `<div class="po-photo" style="background:${bg}"></div>`
+  ).join('');
+
+  document.getElementById('poInner').innerHTML = `
+    <div class="po-hero">
+      <div class="po-hero-av" style="background:${p.color}">${p.initials}</div>
+      <div class="po-hero-info">
+        <div class="po-hero-name">${esc(p.name)}, ${p.age}</div>
+        <div class="po-hero-meta">${esc(p.city)}</div>
+      </div>
+      <div class="po-hero-score">${p.afinidad}%<span>Afinidad</span></div>
+    </div>
+    ${p.bio ? `<div class="po-section"><div class="po-section-label">Sobre ${esc(p.name)}</div><p class="po-bio">${esc(p.bio)}</p></div>` : ''}
+    ${interestChips ? `<div class="po-section"><div class="po-section-label">Intereses <span style="color:var(--orange);text-transform:none;letter-spacing:0">— naranja = compartidos</span></div><div class="po-chips">${interestChips}</div></div>` : ''}
+    ${photosHtml ? `<div class="po-section"><div class="po-section-label">Fotos</div><div class="po-photos-grid">${photosHtml}</div></div>` : ''}
+  `;
+
+  document.getElementById('profileOverlay').classList.add('open');
+}
+
+function closePersonProfile() {
+  document.getElementById('profileOverlay').classList.remove('open');
+}
+
 /* ── Lock toast ── */
 let toastTimer = null;
 function showToast() {
@@ -708,7 +867,7 @@ function handlePanelKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDe
 function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
 
 // Init unread badges
-['sofia','valentina'].forEach(id => refreshListItem(id));
+['sofia','mateo','valentina'].forEach(id => refreshListItem(id));
 </script>
 </body>
 </html>
