@@ -807,6 +807,41 @@ body {
 </nav>
 
 <script>
+// ── Color dinámico por puntaje: mayor % = naranja más intenso ──
+function scoreColor(pct) {
+  // 55% → hsl(40,100%,68%) dorado claro  |  100% → hsl(20,100%,48%) naranja profundo
+  const t = Math.max(0, Math.min(1, (pct - 55) / 45));
+  const h = Math.round(40 - 20 * t);
+  const l = Math.round(68 - 20 * t);
+  return `hsl(${h}, 100%, ${l}%)`;
+}
+
+function initScoreRings() {
+  // Anillo principal de afinidad
+  document.querySelectorAll('.score-ring').forEach(ring => {
+    const numEl = ring.querySelector('.score-number');
+    if (!numEl) return;
+    const pct = parseInt(numEl.textContent);
+    if (isNaN(pct)) return;
+    const color = scoreColor(pct);
+    const fill = ring.querySelector('.score-ring-fill');
+    if (fill) fill.setAttribute('stroke', color);
+    numEl.style.color = color;
+  });
+  // Mini barras de razones dentro de cada card
+  document.querySelectorAll('.reason-score-row').forEach(row => {
+    const label = row.querySelector('.reason-bar-label');
+    const bar   = row.querySelector('.reason-bar');
+    if (!label || !bar) return;
+    const pct = parseInt(label.textContent);
+    if (isNaN(pct)) return;
+    const color = scoreColor(pct);
+    bar.style.background = color;
+    label.style.color = color;
+  });
+}
+initScoreRings();
+
 // ── REEMPLAZAR goTo() por window.location.href cuando estén listas las páginas ──
 function goTo(page) {
   const map = { chats:'./chats.html', gemelo:'./gemelo.html', matches:'./matches.html' };
@@ -937,6 +972,7 @@ function openProfile(id) {
   if (!p) return;
 
   // Header
+  const scoreCol = scoreColor(p.score);
   document.getElementById('modal-header').innerHTML = `
     <div class="modal-av" style="background:${p.color}">${p.av}</div>
     <div class="modal-name-wrap">
@@ -944,7 +980,7 @@ function openProfile(id) {
       <div class="modal-meta">${p.city}</div>
     </div>
     <div style="text-align:center">
-      <div class="modal-score-big">${p.score}%</div>
+      <div class="modal-score-big" style="color:${scoreCol}">${p.score}%</div>
       <div class="modal-score-sub">Afinidad</div>
     </div>
   `;
@@ -963,12 +999,13 @@ function openProfile(id) {
     <p class="modal-section-title">Razones de compatibilidad</p>
     <div class="compat-row">`;
   p.compat.forEach(c => {
+    const cc = scoreColor(c.pct);
     html += `<div class="compat-item">
       <div class="compat-item-header">
         <span class="compat-item-label">${c.label}</span>
-        <span class="compat-item-pct">${c.pct}%</span>
+        <span class="compat-item-pct" style="color:${cc}">${c.pct}%</span>
       </div>
-      <div class="compat-bar-wrap"><div class="compat-bar" style="width:0%" data-target="${c.pct}%"></div></div>
+      <div class="compat-bar-wrap"><div class="compat-bar" style="width:0%;background:${cc}" data-target="${c.pct}%"></div></div>
     </div>`;
   });
   html += `</div></div>`;

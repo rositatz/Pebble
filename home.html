@@ -674,39 +674,36 @@ body {
         </a>
       </div>
       <div class="matches-strip" role="list">
-        <!-- ── Datos de ejemplo — reemplazar con datos reales del backend ── -->
-        <a href="#" class="match-item" onclick="goTo('chats'); return false;" role="listitem" aria-label="Sofía, 92%">
-          <div class="match-av-wrap">
-            <div class="match-av is-new" style="background:linear-gradient(135deg,#FF9700,#FF751F)">S</div>
-            <span class="match-new-pip" aria-hidden="true"></span>
+        <a href="#" class="match-item" onclick="goToMatch('sofia'); return false;" role="listitem" aria-label="Sofía, 92%">
+          <div class="match-av-wrap" id="mav-sofia">
+            <div class="match-av" style="background:linear-gradient(135deg,#FF9700,#FF751F)">S</div>
           </div>
           <span class="match-score">92%</span>
           <span class="match-name">Sofía</span>
         </a>
-        <a href="#" class="match-item" onclick="goTo('chats'); return false;" role="listitem" aria-label="Mateo, 87%">
-          <div class="match-av-wrap">
+        <a href="#" class="match-item" onclick="goToMatch('mateo'); return false;" role="listitem" aria-label="Mateo, 87%">
+          <div class="match-av-wrap" id="mav-mateo">
             <div class="match-av" style="background:linear-gradient(135deg,#555,#888)">M</div>
           </div>
           <span class="match-score">87%</span>
           <span class="match-name">Mateo</span>
         </a>
-        <a href="#" class="match-item" onclick="goTo('chats'); return false;" role="listitem" aria-label="Valentina, 81%">
-          <div class="match-av-wrap">
-            <div class="match-av is-new" style="background:linear-gradient(135deg,#FFBB30,#FF9700)">V</div>
-            <span class="match-new-pip" aria-hidden="true"></span>
+        <a href="#" class="match-item" onclick="goToMatch('valentina'); return false;" role="listitem" aria-label="Valentina, 81%">
+          <div class="match-av-wrap" id="mav-valentina">
+            <div class="match-av" style="background:linear-gradient(135deg,#FFBB30,#FF9700)">V</div>
           </div>
           <span class="match-score">81%</span>
           <span class="match-name">Valentina</span>
         </a>
-        <a href="#" class="match-item" onclick="goTo('chats'); return false;" role="listitem" aria-label="Lucía, 76%">
-          <div class="match-av-wrap">
+        <a href="#" class="match-item" onclick="goToMatch('lucia'); return false;" role="listitem" aria-label="Lucía, 76%">
+          <div class="match-av-wrap" id="mav-lucia">
             <div class="match-av" style="background:linear-gradient(135deg,#333,#555)">L</div>
           </div>
           <span class="match-score">76%</span>
           <span class="match-name">Lucía</span>
         </a>
-        <a href="#" class="match-item" onclick="goTo('chats'); return false;" role="listitem" aria-label="Agustín, 71%">
-          <div class="match-av-wrap">
+        <a href="#" class="match-item" onclick="goToMatch('agustin'); return false;" role="listitem" aria-label="Agustín, 71%">
+          <div class="match-av-wrap" id="mav-agustin">
             <div class="match-av" style="background:linear-gradient(135deg,#222,#3A3A3A)">A</div>
           </div>
           <span class="match-score">71%</span>
@@ -924,6 +921,8 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, GoogleAuthProvider, FacebookAuthProvider,
          onAuthStateChanged, signOut, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -936,18 +935,75 @@ const firebaseConfig = {
 
 const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
+const db       = getFirestore(app);
 const googleProvider   = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
+let   uid = null;
+
+const MATCH_IDS = ['sofia', 'mateo', 'valentina', 'lucia', 'agustin'];
+
+// Muestra el pip naranja en el match-av-wrap dado
+function mostrarPip(id) {
+  const wrap = document.getElementById(`mav-${id}`);
+  if (!wrap) return;
+  wrap.querySelector('.match-av').classList.add('is-new');
+  if (!wrap.querySelector('.match-new-pip')) {
+    const pip = document.createElement('span');
+    pip.className = 'match-new-pip';
+    pip.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(pip);
+  }
+}
+// Oculta el pip
+function ocultarPip(id) {
+  const wrap = document.getElementById(`mav-${id}`);
+  if (!wrap) return;
+  wrap.querySelector('.match-av').classList.remove('is-new');
+  const pip = wrap.querySelector('.match-new-pip');
+  if (pip) pip.remove();
+}
 
 // ── Sesión persistente: Firebase la maneja sola ──
-onAuthStateChanged(auth, user => {
-  if (user) showApp(user);
-  else      showGate();
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    showApp(user);
+    uid = user.uid;
+
+    // Cargar qué matches ya vio el usuario
+    try {
+      const snap = await getDoc(doc(db, 'usuarios', uid));
+      MATCH_IDS.forEach(id => {
+        const visto = snap.exists() && snap.data()[`match_visto_${id}`];
+        if (visto) ocultarPip(id);
+        else       mostrarPip(id);
+      });
+    } catch(e) {
+      // Si falla Firestore, mostrar todos como nuevos por defecto
+      MATCH_IDS.forEach(id => mostrarPip(id));
+    }
+  } else {
+    showGate();
+    uid = null;
+  }
 
   // Quitar el overlay una vez que Firebase resolvió el estado
   const overlay = document.getElementById('loadingOverlay');
   if (overlay) { overlay.classList.add('hide'); setTimeout(() => overlay.remove(), 350); }
 });
+
+// Marcar como visto y navegar al chat
+window.goToMatch = async function(matchId) {
+  ocultarPip(matchId); // feedback inmediato sin esperar Firestore
+  if (uid) {
+    try {
+      await setDoc(doc(db, 'usuarios', uid),
+        { [`match_visto_${matchId}`]: true },
+        { merge: true }
+      );
+    } catch(e) { console.warn('Error guardando match visto:', e); }
+  }
+  window.location.href = `./chats.html?persona=${matchId}`;
+};
 
 // ── LOGIN con email/contraseña ──
 window.doLogin = async function() {

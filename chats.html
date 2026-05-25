@@ -295,6 +295,73 @@ html, body {
 .bnav-center-orb svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 
+/* ── Simulation teaser card (top of gemelo chat) ── */
+.sim-teaser-card {
+  background: rgba(255,117,31,0.06); border: 1px solid rgba(255,117,31,0.18);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: background 0.18s; touch-action: manipulation;
+}
+.sim-teaser-card:hover { background: rgba(255,117,31,0.11); }
+.sim-teaser-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,117,31,0.13); display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0;
+}
+.sim-teaser-icon svg { width: 18px; height: 18px; fill: none; stroke: var(--orange); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sim-teaser-text { flex: 1; min-width: 0; }
+.sim-teaser-title { font-family: var(--font-display); font-size: 0.82rem; font-weight: 800; color: var(--orange); letter-spacing: -0.01em; line-height: 1.3; }
+.sim-teaser-sub { font-size: 0.7rem; color: rgba(255,117,31,0.6); margin-top: 2px; line-height: 1.4; }
+.sim-teaser-arrow { flex-shrink: 0; color: rgba(255,117,31,0.45); }
+.sim-teaser-arrow svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Simulation overlay ── */
+.sim-overlay {
+  position: fixed; inset: 0; z-index: 800; background: #0d0d0d;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sim-overlay.open { transform: translateY(0); }
+.sim-nav {
+  background: #111; border-bottom: 1px solid rgba(255,117,31,0.18);
+  height: var(--nav-top); display: flex; align-items: center;
+  padding: 0 16px 0 8px; gap: 10px; flex-shrink: 0;
+}
+.sim-nav-back {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.5); transition: background 0.2s;
+}
+.sim-nav-back:hover { background: rgba(255,255,255,0.06); }
+.sim-nav-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sim-nav-info { flex: 1; min-width: 0; }
+.sim-nav-title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+.sim-nav-sub { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,117,31,0.6); margin-top: 1px; }
+.sim-badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 10px; background: rgba(255,117,31,0.12); border: 1px solid rgba(255,117,31,0.22); color: var(--orange); text-transform: uppercase; flex-shrink: 0; white-space: nowrap; }
+.sim-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sim-inner { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 8px; }
+.sim-intro { background: rgba(255,117,31,0.05); border: 1px solid rgba(255,117,31,0.12); border-radius: 14px; padding: 16px; margin-bottom: 10px; }
+.sim-intro-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,117,31,0.55); margin-bottom: 6px; }
+.sim-intro-text { font-family: var(--font-serif); font-style: italic; font-size: 0.83rem; font-weight: 300; color: rgba(255,255,255,0.42); line-height: 1.7; }
+.sim-sep { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
+.sim-sep-line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+.sim-sep-text { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.17); white-space: nowrap; }
+/* Simulation bubbles */
+.smsg { display: flex; align-items: flex-end; gap: 8px; }
+.smsg.them { justify-content: flex-start; }
+.smsg.me   { justify-content: flex-end; }
+.smsg-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.65rem; font-weight: 800; color: #fff; align-self: flex-end; margin-bottom: 2px; }
+.sbubble { padding: 10px 14px; border-radius: 18px; max-width: min(74%, 460px); font-family: var(--font-serif); font-size: 0.875rem; font-style: italic; font-weight: 300; line-height: 1.68; word-wrap: break-word; }
+.smsg.them .sbubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,117,31,0.17); border-bottom-left-radius: 4px; color: rgba(255,255,255,0.75); }
+.smsg.me   .sbubble { background: rgba(255,117,31,0.09); border: 1px solid rgba(255,117,31,0.22); border-bottom-right-radius: 4px; color: rgba(255,255,255,0.82); }
+.smsg-label { display: block; font-family: var(--font-body); font-style: normal; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
+.smsg.them .smsg-label { color: var(--orange); }
+.smsg.me   .smsg-label { color: rgba(255,200,120,0.7); }
+.smsg-time { font-size: 0.58rem; color: rgba(255,255,255,0.17); align-self: flex-end; margin-bottom: 4px; flex-shrink: 0; }
+.smsg.me .smsg-time { order: -1; }
+
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 #loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
 #loadingOverlay.hide{opacity:0;pointer-events:none}
@@ -462,6 +529,23 @@ html, body {
   </div>
 </div>
 
+<!-- Simulation overlay -->
+<div class="sim-overlay" id="simOverlay">
+  <div class="sim-nav">
+    <button class="sim-nav-back" onclick="closeSimulation()" aria-label="Volver al chat">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="sim-nav-info">
+      <div class="sim-nav-title" id="simNavTitle">Simulación entre gemelos</div>
+      <div class="sim-nav-sub">Antes de que se conocieran</div>
+    </div>
+    <span class="sim-badge">Privado</span>
+  </div>
+  <div class="sim-body">
+    <div class="sim-inner" id="simInner"></div>
+  </div>
+</div>
+
 <!-- Lock toast -->
 <div class="lock-toast" id="lockToast">
   <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -507,6 +591,17 @@ const people = {
     sharedInterests: ['Jazz','Cine independiente','Naturaleza'],
     photos: ['linear-gradient(145deg,#FF9700,#FF751F)','linear-gradient(145deg,#FFD580,#FF9700)','linear-gradient(145deg,#FF751F,#c74b00)','linear-gradient(145deg,#FFBB30,#FF9700)','linear-gradient(145deg,#ff9a3c,#e05000)'],
     realUnlocked: true, currentMode: 'real',
+    simulacion: [
+      { from: 'su-gemelo', text: 'Hola. Represento a Sofía. Antes de que se conozcan quiero ver si hay algo real acá. ¿Qué busca la persona que vos representás?', time: '10:14' },
+      { from: 'mi-gemelo', text: 'Algo con profundidad. No necesariamente serio, pero que vaya a algún lado. Le aburre lo que no deja huella.', time: '10:15' },
+      { from: 'su-gemelo', text: 'Eso es Sofía casi en sus propias palabras. Interesante que lo dijiste sin que yo te preguntara específicamente eso.', time: '10:16' },
+      { from: 'mi-gemelo', text: '¿Qué hace cuando una conversación le empieza a parecer forzada?', time: '10:18' },
+      { from: 'su-gemelo', text: 'La desvía con humor, pero si no mejora la corta con gracia. No soporta el ruido social vacío. El silencio honesto le parece mejor que la charla de relleno.', time: '10:19' },
+      { from: 'mi-gemelo', text: 'La persona que represento también. No llena los silencios por obligación.', time: '10:21' },
+      { from: 'su-gemelo', text: 'Eso puede funcionar muy bien o muy mal dependiendo de cómo se lean. ¿Tiene confianza para sostener un silencio incómodo con alguien nuevo?', time: '10:22' },
+      { from: 'mi-gemelo', text: 'Sí. Y suele ser la primera en romperlo con algo que vale la pena.', time: '10:24' },
+      { from: 'su-gemelo', text: 'Sofía aprecia eso. Hay algo acá que no es solo compatibilidad de gustos — es compatibilidad de forma de estar en el mundo. 92% no es un número casual.', time: '10:25' },
+    ],
     gemelo: {
       lastTime: '10:47', unread: 0,
       msgs: [
@@ -538,6 +633,17 @@ const people = {
     sharedInterests: ['Cine de autor','Música'],
     photos: ['linear-gradient(145deg,#1e293b,#475569)','linear-gradient(145deg,#334155,#64748b)','linear-gradient(145deg,#0f172a,#334155)','linear-gradient(145deg,#475569,#94a3b8)','linear-gradient(145deg,#1e3a5f,#2563eb)'],
     realUnlocked: true, currentMode: 'real',
+    simulacion: [
+      { from: 'su-gemelo', text: 'Represento a Mateo. Empecemos directo: ¿qué es lo que realmente busca la persona que vos representás en otra persona?', time: '17:50' },
+      { from: 'mi-gemelo', text: 'Algo real, sin performance. Alguien que sea lo mismo cuando nadie está mirando. No le pide que tenga todo resuelto — le pide que no actúe.', time: '17:51' },
+      { from: 'su-gemelo', text: 'Mateo dice casi lo mismo. Tiene algo de sospechoso lo parecido que son en eso.', time: '17:52' },
+      { from: 'mi-gemelo', text: '¿Qué cosas lo hacen realmente entusiasmarse, aunque no lo muestre?', time: '17:54' },
+      { from: 'su-gemelo', text: 'El cine. Cuando algo lo mueve de verdad le cuesta ocultarlo — se le nota en cómo habla, en los silencios que deja. Pero tiene pudor de mostrar ese entusiasmo demasiado rápido.', time: '17:55' },
+      { from: 'mi-gemelo', text: 'Ese tipo de pudor suele venir de haber mostrado entusiasmo y que no fuera correspondido. ¿Le pasó?', time: '17:57' },
+      { from: 'su-gemelo', text: 'Sí. Y aprendió a ir más despacio con eso. Pero cuando baja la guardia, la conversación que tiene es de las mejores.', time: '17:58' },
+      { from: 'mi-gemelo', text: 'Creo que acá hay algo sólido. No explosivo — del tipo que construye.', time: '18:00' },
+      { from: 'su-gemelo', text: 'Coincido. 87% de compatibilidad. Los voy a presentar.', time: '18:01' },
+    ],
     gemelo: {
       lastTime: '18:03', unread: 0,
       msgs: [
@@ -566,6 +672,17 @@ const people = {
     sharedInterests: ['Fotografía','Naturaleza'],
     photos: ['linear-gradient(145deg,#7c3aed,#a855f7)','linear-gradient(145deg,#a855f7,#c084fc)','linear-gradient(145deg,#6d28d9,#8b5cf6)','linear-gradient(145deg,#9333ea,#c084fc)','linear-gradient(145deg,#7e22ce,#a21caf)'],
     realUnlocked: true, currentMode: 'gemelo',
+    simulacion: [
+      { from: 'su-gemelo', text: 'Soy el gemelo de Valentina. No me gusta perder tiempo — ¿qué hace que alguien valga la pena para la persona que representás?', time: '08:50' },
+      { from: 'mi-gemelo', text: 'Coherencia. Que sea lo mismo cuando nadie mira. No le pedimos que tenga todo resuelto, le pedimos que no actúe.', time: '08:51' },
+      { from: 'su-gemelo', text: 'Eso es exactamente lo que Valentina no negocia. La autenticidad para ella es innegociable. Seguí.', time: '08:52' },
+      { from: 'mi-gemelo', text: '¿Qué cosas la hacen sentir que alguien realmente la escucha?', time: '08:54' },
+      { from: 'su-gemelo', text: 'Que le hagan preguntas específicas. No "¿cómo te fue?" sino "¿cómo terminó lo del proyecto del que me hablaste la semana pasada?". La memoria es su lenguaje del amor.', time: '08:55' },
+      { from: 'mi-gemelo', text: 'Eso requiere prestar atención de verdad. No es para cualquiera.', time: '08:57' },
+      { from: 'su-gemelo', text: 'No. Y ella lo sabe. Por eso le da mucho valor cuando pasa. ¿Qué no soportaría la persona que representás?', time: '08:58' },
+      { from: 'mi-gemelo', text: 'La pasividad. Alguien que deja que todo lo decida el otro. Necesita interlocutores, no espectadores.', time: '09:00' },
+      { from: 'su-gemelo', text: 'Valentina tampoco lo soporta. Es 76% de compatibilidad — no es flechazo, pero es el tipo de conexión que, si se cuida, dura. Los voy a presentar.', time: '09:01' },
+    ],
     gemelo: {
       lastTime: 'Ayer', unread: 1,
       msgs: [
@@ -654,6 +771,7 @@ function updateModeBar() {
     bar.innerHTML = `
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       <span style="flex:1">Hablás con el <strong style="color:#fff">gemelo de ${esc(p.name)}</strong> · Modo práctica</span>
+      ${p.simulacion && p.simulacion.length ? `<button onclick="openSimulation()" style="background:rgba(255,117,31,0.15);border:1px solid rgba(255,117,31,0.3);border-radius:10px;padding:3px 10px;font-size:0.62rem;font-weight:700;color:var(--orange);cursor:pointer;letter-spacing:0.03em;white-space:nowrap;touch-action:manipulation;flex-shrink:0">Ver simulación ↗</button>` : ''}
       <span class="mode-bar-badge" style="background:var(--orange);color:#fff">IA</span>`;
     inp.placeholder = `Preguntale algo al gemelo de ${p.name}...`;
   } else {
@@ -678,6 +796,23 @@ function renderMessages() {
   sep.className = 'day-sep';
   sep.innerHTML = '<div class="day-sep-line"></div><span class="day-sep-text">Hoy</span><div class="day-sep-line"></div>';
   con.appendChild(sep);
+
+  // Tarjeta de simulación al tope del chat gemelo
+  if (isG && p.simulacion && p.simulacion.length) {
+    const card = document.createElement('div');
+    card.className = 'sim-teaser-card';
+    card.onclick = openSimulation;
+    card.innerHTML = `
+      <div class="sim-teaser-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+      </div>
+      <div class="sim-teaser-text">
+        <div class="sim-teaser-title">Tu gemelo y el de ${esc(p.name)} ya se conocieron</div>
+        <div class="sim-teaser-sub">Ver la conversación que tuvieron antes de que ustedes se conectaran</div>
+      </div>
+      <div class="sim-teaser-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>`;
+    con.appendChild(card);
+  }
 
   (md.msgs || []).forEach(msg => addMsgEl(con, msg, p, isG));
 }
@@ -872,6 +1007,53 @@ function showToast() {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ── Simulation overlay ── */
+function openSimulation() {
+  if (!curPerson) return;
+  const p = people[curPerson];
+  const sims = p.simulacion || [];
+
+  document.getElementById('simNavTitle').textContent = `Tu gemelo × ${p.name}`;
+
+  const inner = document.getElementById('simInner');
+
+  let html = `<div class="sim-intro">
+    <div class="sim-intro-label">¿Qué es esto?</div>
+    <div class="sim-intro-text">
+      Antes de conectarte con ${esc(p.name)}, los gemelos digitales de ambos exploraron su compatibilidad de forma autónoma. Esta es esa conversación — privada, tuya, generada solo para vos.
+    </div>
+  </div>
+  <div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Inicio de la simulación</span><div class="sim-sep-line"></div></div>`;
+
+  sims.forEach(msg => {
+    const isMe = msg.from === 'mi-gemelo';
+    if (isMe) {
+      html += `<div class="smsg me">
+        <span class="smsg-time">${msg.time}</span>
+        <div class="sbubble"><span class="smsg-label">Tu gemelo</span>${esc(msg.text)}</div>
+        <div class="smsg-av" style="background:#2a2a2a;outline:2px solid rgba(255,160,60,0.45);outline-offset:1px">G</div>
+      </div>`;
+    } else {
+      html += `<div class="smsg them">
+        <div class="smsg-av" style="background:${p.color};outline:2px solid var(--orange);outline-offset:1px">G</div>
+        <div class="sbubble"><span class="smsg-label">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
+        <span class="smsg-time">${msg.time}</span>
+      </div>`;
+    }
+  });
+
+  html += `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Fin de la simulación</span><div class="sim-sep-line"></div></div>`;
+
+  inner.innerHTML = html;
+  document.getElementById('simOverlay').classList.add('open');
+  // Scroll al inicio
+  document.getElementById('simOverlay').querySelector('.sim-body').scrollTop = 0;
+}
+
+function closeSimulation() {
+  document.getElementById('simOverlay').classList.remove('open');
 }
 
 /* ── Helpers ── */
