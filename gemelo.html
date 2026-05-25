@@ -525,7 +525,7 @@ html, body {
         <div class="twin-orb-dot"></div>
       </div>
       <div class="nav-twin-info">
-        <span class="nav-twin-name">Tu gemelo · María</span>
+        <span class="nav-twin-name" id="navTwinName">Tu gemelo</span>
         <span class="nav-twin-status">Activo · 12 conversaciones abiertas</span>
       </div>
     </div>
@@ -1050,6 +1050,13 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
 onAuthStateChanged(auth, user => {
   if (!user) { window.location.href = './home.html'; return; }
+
+  // Mostrar nombre real en el nav
+  const nombre = user.displayName || user.email.split('@')[0];
+  const primerNombre = nombre.trim().split(/\s+/)[0];
+  const navName = document.getElementById('navTwinName');
+  if (navName) navName.textContent = `Tu gemelo · ${primerNombre}`;
+
   const el = document.getElementById('loadingOverlay');
   if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
 });
