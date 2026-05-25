@@ -543,16 +543,13 @@ body {
 // ── REEMPLAZAR goTo() por window.location.href cuando estén listas las páginas ──
 function goTo(page) {
   const map = {
-    matches:  './matches.html',
-    chats:    './chats.html',
-    gemelo:   './gemelo.html',
-    perfil:   './perfil.html',
+    matches: './matches.html',
+    chats:   './chats.html',
+    gemelo:  './gemelo.html',
+    perfil:  './perfil.html',
   };
   const url = map[page];
-  if (url) {
-    // window.location.href = url; // descomentar cuando esté lista
-    alert(`Próximamente: ${url}`);
-  }
+  if (url) window.location.href = url;
 }
 
 function markRead(el) {
@@ -597,9 +594,21 @@ function filterNotifs(type, btn) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
-onAuthStateChanged(auth, user => {
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = './home.html'; return; }
+
+  // Al entrar a notificaciones → marcar todo como leído visual y en Firestore
+  markAllRead();
+  try {
+    await setDoc(doc(db, 'usuarios', user.uid), { notifs_leidas: true }, { merge: true });
+  } catch(e) { console.warn('Error guardando estado notifs:', e); }
+
   const el = document.getElementById('loadingOverlay');
   if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
 });

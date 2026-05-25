@@ -917,6 +917,13 @@ onAuthStateChanged(auth, async user => {
     const snap = await getDoc(doc(db, 'usuarios', uid));
     if (snap.exists()) {
       const d = snap.data();
+
+      // Pip de notificaciones
+      if (d.notifs_leidas) {
+        const pip = document.querySelector('.nav-icon-btn .notif-pip');
+        if (pip) pip.style.display = 'none';
+      }
+
       ['sofia', 'mateo', 'valentina'].forEach(id => {
         ['real', 'gemelo'].forEach(mode => {
           const msgKey   = `chats_${id}_${mode}`;
