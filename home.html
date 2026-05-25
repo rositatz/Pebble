@@ -320,10 +320,14 @@ body {
 
 /* ── Matches strip ── */
 .matches-strip {
-  display: flex; gap: var(--s5);
-  overflow-x: auto; padding-bottom: var(--s1);
+  display: flex;
+  gap: var(--s5);
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 6px 4px 10px;
   scrollbar-width: none;
 }
+
 .matches-strip::-webkit-scrollbar { display: none; }
 
 .match-item {
@@ -331,6 +335,7 @@ body {
   align-items: center; gap: var(--s2);
   text-decoration: none; cursor: pointer;
   touch-action: manipulation;
+  padding: 4px;
 }
 .match-av-wrap { position: relative; }
 .match-av {
