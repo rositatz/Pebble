@@ -255,6 +255,86 @@
   .reveal { opacity:0; transform:translateY(30px); transition:opacity 0.7s ease, transform 0.7s ease; }
   .reveal.visible { opacity:1; transform:translateY(0); }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — MOBILE
+  ══════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* Nav */
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+
+    /* Hero */
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-left { padding: 5rem 1.5rem 3rem; }
+    .hero-right { display: none; }
+    .hero-title { font-size: clamp(2.8rem, 11vw, 4rem); }
+    .hero-subtitle { font-size: 1rem; max-width: 100%; }
+    .hero-cta { flex-direction: column; gap: 0.75rem; }
+    .btn-primary, .btn-secondary { width: 100%; text-align: center; }
+
+    /* Secciones — reducir padding */
+    .section-problem,
+    .section-how,
+    .section-vs,
+    .section-quote,
+    .section-features,
+    .section-manifesto,
+    .section-beta { padding: 4rem 1.5rem; }
+    .section-demo,
+    .section-plans { padding: 3rem 1.5rem; }
+    .section-origin { padding: 4rem 1.5rem; grid-template-columns: 1fr; gap: 2.5rem; }
+
+    /* Problem */
+    .problem-grid { grid-template-columns: 1fr; gap: 3rem; }
+
+    /* How — 3 pasos → 1 columna */
+    .steps-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+    .section-header { margin-bottom: 2.5rem; }
+
+    /* Demo — teléfono centrado, caption abajo */
+    .demo-phone-wrap { flex-direction: column; align-items: center; }
+    .demo-caption { max-width: 100%; padding-top: 0; }
+
+    /* VS table — scroll horizontal */
+    .vs-inner { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .vs-table { min-width: 520px; }
+
+    /* Features — 2 columnas → 1 */
+    .features-grid { grid-template-columns: 1fr; gap: 0; }
+
+    /* Plans */
+    .plans-grid { grid-template-columns: 1fr; gap: 1rem; }
+
+    /* Origin */
+    .origin-visual { height: 260px; }
+    .origin-ring:nth-child(3) { display: none; }
+
+    /* Beta — ocultar pingüino, form ocupa todo el ancho */
+    .beta-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .beta-image { display: none; }
+    .form-row { grid-template-columns: 1fr; }
+
+    /* Footer */
+    footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
+  }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — TELÉFONOS CHICOS (< 400px)
+  ══════════════════════════════════════ */
+  @media (max-width: 400px) {
+    .hero-title { font-size: 2.6rem; }
+    nav { padding: 0.85rem 1.25rem; }
+    .section-problem,
+    .section-how,
+    .section-vs,
+    .section-quote,
+    .section-features,
+    .section-manifesto,
+    .section-beta,
+    .section-origin { padding: 3rem 1.25rem; }
+  }
 </style>
 </head>
 <body>
