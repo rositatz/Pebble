@@ -861,6 +861,24 @@ body {
 </div>
 
 <script>
+// ── Auth optimista: si hay sesión cacheada, mostramos la app al instante ──
+(function() {
+  var cUid  = sessionStorage.getItem('pbl_uid');
+  var cName = sessionStorage.getItem('pbl_name') || '';
+  if (!cUid) return;
+  var ov = document.getElementById('loadingOverlay');
+  if (ov) ov.remove();
+  var gate = document.getElementById('auth-gate');
+  if (gate) gate.classList.add('hidden');
+  var s = document.getElementById('app-shell');
+  if (s) { s.style.display = 'flex'; s.classList.add('visible'); }
+  if (cName) {
+    var un  = document.getElementById('user-name');
+    var nav = document.getElementById('nav-avatar');
+    if (un)  un.textContent  = cName;
+    if (nav) nav.textContent = cName[0].toUpperCase();
+  }
+})();
 // Funciones de UI (no-módulo, accesibles desde onclick en HTML)
 function showGate() {
   document.getElementById('auth-gate').classList.remove('hidden');
@@ -966,6 +984,10 @@ function ocultarPip(id) {
 // ── Sesión persistente: Firebase la maneja sola ──
 onAuthStateChanged(auth, async user => {
   if (user) {
+    // Cachear sesión para que las otras páginas carguen sin overlay
+    const nombre = user.displayName || user.email?.split('@')[0] || 'Usuario';
+    sessionStorage.setItem('pbl_uid', user.uid);
+    sessionStorage.setItem('pbl_name', nombre);
     showApp(user);
     uid = user.uid;
 
@@ -982,6 +1004,8 @@ onAuthStateChanged(auth, async user => {
       MATCH_IDS.forEach(id => mostrarPip(id));
     }
   } else {
+    sessionStorage.removeItem('pbl_uid');
+    sessionStorage.removeItem('pbl_name');
     showGate();
     uid = null;
   }
@@ -1078,6 +1102,8 @@ window.doLoginApple = function() {
 
 // ── LOGOUT (lo llama perfil.html vía window) ──
 window.doLogout = async function() {
+  sessionStorage.removeItem('pbl_uid');
+  sessionStorage.removeItem('pbl_name');
   await signOut(auth);
 };
 

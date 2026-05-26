@@ -1044,12 +1044,25 @@ document.addEventListener('click', e => {
 });
 </script>
 
+<script>
+// Auth optimista — el overlay desaparece al instante si hay sesión cacheada
+if (sessionStorage.getItem('pbl_uid')) {
+  var _ov = document.getElementById('loadingOverlay');
+  if (_ov) _ov.remove();
+}
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
 onAuthStateChanged(auth, user => {
-  if (!user) { window.location.href = './home.html'; return; }
+  if (!user) {
+    sessionStorage.removeItem('pbl_uid');
+    sessionStorage.removeItem('pbl_name');
+    window.location.href = './home.html'; return;
+  }
+  sessionStorage.setItem('pbl_uid', user.uid);
+  sessionStorage.setItem('pbl_name', user.displayName || user.email?.split('@')[0] || '');
 
   // Mostrar nombre real en el nav
   const nombre = user.displayName || user.email.split('@')[0];
