@@ -1078,73 +1078,6 @@ function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(
 })();
 </script>
 
-<script>
-// ── Auth optimista + barra de progreso de navegación ──
-(function() {
-  var uid   = sessionStorage.getItem('pbl_uid');
-  var navTs = parseInt(sessionStorage.getItem('pbl_nav_ts') || '0');
-  var isNav = navTs && (Date.now() - navTs < 5000);
-
-  if (uid) {
-    var ov = document.getElementById('loadingOverlay');
-    if (ov) ov.remove();
-  }
-
-  if (isNav) {
-    sessionStorage.removeItem('pbl_nav_ts');
-    var bar = document.createElement('div');
-    bar.id = 'nav-progress';
-    bar.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;height:2px;background:linear-gradient(90deg,#FF751F,#FF9700);width:40%;pointer-events:none;transition:none';
-    document.body.appendChild(bar);
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        bar.style.transition = 'width 1.2s cubic-bezier(0.1,0.5,0.5,1)';
-        bar.style.width = '82%';
-      });
-    });
-  }
-
-  window._completeNavBar = function() {
-    var bar = document.getElementById('nav-progress');
-    if (!bar) return;
-    bar.style.transition = 'width 0.15s ease-out';
-    bar.style.width = '100%';
-    setTimeout(function() {
-      bar.style.transition = 'opacity 0.25s ease';
-      bar.style.opacity = '0';
-      setTimeout(function() { if (bar.parentNode) bar.parentNode.removeChild(bar); }, 280);
-    }, 160);
-  };
-
-  window.navTo = function(url) {
-    var existing = document.getElementById('nav-progress');
-    if (existing) existing.remove();
-    var bar = document.createElement('div');
-    bar.id = 'nav-progress';
-    bar.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;height:2px;background:linear-gradient(90deg,#FF751F,#FF9700);width:0%;pointer-events:none;';
-    document.body.appendChild(bar);
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        bar.style.transition = 'width 0.45s cubic-bezier(0.1,0.6,0.4,1)';
-        bar.style.width = '30%';
-      });
-    });
-    sessionStorage.setItem('pbl_nav_ts', Date.now().toString());
-    setTimeout(function() { window.location.href = url; }, 80);
-  };
-
-  // Interceptar automáticamente todos los <a href="*.html"> para usar navTo
-  document.addEventListener('click', function(e) {
-    var a = e.target.closest('a[href]');
-    if (!a) return;
-    var href = a.getAttribute('href');
-    if (href && /\.html(\?|#|$)/.test(href) && !href.startsWith('http') && !href.startsWith('//')) {
-      e.preventDefault();
-      window.navTo(href);
-    }
-  });
-})();
-</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1157,13 +1090,7 @@ const db   = getFirestore(app);
 let uid = null;
 
 onAuthStateChanged(auth, async user => {
-  if (!user) {
-    sessionStorage.removeItem('pbl_uid');
-    sessionStorage.removeItem('pbl_name');
-    window.location.href = './home.html'; return;
-  }
-  sessionStorage.setItem('pbl_uid', user.uid);
-  sessionStorage.setItem('pbl_name', user.displayName || user.email?.split('@')[0] || '');
+  if (!user) { window.location.href = './home.html'; return; }
   uid = user.uid;
 
   // ── Cargar conversaciones guardadas de Firestore ──
@@ -1195,10 +1122,9 @@ onAuthStateChanged(auth, async user => {
     }
   } catch(e) { console.warn('Error cargando chats:', e); }
 
-  // Quitar overlay si quedó, y completar la barra de navegación
+  // Quitar overlay cuando todo esté listo
   const el = document.getElementById('loadingOverlay');
   if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
-  window._completeNavBar?.();
 });
 
 // Marcar conversación como leída
