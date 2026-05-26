@@ -1696,8 +1696,8 @@ onAuthStateChanged(auth, async user => {
     // Edad en campo de vista
     if (d.fechaNac) document.getElementById('vEdad').textContent = `${calcAge(d.fechaNac)} años`;
 
-    // Intereses
-    if (Array.isArray(d.intereses) && d.intereses.length) {
+    // Intereses — se aplica aunque el array esté vacío (el usuario puede haber sacado todos)
+    if (Array.isArray(d.intereses)) {
       document.querySelectorAll('.interest-chip.selected').forEach(c => c.classList.remove('selected'));
       document.querySelectorAll('.interest-chip:not(.add-chip)').forEach(chip => {
         if (d.intereses.includes(chip.textContent.trim())) chip.classList.add('selected');
