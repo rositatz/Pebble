@@ -861,24 +861,85 @@ body {
 </div>
 
 <script>
-// ── Auth optimista: si hay sesión cacheada, mostramos la app al instante ──
+// ── Auth optimista + barra de progreso de navegación ──
 (function() {
   var cUid  = sessionStorage.getItem('pbl_uid');
   var cName = sessionStorage.getItem('pbl_name') || '';
-  if (!cUid) return;
-  var ov = document.getElementById('loadingOverlay');
-  if (ov) ov.remove();
-  var gate = document.getElementById('auth-gate');
-  if (gate) gate.classList.add('hidden');
-  var s = document.getElementById('app-shell');
-  if (s) { s.style.display = 'flex'; s.classList.add('visible'); }
-  if (cName) {
-    var un  = document.getElementById('user-name');
-    var nav = document.getElementById('nav-avatar');
-    if (un)  un.textContent  = cName;
-    if (nav) nav.textContent = cName[0].toUpperCase();
+  var navTs = parseInt(sessionStorage.getItem('pbl_nav_ts') || '0');
+  var isNav = navTs && (Date.now() - navTs < 5000);
+
+  // Restaurar sesión al instante (sin overlay)
+  if (cUid) {
+    var ov = document.getElementById('loadingOverlay');
+    if (ov) ov.remove();
+    var gate = document.getElementById('auth-gate');
+    if (gate) gate.classList.add('hidden');
+    var s = document.getElementById('app-shell');
+    if (s) { s.style.display = 'flex'; s.classList.add('visible'); }
+    if (cName) {
+      var un  = document.getElementById('user-name');
+      var nav = document.getElementById('nav-avatar');
+      if (un)  un.textContent  = cName;
+      if (nav) nav.textContent = cName[0].toUpperCase();
+    }
   }
+
+  // Continuar la barra si venimos navegando desde otra página
+  if (isNav) {
+    sessionStorage.removeItem('pbl_nav_ts');
+    var bar = document.createElement('div');
+    bar.id = 'nav-progress';
+    bar.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;height:2px;background:linear-gradient(90deg,#FF751F,#FF9700);width:40%;pointer-events:none;transition:none';
+    document.body.appendChild(bar);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        bar.style.transition = 'width 1.2s cubic-bezier(0.1,0.5,0.5,1)';
+        bar.style.width = '82%';
+      });
+    });
+  }
+
+  // Función para completar y ocultar la barra cuando los datos cargaron
+  window._completeNavBar = function() {
+    var bar = document.getElementById('nav-progress');
+    if (!bar) return;
+    bar.style.transition = 'width 0.15s ease-out';
+    bar.style.width = '100%';
+    setTimeout(function() {
+      bar.style.transition = 'opacity 0.25s ease';
+      bar.style.opacity = '0';
+      setTimeout(function() { if (bar.parentNode) bar.parentNode.removeChild(bar); }, 280);
+    }, 160);
+  };
 })();
+
+// ── Navegar con barra de progreso (se queda en la página actual mientras arranca) ──
+function navTo(url) {
+  var existing = document.getElementById('nav-progress');
+  if (existing) existing.remove();
+  var bar = document.createElement('div');
+  bar.id = 'nav-progress';
+  bar.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;height:2px;background:linear-gradient(90deg,#FF751F,#FF9700);width:0%;pointer-events:none;';
+  document.body.appendChild(bar);
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      bar.style.transition = 'width 0.45s cubic-bezier(0.1,0.6,0.4,1)';
+      bar.style.width = '30%';
+    });
+  });
+  sessionStorage.setItem('pbl_nav_ts', Date.now().toString());
+  setTimeout(function() { window.location.href = url; }, 80);
+}
+// Interceptar automáticamente todos los <a href="*.html"> para usar navTo
+document.addEventListener('click', function(e) {
+  var a = e.target.closest('a[href]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (href && /\.html(\?|#|$)/.test(href) && !href.startsWith('http') && !href.startsWith('//')) {
+    e.preventDefault();
+    navTo(href);
+  }
+});
 // Funciones de UI (no-módulo, accesibles desde onclick en HTML)
 function showGate() {
   document.getElementById('auth-gate').classList.remove('hidden');
@@ -909,7 +970,7 @@ function switchTab(tab) {
 function goTo(page) {
   const map = { gemelo:'./gemelo.html', matches:'./matches.html', chats:'./chats.html', notificaciones:'./notificaciones.html', perfil:'./perfil.html' };
   const url = map[page];
-  if (url) window.location.href = url;
+  if (url) navTo(url);
 }
 function showAuthError(msg) {
   let el = document.getElementById('auth-error');
@@ -1010,9 +1071,10 @@ onAuthStateChanged(auth, async user => {
     uid = null;
   }
 
-  // Quitar el overlay una vez que Firebase resolvió el estado
+  // Quitar el overlay si por algún motivo quedó, y completar la barra de nav
   const overlay = document.getElementById('loadingOverlay');
   if (overlay) { overlay.classList.add('hide'); setTimeout(() => overlay.remove(), 350); }
+  window._completeNavBar?.();
 });
 
 // Marcar como visto y navegar al chat
@@ -1026,7 +1088,7 @@ window.goToMatch = async function(matchId) {
       );
     } catch(e) { console.warn('Error guardando match visto:', e); }
   }
-  window.location.href = `./chats.html?persona=${matchId}`;
+  navTo(`./chats.html?persona=${matchId}`);
 };
 
 // ── LOGIN con email/contraseña ──
