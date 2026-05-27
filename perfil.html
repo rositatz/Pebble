@@ -653,6 +653,40 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 .app-main { opacity: 0; transition: opacity 0.35s ease; }
 .app-main.visible { opacity: 1; }
+
+/* ══════════════════════════════════════
+   RESPONSIVE — MOBILE
+══════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Nav */
+  .app-nav { padding: 0 var(--s4); }
+
+  /* Main padding */
+  .app-main { padding: 20px 12px; }
+
+  /* Card padding interno */
+  .card-pad,
+  .photo-section,
+  .info-section,
+  .privacy-section,
+  .interests-section { padding: 16px; }
+
+  /* Foto principal + thumbnails: la 1ra col más ancha, resto compactas */
+  .photo-section .photo-grid {
+    grid-template-columns: 1.8fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  /* Formulario de edición — campos lado a lado → apilados */
+  .form-row { grid-template-columns: 1fr; }
+
+  /* Interest chips — más compactos */
+  .interest-chip { padding: 5px 10px; font-size: 0.78rem; }
+
+  /* Header de sección dentro de tarjetas */
+  .card-header { flex-wrap: wrap; gap: 8px; }
+  .card-actions { gap: 6px; }
+}
 </style>
 </head>
 <body>

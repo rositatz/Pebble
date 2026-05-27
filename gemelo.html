@@ -508,6 +508,31 @@ html, body {
 #loadingOverlay.hide{opacity:0;pointer-events:none}
 .loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════
+   RESPONSIVE — MOBILE
+══════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Nav */
+  .app-nav { padding: 0 12px; }
+
+  /* Área de chat — menos padding lateral */
+  .chat-main { padding: 16px 12px 70px; }
+
+  /* Burbujas — max width más generoso en pantallas chicas */
+  .pmsg .pbubble,
+  .pbubble { max-width: min(85%, 360px); }
+
+  /* Input */
+  .input-wrap { padding: 8px 12px; }
+  .input-bar { padding: 8px 10px; }
+
+  /* Tabs del gemelo — texto más chico si no entra */
+  .twin-tab { font-size: 0.72rem; padding: 6px 10px; }
+
+  /* Perfil overlay */
+  .profile-overlay-inner { padding: 16px 12px 28px; }
+}
 </style>
 </head>
 <body>
@@ -565,7 +590,7 @@ html, body {
             </span>
           </div>
           <div class="match-card-body">
-            <div class="match-av" style="background:linear-gradient(135deg,#FF9700,#FF751F)">S</div>
+            <div class="match-av" style="background-image:url(./sofia.png);background-size:cover;background-position:center"></div>
             <div class="match-info">
               <div class="match-name">Sofía</div>
               <div class="match-meta">26 años · Buenos Aires</div>
@@ -636,7 +661,7 @@ html, body {
       <div class="card-wrap">
         <div class="progress-card">
           <div class="progress-card-header">
-            <div class="progress-person-av" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">V</div>
+            <div class="progress-person-av" style="background-image:url(./valentina.png);background-size:cover;background-position:center"></div>
             <div class="progress-card-info">
               <div class="progress-card-name">Valentina</div>
               <div class="progress-card-event">Completé el escenario "Primera cita"</div>
