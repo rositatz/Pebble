@@ -636,6 +636,130 @@ body {
 .fu:nth-child(7){animation-delay:.29s}.fu:nth-child(8){animation-delay:.33s}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
+/* ── Account sheets ── */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.26s ease;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+.sheet {
+  width: 100%; max-width: 560px;
+  background: var(--surf-1);
+  border-radius: 22px 22px 0 0;
+  max-height: 88vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+}
+.sheet-overlay.open .sheet { transform: translateY(0); }
+.sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border2); margin: 12px auto 0;
+}
+.sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surf-1); z-index: 1;
+}
+.sheet-title {
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.sheet-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--surf-2); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); font-size: 1rem; line-height: 1;
+  transition: all 0.18s; touch-action: manipulation; flex-shrink: 0;
+}
+.sheet-close:hover { background: var(--border2); color: var(--text-primary); }
+.sheet-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.sheet-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  display: block; margin-bottom: 5px;
+}
+.sheet-field-wrap { position: relative; }
+.sheet-input {
+  width: 100%; padding: 11px 42px 11px 14px;
+  border: 1.5px solid var(--border2); border-radius: var(--r-md);
+  font-family: var(--font-body); font-size: 0.9rem; color: var(--text-primary);
+  background: var(--surf-1); outline: none; transition: border-color 0.18s;
+  -webkit-appearance: none;
+}
+.sheet-input:focus { border-color: var(--orange); }
+.sheet-eye {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; padding: 4px; touch-action: manipulation;
+}
+.sheet-eye:hover { color: var(--text-primary); }
+.sheet-eye svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sheet-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+.sheet-error { font-size: 0.8rem; color: #c0392b; font-weight: 500; min-height: 16px; }
+.pass-strength { height: 3px; border-radius: 2px; background: var(--border2); margin-top: 6px; overflow: hidden; }
+.pass-strength-fill { height: 100%; border-radius: 2px; width: 0%; transition: width 0.3s ease, background 0.3s ease; }
+.sheet-btn-save {
+  width: 100%; padding: 13px; border-radius: var(--r-md);
+  background: var(--text-primary); border: none; color: #fff;
+  font-family: var(--font-display); font-size: 0.92rem; font-weight: 700;
+  cursor: pointer; transition: opacity 0.18s; margin-top: 2px;
+  touch-action: manipulation;
+}
+.sheet-btn-save:hover { opacity: 0.82; }
+.sheet-btn-save:disabled { opacity: 0.45; cursor: not-allowed; }
+.sheet-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border); gap: 16px;
+}
+.sheet-row:last-of-type { border-bottom: none; }
+.sheet-row-info { flex: 1; }
+.sheet-row-label { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 2px; }
+.sheet-row-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.45; }
+.sheet-note {
+  font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55;
+  padding: 12px 14px; border-radius: var(--r-md);
+  background: var(--surf-2); border-left: 3px solid var(--orange);
+}
+.sheet-btn-outline {
+  width: 100%; padding: 12px; border-radius: var(--r-md);
+  background: none; border: 1.5px solid var(--border2); color: var(--text-primary);
+  font-family: var(--font-body); font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all 0.18s; text-align: center; text-decoration: none;
+  display: block; touch-action: manipulation;
+}
+.sheet-btn-outline:hover { border-color: var(--orange); color: var(--orange); }
+.sheet-btn-danger {
+  width: 100%; padding: 12px; border-radius: var(--r-md);
+  background: none; border: 1.5px solid rgba(192,57,43,0.3);
+  color: #c0392b; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all 0.18s; touch-action: manipulation;
+}
+.sheet-btn-danger:hover { background: #fdf2f1; }
+.sheet-version { font-size: 0.7rem; color: var(--text-muted); text-align: center; }
+.faq-list { display: flex; flex-direction: column; }
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-item:last-child { border-bottom: none; }
+.faq-q {
+  width: 100%; text-align: left; background: none; border: none;
+  padding: 14px 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-family: var(--font-body); font-size: 0.88rem; font-weight: 600;
+  color: var(--text-primary); touch-action: manipulation;
+}
+.faq-q svg { width: 16px; height: 16px; flex-shrink: 0; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.22s; }
+.faq-item.faq-open .faq-q svg { transform: rotate(180deg); }
+.faq-a {
+  font-size: 0.83rem; color: var(--text-secondary); line-height: 1.65;
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.28s ease, padding-bottom 0.28s ease;
+}
+.faq-item.faq-open .faq-a { max-height: 400px; padding-bottom: 14px; }
+
 /* ── Loading overlay ── */
 #loadingOverlay {
   position: fixed; inset: 0; z-index: 9999;
@@ -1243,7 +1367,7 @@ body {
     <div class="account-section">
       <h2 class="section-title" style="margin-bottom:6px">Cuenta</h2>
       <div class="account-list">
-        <a href="#" class="account-item" onclick="showToast('Próximamente: cambio de contraseña'); return false;">
+        <a href="#" class="account-item" onclick="openSheet('sheetPass'); return false;">
           <div class="account-item-left">
             <div class="account-icon">
               <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -1252,7 +1376,7 @@ body {
           </div>
           <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </a>
-        <a href="#" class="account-item" onclick="showToast('Próximamente: configuración de notificaciones'); return false;">
+        <a href="#" class="account-item" onclick="openSheet('sheetNotif'); return false;">
           <div class="account-item-left">
             <div class="account-icon">
               <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -1261,7 +1385,7 @@ body {
           </div>
           <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </a>
-        <a href="#" class="account-item" onclick="showToast('Próximamente: configuración de privacidad avanzada'); return false;">
+        <a href="#" class="account-item" onclick="openSheet('sheetPriv'); return false;">
           <div class="account-item-left">
             <div class="account-icon">
               <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1270,7 +1394,7 @@ body {
           </div>
           <svg class="account-chevron" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </a>
-        <a href="#" class="account-item" onclick="showToast('Próximamente: ayuda y soporte'); return false;">
+        <a href="#" class="account-item" onclick="openSheet('sheetAyuda'); return false;">
           <div class="account-item-left">
             <div class="account-icon">
               <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1322,6 +1446,204 @@ body {
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- ══ SHEET: Cambiar contraseña ══ -->
+<div class="sheet-overlay" id="sheetPassOverlay" onclick="if(event.target===this)closeSheet('sheetPass')">
+  <div class="sheet" id="sheetPass">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Cambiar contraseña</h3>
+      <button class="sheet-close" onclick="closeSheet('sheetPass')" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div>
+        <label class="sheet-label" for="passActual">Contraseña actual</label>
+        <div class="sheet-field-wrap">
+          <input class="sheet-input" id="passActual" type="password" placeholder="Tu contraseña actual" autocomplete="current-password"/>
+          <button class="sheet-eye" type="button" onclick="togglePassVis('passActual',this)" aria-label="Mostrar/ocultar">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div>
+        <label class="sheet-label" for="passNueva">Nueva contraseña</label>
+        <div class="sheet-field-wrap">
+          <input class="sheet-input" id="passNueva" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"
+            oninput="updatePassStrength(this.value)"/>
+          <button class="sheet-eye" type="button" onclick="togglePassVis('passNueva',this)" aria-label="Mostrar/ocultar">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="pass-strength"><div class="pass-strength-fill" id="passStrengthFill"></div></div>
+        <p class="sheet-hint">Usá letras, números y símbolos para más seguridad</p>
+      </div>
+      <div>
+        <label class="sheet-label" for="passConfirm">Confirmar nueva contraseña</label>
+        <div class="sheet-field-wrap">
+          <input class="sheet-input" id="passConfirm" type="password" placeholder="Repetí la nueva contraseña" autocomplete="new-password"/>
+          <button class="sheet-eye" type="button" onclick="togglePassVis('passConfirm',this)" aria-label="Mostrar/ocultar">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sheet-error" id="passError"></div>
+      <button class="sheet-btn-save" id="passSaveBtn" onclick="cambiarPassword()">Guardar contraseña</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHEET: Notificaciones ══ -->
+<div class="sheet-overlay" id="sheetNotifOverlay" onclick="if(event.target===this)closeSheet('sheetNotif')">
+  <div class="sheet" id="sheetNotif">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Notificaciones</h3>
+      <button class="sheet-close" onclick="closeSheet('sheetNotif')" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div style="display:flex;flex-direction:column">
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Nuevos matches</span>
+            <span class="sheet-row-desc">Te avisamos cuando tu gemelo conecta con alguien</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="notifMatches" checked/>
+            <label class="toggle-label" for="notifMatches"></label>
+          </div>
+        </div>
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Mensajes nuevos</span>
+            <span class="sheet-row-desc">Recibís una notificación cuando alguien te escribe</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="notifMensajes" checked/>
+            <label class="toggle-label" for="notifMensajes"></label>
+          </div>
+        </div>
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Actividad de mi gemelo</span>
+            <span class="sheet-row-desc">Cuando tu gemelo digital tiene novedades o conversaciones</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="notifGemelo" checked/>
+            <label class="toggle-label" for="notifGemelo"></label>
+          </div>
+        </div>
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Novedades de Pebble</span>
+            <span class="sheet-row-desc">Actualizaciones, mejoras y tips de la app</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="notifNovedades"/>
+            <label class="toggle-label" for="notifNovedades"></label>
+          </div>
+        </div>
+      </div>
+      <button class="sheet-btn-save" onclick="saveNotificaciones()">Guardar preferencias</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHEET: Privacidad avanzada ══ -->
+<div class="sheet-overlay" id="sheetPrivOverlay" onclick="if(event.target===this)closeSheet('sheetPriv')">
+  <div class="sheet" id="sheetPriv">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Privacidad avanzada</h3>
+      <button class="sheet-close" onclick="closeSheet('sheetPriv')" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-note">
+        Estas configuraciones afectan tu visibilidad dentro de Pebble. Podés cambiarlas en cualquier momento.
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Modo invisible</span>
+            <span class="sheet-row-desc">Tu perfil no aparece en el feed de descubrimiento de otros usuarios</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privInvisible"/>
+            <label class="toggle-label" for="privInvisible"></label>
+          </div>
+        </div>
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Solo mostrarme a compatibles (+70%)</span>
+            <span class="sheet-row-desc">Solo ven tu perfil personas con las que tenés alta afinidad</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privSoloComp"/>
+            <label class="toggle-label" for="privSoloComp"></label>
+          </div>
+        </div>
+        <div class="sheet-row">
+          <div class="sheet-row-info">
+            <span class="sheet-row-label">Pausar mi cuenta</span>
+            <span class="sheet-row-desc">Ocultá temporalmente tu perfil sin perder tus datos ni matches</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privPausar"/>
+            <label class="toggle-label" for="privPausar"></label>
+          </div>
+        </div>
+      </div>
+      <button class="sheet-btn-save" onclick="savePrivacidadAvanzada()">Guardar configuración</button>
+      <button class="sheet-btn-danger" onclick="showToast('Para eliminar tu cuenta contactá a soporte')">Eliminar mi cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHEET: Ayuda y soporte ══ -->
+<div class="sheet-overlay" id="sheetAyudaOverlay" onclick="if(event.target===this)closeSheet('sheetAyuda')">
+  <div class="sheet" id="sheetAyuda">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Ayuda y soporte</h3>
+      <button class="sheet-close" onclick="closeSheet('sheetAyuda')" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            ¿Cómo funciona el gemelo digital?
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a">Tu gemelo es una IA entrenada con las respuestas que le das en Pebble. Representa tu forma de comunicarte, tus intereses y lo que buscás en otra persona. Habla con los gemelos de otros usuarios antes de que ustedes se conozcan directamente.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            ¿Cómo se calcula el porcentaje de afinidad?
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a">El porcentaje se calcula en base a las conversaciones entre gemelos, la compatibilidad de intereses, el estilo de comunicación y los valores que declaraste en tu perfil. Es dinámico: puede mejorar a medida que tu gemelo aprende más sobre vos.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            ¿Puedo bloquear o reportar a alguien?
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a">Sí. Dentro de cualquier chat o perfil podés usar el menú de opciones para bloquear o reportar a una persona. La función de bloqueo oculta tu perfil y el de esa persona mutuamente de forma permanente.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            ¿Qué pasa con mis datos si me voy?
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-a">Podés pedir la eliminación completa de tu cuenta y todos tus datos desde Privacidad avanzada o escribiéndonos a soporte. Eliminamos toda tu información en un plazo de 30 días hábiles.</div>
+        </div>
+      </div>
+      <a class="sheet-btn-outline" href="mailto:soporte@pebbleapp.co" style="margin-top:4px">
+        Escribinos a soporte
+      </a>
+      <p class="sheet-version">Pebble v0.9.1 — Beta privada · pebbleapp.co</p>
+    </div>
+  </div>
+</div>
 
 <!-- Hidden file inputs for photo slots -->
 <input type="file" id="photoInput0" accept="image/*" hidden/>
@@ -1619,6 +1941,121 @@ function showToast(msg) {
 }
 
 /* ══════════════════════════════
+   ACCOUNT SHEETS
+══════════════════════════════ */
+function openSheet(id) {
+  document.getElementById(id + 'Overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet(id) {
+  document.getElementById(id + 'Overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.sheet-overlay.open').forEach(el => el.classList.remove('open'));
+    document.body.style.overflow = '';
+  }
+});
+
+/* Contraseña */
+async function cambiarPassword() {
+  const actual   = document.getElementById('passActual').value;
+  const nueva    = document.getElementById('passNueva').value;
+  const confirma = document.getElementById('passConfirm').value;
+  const errEl    = document.getElementById('passError');
+  const btn      = document.getElementById('passSaveBtn');
+  errEl.textContent = '';
+
+  if (!actual || !nueva || !confirma) {
+    errEl.textContent = 'Completá todos los campos.'; return;
+  }
+  if (nueva !== confirma) {
+    errEl.textContent = 'Las contraseñas nuevas no coinciden.'; return;
+  }
+  if (nueva.length < 6) {
+    errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+  try {
+    await window._changePassword(actual, nueva);
+    closeSheet('sheetPass');
+    ['passActual','passNueva','passConfirm'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('passStrengthFill').style.width = '0%';
+    showToast('Contraseña actualizada ✓');
+  } catch(e) {
+    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      errEl.textContent = 'La contraseña actual es incorrecta.';
+    } else if (e.code === 'auth/weak-password') {
+      errEl.textContent = 'Elegí una contraseña más segura.';
+    } else {
+      errEl.textContent = 'Error al cambiar la contraseña. Intentá de nuevo.';
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar contraseña';
+  }
+}
+
+function togglePassVis(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+function updatePassStrength(val) {
+  const fill = document.getElementById('passStrengthFill');
+  if (!fill) return;
+  let s = 0;
+  if (val.length >= 6)            s++;
+  if (val.length >= 10)           s++;
+  if (/[A-Z]/.test(val))          s++;
+  if (/[0-9]/.test(val))          s++;
+  if (/[^A-Za-z0-9]/.test(val))   s++;
+  const w = ['0%','20%','40%','65%','85%','100%'][s];
+  const c = ['#e74c3c','#e74c3c','#f39c12','#f39c12','#2ecc71','#27ae60'][s];
+  fill.style.width = w; fill.style.background = c;
+}
+
+/* Notificaciones */
+function saveNotificaciones() {
+  const data = {
+    matches:   document.getElementById('notifMatches').checked,
+    mensajes:  document.getElementById('notifMensajes').checked,
+    gemelo:    document.getElementById('notifGemelo').checked,
+    novedades: document.getElementById('notifNovedades').checked,
+  };
+  if (typeof window._db_saveNotificaciones === 'function') window._db_saveNotificaciones(data);
+  closeSheet('sheetNotif');
+  showToast('Preferencias guardadas ✓');
+}
+
+/* Privacidad avanzada */
+function savePrivacidadAvanzada() {
+  const data = {
+    invisible:     document.getElementById('privInvisible').checked,
+    soloComp:      document.getElementById('privSoloComp').checked,
+    pausada:       document.getElementById('privPausar').checked,
+  };
+  if (typeof window._db_savePrivacidadAvanzada === 'function') window._db_savePrivacidadAvanzada(data);
+  closeSheet('sheetPriv');
+  showToast('Configuración guardada ✓');
+}
+
+/* FAQ */
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const open = item.classList.contains('faq-open');
+  document.querySelectorAll('.faq-item.faq-open').forEach(i => i.classList.remove('faq-open'));
+  if (!open) item.classList.add('faq-open');
+}
+
+/* ══════════════════════════════
    LOGOUT
 ══════════════════════════════ */
 function handleLogout() {
@@ -1641,7 +2078,8 @@ document.getElementById('bioCount').textContent = document.getElementById('eBio'
 
 <script type="module">
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut }
+import { getAuth, onAuthStateChanged, signOut,
+         reauthenticateWithCredential, EmailAuthProvider, updatePassword }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1739,6 +2177,23 @@ onAuthStateChanged(auth, async user => {
       document.getElementById('interestCount').textContent =
         document.querySelectorAll('.interest-chip.selected').length;
     }
+    // Notificaciones guardadas
+    if (d.notificaciones) {
+      const n = d.notificaciones;
+      if (n.matches   !== undefined) document.getElementById('notifMatches').checked   = n.matches;
+      if (n.mensajes  !== undefined) document.getElementById('notifMensajes').checked  = n.mensajes;
+      if (n.gemelo    !== undefined) document.getElementById('notifGemelo').checked    = n.gemelo;
+      if (n.novedades !== undefined) document.getElementById('notifNovedades').checked = n.novedades;
+    }
+
+    // Privacidad avanzada guardada
+    if (d.privacidadAvanzada) {
+      const p = d.privacidadAvanzada;
+      if (p.invisible !== undefined) document.getElementById('privInvisible').checked = p.invisible;
+      if (p.soloComp  !== undefined) document.getElementById('privSoloComp').checked  = p.soloComp;
+      if (p.pausada   !== undefined) document.getElementById('privPausar').checked    = p.pausada;
+    }
+
   } catch(err) { console.warn('Error cargando perfil:', err); }
 
   mostrarPagina();
@@ -1761,6 +2216,27 @@ window._db_saveIntereses = async () => {
 };
 
 window.doLogout = () => signOut(auth);
+
+// Cambio real de contraseña con Firebase Auth
+window._changePassword = async (currentPass, newPass) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('No hay usuario activo');
+  const credential = EmailAuthProvider.credential(user.email, currentPass);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPass);
+};
+
+// Guardar notificaciones en Firestore
+window._db_saveNotificaciones = async (data) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), { notificaciones: data }, { merge: true });
+};
+
+// Guardar privacidad avanzada en Firestore
+window._db_savePrivacidadAvanzada = async (data) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), { privacidadAvanzada: data }, { merge: true });
+};
 </script>
 </body>
 </html>
