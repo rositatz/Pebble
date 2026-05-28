@@ -1019,18 +1019,39 @@ onAuthStateChanged(auth, async user => {
   if (overlay) { overlay.classList.add('hide'); setTimeout(() => overlay.remove(), 350); }
 });
 
-// Marcar como visto y navegar al chat
+// Marcar como visto y navegar según si ya hay chat con esa persona
 window.goToMatch = async function(matchId) {
   ocultarPip(matchId); // feedback inmediato sin esperar Firestore
   if (uid) {
+    // Marcar como visto
     try {
       await setDoc(doc(db, 'usuarios', uid),
         { [`match_visto_${matchId}`]: true },
         { merge: true }
       );
     } catch(e) { console.warn('Error guardando match visto:', e); }
+
+    // Verificar si ya existe un chat real con esta persona
+    try {
+      const snap = await getDoc(doc(db, 'usuarios', uid));
+      const data = snap.exists() ? snap.data() : {};
+      const chatKey = `chats_${matchId}_real`;
+      const hasChat = Array.isArray(data[chatKey]) && data[chatKey].length > 0;
+
+      if (hasChat) {
+        // Ya hay mensajes → ir directo al chat
+        window.location.href = `./chats.html?persona=${matchId}`;
+      } else {
+        // Nunca hablaron → ir al perfil para que pueda decidir
+        window.location.href = `./matches.html?persona=${matchId}`;
+      }
+    } catch(e) {
+      // Si Firestore falla, ir al perfil por defecto
+      window.location.href = `./matches.html?persona=${matchId}`;
+    }
+  } else {
+    window.location.href = `./matches.html?persona=${matchId}`;
   }
-  window.location.href = `./matches.html?persona=${matchId}`;
 };
 
 // ── LOGIN con email/contraseña ──
