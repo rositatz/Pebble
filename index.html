@@ -143,6 +143,19 @@
   .vs-no { color: rgba(255,255,255,0.45); font-size: 1.1rem; font-weight: 700; }
   .vs-yes { color: var(--orange); font-size: 1.1rem; font-weight: 700; }
 
+  /* VS — mobile alternative (oculto en desktop) */
+  .vs-mobile { display: none; }
+  .vs-mob-row { padding: 1.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .vs-mob-row:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
+  .vs-mob-feature { font-family: var(--font-body); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.38); margin-bottom: 0.6rem; }
+  .vs-mob-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .vs-mob-col { display: flex; flex-direction: column; gap: 0.3rem; }
+  .vs-mob-badge { font-family: var(--font-body); font-size: 0.52rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.18rem 0.45rem; display: inline-block; margin-bottom: 0.25rem; }
+  .vs-mob-badge.them { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.38); }
+  .vs-mob-badge.us { background: var(--orange); color: white; }
+  .vs-mob-them-text { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.4; color: rgba(255,255,255,0.45); }
+  .vs-mob-us-text { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.4; color: var(--cream); font-weight: 500; }
+
   /* ── QUOTE ── */
   .section-quote { padding: 8rem 5rem; background: var(--black); text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
   .quote-text { font-family: var(--font-serif); font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 300; font-style: italic; color: var(--cream); line-height: 1.5; max-width: 800px; margin: 0 auto 2rem; }
@@ -269,10 +282,11 @@
     .hero { grid-template-columns: 1fr; min-height: auto; }
     .hero-left { padding: 5rem 1.5rem 3rem; }
     .hero-right { display: none; }
-    .hero-title { font-size: clamp(2.8rem, 11vw, 4rem); }
-    .hero-subtitle { font-size: 1rem; max-width: 100%; }
+    .hero-title { font-size: clamp(2.2rem, 9vw, 3rem); }
+    .hero-subtitle { font-size: 0.92rem; max-width: 100%; }
     .hero-cta { flex-direction: column; gap: 0.75rem; }
-    .btn-primary, .btn-secondary { width: 100%; text-align: center; }
+    .btn-primary { width: 100%; text-align: center; font-size: 0.78rem; padding: 0.85rem 1.5rem; letter-spacing: 0.06em; }
+    .btn-secondary { width: 100%; text-align: center; font-size: 0.78rem; justify-content: center; }
 
     /* Secciones — reducir padding */
     .section-problem,
@@ -297,9 +311,10 @@
     .demo-phone-wrap { flex-direction: column; align-items: center; }
     .demo-caption { max-width: 100%; padding-top: 0; }
 
-    /* VS table — scroll horizontal */
-    .vs-inner { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .vs-table { min-width: 520px; }
+    /* VS — ocultar tabla, mostrar versión mobile */
+    .vs-inner { overflow-x: unset; }
+    .vs-table { display: none; }
+    .vs-mobile { display: block; }
 
     /* Features — 2 columnas → 1 */
     .features-grid { grid-template-columns: 1fr; gap: 0; }
@@ -461,6 +476,46 @@
         <tr><td>Podés comprender antes de hablar</td><td><span class="vs-no">✗</span></td><td> Hablá con el gemelo del otro</td></tr>
       </tbody>
     </table>
+
+    <!-- Versión mobile — tarjetas por feature -->
+    <div class="vs-mobile reveal">
+      <div class="vs-mob-row">
+        <div class="vs-mob-feature">Primer filtro</div>
+        <div class="vs-mob-cols">
+          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Foto y apariencia física</span></div>
+          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Personalidad y valores</span></div>
+        </div>
+      </div>
+      <div class="vs-mob-row">
+        <div class="vs-mob-feature">Cómo empieza la conversación</div>
+        <div class="vs-mob-cols">
+          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Mensaje en frío sin contexto</span></div>
+          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Ya hay historia antes del primer hola</span></div>
+        </div>
+      </div>
+      <div class="vs-mob-row">
+        <div class="vs-mob-feature">Conocés la personalidad del otro</div>
+        <div class="vs-mob-cols">
+          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Después de hablar mucho</span></div>
+          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Antes de escribirle</span></div>
+        </div>
+      </div>
+      <div class="vs-mob-row">
+        <div class="vs-mob-feature">Optimiza</div>
+        <div class="vs-mob-cols">
+          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Cantidad de matches</span></div>
+          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Calidad del vínculo</span></div>
+        </div>
+      </div>
+      <div class="vs-mob-row">
+        <div class="vs-mob-feature">Podés comprender antes de hablar</div>
+        <div class="vs-mob-cols">
+          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text vs-no">✗</span></div>
+          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Hablá con el gemelo del otro</span></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 
