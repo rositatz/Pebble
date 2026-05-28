@@ -525,6 +525,16 @@ body {
 .plan-opt-item.yes svg { stroke: var(--orange); }
 .plan-opt-item.no { color: var(--text-muted); }
 .plan-opt-item.no svg { stroke: var(--text-muted); }
+/* Premium card — fondo negro como en planes.html */
+.plan-opt.dark {
+  background: var(--surf-dark);
+  border-color: var(--surf-dark);
+}
+.plan-opt.dark .plan-opt-name { color: rgba(255,255,255,0.45); }
+.plan-opt.dark .plan-opt-price { color: #fff; }
+.plan-opt.dark .plan-opt-price span { color: rgba(255,255,255,0.4); }
+.plan-opt.dark .plan-opt-item { color: rgba(255,255,255,0.75); }
+.plan-opt.dark .plan-opt-item.yes svg { stroke: var(--orange); }
 .plan-opt-tag {
   display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
   padding: 3px 9px; border-radius: 20px; align-self: flex-start;
@@ -1328,7 +1338,7 @@ body {
             </div>
           </div>
         </div>
-        <div class="plan-opt" onclick="window.location.href='./planes.html'" style="cursor:pointer">
+        <div class="plan-opt dark" onclick="window.location.href='./planes.html'" style="cursor:pointer">
           <span class="plan-opt-tag">Premium</span>
           <div class="plan-opt-name">Premium</div>
           <div class="plan-opt-price">$5<span> / mes</span></div>
