@@ -248,6 +248,12 @@
   .btn-submit { background: var(--orange); color: white; font-family: var(--font-body); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 1.1rem 2rem; border: none; cursor: pointer; width: 100%; margin-top: 0.5rem; transition: background 0.25s, transform 0.2s; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
   .btn-submit:hover { background: var(--orange-mid); transform: translateY(-2px); }
   .form-note { font-family: var(--font-body); font-size: 0.72rem; color: rgba(238,237,236,0.45); margin-top: 0.5rem; text-align: center; }
+  /* Ocultar spinner en inputs numéricos */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  .form-duplicate { display: none; background: rgba(255,117,31,0.1); border: 1px solid rgba(255,117,31,0.35); padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
+  .form-duplicate p { font-family: var(--font-body); font-size: 0.82rem; color: var(--orange); margin: 0; line-height: 1.4; }
   .form-success { display: none; text-align: center; padding: 2rem 0; }
   .form-success-icon { width: 64px; height: 64px; margin: 0 auto 1.25rem; }
   .form-success-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: var(--cream); margin-bottom: 0.75rem; }
@@ -257,7 +263,7 @@
   footer { background: var(--black); border-top: 1px solid rgba(238,237,236,0.08); padding: 2.5rem 5rem; display: flex; align-items: center; justify-content: space-between; }
   .footer-logo { font-family: var(--font-display); font-size: 1rem; font-weight: 800; text-decoration: none; }
   .footer-logo .bb { color: var(--orange); } .footer-logo .rest { color: var(--cream); }
-  .footer-tagline { font-family: var(--font-serif); font-size: 0.8rem; font-style: italic; color: rgba(238,237,236,0.3); }
+  .footer-tagline { font-family: var(--font-serif); font-size: 1rem; font-style: italic; color: #fff; }
 
   /* ── ANIMATIONS ── */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
@@ -660,6 +666,9 @@
         <input type="hidden" name="_subject" value="Nueva inscripción beta Pebble"/>
         <input type="hidden" name="_next" value=""/>
 
+        <div class="form-duplicate" id="formDuplicate">
+          <p>⚠ Este email ya está en la lista. Te avisamos cuando sea tu turno.</p>
+        </div>
         <button type="submit" class="btn-submit">Quiero estar en la beta →</button>
         <p class="form-note">No spam. Solo te avisamos cuando estés listo para entrar.</p>
       </form>
@@ -705,11 +714,40 @@
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal, .manifesto-line').forEach(el => observer.observe(el));
 
-  // Formspree AJAX submit
+  // Formspree AJAX submit + detección de duplicados
   const form = document.getElementById('betaForm');
+  const BETA_KEY = 'pebble_beta_emails';
+
+  function getRegisteredEmails() {
+    try { return JSON.parse(localStorage.getItem(BETA_KEY) || '[]'); } catch { return []; }
+  }
+  function saveEmail(email) {
+    const list = getRegisteredEmails();
+    const normalized = email.toLowerCase().trim();
+    if (!list.includes(normalized)) {
+      list.push(normalized);
+      localStorage.setItem(BETA_KEY, JSON.stringify(list));
+    }
+  }
+
+  // Ocultar aviso al modificar el email
+  document.getElementById('f-email').addEventListener('input', () => {
+    document.getElementById('formDuplicate').style.display = 'none';
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = form.querySelector('.btn-submit');
+    const email = document.getElementById('f-email').value.toLowerCase().trim();
+    const dupMsg = document.getElementById('formDuplicate');
+
+    // Verificar duplicado
+    if (getRegisteredEmails().includes(email)) {
+      dupMsg.style.display = 'block';
+      return;
+    }
+    dupMsg.style.display = 'none';
+
     btn.textContent = 'Enviando...';
     btn.disabled = true;
     try {
@@ -719,6 +757,7 @@
         headers: { 'Accept': 'application/json' }
       });
       if (res.ok) {
+        saveEmail(email);
         form.style.display = 'none';
         document.getElementById('formSuccess').style.display = 'block';
       } else {
