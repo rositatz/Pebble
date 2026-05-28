@@ -1111,11 +1111,16 @@ window.doLoginFacebook = async function() {
     const isNew  = result._tokenResponse?.isNewUser;
     if (isNew) window.location.href = './planes.html';
   } catch (err) {
+    console.error('Facebook login error:', err.code, err.message);
     if (err.code === 'auth/popup-closed-by-user') return;
-    if (err.code === 'auth/operation-not-allowed') {
-      showAuthError('Facebook no está habilitado aún. Usá email o Google.');
+    if (err.code === 'auth/popup-blocked') {
+      showAuthError('El popup fue bloqueado. Permití los popups en tu browser e intentá de nuevo.');
+    } else if (err.code === 'auth/operation-not-allowed') {
+      showAuthError('Facebook no está habilitado en Firebase. Verificá la configuración.');
+    } else if (err.code === 'auth/invalid-api-key') {
+      showAuthError('Error de configuración de Firebase.');
     } else {
-      showAuthError('No se pudo iniciar con Facebook. Intentá de nuevo.');
+      showAuthError('Error: ' + (err.code || err.message));
     }
   }
 };
