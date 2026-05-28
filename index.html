@@ -232,6 +232,11 @@
   .section-beta { padding: 8rem 5rem; background: var(--black); color: var(--cream); position: relative; overflow: hidden; }
   .section-beta::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(255,117,31,0.08) 0%, transparent 70%); pointer-events: none; }
   .beta-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: flex-end; position: relative; z-index: 1; }
+  /* Estado éxito — centrado */
+  .beta-inner.success-mode { display: flex; align-items: center; justify-content: center; gap: 5rem; }
+  .beta-inner.success-mode .beta-content { text-align: center; }
+  .beta-inner.success-mode .beta-image { display: flex !important; padding-left: 0; margin-right: 0; justify-content: center; }
+  .beta-inner.success-mode .beta-image img { width: 340px; max-width: 100%; }
   .beta-content { text-align: left; }
   .beta-image { display: flex; align-items: flex-end; justify-content: flex-end; padding-left: 12rem; margin-right: -5rem; }
   .beta-image img { width: 240%; max-width: none; opacity: 0.88; }
@@ -261,9 +266,9 @@
 
   /* ── FOOTER ── */
   footer { background: var(--black); border-top: 1px solid rgba(238,237,236,0.08); padding: 2.5rem 5rem; display: flex; align-items: center; justify-content: space-between; }
-  .footer-logo { font-family: var(--font-display); font-size: 1rem; font-weight: 800; text-decoration: none; }
+  .footer-logo { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; text-decoration: none; }
   .footer-logo .bb { color: var(--orange); } .footer-logo .rest { color: var(--cream); }
-  .footer-tagline { font-family: var(--font-serif); font-size: 1rem; font-style: italic; color: #fff; }
+  .footer-tagline { font-family: var(--font-serif); font-size: 1rem; font-style: italic; color: rgba(238,237,236,0.3); }
 
   /* ── ANIMATIONS ── */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
@@ -713,43 +718,56 @@
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal, .manifesto-line').forEach(el => observer.observe(el));
+</script>
 
-  // Formspree AJAX submit + detección de duplicados
-  const form = document.getElementById('betaForm');
-  const BETA_KEY = 'pebble_beta_emails';
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  function getRegisteredEmails() {
-    try { return JSON.parse(localStorage.getItem(BETA_KEY) || '[]'); } catch { return []; }
-  }
-  function saveEmail(email) {
-    const list = getRegisteredEmails();
-    const normalized = email.toLowerCase().trim();
-    if (!list.includes(normalized)) {
-      list.push(normalized);
-      localStorage.setItem(BETA_KEY, JSON.stringify(list));
-    }
-  }
+  const db = getFirestore(initializeApp({
+    apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+    authDomain: "pebble-78e95.firebaseapp.com",
+    projectId: "pebble-78e95",
+    storageBucket: "pebble-78e95.firebasestorage.app",
+    messagingSenderId: "56434257024",
+    appId: "1:56434257024:web:3e2625f73bad3d4c004a65"
+  }));
 
-  // Ocultar aviso al modificar el email
+  const form    = document.getElementById('betaForm');
+  const dupMsg  = document.getElementById('formDuplicate');
+
+  // Ocultar aviso al editar email
   document.getElementById('f-email').addEventListener('input', () => {
-    document.getElementById('formDuplicate').style.display = 'none';
+    dupMsg.style.display = 'none';
   });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = form.querySelector('.btn-submit');
-    const email = document.getElementById('f-email').value.toLowerCase().trim();
-    const dupMsg = document.getElementById('formDuplicate');
+    const btn    = form.querySelector('.btn-submit');
+    const email  = document.getElementById('f-email').value.toLowerCase().trim();
+    // Firestore no acepta '/' en IDs — encodeURIComponent lo evita
+    const emailId = encodeURIComponent(email);
 
-    // Verificar duplicado
-    if (getRegisteredEmails().includes(email)) {
-      dupMsg.style.display = 'block';
-      return;
-    }
-    dupMsg.style.display = 'none';
-
-    btn.textContent = 'Enviando...';
+    btn.textContent = 'Verificando...';
     btn.disabled = true;
+
+    // — Chequeo duplicado en Firestore —
+    try {
+      const snap = await getDoc(doc(db, 'beta_waitlist', emailId));
+      if (snap.exists()) {
+        dupMsg.style.display = 'block';
+        btn.textContent = 'Quiero estar en la beta →';
+        btn.disabled = false;
+        return;
+      }
+    } catch (err) {
+      console.warn('Firestore check falló, continuando:', err);
+    }
+
+    dupMsg.style.display = 'none';
+    btn.textContent = 'Enviando...';
+
+    // — Envío a Formspree —
     try {
       const res = await fetch(form.action, {
         method: 'POST',
@@ -757,9 +775,19 @@
         headers: { 'Accept': 'application/json' }
       });
       if (res.ok) {
-        saveEmail(email);
-        form.style.display = 'none';
-        document.getElementById('formSuccess').style.display = 'block';
+        // Guardar email en Firestore para futuras verificaciones
+        try {
+          await setDoc(doc(db, 'beta_waitlist', emailId), {
+            email,
+            nombre:   document.getElementById('f-name').value.trim(),
+            apellido: document.getElementById('f-last').value.trim(),
+            edad:     document.getElementById('f-age').value,
+            fecha:    new Date().toISOString()
+          });
+        } catch (err) {
+          console.warn('No se pudo guardar en Firestore:', err);
+        }
+        mostrarExito();
       } else {
         btn.textContent = 'Error — intentá de nuevo';
         btn.disabled = false;
@@ -769,6 +797,14 @@
       btn.disabled = false;
     }
   });
+
+  function mostrarExito() {
+    form.style.display = 'none';
+    document.querySelector('.beta-title').style.display   = 'none';
+    document.querySelector('.beta-subtitle').style.display = 'none';
+    document.getElementById('formSuccess').style.display  = 'block';
+    document.querySelector('.beta-inner').classList.add('success-mode');
+  }
 </script>
 </body>
 </html>
