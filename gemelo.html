@@ -780,34 +780,40 @@ html, body {
 </nav>
 
 <script>
-const messagesEl = document.getElementById('messages');
-const chatWrap   = document.getElementById('chatWrap');
-const inputEl    = document.getElementById('chatInput');
-const plusMenu   = document.getElementById('plusMenu');
+// Referencias a los elementos principales del DOM
+const messagesEl = document.getElementById('messages'); // contenedor donde se agregan los mensajes
+const chatWrap   = document.getElementById('chatWrap'); // área scrolleable del chat
+const inputEl    = document.getElementById('chatInput'); // campo de texto donde el usuario escribe
+const plusMenu   = document.getElementById('plusMenu'); // menú desplegable del botón +
 
-/* ── Scroll to bottom ── */
+// Hace scroll hasta el último mensaje del chat
+// Si smooth=true lo hace con animación, si es false va directo (útil al cargar la página)
 function scrollBottom(smooth = true) {
   chatWrap.scrollTo({ top: chatWrap.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
 }
-scrollBottom(false);
+scrollBottom(false); // al cargar, posicionarse al final sin animación
 
-/* ── Auto-resize textarea ── */
+// Ajusta la altura del textarea automáticamente según el contenido
+// crece al escribir y tiene un máximo de 100px
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 100) + 'px';
 }
 
-/* ── Key handler ── */
+// Detecta cuando el usuario presiona Enter para enviar el mensaje
+// Shift+Enter hace salto de línea en vez de enviar
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
-/* ── Now string ── */
+// Devuelve la hora actual en formato HH:MM (horario Argentina)
+// Se usa para mostrar el timestamp en cada mensaje
 function nowTime() {
   return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
-/* ── Add messages to DOM ── */
+// Agrega un mensaje del usuario al chat (burbuja alineada a la derecha)
+// Escapa el HTML del texto para evitar inyección de código
 function addUserMsg(text) {
   const t = nowTime();
   const div = document.createElement('div');
@@ -817,6 +823,8 @@ function addUserMsg(text) {
   scrollBottom();
 }
 
+// Agrega un mensaje del gemelo al chat (burbuja alineada a la izquierda con ícono)
+// Retorna el elemento creado por si se necesita modificar después
 function addTwinMsg(text) {
   const t = nowTime();
   const div = document.createElement('div');
@@ -830,6 +838,7 @@ function addTwinMsg(text) {
   return div;
 }
 
+// Muestra el indicador de "escribiendo..." (tres puntos animados) mientras el gemelo procesa la respuesta
 function addTyping() {
   const div = document.createElement('div');
   div.className = 'msg twin'; div.id = 'typing';
@@ -840,11 +849,14 @@ function addTyping() {
   scrollBottom();
 }
 
+// Elimina el indicador de "escribiendo..." una vez que el gemelo ya tiene su respuesta lista
 function removeTyping() {
   const el = document.getElementById('typing');
   if (el) el.remove();
 }
 
+// Agrega una tarjeta de recomendaciones en el chat
+// Muestra un título, contexto y una lista de tips personalizados sobre cómo hablarle a alguien
 function addRecomCard(title, context, tips) {
   const t = nowTime();
   const tipsHtml = tips.map(tp => `<div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text">${tp}</div></div>`).join('');
@@ -866,6 +878,9 @@ function addRecomCard(title, context, tips) {
   scrollBottom();
 }
 
+// Agrega una tarjeta de feedback con botones clicables
+// El usuario puede elegir una opción para ajustar el comportamiento del gemelo
+// Cada tarjeta tiene un ID único basado en el timestamp para poder referenciarlo después
 function addFeedbackCard(question, options) {
   const id = 'fb_' + Date.now();
   const t = nowTime();
@@ -885,11 +900,14 @@ function addFeedbackCard(question, options) {
   scrollBottom();
 }
 
+// Agrega una tarjeta de progreso de afinidad con un match
+// Muestra el nombre, avatar con iniciales, porcentaje de afinidad y un mensaje de desbloqueo si corresponde
 function addProgressCard(name, initials, color, event, pct, unlockText) {
   const t = nowTime();
   const div = document.createElement('div');
   div.className = 'msg twin';
   const fill = `<div class="progress-bar-fill" style="width:${pct}%"></div>`;
+  // Si hay texto de desbloqueo, muestra una sección extra con ícono de candado
   const unlock = unlockText ? `<div class="progress-unlock"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>${unlockText}</div>` : '';
   div.innerHTML = `
     <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
@@ -915,30 +933,37 @@ function addProgressCard(name, initials, color, event, pct, unlockText) {
   scrollBottom();
 }
 
+// Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
+// Convierte &, < y > en sus entidades HTML seguras
 function escHtml(t) {
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ── Send message ── */
+// Toma el texto del input, lo muestra como mensaje del usuario y dispara la respuesta del gemelo
+// Espera 300ms, muestra el indicador de escritura, y después de 1.2-1.8s muestra la respuesta
 function sendMessage() {
   const text = inputEl.value.trim();
-  if (!text) return;
+  if (!text) return; // no hace nada si el input está vacío
   inputEl.value = ''; autoResize(inputEl);
   addUserMsg(text);
   closePlusMenu();
   setTimeout(() => { addTyping(); setTimeout(() => { removeTyping(); twinRespond(text); }, 1200 + Math.random()*600); }, 300);
 }
 
+// Envía un mensaje desde los chips de respuesta rápida
+// Pone el texto en el input y llama a sendMessage() directamente
 function sendQuick(text) {
   inputEl.value = text;
   sendMessage();
   updateQuickReplies(text);
 }
 
-/* ── Twin responses ── */
+// Analiza el mensaje del usuario con palabras clave y elige la respuesta apropiada del gemelo
+// Cubre escenarios para Sofía, Valentina, Lucas, resumen de matches, feedback y respuestas genéricas
 function twinRespond(text) {
   const t = text.toLowerCase();
 
+  // Consejo sobre Sofía
   if (t.includes('sofía') && (t.includes('hablo') || t.includes('hablar') || t.includes('consejo'))) {
     addTwinMsg('Con Sofía la clave es la naturalidad. Le aburre el protocolo de las apps. Acá van mis recomendaciones basadas en lo que hablamos:');
     setTimeout(() => {
@@ -950,6 +975,7 @@ function twinRespond(text) {
     }, 400);
     setQuickReplies(['¿Cómo van mis matches?', 'Consejo para Valentina', 'Iniciá escenario con Sofía', 'Dame un consejo general']);
 
+  // Iniciar escenario con Valentina
   } else if (t.includes('valentina') && (t.includes('escenario') || t.includes('inicia') || t.includes('iniciá'))) {
     addTwinMsg('Dale. Voy a iniciar un escenario de "conversación de fondo" con Valentina, que es donde mejor nos fue. Te aviso cuando tengamos resultado.');
     setTimeout(() => {
@@ -958,6 +984,7 @@ function twinRespond(text) {
     setTimeout(() => { addTwinMsg('Escenario iniciado. Suele tardar entre 20 y 40 minutos dependiendo de la profundidad. Te notifico cuando terminemos.'); }, 1000);
     setQuickReplies(['¿Cómo van mis otros matches?', 'Consejo para Sofía', '¿Quién tiene más potencial?']);
 
+  // Resumen del estado de todos los matches
   } else if (t.includes('matches') && (t.includes('van') || t.includes('resumen') || t.includes('cómo'))) {
     addTwinMsg('Este es el estado actual de mis conversaciones:');
     setTimeout(() => {
@@ -974,10 +1001,12 @@ function twinRespond(text) {
       setQuickReplies(['Consejo para Sofía', 'Consejo para Valentina', 'Escenario con Lucas', '¿Quién tiene más potencial?']);
     }, 1600);
 
+  // Pregunta sobre quién tiene más potencial
   } else if (t.includes('potencial') || t.includes('mejor')) {
     addTwinMsg('Ahora mismo Sofía tiene el mayor potencial: 87% de afinidad, conversación muy natural y ya desbloqueaste el chat. Si querés apostar a una sola persona esta semana, es ella. Valentina tiene recorrido pero todavía necesitamos más escenarios para confirmarlo.');
     setQuickReplies(['Consejo para Sofía', '¿Cómo hablo con Sofía?', 'Escenario con Valentina', '¿Cómo van mis matches?']);
 
+  // Solicitud de feedback o ajuste de comportamiento del gemelo
   } else if (t.includes('feedback') || t.includes('ajusta') || t.includes('cambiar') || t.includes('mejorar')) {
     addTwinMsg('Perfecto, contame qué querés que cambie. O si preferís podés elegir una de estas opciones:');
     setTimeout(() => {
@@ -986,14 +1015,17 @@ function twinRespond(text) {
       ]);
     }, 400);
 
+  // Consejo o escenario con Lucas
   } else if (t.includes('lucas') && (t.includes('escenario') || t.includes('hablo') || t.includes('consejo'))) {
     addTwinMsg('Con Lucas todavía tengo poco contexto (un solo escenario), pero puedo decirte que le gusta ir despacio y que la conversación sea recíproca. No le tires todo junto, dejá espacio para que él también cuente.');
     setQuickReplies(['Iniciá otro escenario con Lucas', 'Ver mis matches', 'Consejo para Sofía']);
 
+  // Solicitud de escenario sin especificar con quién
   } else if (t.includes('escenario') && !t.includes('valentina') && !t.includes('lucas')) {
     addTwinMsg('¿Con quién querés que inicie un escenario? Ahora mismo tengo conversaciones abiertas con Sofía (87%), Valentina (76%) y Lucas (54%).');
     setQuickReplies(['Escenario con Sofía', 'Escenario con Valentina', 'Escenario con Lucas']);
 
+  // Respuestas de confirmación o agradecimiento — elige una al azar
   } else if (t.includes('gracias') || t.includes('perfecto') || t.includes('genial') || t.includes('dale') || t.includes('bueno')) {
     const ack = [
       'Para eso estoy. Cualquier cosa que quieras ajustar o preguntar, acá estoy.',
@@ -1002,6 +1034,7 @@ function twinRespond(text) {
     ];
     addTwinMsg(ack[Math.floor(Math.random() * ack.length)]);
 
+  // Respuesta genérica para mensajes que no coinciden con ningún patrón conocido
   } else {
     const generic = [
       'Entendido. ¿Querés que profundice en algún match en particular o que te dé un resumen general?',
@@ -1013,12 +1046,15 @@ function twinRespond(text) {
   }
 }
 
-/* ── Quick replies ── */
+// Reemplaza los chips de respuesta rápida con una nueva lista de opciones
+// Se llama cada vez que el gemelo responde para mostrar sugerencias relevantes
 function setQuickReplies(opts) {
   const qr = document.getElementById('quickReplies');
   qr.innerHTML = opts.map(o => `<button class="qr-chip" onclick="sendQuick('${o}')">${o}</button>`).join('');
 }
 
+// Actualiza los chips de respuesta rápida según el último mensaje enviado por el usuario
+// Mantiene las sugerencias siempre relevantes al contexto de la conversación
 function updateQuickReplies(sent) {
   const s = sent.toLowerCase();
   if (s.includes('matches'))         setQuickReplies(['Consejo para Sofía', 'Consejo para Valentina', '¿Quién tiene más potencial?', 'Iniciá un escenario']);
@@ -1028,12 +1064,13 @@ function updateQuickReplies(sent) {
   else                               setQuickReplies(['¿Cómo van mis matches?', 'Consejo para Sofía', 'Dame un consejo', 'Quiero darte feedback']);
 }
 
-/* ── Feedback ── */
+// Procesa la elección del usuario en una tarjeta de feedback
+// Marca el botón elegido visualmente y el gemelo confirma que incorporó el ajuste
 function chooseFeedback(btn, cardId) {
   const card = document.getElementById(cardId);
   if (!card) return;
-  card.querySelectorAll('.feedback-opt').forEach(b => b.classList.remove('chosen'));
-  btn.classList.add('chosen');
+  card.querySelectorAll('.feedback-opt').forEach(b => b.classList.remove('chosen')); // deselecciona todos
+  btn.classList.add('chosen'); // marca el elegido
   const choice = btn.textContent;
   setTimeout(() => {
     addTyping();
@@ -1045,11 +1082,13 @@ function chooseFeedback(btn, cardId) {
   }, 300);
 }
 
-/* ── Match actions ── */
+// Navega a la pantalla de matches
 function goToMatches() {
   window.location.href = './matches.html';
 }
 
+// Le dice al gemelo que continúe interactuando con el match especificado
+// Muestra typing y confirma que seguirá trabajando en esa conexión
 function twinKeepGoing(name) {
   addTyping();
   setTimeout(() => {
@@ -1059,11 +1098,15 @@ function twinKeepGoing(name) {
   }, 1100);
 }
 
-/* ── Plus menu ── */
+// Abre o cierra el menú del botón + (opciones adicionales del chat)
 function togglePlusMenu() {
   plusMenu.classList.toggle('hidden');
 }
+
+// Cierra el menú del botón +
 function closePlusMenu() { plusMenu.classList.add('hidden'); }
+
+// Cierra el menú + si el usuario hace click en cualquier lugar fuera de él
 document.addEventListener('click', e => {
   if (!plusMenu.contains(e.target) && e.target.id !== 'plusBtn') closePlusMenu();
 });

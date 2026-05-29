@@ -1671,6 +1671,9 @@ const MAX_PHOTOS = 6;
 // In-memory store for this session — REEMPLAZAR con URLs del backend
 let photos = new Array(MAX_PHOTOS).fill(null);
 
+// Redibuja completamente la grilla de fotos del perfil
+// Muestra cada slot con la foto cargada (con botones de cambiar, hacer principal y eliminar)
+// o vacío con opción de agregar. También actualiza el avatar hero con la foto principal
 function renderPhotoGrid() {
   const grid = document.getElementById('photoGrid');
   grid.innerHTML = '';
@@ -1730,6 +1733,8 @@ function renderPhotoGrid() {
   }
 }
 
+// Abre el selector de archivo para cambiar la foto del slot indicado
+// Cuando el usuario elige una imagen, la convierte a URL temporal y la guarda en el array
 function changePhoto(index) {
   const input = document.getElementById(`photoInput${index}`);
   input.onchange = (e) => {
@@ -1744,6 +1749,8 @@ function changePhoto(index) {
   input.click();
 }
 
+// Elimina la foto del índice dado y compacta el array hacia abajo
+// (no deja huecos: las fotos restantes se desplazan al principio del array)
 function removePhoto(index) {
   photos[index] = null;
   // compact: shift remaining photos down
@@ -1752,6 +1759,7 @@ function removePhoto(index) {
   showToast('Foto eliminada');
 }
 
+// Intercambia la foto del índice dado con la foto principal (índice 0)
 function setMainPhoto(index) {
   const tmp = photos[0];
   photos[0] = photos[index];
@@ -1774,6 +1782,8 @@ document.getElementById('mainPhotoInput').addEventListener('change', (e) => {
 /* ══════════════════════════════
    EDIT TOGGLES
 ══════════════════════════════ */
+// Alterna entre modo vista y modo edición para una sección del perfil (info, bio, etc.)
+// Si ya está editando, cancela. Si no, muestra el formulario de edición
 function toggleEdit(section) {
   const view = document.getElementById(section + 'View');
   const edit = document.getElementById(section + 'Edit');
@@ -1789,6 +1799,7 @@ function toggleEdit(section) {
   }
 }
 
+// Cancela la edición de una sección y vuelve al modo vista sin guardar cambios
 function cancelEdit(section) {
   const view = document.getElementById(section + 'View');
   const edit = document.getElementById(section + 'Edit');
@@ -1802,6 +1813,8 @@ function cancelEdit(section) {
 /* ══════════════════════════════
    SAVE INFO
 ══════════════════════════════ */
+// Guarda los datos de información personal del perfil (nombre, edad, ciudad, género, etc.)
+// Calcula la edad a partir de la fecha de nacimiento, actualiza la vista y guarda en Firestore
 function saveInfo() {
   const nombre   = document.getElementById('eNombre').value.trim();
   const fechaNac = document.getElementById('eFechaNac').value;
@@ -1848,6 +1861,7 @@ function saveInfo() {
 /* ══════════════════════════════
    SAVE BIO
 ══════════════════════════════ */
+// Guarda la bio del usuario, actualiza la vista y persiste en Firestore
 function saveBio() {
   const text = document.getElementById('eBio').value.trim();
   const vBio = document.getElementById('vBio');
@@ -1860,6 +1874,7 @@ function saveBio() {
   showToast('Bio actualizada');
 }
 
+// Actualiza en tiempo real el contador de caracteres del textarea indicado
 function updateCharCount(textarea, counterId) {
   document.getElementById(counterId).textContent = textarea.value.length;
 }
@@ -1871,6 +1886,8 @@ document.getElementById('eBio').dispatchEvent(new Event('input'));
 ══════════════════════════════ */
 const MAX_INTERESTS = 10;
 
+// Selecciona o deselecciona un chip de interés
+// Limita a un máximo de 10 intereses seleccionados y guarda en Firestore al cambiar
 function toggleInterest(el) {
   if (el.classList.contains('add-chip')) return;
   const isSelected = el.classList.contains('selected');
@@ -1887,18 +1904,22 @@ function toggleInterest(el) {
   }
 }
 
+// Muestra el campo de texto para agregar un interés personalizado
 function openCustomInput() {
   document.getElementById('customInputWrap').style.display = 'flex';
   document.getElementById('addChipBtn').style.display = 'none';
   document.getElementById('customInterestInput').focus();
 }
 
+// Oculta el campo de interés personalizado y limpia el input
 function closeCustomInput() {
   document.getElementById('customInputWrap').style.display = 'none';
   document.getElementById('addChipBtn').style.display = '';
   document.getElementById('customInterestInput').value = '';
 }
 
+// Crea un nuevo chip de interés personalizado y lo agrega a la lista ya seleccionado
+// Respeta el límite de 10 intereses y guarda en Firestore
 function addCustomInterest() {
   const input = document.getElementById('customInterestInput');
   const val   = input.value.trim();
@@ -1928,6 +1949,8 @@ const privacyFieldMap = {
   Ciudad: 'lockCiudad',
 };
 
+// Actualiza el badge de privacidad (visible / al conectar) para un campo del perfil
+// Se llama al cambiar los toggles de privacidad de cada campo
 function updatePrivacyBadge(field, isVisible) {
   const lockId = privacyFieldMap[field];
   if (!lockId) return;
@@ -1941,6 +1964,8 @@ function updatePrivacyBadge(field, isVisible) {
 /* ══════════════════════════════
    TOAST
 ══════════════════════════════ */
+// Muestra una notificación temporal en pantalla con el mensaje dado
+// Se oculta automáticamente después de 2.4 segundos
 let toastTimer;
 function showToast(msg) {
   const el = document.getElementById('toast');
@@ -1953,14 +1978,17 @@ function showToast(msg) {
 /* ══════════════════════════════
    ACCOUNT SHEETS
 ══════════════════════════════ */
+// Abre un sheet (panel deslizable) por su ID — bloquea el scroll del body mientras está abierto
 function openSheet(id) {
   document.getElementById(id + 'Overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
+// Cierra el sheet y restaura el scroll del body
 function closeSheet(id) {
   document.getElementById(id + 'Overlay').classList.remove('open');
   document.body.style.overflow = '';
 }
+// Cierra todos los sheets abiertos al presionar Escape
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.sheet-overlay.open').forEach(el => el.classList.remove('open'));
@@ -1968,7 +1996,9 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* Contraseña */
+// Valida y ejecuta el cambio de contraseña del usuario
+// Verifica que los campos estén completos, que las contraseñas nuevas coincidan
+// y que la contraseña tenga al menos 6 caracteres antes de llamar a Firebase
 async function cambiarPassword() {
   const actual   = document.getElementById('passActual').value;
   const nueva    = document.getElementById('passNueva').value;
@@ -2009,6 +2039,8 @@ async function cambiarPassword() {
   }
 }
 
+// Alterna la visibilidad del campo de contraseña (texto plano / puntos)
+// Cambia el ícono del botón según el estado
 function togglePassVis(inputId, btn) {
   const inp = document.getElementById(inputId);
   const show = inp.type === 'password';
@@ -2018,6 +2050,8 @@ function togglePassVis(inputId, btn) {
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 }
 
+// Actualiza la barra visual de fortaleza de contraseña según el texto ingresado
+// Evalúa longitud, mayúsculas, números y caracteres especiales para asignar un nivel (0 a 5)
 function updatePassStrength(val) {
   const fill = document.getElementById('passStrengthFill');
   if (!fill) return;
@@ -2032,7 +2066,8 @@ function updatePassStrength(val) {
   fill.style.width = w; fill.style.background = c;
 }
 
-/* Notificaciones */
+// Guarda las preferencias de notificaciones del usuario (matches, mensajes, gemelo, novedades)
+// Lee el estado de cada toggle y los persiste en Firestore
 function saveNotificaciones() {
   const data = {
     matches:   document.getElementById('notifMatches').checked,
@@ -2045,7 +2080,8 @@ function saveNotificaciones() {
   showToast('Preferencias guardadas ✓');
 }
 
-/* Privacidad avanzada */
+// Guarda la configuración de privacidad avanzada (invisible, solo compatibles, cuenta pausada)
+// Lee los toggles del sheet de privacidad y los persiste en Firestore
 function savePrivacidadAvanzada() {
   const data = {
     invisible:     document.getElementById('privInvisible').checked,
@@ -2057,7 +2093,8 @@ function savePrivacidadAvanzada() {
   showToast('Configuración guardada ✓');
 }
 
-/* FAQ */
+// Abre o cierra una pregunta del FAQ (acordeón)
+// Cierra las demás preguntas abiertas antes de abrir la nueva
 function toggleFaq(btn) {
   const item = btn.closest('.faq-item');
   const open = item.classList.contains('faq-open');
@@ -2068,6 +2105,8 @@ function toggleFaq(btn) {
 /* ══════════════════════════════
    LOGOUT
 ══════════════════════════════ */
+// Pide confirmación al usuario antes de cerrar sesión
+// Llama a doLogout() (función expuesta por el módulo Firebase) si confirma
 function handleLogout() {
   if (confirm('¿Querés cerrar sesión?')) {
     if (typeof doLogout === 'function') {

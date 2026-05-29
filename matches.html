@@ -849,15 +849,18 @@ body {
 </nav>
 
 <script>
-// ── Color dinámico por puntaje: mayor % = naranja más intenso ──
+// Devuelve un color dinámico según el porcentaje de afinidad
+// A mayor porcentaje, el color se vuelve naranja más intenso
+// 55% → dorado claro  |  100% → naranja profundo
 function scoreColor(pct) {
-  // 55% → hsl(40,100%,68%) dorado claro  |  100% → hsl(20,100%,48%) naranja profundo
   const t = Math.max(0, Math.min(1, (pct - 55) / 45));
   const h = Math.round(40 - 20 * t);
   const l = Math.round(68 - 20 * t);
   return `hsl(${h}, 100%, ${l}%)`;
 }
 
+// Inicializa los colores de todos los anillos de afinidad y las mini barras de razones
+// Se ejecuta al cargar la página para aplicar los colores dinámicos a cada match card
 function initScoreRings() {
   // Anillo principal de afinidad
   document.querySelectorAll('.score-ring').forEach(ring => {
@@ -884,7 +887,7 @@ function initScoreRings() {
 }
 initScoreRings();
 
-// ── REEMPLAZAR goTo() por window.location.href cuando estén listas las páginas ──
+// Navega a otra pantalla de la app según el nombre de la página
 function goTo(page) {
   const map = { chats:'./chats.html', gemelo:'./gemelo.html', matches:'./matches.html' };
   const url = map[page];
@@ -1009,6 +1012,9 @@ const profiles = {
   },
 };
 
+// Abre el modal con el perfil completo del match seleccionado
+// Construye dinámicamente el header, bio, barras de compatibilidad, intereses,
+// fragmento de conversación entre gemelos y fotos
 function openProfile(id) {
   const p = profiles[id];
   if (!p) return;
@@ -1099,19 +1105,21 @@ function openProfile(id) {
   });
 }
 
+// Cierra el modal del perfil y restaura el scroll del body
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
   document.body.style.overflow = '';
 }
 
+// Cierra el modal si el usuario hace click en el overlay oscuro (fuera del contenido)
 function closeIfOverlay(e) {
   if (e.target === document.getElementById('modal')) closeModal();
 }
 
-// Keyboard close
+// Cierra el modal al presionar la tecla Escape
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// Abrir perfil si viene desde home con ?persona=ID
+// Si la página fue abierta con ?persona=ID (desde home), abre ese perfil automáticamente
 (function() {
   const param = new URLSearchParams(location.search).get('persona');
   if (param && profiles[param]) {
@@ -1119,7 +1127,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   }
 })();
 
-// Sort
+// Ordena las match cards según el criterio elegido: afinidad, nuevos o activos
+// Remueve y reinserta las cards con una animación de fade para suavizar el reordenamiento
 function sortMatches(mode, btn) {
   document.querySelectorAll('.sort-chip').forEach(c => {
     c.classList.remove('active'); c.setAttribute('aria-selected','false');

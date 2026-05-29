@@ -540,6 +540,7 @@ body {
 
 <script>
 // ── REEMPLAZAR goTo() por window.location.href cuando estén listas las páginas ──
+// Navega a otra pantalla de la app según el nombre de la página
 function goTo(page) {
   const map = {
     matches: './matches.html',
@@ -551,6 +552,8 @@ function goTo(page) {
   if (url) window.location.href = url;
 }
 
+// Marca una notificación individual como leída
+// Quita la clase 'unread', elimina el punto indicador y normaliza el peso del texto
 function markRead(el) {
   el.classList.remove('unread');
   const dot = el.querySelector('.unread-dot');
@@ -559,12 +562,15 @@ function markRead(el) {
   if (title) title.style.fontWeight = '600';
 }
 
+// Marca todas las notificaciones no leídas como leídas de una vez
 function markAllRead() {
   document.querySelectorAll('.notif-card.unread').forEach(markRead);
 }
 
+// Filtra las notificaciones por tipo (todas, matches, mensajes, sistema, etc.)
+// Oculta los grupos del día que quedan vacíos después del filtrado
 function filterNotifs(type, btn) {
-  // Update active chip
+  // Actualizar chip activo
   document.querySelectorAll('.filter-chip').forEach(c => {
     c.classList.remove('active');
     c.setAttribute('aria-selected', 'false');
