@@ -575,7 +575,7 @@ body {
   <!-- ── Datos de ejemplo. Reemplazar con datos reales del backend ── -->
 
   <!-- 1. Sofía 92% -->
-  <div class="match-card fu" data-score="92" data-new="true" data-active="true">
+  <div class="match-card fu" data-id="sofia" data-score="92" data-new="true" data-active="true">
     <div class="card-top" onclick="openProfile('sofia')" role="button" tabindex="0" aria-label="Ver perfil de Sofía">
       <div class="card-av card-av-new" style="background-image:url(./sofia.png);background-size:cover;background-position:center" aria-hidden="true"></div>
       <div class="card-info">
@@ -629,7 +629,7 @@ body {
   </div>
 
   <!-- 2. Mateo 87% -->
-  <div class="match-card fu" data-score="87" data-new="false" data-active="true">
+  <div class="match-card fu" data-id="mateo" data-score="87" data-new="false" data-active="true">
     <div class="card-top" onclick="openProfile('mateo')" role="button" tabindex="0" aria-label="Ver perfil de Mateo">
       <div class="card-av" style="background-image:url(./mateo.png);background-size:cover;background-position:center" aria-hidden="true"></div>
       <div class="card-info">
@@ -677,7 +677,7 @@ body {
   </div>
 
   <!-- 3. Valentina 81% -->
-  <div class="match-card fu" data-score="81" data-new="true" data-active="false">
+  <div class="match-card fu" data-id="valentina" data-score="81" data-new="true" data-active="false">
     <div class="card-top" onclick="openProfile('valentina')" role="button" tabindex="0" aria-label="Ver perfil de Valentina">
       <div class="card-av card-av-new" style="background-image:url(./valentina.png);background-size:cover;background-position:center" aria-hidden="true"></div>
       <div class="card-info">
@@ -725,7 +725,7 @@ body {
   </div>
 
   <!-- 4. Lucía 76% -->
-  <div class="match-card fu" data-score="76" data-new="false" data-active="true">
+  <div class="match-card fu" data-id="lucia" data-score="76" data-new="false" data-active="true">
     <div class="card-top" onclick="openProfile('lucia')" role="button" tabindex="0" aria-label="Ver perfil de Lucía">
       <div class="card-av" style="background-image:url(./lucia.png);background-size:cover;background-position:center" aria-hidden="true"></div>
       <div class="card-info">
@@ -773,7 +773,7 @@ body {
   </div>
 
   <!-- 5. Agustín 71% -->
-  <div class="match-card fu" data-score="71" data-new="false" data-active="false">
+  <div class="match-card fu" data-id="agustin" data-score="71" data-new="false" data-active="false">
     <div class="card-top" onclick="openProfile('agustin')" role="button" tabindex="0" aria-label="Ver perfil de Agustín">
       <div class="card-av" style="background-image:url(./Agustin.png);background-size:cover;background-position:center" aria-hidden="true"></div>
       <div class="card-info">
@@ -1127,8 +1127,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   }
 })();
 
-// Ordena las match cards según el criterio elegido: afinidad, nuevos o activos
-// Remueve y reinserta las cards con una animación de fade para suavizar el reordenamiento
+// Ordena o filtra las match cards según el criterio elegido
+// 'afinidad' y 'nuevos': reordena todas las cards con animación de fade
+// 'activos': filtra — muestra solo las que tienen data-active="true", oculta el resto
 function sortMatches(mode, btn) {
   document.querySelectorAll('.sort-chip').forEach(c => {
     c.classList.remove('active'); c.setAttribute('aria-selected','false');
@@ -1136,25 +1137,64 @@ function sortMatches(mode, btn) {
   btn.classList.add('active'); btn.setAttribute('aria-selected','true');
   const list = document.querySelector('.app-main');
   const cards = [...list.querySelectorAll('.match-card')];
-  cards.forEach(c => c.remove());
-  let sorted;
-  if (mode === 'afinidad') {
-    sorted = cards.sort((a,b) => Number(b.dataset.score) - Number(a.dataset.score));
-  } else if (mode === 'nuevos') {
-    sorted = cards.sort((a,b) => (b.dataset.new === 'true') - (a.dataset.new === 'true'));
+
+  if (mode === 'activos') {
+    // Filtrar: mostrar solo las que tienen chat activo, ocultar el resto
+    cards.forEach(c => {
+      if (c.dataset.active === 'true') {
+        c.style.display = '';
+        c.style.opacity = '0';
+        requestAnimationFrame(() => { c.style.transition = 'opacity 0.3s'; c.style.opacity = '1'; });
+      } else {
+        c.style.display = 'none';
+      }
+    });
   } else {
-    sorted = cards.sort((a,b) => (b.dataset.active === 'true') - (a.dataset.active === 'true'));
+    // Restaurar visibilidad de todas las cards antes de reordenar
+    cards.forEach(c => { c.style.display = ''; });
+    cards.forEach(c => c.remove());
+    let sorted;
+    if (mode === 'afinidad') {
+      sorted = cards.sort((a,b) => Number(b.dataset.score) - Number(a.dataset.score));
+    } else if (mode === 'nuevos') {
+      sorted = cards.sort((a,b) => (b.dataset.new === 'true') - (a.dataset.new === 'true'));
+    } else {
+      sorted = cards;
+    }
+    sorted.forEach(c => { c.style.opacity='0'; list.appendChild(c); requestAnimationFrame(() => { c.style.transition='opacity 0.3s'; c.style.opacity='1'; }); });
   }
-  sorted.forEach(c => { c.style.opacity='0'; list.appendChild(c); requestAnimationFrame(() => { c.style.transition='opacity 0.3s'; c.style.opacity='1'; }); });
 }
 </script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
-onAuthStateChanged(auth, user => {
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = './home.html'; return; }
+
+  // Actualizar data-active en las cards según chats reales en Firestore
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      document.querySelectorAll('.match-card[data-id]').forEach(card => {
+        const id = card.dataset.id;
+        // Tiene chat activo si hay al menos un mensaje real o gemelo guardado
+        const hasChat = ['real','gemelo'].some(mode => {
+          const key = `chats_${id}_${mode}`;
+          return Array.isArray(data[key]) && data[key].length > 0;
+        });
+        card.dataset.active = hasChat ? 'true' : 'false';
+      });
+    }
+  } catch(e) { console.warn('Error cargando estado de chats:', e); }
+
   const el = document.getElementById('loadingOverlay');
   if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
 });
