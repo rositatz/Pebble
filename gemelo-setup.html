@@ -80,6 +80,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size
 .rtext{flex:1;line-height:1.4}
 
 /* ── BINARY ── */
+.bin-group{margin-bottom:32px}
+.bin-group-lbl{font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.45}
+.bin-group .binary{margin-bottom:10px}
+.bin-group .binary:last-of-type{margin-bottom:0}
 .binary{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .bbin{padding:22px 14px;background:var(--surf-1);border:2px solid var(--border);border-radius:var(--r-lg);color:var(--text);font-size:.92rem;font-weight:600;cursor:pointer;transition:all .2s var(--spring);font-family:var(--fb);text-align:center;line-height:1.35;min-height:82px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center}
 .bbin:hover{border-color:rgba(255,117,31,.35);background:rgba(255,117,31,.05)}
@@ -614,31 +618,46 @@ body.is-premium .prem-only{display:block}
 
   <div class="sec">
     <div class="sec-title">✨ Vibes</div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="veloc"><button class="bbin" onclick="selBin(this)">Ir despacio</button><button class="bbin" onclick="selBin(this)">Ir rápido</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="profConv"><button class="bbin" onclick="selBin(this)">Charlas profundas desde el inicio</button><button class="bbin" onclick="selBin(this)">Conversaciones livianas primero</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="frecContact"><button class="bbin" onclick="selBin(this)">Hablar todo el día</button><button class="bbin" onclick="selBin(this)">Hablar más espaciado</button></div></div>
-    <div class="q"><div class="ql">¿Te atrae más alguien...</div><div class="binary" data-field="similitud"><button class="bbin" onclick="selBin(this)">Muy parecido/a a vos</button><button class="bbin" onclick="selBin(this)">Completamente diferente</button></div></div>
+    <div class="bin-group">
+      <div class="bin-group-lbl">¿Sos más de...</div>
+      <div class="binary" data-field="veloc"><button class="bbin" onclick="selBin(this)">Ir despacio</button><button class="bbin" onclick="selBin(this)">Ir rápido</button></div>
+      <div class="binary" data-field="profConv"><button class="bbin" onclick="selBin(this)">Charlas profundas desde el inicio</button><button class="bbin" onclick="selBin(this)">Conversaciones livianas primero</button></div>
+      <div class="binary" data-field="frecContact"><button class="bbin" onclick="selBin(this)">Hablar todo el día</button><button class="bbin" onclick="selBin(this)">Hablar más espaciado</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Te atrae más alguien...</div>
+      <div class="binary" data-field="similitud"><button class="bbin" onclick="selBin(this)">Muy parecido/a a vos</button><button class="bbin" onclick="selBin(this)">Completamente diferente</button></div>
+    </div>
   </div>
 
   <div class="sec">
     <div class="sec-title">🌙 Tu cita ideal</div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaLugar"><button class="bbin" onclick="selBin(this)">Quedarse en casa</button><button class="bbin" onclick="selBin(this)">Salir de noche</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaPlan"><button class="bbin" onclick="selBin(this)">Recital</button><button class="bbin" onclick="selBin(this)">Cine</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaEst"><button class="bbin" onclick="selBin(this)">Verano</button><button class="bbin" onclick="selBin(this)">Invierno</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaClima"><button class="bbin" onclick="selBin(this)">Lluvia y películas</button><button class="bbin" onclick="selBin(this)">Playa y música</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaComida"><button class="bbin" onclick="selBin(this)">Cocinar juntos</button><button class="bbin" onclick="selBin(this)">Pedir delivery</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaJuntada"><button class="bbin" onclick="selBin(this)">Fiesta grande</button><button class="bbin" onclick="selBin(this)">Juntada chica</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaNoche"><button class="bbin" onclick="selBin(this)">Ciudad de noche</button><button class="bbin" onclick="selBin(this)">Amanecer tranquilo</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaActividad"><button class="bbin" onclick="selBin(this)">Mirar estrellas</button><button class="bbin" onclick="selBin(this)">Caminar sin rumbo</button></div></div>
+    <div class="bin-group">
+      <div class="bin-group-lbl">¿Sos más de...</div>
+      <div class="binary" data-field="citaLugar"><button class="bbin" onclick="selBin(this)">Quedarse en casa</button><button class="bbin" onclick="selBin(this)">Salir de noche</button></div>
+      <div class="binary" data-field="citaPlan"><button class="bbin" onclick="selBin(this)">Recital</button><button class="bbin" onclick="selBin(this)">Cine</button></div>
+      <div class="binary" data-field="citaEst"><button class="bbin" onclick="selBin(this)">Verano</button><button class="bbin" onclick="selBin(this)">Invierno</button></div>
+      <div class="binary" data-field="citaClima"><button class="bbin" onclick="selBin(this)">Lluvia y películas</button><button class="bbin" onclick="selBin(this)">Playa y música</button></div>
+      <div class="binary" data-field="citaComida"><button class="bbin" onclick="selBin(this)">Cocinar juntos</button><button class="bbin" onclick="selBin(this)">Pedir delivery</button></div>
+      <div class="binary" data-field="citaJuntada"><button class="bbin" onclick="selBin(this)">Fiesta grande</button><button class="bbin" onclick="selBin(this)">Juntada chica</button></div>
+      <div class="binary" data-field="citaNoche"><button class="bbin" onclick="selBin(this)">Ciudad de noche</button><button class="bbin" onclick="selBin(this)">Amanecer tranquilo</button></div>
+      <div class="binary" data-field="citaActividad"><button class="bbin" onclick="selBin(this)">Mirar estrellas</button><button class="bbin" onclick="selBin(this)">Caminar sin rumbo</button></div>
+    </div>
   </div>
 
   <div class="sec">
     <div class="sec-title">💌 Comunicación y cariño</div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoComm"><button class="bbin" onclick="selBin(this)">Audios</button><button class="bbin" onclick="selBin(this)">Videollamadas</button></div></div>
-    <div class="q"><div class="ql">¿Te atrae más alguien...</div><div class="binary" data-field="carinoIntens"><button class="bbin" onclick="selBin(this)">Intenso/a</button><button class="bbin" onclick="selBin(this)">Tranquilo/a</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoPublic"><button class="bbin" onclick="selBin(this)">Cariño privado</button><button class="bbin" onclick="selBin(this)">Demostrar públicamente</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoResp"><button class="bbin" onclick="selBin(this)">Responder rápido</button><button class="bbin" onclick="selBin(this)">Responder bien</button></div></div>
-    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoCoqueteo"><button class="bbin" onclick="selBin(this)">Coqueteo directo</button><button class="bbin" onclick="selBin(this)">Coqueteo indirecto</button></div></div>
+    <div class="q">
+      <div class="ql">¿Te atrae más alguien...</div>
+      <div class="binary" data-field="carinoIntens"><button class="bbin" onclick="selBin(this)">Intenso/a</button><button class="bbin" onclick="selBin(this)">Tranquilo/a</button></div>
+    </div>
+    <div class="bin-group">
+      <div class="bin-group-lbl">¿Sos más de...</div>
+      <div class="binary" data-field="carinoComm"><button class="bbin" onclick="selBin(this)">Audios</button><button class="bbin" onclick="selBin(this)">Videollamadas</button></div>
+      <div class="binary" data-field="carinoPublic"><button class="bbin" onclick="selBin(this)">Cariño privado</button><button class="bbin" onclick="selBin(this)">Demostrar públicamente</button></div>
+      <div class="binary" data-field="carinoResp"><button class="bbin" onclick="selBin(this)">Responder rápido</button><button class="bbin" onclick="selBin(this)">Responder bien</button></div>
+      <div class="binary" data-field="carinoCoqueteo"><button class="bbin" onclick="selBin(this)">Coqueteo directo</button><button class="bbin" onclick="selBin(this)">Coqueteo indirecto</button></div>
+    </div>
   </div>
 
   <div class="divider"></div>
