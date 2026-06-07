@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pebble — Creá tu Gemelo Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#FF751F;--orange-mid:#FF9700;
+  --bg:#0A0A0A;--surf-1:#111111;--surf-2:#1A1A1A;
+  --border:rgba(255,255,255,0.08);--border-hi:rgba(255,117,31,0.5);
+  --text:#EEEDEC;--text-m:rgba(238,237,236,0.45);
+  --premium:#FFB800;--green:#22c55e;--red:#ef4444;
+  --fd:'Bricolage Grotesque',sans-serif;--fb:'Open Sans',sans-serif;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:22px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:16px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;}
+/* ── TOPBAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 20px;gap:12px;}
+.logo{font-family:var(--fd);font-weight:800;font-size:1.25rem;letter-spacing:-.03em;color:var(--text);text-decoration:none;flex-shrink:0}
+.logo span{color:var(--orange)}
+.prog-track{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--orange);border-radius:2px;width:14.3%;transition:width .4s ease}
+.step-lbl{font-size:.72rem;color:var(--text-m);font-weight:600;white-space:nowrap;letter-spacing:.05em}
+/* ── MAIN ── */
+.main{padding:80px 20px 96px;max-width:540px;margin:0 auto}
+/* ── STAGES ── */
+.stage{display:none}
+.stage.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ── STAGE HEADER ── */
+.s-num{font-size:.72rem;font-weight:700;color:var(--orange);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.s-title{font-family:var(--fd);font-size:1.85rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:8px}
+.s-sub{font-size:.88rem;color:var(--text-m);line-height:1.55;margin-bottom:28px}
+/* ── SECTION ── */
+.sec{margin-bottom:28px}
+.sec-title{font-family:var(--fd);font-size:.95rem;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--text);display:flex;align-items:center;gap:6px}
+/* ── QUESTION ── */
+.q{margin-bottom:18px}
+.ql{font-size:.88rem;font-weight:500;color:var(--text);margin-bottom:8px;line-height:1.4;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.ptag{font-size:.64rem;font-weight:700;color:var(--premium);background:rgba(255,184,0,.12);padding:2px 7px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+/* ── INPUTS ── */
+.inp{width:100%;height:48px;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.93rem;padding:0 14px;outline:none;transition:border .18s;-webkit-appearance:none}
+.inp:focus{border-color:var(--border-hi)}
+.inp::placeholder,.txa::placeholder{color:var(--text-m)}
+.txa{width:100%;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.93rem;padding:12px 14px;outline:none;resize:none;min-height:88px;transition:border .18s;line-height:1.5}
+.txa:focus{border-color:var(--border-hi)}
+.ing{display:flex;flex-direction:column;gap:8px}
+/* ── PILLS ── */
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{padding:8px 14px;background:var(--surf-1);border:1.5px solid var(--border);border-radius:22px;color:var(--text);font-size:.83rem;font-weight:500;cursor:pointer;transition:all .18s;font-family:var(--fb);touch-action:manipulation;line-height:1;-webkit-tap-highlight-color:transparent}
+.pill:hover{border-color:rgba(255,117,31,.4)}
+.pill.sel{background:var(--orange);border-color:var(--orange);color:#fff}
+/* ── RADIO LIST ── */
+.rlist{display:flex;flex-direction:column;gap:8px}
+.ritem{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .18s;font-size:.88rem;color:var(--text);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.ritem.sel{border-color:var(--orange);background:rgba(255,117,31,.07)}
+.rdot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.2);flex-shrink:0;transition:all .18s}
+.ritem.sel .rdot{background:var(--orange);border-color:var(--orange)}
+.rtext{flex:1;line-height:1.35}
+/* ── BINARY ── */
+.binary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bbin{padding:16px 10px;background:var(--surf-1);border:2px solid var(--border);border-radius:var(--r-lg);color:var(--text);font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--fb);text-align:center;line-height:1.3;min-height:64px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.bbin:hover{border-color:rgba(255,117,31,.35)}
+.bbin.sel{border-color:var(--orange);background:rgba(255,117,31,.1);color:var(--orange)}
+/* ── FLAGS ── */
+.fp{text-align:center;font-size:.75rem;color:var(--text-m);margin-bottom:10px}
+.fcard{background:var(--surf-2);border:2px solid var(--border);border-radius:var(--r-xl);padding:36px 24px;text-align:center;font-size:1rem;font-weight:500;min-height:130px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;transition:border .2s,background .2s;line-height:1.4}
+.fcard.fg{border-color:var(--green);background:rgba(34,197,94,.08)}
+.fcard.fr{border-color:var(--red);background:rgba(239,68,68,.08)}
+.fbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fbr{background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);border-radius:var(--r-md);padding:14px;color:var(--red);font-weight:700;cursor:pointer;font-family:var(--fb);font-size:.88rem;transition:background .18s;touch-action:manipulation}
+.fbg{background:rgba(34,197,94,.1);border:1.5px solid rgba(34,197,94,.3);border-radius:var(--r-md);padding:14px;color:var(--green);font-weight:700;cursor:pointer;font-family:var(--fb);font-size:.88rem;transition:background .18s;touch-action:manipulation}
+.fbr:hover{background:rgba(239,68,68,.2)}
+.fbg:hover{background:rgba(34,197,94,.2)}
+.fdone{background:var(--surf-1);border-radius:var(--r-md);padding:12px 14px;font-size:.82rem;color:var(--text-m);margin-top:10px;display:none}
+/* ── GEMELO FINAL ── */
+.gbox{background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:24px;margin-bottom:20px}
+.glabel{font-size:.72rem;font-weight:700;color:var(--orange);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.gtext{font-size:1rem;line-height:1.7;color:var(--text);font-style:italic}
+.gtraits{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.gtrait{padding:6px 12px;background:rgba(255,117,31,.12);border:1px solid rgba(255,117,31,.25);border-radius:20px;font-size:.78rem;color:var(--orange);font-weight:600}
+.gedit{width:100%;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.93rem;padding:14px;resize:none;min-height:130px;outline:none;line-height:1.55;transition:border .18s}
+.gedit:focus{border-color:var(--border-hi)}
+.btn-confirm{width:100%;height:52px;background:var(--orange);border:none;border-radius:var(--r-xl);color:#fff;font-family:var(--fd);font-weight:800;font-size:1.05rem;cursor:pointer;transition:background .2s;margin-top:8px;touch-action:manipulation}
+.btn-confirm:hover{background:var(--orange-mid)}
+.btn-regen{height:52px;padding:0 24px;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-xl);color:var(--text-m);font-family:var(--fb);font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;touch-action:manipulation;flex-shrink:0}
+.btn-regen:hover{color:var(--text)}
+/* ── BOTTOM NAV ── */
+.botnav{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:12px;z-index:100;align-items:center}
+.btn-back{height:48px;padding:0 22px;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-xl);color:var(--text-m);font-family:var(--fb);font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;touch-action:manipulation;flex-shrink:0}
+.btn-back:hover{color:var(--text)}
+.btn-back:disabled{opacity:.3;cursor:default}
+.btn-next{height:48px;flex:1;background:var(--orange);border:none;border-radius:var(--r-xl);color:#fff;font-family:var(--fd);font-weight:800;font-size:1rem;cursor:pointer;transition:background .2s;touch-action:manipulation}
+.btn-next:hover{background:var(--orange-mid)}
+.btn-next:active{transform:scale(.98)}
+/* ── PREMIUM ── */
+.prem-only{display:none}
+body.is-premium .prem-only{display:block}
+/* ── HELPERS ── */
+.divider{height:1px;background:var(--border);margin:24px 0}
+.help{font-size:.78rem;color:var(--text-m)}
+/* ── AUTH GATE ── */
+#auth-gate{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.spin{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="auth-gate"><div class="spin"></div></div>
+
+<header class="topbar">
+  <a href="home.html" class="logo">PE<span>BB</span>LE</a>
+  <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+  <span class="step-lbl" id="step-lbl">1 / 7</span>
+</header>
+
+<div class="main">
+
+<!-- ═══ ETAPA 1 ═══ -->
+<section class="stage active" id="stage-1">
+  <p class="s-num">Etapa 1</p>
+  <h1 class="s-title">Quién sos</h1>
+  <p class="s-sub">Empezamos por lo básico. Tu gemelo necesita conocerte.</p>
+
+  <div class="sec">
+    <div class="sec-title">👤 Identidad básica</div>
+    <div class="q"><div class="ql">¿Cómo te llamás?</div><input class="inp" id="nombre" type="text" placeholder="Tu nombre"/></div>
+    <div class="q"><div class="ql">¿Cómo te gusta que te digan?</div><input class="inp" id="apodo" type="text" placeholder="Apodo o preferencia"/></div>
+    <div class="q"><div class="ql">¿Qué edad tenés?</div><input class="inp" id="edad" type="number" min="16" max="99" placeholder="Ej: 23" style="-moz-appearance:textfield"/></div>
+    <div class="q"><div class="ql">¿Cuándo es tu cumpleaños?</div><input class="inp" id="cumple" type="date" style="color-scheme:dark"/></div>
+    <div class="q"><div class="ql">¿Dónde vivís?</div><input class="inp" id="ciudad" type="text" placeholder="Ciudad o barrio"/></div>
+    <div class="q">
+      <div class="ql">¿Con quién vivís actualmente?</div>
+      <div class="pills" data-field="convivo">
+        <button class="pill" onclick="selPill(this)">Solo/a</button>
+        <button class="pill" onclick="selPill(this)">Con mi familia</button>
+        <button class="pill" onclick="selPill(this)">Con amigos/as</button>
+        <button class="pill" onclick="selPill(this)">Con pareja</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">💼 Estudio / Trabajo</div>
+    <div class="q"><div class="ql">¿Qué estudiás o a qué te dedicás?</div><input class="inp" id="ocupacion" type="text" placeholder="Carrera, trabajo, proyecto..."/></div>
+    <div class="q">
+      <div class="ql">¿Te gusta lo que hacés actualmente?</div>
+      <div class="pills" data-field="gustaOcup">
+        <button class="pill" onclick="selPill(this)">Sí, mucho</button>
+        <button class="pill" onclick="selPill(this)">Bastante</button>
+        <button class="pill" onclick="selPill(this)">Más o menos</button>
+        <button class="pill" onclick="selPill(this)">No realmente</button>
+      </div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Qué harías si no hubieses elegido lo que hacés? <span class="ptag">★ Premium</span></div>
+      <textarea class="txa" id="siNoOcup" placeholder="Contanos..."></textarea>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🌅 Tu rutina</div>
+    <div class="q">
+      <div class="ql">¿Sos más productivo/a de mañana o de noche?</div>
+      <div class="pills" data-field="productiv">
+        <button class="pill" onclick="selPill(this)">De mañana</button>
+        <button class="pill" onclick="selPill(this)">De noche</button>
+        <button class="pill" onclick="selPill(this)">Me da igual</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Tu rutina suele ser?</div>
+      <div class="pills" data-field="rutina">
+        <button class="pill" onclick="selPill(this)">Tranquila</button>
+        <button class="pill" onclick="selPill(this)">Intensa</button>
+        <button class="pill" onclick="selPill(this)">Cambiante</button>
+        <button class="pill" onclick="selPill(this)">Caótica</button>
+        <button class="pill" onclick="selPill(this)">Repetitiva</button>
+      </div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Cómo sería un día perfecto para vos? <span class="ptag">★ Premium</span></div>
+      <textarea class="txa" id="diaPerfecto" placeholder="Describilo libremente..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ETAPA 2 ═══ -->
+<section class="stage" id="stage-2">
+  <p class="s-num">Etapa 2</p>
+  <h1 class="s-title">Cómo vivís y qué te representa</h1>
+  <p class="s-sub">Música, series, estilo, lugares. Lo que te define.</p>
+
+  <div class="sec">
+    <div class="sec-title">🎵 Música</div>
+    <div class="q"><div class="ql">¿Cuál es tu artista favorito?</div><input class="inp" id="artista" type="text" placeholder="Nombre del artista"/></div>
+    <div class="q">
+      <div class="ql">Tu top 5 de canciones favoritas</div>
+      <div class="ing">
+        <input class="inp" id="song1" type="text" placeholder="1."/>
+        <input class="inp" id="song2" type="text" placeholder="2."/>
+        <input class="inp" id="song3" type="text" placeholder="3."/>
+        <input class="inp" id="song4" type="text" placeholder="4."/>
+        <input class="inp" id="song5" type="text" placeholder="5."/>
+      </div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Qué canción te pone triste? <span class="ptag">★ Premium</span></div><input class="inp" id="canTriste" type="text" placeholder="Artista — Canción"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué canción te da energía automáticamente? <span class="ptag">★ Premium</span></div><input class="inp" id="canEnergia" type="text" placeholder="Artista — Canción"/></div>
+    <div class="q">
+      <div class="ql">¿Qué género escuchás más? (podés elegir varios)</div>
+      <div class="pills multi" data-field="genero">
+        <button class="pill" onclick="selMulti(this)">Pop</button><button class="pill" onclick="selMulti(this)">Reggaetón</button><button class="pill" onclick="selMulti(this)">Trap</button><button class="pill" onclick="selMulti(this)">Rock</button><button class="pill" onclick="selMulti(this)">Indie</button><button class="pill" onclick="selMulti(this)">Electrónica</button><button class="pill" onclick="selMulti(this)">Rap</button><button class="pill" onclick="selMulti(this)">Techno</button><button class="pill" onclick="selMulti(this)">Metal</button><button class="pill" onclick="selMulti(this)">Jazz</button><button class="pill" onclick="selMulti(this)">Clásica</button><button class="pill" onclick="selMulti(this)">K-pop</button><button class="pill" onclick="selMulti(this)">J-pop</button><button class="pill" onclick="selMulti(this)">R&amp;B</button><button class="pill" onclick="selMulti(this)">Hip hop</button><button class="pill" onclick="selMulti(this)">RKT</button><button class="pill" onclick="selMulti(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Cuál fue el mejor recital de tu vida? <span class="ptag">★ Premium</span></div><input class="inp" id="recital" type="text" placeholder="Artista o evento"/></div>
+    <div class="q prem-only"><div class="ql">¿Si solo pudieras escuchar una sola canción para siempre, cuál sería? <span class="ptag">★ Premium</span></div><input class="inp" id="canUnica" type="text" placeholder="Artista — Canción"/></div>
+    <div class="q"><div class="ql">¿Qué música escuchás para salir de fiesta?</div><input class="inp" id="musicaFiesta" type="text" placeholder="Género, artista o vibe..."/></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🎬 Series, películas y contenido</div>
+    <div class="q"><div class="ql">¿Cuál es tu serie preferida?</div><input class="inp" id="serie" type="text" placeholder="Nombre de la serie"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué película te marcó emocionalmente? <span class="ptag">★ Premium</span></div><input class="inp" id="peliculaEmoc" type="text" placeholder="Nombre de la película"/></div>
+    <div class="q prem-only"><div class="ql">Si pudieras actuar en una serie o película, ¿quién serías y por qué? <span class="ptag">★ Premium</span></div><textarea class="txa" id="personajeSerie" placeholder="Contanos..."></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Con qué personaje de película te identificás más? <span class="ptag">★ Premium</span></div><input class="inp" id="personajeIdent" type="text" placeholder="Personaje y película"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué streamer o youtuber es tu favorito? <span class="ptag">★ Premium</span></div><input class="inp" id="streamer" type="text" placeholder="Nombre del creador"/></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">👗 Estilo y estética</div>
+    <div class="q">
+      <div class="ql">¿Qué estética sentís más tuya?</div>
+      <div class="pills" data-field="estetica">
+        <button class="pill" onclick="selPill(this)">Clean</button><button class="pill" onclick="selPill(this)">Streetwear</button><button class="pill" onclick="selPill(this)">Vintage</button><button class="pill" onclick="selPill(this)">Deportiva</button><button class="pill" onclick="selPill(this)">Artística</button><button class="pill" onclick="selPill(this)">Elegante</button><button class="pill" onclick="selPill(this)">Comfy</button><button class="pill" onclick="selPill(this)">Alternativa</button><button class="pill" onclick="selPill(this)">Aesthetic</button>
+      </div>
+    </div>
+    <div class="q"><div class="ql">¿Qué color te representa más?</div><input class="inp" id="colorPers" type="text" placeholder="Ej: negro, naranja, azul cielo..."/></div>
+    <div class="q prem-only">
+      <div class="ql">¿Te gusta arreglarte mucho o ir cómodo/a? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="arreglo"><button class="pill" onclick="selPill(this)">Me arreglo bastante</button><button class="pill" onclick="selPill(this)">Cómodo/a siempre</button><button class="pill" onclick="selPill(this)">Depende del día</button></div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Qué detalle de estilo notás primero en alguien? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="detalleEstilo"><button class="pill" onclick="selPill(this)">Sus zapatos</button><button class="pill" onclick="selPill(this)">Sus accesorios</button><button class="pill" onclick="selPill(this)">Su peinado</button><button class="pill" onclick="selPill(this)">Otro</button></div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Qué estación del año combina más con vos? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="estacion"><button class="pill" onclick="selPill(this)">Primavera</button><button class="pill" onclick="selPill(this)">Otoño</button><button class="pill" onclick="selPill(this)">Invierno</button><button class="pill" onclick="selPill(this)">Verano</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">📍 Lugares y sensaciones</div>
+    <div class="q">
+      <div class="ql">¿Cuál sería tu lugar ideal?</div>
+      <div class="pills" data-field="lugarIdeal">
+        <button class="pill" onclick="selPill(this)">Cafetería</button><button class="pill" onclick="selPill(this)">Playa</button><button class="pill" onclick="selPill(this)">Ciudad de noche</button><button class="pill" onclick="selPill(this)">Bosque</button><button class="pill" onclick="selPill(this)">Recital</button><button class="pill" onclick="selPill(this)">Shopping</button><button class="pill" onclick="selPill(this)">En casa</button><button class="pill" onclick="selPill(this)">Ruta / viaje</button><button class="pill" onclick="selPill(this)">Librería</button><button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Qué país te gustaría visitar y por qué? <span class="ptag">★ Premium</span></div><textarea class="txa" id="paisVisitar" placeholder="País y motivo..."></textarea></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🍕 Comida</div>
+    <div class="q"><div class="ql">¿Tu comida favorita?</div><input class="inp" id="comidaFav" type="text" placeholder="Lo que más te gusta"/></div>
+    <div class="q"><div class="ql">¿Qué comida no te gusta?</div><input class="inp" id="comidaNoGusta" type="text" placeholder="La que evitás siempre"/></div>
+    <div class="q">
+      <div class="ql">¿Preferís pedir, cocinar o ir a un restaurante?</div>
+      <div class="pills" data-field="prefComida"><button class="pill" onclick="selPill(this)">Pedir delivery</button><button class="pill" onclick="selPill(this)">Cocinar</button><button class="pill" onclick="selPill(this)">Ir a un restaurante</button></div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Cuál es tu snack favorito? <span class="ptag">★ Premium</span></div><input class="inp" id="snack" type="text" placeholder="El de madrugada"/></div>
+    <div class="q prem-only">
+      <div class="ql">¿Cocinar te relaja o te estresa? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="cocinar"><button class="pill" onclick="selPill(this)">Me relaja</button><button class="pill" onclick="selPill(this)">Me estresa</button><button class="pill" onclick="selPill(this)">Depende del día</button></div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Qué comida te recuerda a tu infancia? <span class="ptag">★ Premium</span></div><input class="inp" id="comidaInfancia" type="text" placeholder="Algo casero o especial"/></div>
+    <div class="q prem-only">
+      <div class="ql">¿Te gusta lavar los platos? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="lavarPlatos"><button class="pill" onclick="selPill(this)">Sí, me relaja</button><button class="pill" onclick="selPill(this)">No, para nada</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🎮 Hobbies y tiempo libre</div>
+    <div class="q"><div class="ql">Una tarde libre, sin obligaciones. ¿Qué probablemente estabas haciendo?</div><textarea class="txa" id="tardeLibre" placeholder="Lo primero que se te viene..."></textarea></div>
+    <div class="q prem-only"><div class="ql">Si tuvieras que probar algo completamente nuevo este fin de semana, ¿qué elegirías? <span class="ptag">★ Premium</span></div><textarea class="txa" id="probarNuevo" placeholder="Algo que nunca hiciste..."></textarea></div>
+    <div class="q"><div class="ql">Después de un día agotador, ¿qué te ayuda a desconectar?</div><textarea class="txa" id="desconectar" placeholder="Esa cosa que siempre funciona..."></textarea></div>
+    <div class="q"><div class="ql">¿Hacés deporte? ¿Cuál?</div><input class="inp" id="deporte" type="text" placeholder="O escribí 'No hago'"/></div>
+    <div class="q"><div class="ql">¿De qué equipo de fútbol sos?</div><input class="inp" id="equipo" type="text" placeholder="El tuyo, sin miedo"/></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">📱 Redes y mundo digital</div>
+    <div class="q"><div class="ql">¿Qué app usás más?</div><input class="inp" id="appMas" type="text" placeholder="Instagram, TikTok, X..."/></div>
+    <div class="q">
+      <div class="ql">¿Qué tipo de publicaciones guardás? (podés elegir varios)</div>
+      <div class="pills multi" data-field="pubGuarda">
+        <button class="pill" onclick="selMulti(this)">Memes</button><button class="pill" onclick="selMulti(this)">Edits</button><button class="pill" onclick="selMulti(this)">Frases</button><button class="pill" onclick="selMulti(this)">Reels</button><button class="pill" onclick="selMulti(this)">Recetas</button><button class="pill" onclick="selMulti(this)">Outfits</button><button class="pill" onclick="selMulti(this)">Canciones</button><button class="pill" onclick="selMulti(this)">Fotos</button><button class="pill" onclick="selMulti(this)">TikToks</button>
+      </div>
+    </div>
+    <div class="q"><div class="ql">¿Qué tipo de publicaciones compartís más?</div><input class="inp" id="pubComparte" type="text" placeholder="Memes, noticias, música..."/></div>
+    <div class="q prem-only">
+      <div class="ql">¿Te gusta que te presuman en redes? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="presumir"><button class="pill" onclick="selPill(this)">Sí, me encanta</button><button class="pill" onclick="selPill(this)">Prefiero lo privado</button><button class="pill" onclick="selPill(this)">Depende con quién</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Sos de tener el feed organizado?</div>
+      <div class="pills" data-field="feedOrg"><button class="pill" onclick="selPill(this)">Sí, cuido la estética</button><button class="pill" onclick="selPill(this)">No, subo lo que sea</button><button class="pill" onclick="selPill(this)">No posteo casi nada</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Sobrepensás los likes, reacciones o vistas?</div>
+      <div class="pills" data-field="sobreLikes"><button class="pill" onclick="selPill(this)">Sí, bastante</button><button class="pill" onclick="selPill(this)">A veces</button><button class="pill" onclick="selPill(this)">Para nada</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Sos de stalkear cuando alguien te interesa?</div>
+      <div class="pills" data-field="stalkear"><button class="pill" onclick="selPill(this)">Obvio que sí</button><button class="pill" onclick="selPill(this)">Algo sí</button><button class="pill" onclick="selPill(this)">No, no me interesa</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Subís indirectas?</div>
+      <div class="pills" data-field="indirectas"><button class="pill" onclick="selPill(this)">Sí, claro</button><button class="pill" onclick="selPill(this)">Rara vez</button><button class="pill" onclick="selPill(this)">No, jamás</button></div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Qué canción pondrías en una historia con alguien que te gusta? <span class="ptag">★ Premium</span></div><input class="inp" id="canHistory" type="text" placeholder="Artista — Canción"/></div>
+    <div class="q"><div class="ql">¿Sos de usar emojis? Poné tu favorito</div><input class="inp" id="emoji" type="text" placeholder="Tu emoji más usado 🫠"/></div>
+  </div>
+</section>
+
+<!-- ═══ ETAPA 3 ═══ -->
+<section class="stage" id="stage-3">
+  <p class="s-num">Etapa 3</p>
+  <h1 class="s-title">Personalidad y mundo interior</h1>
+  <p class="s-sub">¿Cómo sos de verdad? Tu gemelo tiene que poder reflejarte.</p>
+
+  <div class="sec">
+    <div class="sec-title">⚡ Energía y personalidad</div>
+    <div class="q">
+      <div class="ql">¿Cómo dirían tus amigos que sos? (podés elegir varios)</div>
+      <div class="pills multi" data-field="comoSoy">
+        <button class="pill" onclick="selMulti(this)">Tranquilo/a</button><button class="pill" onclick="selMulti(this)">Divertido/a</button><button class="pill" onclick="selMulti(this)">Intenso/a</button><button class="pill" onclick="selMulti(this)">Reservado/a</button><button class="pill" onclick="selMulti(this)">Sociable</button><button class="pill" onclick="selMulti(this)">Creativo/a</button><button class="pill" onclick="selMulti(this)">Sensible</button><button class="pill" onclick="selMulti(this)">Impulsivo/a</button><button class="pill" onclick="selMulti(this)">Observador/a</button><button class="pill" onclick="selMulti(this)">Espontáneo/a</button>
+      </div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Qué parte de vos te cuesta mostrar? <span class="ptag">★ Premium</span></div><textarea class="txa" id="cuestaMostrar" placeholder="Esa faceta que guardás..."></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Qué sentís que la gente suele malinterpretar sobre vos? <span class="ptag">★ Premium</span></div><textarea class="txa" id="malinterp" placeholder="Algo que no te representa..."></textarea></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🫂 Social y vínculos</div>
+    <div class="q">
+      <div class="ql">Cuando conocés gente nueva, normalmente...</div>
+      <div class="pills" data-field="genteNueva"><button class="pill" onclick="selPill(this)">Tomás iniciativa</button><button class="pill" onclick="selPill(this)">Esperás que se acerquen</button><button class="pill" onclick="selPill(this)">Observás primero</button><button class="pill" onclick="selPill(this)">Depende del ambiente</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">Semana muy pesada. ¿Qué preferís hacer el finde?</div>
+      <div class="rlist" data-field="findeDesc">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Quedarme solo/a en casa para descansar</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Salir a tomar algo con gente para distraerme</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">Si pasás días seguidos en casa sin ver a nadie, ¿cómo te sentís?</div>
+      <div class="rlist" data-field="diasSolo">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Re bien, disfruto mis momentos a solas</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Un poco encerrado/a, me dan ganas de ver gente</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Qué tipo de personalidad te engancha más?</div>
+      <div class="rlist" data-field="persEngancha">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Súper expresiva, habladora y con mucha onda</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Tranquila, que sabe escuchar y transmite paz</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Intensa o hiperactiva</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Muy cerrada, de las que cuesta remarles la conversación</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🎯 Forma de actuar</div>
+    <div class="q prem-only">
+      <div class="ql">A la hora de armar un viaje, ¿cómo te manejás? <span class="ptag">★ Premium</span></div>
+      <div class="rlist" data-field="viajePlan">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Prefiero planificar y tener todo organizado</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Prefiero fluir y decidir en el momento</span></div>
+      </div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">Ante una decisión importante, ¿qué te define más? <span class="ptag">★ Premium</span></div>
+      <div class="rlist" data-field="decision">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">La pienso un montón, analizo pros y contras</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Actúo rápido y confío en mi intuición</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">Cuando la vida cambia los planes de golpe, ¿cómo reaccionás?</div>
+      <div class="rlist" data-field="cambioPlanes">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me adapto fácil, incluso me puede gustar lo inesperado</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me cuesta, necesito tiempo para acomodarme</span></div>
+      </div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Sos de sentir las cosas «a fondo» o mantener distancia emocional? <span class="ptag">★ Premium</span></div>
+      <div class="rlist" data-field="sentirFondo">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Siento todo bastante intenso, me atraviesa lo que me pasa</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Suelo mantener cierta distancia emocional</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">Cuando algo te impacta emocionalmente, ¿cómo lo manejás?</div>
+      <div class="rlist" data-field="impactoEmoc">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Necesito hablarlo con alguien para ordenarme</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Lo proceso por mi cuenta y después veo si lo comparto</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Lo escribo o busco entenderlo de alguna forma</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Intento distraerme y que se me pase</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Depende mucho de la situación</span></div>
+      </div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">Cuando empezás a preocuparte demasiado, ¿cuál suele ser la causa? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="causaAnsiedad">
+        <button class="pill" onclick="selPill(this)">No saber qué va a pasar</button><button class="pill" onclick="selPill(this)">No poder cambiar la situación</button><button class="pill" onclick="selPill(this)">Presión por expectativas</button><button class="pill" onclick="selPill(this)">Lo que alguien piensa de mí</button><button class="pill" onclick="selPill(this)">Otra</button>
+      </div>
+    </div>
+    <div class="q"><div class="ql">¿Qué cosas te dan ansiedad y cuáles te dan seguridad?</div><textarea class="txa" id="ansiedadSeg" placeholder="Contanos un poco..."></textarea></div>
+  </div>
+</section>
+
+<!-- ═══ ETAPA 4 ═══ -->
+<section class="stage" id="stage-4">
+  <p class="s-num">Etapa 4</p>
+  <h1 class="s-title">Comunicación y vínculos</h1>
+  <p class="s-sub">¿Cómo conectás? ¿Cómo amás? ¿Cómo peleás?</p>
+
+  <div class="sec">
+    <div class="sec-title">💬 Mensajes y comunicación</div>
+    <div class="q">
+      <div class="ql">¿Qué preferís para comunicarte?</div>
+      <div class="pills" data-field="prefCom"><button class="pill" onclick="selPill(this)">Mensajes de texto</button><button class="pill" onclick="selPill(this)">Audios</button><button class="pill" onclick="selPill(this)">Llamadas</button><button class="pill" onclick="selPill(this)">Videollamadas</button><button class="pill" onclick="selPill(this)">Verse en persona</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Respondés rápido o desaparecés por horas?</div>
+      <div class="pills" data-field="velocResp"><button class="pill" onclick="selPill(this)">Siempre rápido</button><button class="pill" onclick="selPill(this)">Depende el momento</button><button class="pill" onclick="selPill(this)">Desaparezco seguido</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Te cuesta iniciar conversaciones?</div>
+      <div class="pills" data-field="iniciarConv"><button class="pill" onclick="selPill(this)">No, arranco yo siempre</button><button class="pill" onclick="selPill(this)">A veces</button><button class="pill" onclick="selPill(this)">Sí, prefiero que me escriban</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Te molestan las respuestas secas?</div>
+      <div class="pills" data-field="respSecas"><button class="pill" onclick="selPill(this)">Sí, mucho</button><button class="pill" onclick="selPill(this)">Un poco</button><button class="pill" onclick="selPill(this)">No me importa</button></div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Mandás reels o memes para demostrar interés o cariño? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="mandasReels"><button class="pill" onclick="selPill(this)">Sí, es mi lenguaje del amor</button><button class="pill" onclick="selPill(this)">A veces</button><button class="pill" onclick="selPill(this)">No, no soy de eso</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Sos más de demostrar con...? (podés elegir varios)</div>
+      <div class="pills multi" data-field="demostrar"><button class="pill" onclick="selMulti(this)">Palabras</button><button class="pill" onclick="selMulti(this)">Acciones</button><button class="pill" onclick="selMulti(this)">Tiempo</button><button class="pill" onclick="selMulti(this)">Regalos</button><button class="pill" onclick="selMulti(this)">Contacto físico</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Sos intenso/a cuando alguien te gusta?</div>
+      <div class="pills" data-field="intensoGusta"><button class="pill" onclick="selPill(this)">Sí, bastante</button><button class="pill" onclick="selPill(this)">Un poco</button><button class="pill" onclick="selPill(this)">No, soy bastante calmo/a</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Te enamorás fácilmente?</div>
+      <div class="pills" data-field="enamoraFacil"><button class="pill" onclick="selPill(this)">Sí, me pasa seguido</button><button class="pill" onclick="selPill(this)">A veces</button><button class="pill" onclick="selPill(this)">No, me cuesta mucho</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">💥 Conflictos y discusiones</div>
+    <div class="q">
+      <div class="ql">Cuando algo te molesta...</div>
+      <div class="pills" data-field="cuandoMolesta"><button class="pill" onclick="selPill(this)">Lo hablo enseguida</button><button class="pill" onclick="selPill(this)">Necesito tiempo primero</button><button class="pill" onclick="selPill(this)">Me alejo</button><button class="pill" onclick="selPill(this)">Exploto después</button><button class="pill" onclick="selPill(this)">Actúo como si nada</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">Cuando necesitás algo de alguien cercano, ¿te resulta fácil pedirlo?</div>
+      <div class="rlist" data-field="pedirAlgo">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Sí, suelo decir lo que necesito sin problema</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">A veces me cuesta porque no quiero incomodar</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Espero que la otra persona se dé cuenta sola</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me cuesta bastante pedir ayuda o expresar lo que necesito</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">Si te peleás con un amigo, ¿cómo reaccionás?</div>
+      <div class="rlist" data-field="pelea">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Digo lo que pienso aunque genere discusión</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Intento hablarlo con calma para resolverlo</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me guardo cosas para evitar conflictos</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Necesito tomar distancia antes de hablar</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Qué comportamiento considerás más inaceptable en una discusión?</div>
+      <div class="rlist" data-field="inaceptable">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Que me falte el respeto</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Que me mienta o me oculte cosas</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Que minimice lo que siento</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Que me grite o se vuelva agresivo/a</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Que no escuche mi punto de vista</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">💫 Coqueteo y señales</div>
+    <div class="q">
+      <div class="ql">¿Sos directo/a o indirecto/a cuando te gusta alguien?</div>
+      <div class="pills" data-field="coqueteo"><button class="pill" onclick="selPill(this)">Directo/a, lo dejo claro</button><button class="pill" onclick="selPill(this)">Indirecto/a, por actitudes</button><button class="pill" onclick="selPill(this)">Primero espero señales</button><button class="pill" onclick="selPill(this)">Me cuesta mucho demostrarlo</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">En una fiesta, alguien que te gusta se acerca. ¿Cómo reaccionás?</div>
+      <div class="rlist" data-field="fiestaReac">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me muestro natural y sigo la conversación</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me pongo nervioso/a pero intento seguirle el ritmo</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Espero señales antes de abrirme más</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me quedo más reservado/a</span></div>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">Cuando estás con alguien que te interesa mucho, ¿cómo te comportás?</div>
+      <div class="rlist" data-field="comportaInt">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me pongo más atento/a y presente, lo demuestro bastante</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Me vuelvo un poco más tímido/a</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Intento actuar normal aunque por dentro piense todo</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Depende, puedo ser muy expresivo/a o muy frío/a</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🤝 Cercanía y conexión</div>
+    <div class="q">
+      <div class="ql">¿Qué cosas te hacen sentir realmente acompañado/a? (podés elegir varios)</div>
+      <div class="pills multi" data-field="acompaniado">
+        <button class="pill" onclick="selMulti(this)">Presencia en momentos simples</button><button class="pill" onclick="selMulti(this)">Que me escuchen y validen</button><button class="pill" onclick="selMulti(this)">Que recuerden detalles míos</button><button class="pill" onclick="selMulti(this)">Que me busquen sin que pida</button><button class="pill" onclick="selMulti(this)">Tiempo de calidad sin distracciones</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Qué necesitás más de las personas importantes para vos?</div>
+      <div class="rlist" data-field="necesitasVinc">
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Poder hablar de lo que me pasa sin filtro</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Disponibilidad real cuando la necesito</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Estabilidad y tranquilidad en el vínculo</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Que respeten mi independencia y tiempos</span></div>
+        <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Poder resolver conflictos hablando, sin dramas</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ETAPA 5 ═══ -->
+<section class="stage" id="stage-5">
+  <p class="s-num">Etapa 5</p>
+  <h1 class="s-title">Chin-Chin 🥂</h1>
+  <p class="s-sub">Elegí tu forma de vincularte. Cada respuesta ajusta tu gemelo. Podés saltar, pero tu reflejo será más difuso.</p>
+
+  <div class="sec">
+    <div class="sec-title">✨ Vibes</div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="veloc"><button class="bbin" onclick="selBin(this)">Ir despacio</button><button class="bbin" onclick="selBin(this)">Ir rápido</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="profConv"><button class="bbin" onclick="selBin(this)">Charlas profundas desde el inicio</button><button class="bbin" onclick="selBin(this)">Conversaciones livianas primero</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="frecContact"><button class="bbin" onclick="selBin(this)">Hablar todo el día</button><button class="bbin" onclick="selBin(this)">Hablar más espaciado</button></div></div>
+    <div class="q"><div class="ql">¿Te atrae más alguien...</div><div class="binary" data-field="similitud"><button class="bbin" onclick="selBin(this)">Muy parecido/a a vos</button><button class="bbin" onclick="selBin(this)">Completamente diferente</button></div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🌙 Tu cita ideal</div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaLugar"><button class="bbin" onclick="selBin(this)">Quedarse en casa</button><button class="bbin" onclick="selBin(this)">Salir de noche</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaPlan"><button class="bbin" onclick="selBin(this)">Recital</button><button class="bbin" onclick="selBin(this)">Cine</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaEst"><button class="bbin" onclick="selBin(this)">Verano</button><button class="bbin" onclick="selBin(this)">Invierno</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaClima"><button class="bbin" onclick="selBin(this)">Lluvia y películas</button><button class="bbin" onclick="selBin(this)">Playa y música</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaComida"><button class="bbin" onclick="selBin(this)">Cocinar juntos</button><button class="bbin" onclick="selBin(this)">Pedir delivery</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaJuntada"><button class="bbin" onclick="selBin(this)">Fiesta grande</button><button class="bbin" onclick="selBin(this)">Juntada chica</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaNoche"><button class="bbin" onclick="selBin(this)">Ciudad de noche</button><button class="bbin" onclick="selBin(this)">Amanecer tranquilo</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="citaActividad"><button class="bbin" onclick="selBin(this)">Mirar estrellas</button><button class="bbin" onclick="selBin(this)">Caminar sin rumbo</button></div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">💌 Comunicación y cariño</div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoComm"><button class="bbin" onclick="selBin(this)">Audios</button><button class="bbin" onclick="selBin(this)">Videollamadas</button></div></div>
+    <div class="q"><div class="ql">¿Te atrae más alguien...</div><div class="binary" data-field="carinoIntens"><button class="bbin" onclick="selBin(this)">Intenso/a</button><button class="bbin" onclick="selBin(this)">Tranquilo/a</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoPublic"><button class="bbin" onclick="selBin(this)">Cariño privado</button><button class="bbin" onclick="selBin(this)">Demostrar públicamente</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoResp"><button class="bbin" onclick="selBin(this)">Responder rápido</button><button class="bbin" onclick="selBin(this)">Responder bien</button></div></div>
+    <div class="q"><div class="ql">¿Sos más de...</div><div class="binary" data-field="carinoCoqueteo"><button class="bbin" onclick="selBin(this)">Coqueteo directo</button><button class="bbin" onclick="selBin(this)">Coqueteo indirecto</button></div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sec">
+    <div class="sec-title">🎮 ¿Cómo sos en el amor?</div>
+    <div class="q">
+      <div class="ql">Si alguien te gusta mucho... (podés elegir varios)</div>
+      <div class="pills multi" data-field="siGusta">
+        <button class="pill" onclick="selMulti(this)">Le hablo más</button><button class="pill" onclick="selMulti(this)">Le hablo menos (me pongo raro/a)</button><button class="pill" onclick="selMulti(this)">Stalkeo todas sus redes</button><button class="pill" onclick="selMulti(this)">Sobrepiensa cada mensaje</button><button class="pill" onclick="selMulti(this)">Espero señales</button><button class="pill" onclick="selMulti(this)">Soy directo/a, lo dejo claro</button><button class="pill" onclick="selMulti(this)">Lo muestro con indirectas</button><button class="pill" onclick="selMulti(this)">Observo si hay reciprocidad</button><button class="pill" onclick="selMulti(this)">Me cuesta mucho demostrarlo</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">Si alguien te deja de responder...</div>
+      <div class="pills" data-field="dejResponder"><button class="pill" onclick="selPill(this)">Te da igual</button><button class="pill" onclick="selPill(this)">Sobrepensás</button><button class="pill" onclick="selPill(this)">Mandás otro mensaje</button><button class="pill" onclick="selPill(this)">Esperás</button><button class="pill" onclick="selPill(this)">Te alejás emocionalmente</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">En una relación sos más... (podés elegir varios)</div>
+      <div class="pills multi" data-field="enRelacion">
+        <button class="pill" onclick="selMulti(this)">Intenso/a</button><button class="pill" onclick="selMulti(this)">Tranquilo/a</button><button class="pill" onclick="selMulti(this)">Detallista</button><button class="pill" onclick="selMulti(this)">Protector/a</button><button class="pill" onclick="selMulti(this)">Sensible</button><button class="pill" onclick="selMulti(this)">Gracioso/a</button><button class="pill" onclick="selMulti(this)">Celoso/a</button><button class="pill" onclick="selMulti(this)">Observador/a</button><button class="pill" onclick="selMulti(this)">Romántico/a</button><button class="pill" onclick="selMulti(this)">Independiente</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">En el amor sos...</div>
+      <div class="pills" data-field="enElAmor"><button class="pill" onclick="selPill(this)">El/la que se enamora rápido</button><button class="pill" onclick="selPill(this)">El/la que tarda en abrirse</button><button class="pill" onclick="selPill(this)">El/la que sobrepiensa todo</button><button class="pill" onclick="selPill(this)">El/la que da demasiado</button><button class="pill" onclick="selPill(this)">El/la que se hace el/la difícil</button><button class="pill" onclick="selPill(this)">El/la protector/a</button><button class="pill" onclick="selPill(this)">El/la intenso/a</button><button class="pill" onclick="selPill(this)">El/la romántico/a</button></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sec">
+    <div class="sec-title">🚩 Green flag o Red flag</div>
+    <p class="help" style="margin-bottom:14px">¿Green flag o red flag para vos?</p>
+    <div class="fp" id="fp">1 / 16</div>
+    <div class="fcard" id="fcard">Te escribe primero todos los días</div>
+    <div class="fbtns">
+      <button class="fbr" onclick="flagVote('red')">🚩 Red flag</button>
+      <button class="fbg" onclick="flagVote('green')">💚 Green flag</button>
+    </div>
+    <div class="fdone" id="fdone"></div>
+  </div>
+</section>
+
+<!-- ═══ ETAPA 6 ═══ -->
+<section class="stage" id="stage-6">
+  <p class="s-num">Etapa 6</p>
+  <h1 class="s-title">Tu tipo y profundidad</h1>
+  <p class="s-sub">Atracción, vínculos y lo que nunca te dijeron.</p>
+
+  <div class="sec">
+    <div class="sec-title">💘 Tu tipo</div>
+    <div class="q">
+      <div class="ql">¿Qué vibra te suele atraer?</div>
+      <div class="pills" data-field="vibeAtrae"><button class="pill" onclick="selPill(this)">Tranquila</button><button class="pill" onclick="selPill(this)">Intensa</button><button class="pill" onclick="selPill(this)">Misteriosa</button><button class="pill" onclick="selPill(this)">Divertida</button><button class="pill" onclick="selPill(this)">Sensible</button><button class="pill" onclick="selPill(this)">Segura</button><button class="pill" onclick="selPill(this)">Artística</button><button class="pill" onclick="selPill(this)">Intelectual</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Qué tipo de conexión buscás primero?</div>
+      <div class="pills" data-field="conexionPrimero"><button class="pill" onclick="selPill(this)">Emocional</button><button class="pill" onclick="selPill(this)">Mental</button><button class="pill" onclick="selPill(this)">Física</button><button class="pill" onclick="selPill(this)">Divertida</button><button class="pill" onclick="selPill(this)">Tranquila</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Te gusta alguien que...</div>
+      <div class="pills" data-field="gustaMueven"><button class="pill" onclick="selPill(this)">Tome iniciativa</button><button class="pill" onclick="selPill(this)">Vaya lento</button><button class="pill" onclick="selPill(this)">Sea demostrativo/a</button><button class="pill" onclick="selPill(this)">Sea misterioso/a</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Te atrae más alguien...</div>
+      <div class="pills" data-field="atraeMas"><button class="pill" onclick="selPill(this)">Seguro/a</button><button class="pill" onclick="selPill(this)">Sensible</button><button class="pill" onclick="selPill(this)">Gracioso/a</button><button class="pill" onclick="selPill(this)">Inteligente</button><button class="pill" onclick="selPill(this)">Creativo/a</button><button class="pill" onclick="selPill(this)">Ambicioso/a</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">👀 Estética del crush</div>
+    <div class="q prem-only">
+      <div class="ql">¿Qué outfit te parece más atractivo? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="outfitCrush"><button class="pill" onclick="selPill(this)">Natural / casual</button><button class="pill" onclick="selPill(this)">Elegante</button><button class="pill" onclick="selPill(this)">Sporty / gym</button><button class="pill" onclick="selPill(this)">Artístico</button><button class="pill" onclick="selPill(this)">Aesthetic</button><button class="pill" onclick="selPill(this)">Urbano / streetwear</button><button class="pill" onclick="selPill(this)">Relajado / comfy</button></div>
+    </div>
+    <div class="q prem-only"><div class="ql">¿Qué detalle de estilo notás primero en alguien que te atrae? <span class="ptag">★ Premium</span></div><input class="inp" id="detalleAtrae" type="text" placeholder="Lo primero que ves"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué detalle pequeño te parece MUY atractivo? <span class="ptag">★ Premium</span></div><input class="inp" id="detalleMuyAtrac" type="text" placeholder="Ese detalle que te vuela la cabeza"/></div>
+    <div class="q">
+      <div class="ql">¿Qué color de pelo te atrae más?</div>
+      <div class="pills" data-field="colorPelo"><button class="pill" onclick="selPill(this)">Negro</button><button class="pill" onclick="selPill(this)">Castaño</button><button class="pill" onclick="selPill(this)">Rubio</button><button class="pill" onclick="selPill(this)">Pelirrojo</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
+    </div>
+    <div class="q prem-only">
+      <div class="ql">¿Qué estilo de pelo te gusta? <span class="ptag">★ Premium</span></div>
+      <div class="pills" data-field="estiloPelo"><button class="pill" onclick="selPill(this)">Corto</button><button class="pill" onclick="selPill(this)">Largo</button><button class="pill" onclick="selPill(this)">Ondulado</button><button class="pill" onclick="selPill(this)">Lacio</button><button class="pill" onclick="selPill(this)">Despeinado</button><button class="pill" onclick="selPill(this)">Prolijo</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Qué altura te suele atraer?</div>
+      <div class="pills" data-field="alturaAtrae"><button class="pill" onclick="selPill(this)">Más bajos/as que yo</button><button class="pill" onclick="selPill(this)">Misma altura</button><button class="pill" onclick="selPill(this)">Más altos/as</button><button class="pill" onclick="selPill(this)">Indiferente</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Qué tipo de contextura te atrae más?</div>
+      <div class="pills" data-field="contextura"><button class="pill" onclick="selPill(this)">Delgada</button><button class="pill" onclick="selPill(this)">Atlética</button><button class="pill" onclick="selPill(this)">Musculosa</button><button class="pill" onclick="selPill(this)">Curvy</button><button class="pill" onclick="selPill(this)">Plus size</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">🛋️ Tu sesión de psicología</div>
+    <p class="help" style="margin-bottom:16px">Tu gemelo necesita saber algunas cosas profundas. Sentite en confianza.</p>
+    <div class="q"><div class="ql">¿Qué aprendiste de tus vínculos pasados? ¿Qué errores repetías y qué no aceptarías hoy?</div><textarea class="txa" id="psi1" placeholder="Contanos..."></textarea></div>
+    <div class="q">
+      <div class="ql">¿Qué te cuesta más, perdonar a otros o perdonarte a vos?</div>
+      <div class="pills" data-field="perdonar"><button class="pill" onclick="selPill(this)">Perdonar a otros</button><button class="pill" onclick="selPill(this)">Perdonarme a mí</button><button class="pill" onclick="selPill(this)">Las dos por igual</button></div>
+    </div>
+    <div class="q"><div class="ql">¿Te cuesta soltar a las personas o tendés a idealizar las relaciones al principio?</div><textarea class="txa" id="psi3" placeholder="Contanos..."></textarea></div>
+    <div class="q"><div class="ql">¿Qué tipo de personas o dinámicas suelen aparecer repetidamente en tu vida?</div><textarea class="txa" id="psi4" placeholder="Esos patrones que notás..."></textarea></div>
+    <div class="q"><div class="ql">¿Qué es lo que más necesitás escuchar de alguien y nunca te lo dijeron?</div><textarea class="txa" id="psi5" placeholder="Algo que siempre esperaste..."></textarea></div>
+  </div>
+</section>
+
+<!-- ═══ ETAPA 7 ═══ -->
+<section class="stage" id="stage-7">
+  <p class="s-num">Etapa 7</p>
+  <h1 class="s-title">Tu Gemelo Digital</h1>
+  <p class="s-sub">Esto es lo que construiste. ¿Te representa?</p>
+
+  <div class="gbox" id="gemelo-summary-box">
+    <div class="glabel">Tu gemelo dice...</div>
+    <p class="gtext" id="gemelo-gen-text">Cargando tu gemelo...</p>
+    <div class="gtraits" id="gemelo-traits"></div>
+  </div>
+
+  <div class="gbox">
+    <div class="glabel">¿Lo querés ajustar?</div>
+    <p class="help" style="margin-bottom:10px">Editá libremente. Este texto es lo que tu gemelo digital va a usar para conectar con otros.</p>
+    <textarea class="gedit" id="gedit" placeholder="Editá tu descripción..."></textarea>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:32px">
+    <button class="btn-regen" onclick="regenGemelo()">Regenerar ✨</button>
+    <button class="btn-confirm" onclick="finalizarGemelo()">Este soy yo ✓</button>
+  </div>
+</section>
+
+</div><!-- /main -->
+
+<nav class="botnav">
+  <button class="btn-back" id="btn-back" onclick="goBack()" disabled>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+    Volver
+  </button>
+  <button class="btn-next" id="btn-next" onclick="goNext()">Siguiente →</button>
+</nav>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+  authDomain:"pebble-78e95.firebaseapp.com",
+  projectId:"pebble-78e95"
+});
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let uid = null, userPlan = 'free', stageData = {}, currentStage = 1;
+const TOTAL = 7;
+
+/* ─── FLAGS ─── */
+const FLAGS = [
+  "Te escribe primero todos los días",
+  "Te dice «Te extraño» a la semana de conocerse",
+  "Te cuenta toda su vida en la primera cita",
+  "Te manda 5 audios seguidos",
+  "Te presenta a sus amigos después de dos citas",
+  "Te pone un apodo cariñoso al toque",
+  "Tarda en responder",
+  "No postea nada de la relación",
+  "Tiene opiniones fuertes en todo",
+  "Te deja ganar siempre",
+  "Es espontáneo/a",
+  "Vive el presente, no planea nada",
+  "Es adicto/a al trabajo o estudio",
+  "Llora en las películas",
+  "Sale de fiesta todos los fines de semana",
+  "No usa mucho el teléfono"
+];
+let flagIdx = 0, flagVotes = {};
+
+window.flagVote = function(val) {
+  if (flagIdx >= FLAGS.length) return;
+  flagVotes[flagIdx] = val;
+  const card = document.getElementById('fcard');
+  card.classList.add(val === 'green' ? 'fg' : 'fr');
+  setTimeout(() => {
+    card.classList.remove('fg','fr');
+    flagIdx++;
+    if (flagIdx < FLAGS.length) {
+      card.textContent = FLAGS[flagIdx];
+      document.getElementById('fp').textContent = (flagIdx + 1) + ' / ' + FLAGS.length;
+    } else {
+      card.style.display = 'none';
+      document.querySelector('.fbtns').style.display = 'none';
+      document.getElementById('fp').style.display = 'none';
+      const greens = Object.values(flagVotes).filter(v => v === 'green').length;
+      const done = document.getElementById('fdone');
+      done.style.display = 'block';
+      done.textContent = '¡Listo! Marcaste ' + greens + ' green flags y ' + (FLAGS.length - greens) + ' red flags.';
+    }
+  }, 320);
+};
+
+/* ─── SELECTORS ─── */
+window.selPill = function(btn) {
+  btn.closest('.pills').querySelectorAll('.pill').forEach(p => p.classList.remove('sel'));
+  btn.classList.add('sel');
+};
+window.selMulti = function(btn) { btn.classList.toggle('sel'); };
+window.selRadio = function(item) {
+  item.closest('.rlist').querySelectorAll('.ritem').forEach(r => r.classList.remove('sel'));
+  item.classList.add('sel');
+};
+window.selBin = function(btn) {
+  btn.closest('.binary').querySelectorAll('.bbin').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+};
+
+/* ─── COLLECT ─── */
+function collectStage(n) {
+  const stage = document.getElementById('stage-' + n);
+  const d = {};
+  stage.querySelectorAll('input[id],textarea[id]').forEach(el => { d[el.id] = el.value.trim(); });
+  stage.querySelectorAll('.pills:not(.multi)').forEach(p => {
+    const sel = p.querySelector('.pill.sel');
+    d[p.dataset.field] = sel ? sel.textContent.trim() : '';
+  });
+  stage.querySelectorAll('.pills.multi').forEach(p => {
+    d[p.dataset.field] = [...p.querySelectorAll('.pill.sel')].map(b => b.textContent.trim());
+  });
+  stage.querySelectorAll('.rlist').forEach(r => {
+    const sel = r.querySelector('.ritem.sel .rtext');
+    d[r.dataset.field] = sel ? sel.textContent.trim() : '';
+  });
+  stage.querySelectorAll('.binary').forEach(b => {
+    const sel = b.querySelector('.bbin.sel');
+    d[b.dataset.field] = sel ? sel.textContent.trim() : '';
+  });
+  if (n === 5) d['flags'] = flagVotes;
+  return d;
+}
+
+/* ─── SAVE ─── */
+async function saveStage(n) {
+  if (!uid) return;
+  const data = collectStage(n);
+  stageData['etapa' + n] = data;
+  try {
+    await setDoc(doc(db,'usuarios',uid,'gemelo_setup','data'), { ['etapa'+n]: data }, { merge: true });
+  } catch(e) { console.error(e); }
+}
+
+/* ─── NAVIGATION ─── */
+function showStage(n) {
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.getElementById('stage-' + n).classList.add('active');
+  currentStage = n;
+  document.getElementById('prog-fill').style.width = (n / TOTAL * 100) + '%';
+  document.getElementById('step-lbl').textContent = n + ' / ' + TOTAL;
+  const back = document.getElementById('btn-back');
+  back.disabled = n === 1;
+  back.style.opacity = n === 1 ? '0.3' : '1';
+  const next = document.getElementById('btn-next');
+  if (n === TOTAL) { next.style.display = 'none'; }
+  else { next.style.display = ''; next.textContent = n === TOTAL - 1 ? 'Ver mi Gemelo ✨' : 'Siguiente →'; }
+  window.scrollTo(0, 0);
+  history.pushState({ stage: n }, '', '#etapa-' + n);
+}
+
+window.goNext = async function() {
+  if (currentStage === TOTAL) return;
+  await saveStage(currentStage);
+  const next = currentStage + 1;
+  if (next === TOTAL) buildGemelo();
+  showStage(next);
+};
+window.goBack = function() {
+  if (currentStage === 1) return;
+  showStage(currentStage - 1);
+};
+window.addEventListener('popstate', e => { if (e.state?.stage) showStage(e.state.stage); });
+
+/* ─── GEMELO GENERATOR ─── */
+function buildGemelo() {
+  const e1 = stageData.etapa1 || {}, e2 = stageData.etapa2 || {},
+        e3 = stageData.etapa3 || {}, e5 = stageData.etapa5 || {},
+        e6 = stageData.etapa6 || {};
+  const nombre   = e1.nombre || 'Vos';
+  const amor     = e5.enElAmor  || '';
+  const relacion = (e5.enRelacion || []).slice(0,3).join(', ') || 'auténtico/a';
+  const vibe     = e6.vibeAtrae  || 'especial';
+  const lugar    = e2.lugarIdeal || 'un lugar único';
+  const artista  = e2.artista    || 'la música';
+  const estetica = e2.estetica   || '';
+
+  const amorLine = amor ? `, ${amor.toLowerCase()}` : '';
+  const esteticaLine = estetica ? ` Tu estética es ${estetica.toLowerCase()}.` : '';
+  const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Me sentís bien en "${lugar.toLowerCase()}" y con ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
+
+  document.getElementById('gemelo-gen-text').textContent = text;
+  document.getElementById('gedit').value = text;
+
+  const traits = [];
+  if (amor) traits.push(amor);
+  if (e3.comoSoy) traits.push(...(e3.comoSoy || []).slice(0,3));
+  if (estetica) traits.push(estetica);
+  if (e6.conexionPrimero) traits.push('Conexión ' + e6.conexionPrimero.toLowerCase());
+  document.getElementById('gemelo-traits').innerHTML =
+    traits.slice(0,6).map(t => `<span class="gtrait">${t}</span>`).join('');
+}
+
+window.regenGemelo = function() { buildGemelo(); };
+
+window.finalizarGemelo = async function() {
+  if (!uid) return;
+  const finalText = document.getElementById('gedit').value.trim();
+  await saveStage(7);
+  try {
+    await setDoc(doc(db,'usuarios',uid,'gemelo_setup','data'), {
+      gemelo_final: finalText,
+      completed: true,
+      completedAt: new Date().toISOString()
+    }, { merge: true });
+    await updateDoc(doc(db,'usuarios',uid), { gemelo_completado: true });
+    window.location.href = 'gemelo.html';
+  } catch(e) { console.error(e); }
+};
+
+/* ─── AUTH ─── */
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'home.html'; return; }
+  uid = user.uid;
+
+  try {
+    const snap = await getDoc(doc(db,'usuarios',uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      userPlan = d.plan || 'free';
+      if (userPlan === 'premium') document.body.classList.add('is-premium');
+    }
+  } catch(e) {}
+
+  try {
+    const snap = await getDoc(doc(db,'usuarios',uid,'gemelo_setup','data'));
+    if (snap.exists()) {
+      const d = snap.data();
+      for (const k in d) stageData[k] = d[k];
+    }
+  } catch(e) {}
+
+  const hash = window.location.hash.match(/#etapa-(\d)/);
+  showStage(hash ? parseInt(hash[1]) : 1);
+  document.getElementById('auth-gate').style.display = 'none';
+});
+</script>
+</body>
+</html>
