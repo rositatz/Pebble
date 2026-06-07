@@ -403,7 +403,7 @@ html, body {
     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
   </div>
   <div class="success-title">¡Listo, sos Premium!</div>
-  <p class="success-sub">Tu gemelo ya tiene acceso a todas las funciones.<br>Redirigiendo a tu inicio…</p>
+  <p class="success-sub">¡Bienvenido/a a Premium!<br>Completá las preguntas para potenciar tu gemelo…</p>
   <div class="success-dots">
     <div class="success-dot active" id="dot1"></div>
     <div class="success-dot" id="dot2"></div>
@@ -503,13 +503,37 @@ function processPayment() {
         step++;
       }, 500);
 
-      setTimeout(() => {
+      setTimeout(async () => {
         clearInterval(dotTimer);
-        window.location.href = './home.html';
+        if (window._savePremiumPlan) await window._savePremiumPlan();
+        window.location.href = './gemelo-setup.html?upgrade=premium';
       }, 2400);
     }, 600);
   }, 1800);
 }
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+  authDomain:"pebble-78e95.firebaseapp.com",
+  projectId:"pebble-78e95"
+});
+const db = getFirestore(app);
+let _uid = null;
+onAuthStateChanged(getAuth(app), u => { if (u) _uid = u.uid; });
+
+// Expuesto para que processPayment() lo llame antes de redirigir
+window._savePremiumPlan = async function() {
+  if (!_uid) return;
+  try {
+    await setDoc(doc(db,'usuarios',_uid), { plan:'premium', planActivadoAt: new Date().toISOString() }, { merge:true });
+  } catch(e) { console.error(e); }
+};
 </script>
 </body>
 </html>

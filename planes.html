@@ -198,7 +198,7 @@ html, body {
 <!-- Top bar -->
 <div class="topbar">
   <a class="logo" href="./home.html">Pe<span>bb</span>le</a>
-  <a class="skip-link" href="./home.html">Continuar gratis →</a>
+  <a class="skip-link" href="#" onclick="elegirGratis();return false">Continuar gratis →</a>
 </div>
 
 <div class="main">
@@ -301,7 +301,7 @@ html, body {
           <span class="feat-text">Estadísticas avanzadas</span>
         </li>
       </ul>
-      <a href="./home.html" class="plan-cta">Continuar gratis</a>
+      <button class="plan-cta" onclick="elegirGratis()">Continuar gratis</button>
     </div>
 
   </div>
@@ -328,10 +328,32 @@ html, body {
 
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+  authDomain:"pebble-78e95.firebaseapp.com",
+  projectId:"pebble-78e95"
+});
+const auth = getAuth(app);
+const db   = getFirestore(app);
+let currentUid = null;
+
+onAuthStateChanged(auth, user => { if (user) currentUid = user.uid; });
+
+window.elegirGratis = async function() {
+  if (currentUid) {
+    try { await setDoc(doc(db,'usuarios',currentUid), { plan:'free' }, { merge:true }); } catch(e) {}
+  }
+  window.location.href = './gemelo-setup.html';
+};
+
 let currentPeriod = 'mensual';
 
-function setPeriod(p) {
+window.setPeriod = function setPeriod(p) {
   currentPeriod = p;
   document.getElementById('btnMensual').classList.toggle('active', p === 'mensual');
   document.getElementById('btnAnual').classList.toggle('active', p === 'anual');
