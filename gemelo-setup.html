@@ -978,18 +978,30 @@ function buildGemelo() {
 window.regenGemelo = function() { buildGemelo(); };
 
 window.finalizarGemelo = async function() {
-  if (!uid) return;
+  // Mostrar estado de carga en el botón
+  const btn = document.querySelector('.btn-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  // Si no hay uid redirigir igual
+  if (!uid) { window.location.href = 'home.html'; return; }
+
   const finalText = document.getElementById('gedit').value.trim();
-  await saveStage(7);
+
   try {
+    await saveStage(7);
     await setDoc(doc(db,'usuarios',uid,'gemelo_setup','data'), {
       gemelo_final: finalText,
       completed: true,
       completedAt: new Date().toISOString()
     }, { merge: true });
     await updateDoc(doc(db,'usuarios',uid), { gemelo_completado: true });
+  } catch(e) {
+    console.error('finalizar gemelo:', e);
+  } finally {
+    // Siempre redirigir, haya guardado bien o no
     window.location.href = 'home.html';
-  } catch(e) { console.error(e); }
+  }
 };
 
 /* ─── AUTH ─── */
