@@ -293,6 +293,38 @@ body {
   border-color: var(--orange);
 }
 .form-textarea { resize: none; min-height: 100px; line-height: 1.6; }
+
+.range-slider-wrap { position: relative; width: 100%; height: 48px; padding-top: 14px; }
+.range-slider-track {
+  position: absolute; top: 18px; left: 0; right: 0; height: 4px;
+  border-radius: 2px; background: var(--border); pointer-events: none;
+}
+.range-slider-track::after {
+  content: ''; position: absolute; top: 0; height: 100%;
+  background: var(--orange); border-radius: 2px;
+  left: var(--range-left, 0%); right: var(--range-right, 0%);
+}
+.range-thumb {
+  position: absolute; top: 8px; left: 0; width: 100%; height: 24px;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; pointer-events: none; margin: 0;
+}
+.range-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--orange); border: 3px solid var(--bg);
+  cursor: pointer; pointer-events: all; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  transition: transform .15s;
+}
+.range-thumb::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.range-thumb::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--orange); border: 3px solid var(--bg);
+  cursor: pointer; pointer-events: all; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.range-labels {
+  display: flex; justify-content: space-between; margin-top: 8px;
+  font-size: 0.78rem; font-weight: 600; color: var(--orange);
+}
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .char-count {
   font-size: 0.7rem; color: var(--text-muted); text-align: right;
@@ -954,6 +986,10 @@ body {
             Visible
           </span>
         </div>
+        <div class="field-row">
+          <span class="field-label">Rango de edad</span>
+          <span class="field-value" id="vRangoEdad">18 – 35 años</span>
+        </div>
       </div>
 
       <!-- Edición -->
@@ -1012,6 +1048,19 @@ body {
             </select>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Rango de edad que busco</label>
+          <div class="range-slider-wrap">
+            <div class="range-slider-track" id="rangeTrack"></div>
+            <input type="range" class="range-thumb range-min" id="rangeMin" min="18" max="70" value="18" step="1"/>
+            <input type="range" class="range-thumb range-max" id="rangeMax" min="18" max="70" value="35" step="1"/>
+            <div class="range-labels">
+              <span id="rangeLabelMin">18</span>
+              <span id="rangeLabelMax">35</span>
+            </div>
+          </div>
+        </div>
+
         <div class="edit-actions">
           <button class="btn-cancel" onclick="cancelEdit('info')">Cancelar</button>
           <button class="btn-save" onclick="saveInfo()">Guardar</button>
@@ -1834,6 +1883,9 @@ function saveInfo() {
     return a;
   })() : null;
 
+  const rMin = document.getElementById('rangeMin').value;
+  const rMax = document.getElementById('rangeMax').value;
+
   // Update view
   document.getElementById('vNombre').textContent    = nombre || '—';
   document.getElementById('vEdad').textContent      = age ? `${age} años` : '—';
@@ -1842,6 +1894,7 @@ function saveInfo() {
   document.getElementById('vPronombres').textContent= pronomb || '—';
   document.getElementById('vOrientacion').textContent= orient || '—';
   document.getElementById('vBusco').textContent     = busco || '—';
+  document.getElementById('vRangoEdad').textContent = `${rMin} – ${rMax} años`;
 
   // Update hero
   document.getElementById('heroName').textContent = nombre || '—';
@@ -2123,6 +2176,31 @@ function handleLogout() {
 renderPhotoGrid();
 // init bio char count
 document.getElementById('bioCount').textContent = document.getElementById('eBio').value.length;
+
+// ── Dual range slider ──
+(function initRangeSlider() {
+  const min = document.getElementById('rangeMin');
+  const max = document.getElementById('rangeMax');
+  const track = document.getElementById('rangeTrack');
+  const lblMin = document.getElementById('rangeLabelMin');
+  const lblMax = document.getElementById('rangeLabelMax');
+
+  function update() {
+    let lo = parseInt(min.value);
+    let hi = parseInt(max.value);
+    if (lo > hi) { min.value = hi; lo = hi; }
+    if (hi < lo) { max.value = lo; hi = lo; }
+    const pct = v => ((v - 18) / (70 - 18)) * 100;
+    track.style.setProperty('--range-left', pct(lo) + '%');
+    track.style.setProperty('--range-right', (100 - pct(hi)) + '%');
+    lblMin.textContent = lo;
+    lblMax.textContent = hi;
+  }
+
+  min.addEventListener('input', update);
+  max.addEventListener('input', update);
+  update();
+})();
 </script>
 
 <script type="module">
