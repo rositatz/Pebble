@@ -249,6 +249,8 @@
   .form-label { font-family: var(--font-body); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(238,237,236,0.95); }
   .form-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.45); color: var(--cream); font-family: var(--font-body); font-size: 0.9rem; padding: 0.85rem 1rem; outline: none; transition: border-color 0.2s, background 0.2s; }
   .form-input::placeholder { color: rgba(238,237,236,0.65); }
+  select.form-input { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(238,237,236,0.6)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; cursor: pointer; }
+  select.form-input option { background: #1a1a1a; color: #EEEDEC; }
   .form-input:focus { border-color: var(--orange); background: rgba(255,255,255,0.22); }
   .btn-submit { background: var(--orange); color: white; font-family: var(--font-body); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 1.1rem 2rem; border: none; cursor: pointer; width: 100%; margin-top: 0.5rem; transition: background 0.25s, transform 0.2s; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
   .btn-submit:hover { background: var(--orange-mid); transform: translateY(-2px); }
@@ -661,9 +663,25 @@
           <input class="form-input" type="email" id="f-email" name="email" placeholder="tu@email.com" required/>
         </div>
 
-        <div class="form-field">
-          <label class="form-label" for="f-age">Edad</label>
-          <input class="form-input" type="number" id="f-age" name="edad" placeholder="Tu edad" min="18" max="99" required/>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="f-age">Edad</label>
+            <input class="form-input" type="number" id="f-age" name="edad" placeholder="Tu edad" min="18" max="99" required/>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="f-ocupacion">Ocupación</label>
+            <select class="form-input" id="f-ocupacion" name="ocupacion" required>
+              <option value="" disabled selected>Seleccioná una opción</option>
+              <option value="Estudio">Estudio</option>
+              <option value="Trabajo">Trabajo</option>
+              <option value="Estudio y trabajo">Estudio y trabajo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field" id="field-donde" style="display:none">
+          <label class="form-label" id="label-donde" for="f-donde">¿Dónde estudiás?</label>
+          <input class="form-input" type="text" id="f-donde" name="institucion" placeholder="Universidad / instituto"/>
         </div>
 
         <!-- campo oculto para identificar la fuente -->
@@ -739,6 +757,30 @@
   // Ocultar aviso al editar email
   document.getElementById('f-email').addEventListener('input', () => {
     dupMsg.style.display = 'none';
+  });
+
+  // Mostrar campo institución/empresa según ocupación
+  document.getElementById('f-ocupacion').addEventListener('change', (e) => {
+    const v = e.target.value;
+    const field = document.getElementById('field-donde');
+    const label = document.getElementById('label-donde');
+    const input = document.getElementById('f-donde');
+    if (v === 'Estudio') {
+      label.textContent = '¿Dónde estudiás?';
+      input.placeholder = 'Universidad / instituto';
+      input.name = 'institucion';
+      field.style.display = 'flex';
+    } else if (v === 'Trabajo') {
+      label.textContent = '¿Dónde trabajás?';
+      input.placeholder = 'Empresa / organización';
+      input.name = 'empresa';
+      field.style.display = 'flex';
+    } else if (v === 'Estudio y trabajo') {
+      label.textContent = '¿Dónde estudiás y trabajás?';
+      input.placeholder = 'Universidad y/o empresa';
+      input.name = 'institucion_empresa';
+      field.style.display = 'flex';
+    }
   });
 
   form.addEventListener('submit', async (e) => {
