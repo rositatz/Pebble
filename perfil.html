@@ -917,6 +917,25 @@ body {
     </div>
   </div>
 
+  <!-- Gemelo progress banner -->
+  <div class="card fu" id="gemeloBanner" style="display:none">
+    <div style="padding:20px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <h2 class="section-title" style="margin-bottom:4px">Tu gemelo digital</h2>
+          <p class="section-sub">Te falta completar el cuestionario</p>
+        </div>
+        <span id="gemeloPct" style="font-family:var(--fd);font-size:1.6rem;font-weight:800;color:var(--orange);letter-spacing:-.03em">0%</span>
+      </div>
+      <div style="width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:16px">
+        <div id="gemeloBar" style="height:100%;background:var(--orange);border-radius:3px;width:0%;transition:width .6s ease"></div>
+      </div>
+      <a href="gemelo-setup.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:var(--orange);color:#fff;border-radius:100px;font-family:var(--fb);font-size:.85rem;font-weight:600;text-decoration:none;transition:background .2s">
+        Seguir completando →
+      </a>
+    </div>
+  </div>
+
   <!-- ③ Información básica -->
   <div class="card fu">
     <div class="info-section">
@@ -2319,6 +2338,20 @@ onAuthStateChanged(auth, async user => {
       if (p.invisible !== undefined) document.getElementById('privInvisible').checked = p.invisible;
       if (p.soloComp  !== undefined) document.getElementById('privSoloComp').checked  = p.soloComp;
       if (p.pausada   !== undefined) document.getElementById('privPausar').checked    = p.pausada;
+    }
+
+    // Gemelo progress banner
+    if (d.gemelo_completado === false && d.gemelo_progreso) {
+      const pct = d.gemelo_progreso;
+      const etapa = d.gemelo_etapa_actual || 1;
+      document.getElementById('gemeloBanner').style.display = 'block';
+      document.getElementById('gemeloPct').textContent = pct + '%';
+      document.getElementById('gemeloBar').style.width = pct + '%';
+      document.getElementById('gemeloBanner').querySelector('a').href = 'gemelo-setup.html#etapa-' + etapa;
+    } else if (!d.gemelo_completado && !d.gemelo_progreso) {
+      document.getElementById('gemeloBanner').style.display = 'block';
+      document.getElementById('gemeloPct').textContent = '0%';
+      document.getElementById('gemeloBar').style.width = '0%';
     }
 
   } catch(err) { console.warn('Error cargando perfil:', err); }

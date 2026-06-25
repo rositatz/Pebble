@@ -125,6 +125,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size
 .btn-next{height:52px;flex:1;background:var(--orange);border:none;border-radius:var(--r-xl);color:#fff;font-family:var(--fd);font-weight:800;font-size:1rem;cursor:pointer;transition:all .2s;touch-action:manipulation}
 .btn-next:hover{background:var(--orange-mid)}
 .btn-next:active{transform:scale(.98)}
+.btn-skip{height:52px;padding:0 20px;background:transparent;border:1.5px solid var(--border);border-radius:var(--r-xl);color:var(--text-m);font-family:var(--fb);font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s;touch-action:manipulation;flex-shrink:0}
+.btn-skip:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
 
 /* ── PREMIUM ── */
 .prem-only{display:none}
@@ -802,6 +804,7 @@ body.is-upgrade .upgrade-banner{display:block}
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
     Volver
   </button>
+  <button class="btn-skip" id="btn-skip" onclick="guardarYSalir()">Seguir después</button>
   <button class="btn-next" id="btn-next" onclick="goNext()">Siguiente →</button>
 </nav>
 
@@ -943,6 +946,22 @@ window.goNext = async function() {
 window.goBack = function() {
   if (currentStage === 1) return;
   showStage(currentStage - 1, 'back');
+};
+window.guardarYSalir = async function() {
+  const btn = document.getElementById('btn-skip');
+  btn.textContent = 'Guardando…';
+  btn.disabled = true;
+  await saveStage(currentStage);
+  if (uid) {
+    try {
+      await updateDoc(doc(db,'usuarios',uid), {
+        gemelo_completado: false,
+        gemelo_progreso: Math.round((currentStage / TOTAL) * 100),
+        gemelo_etapa_actual: currentStage
+      });
+    } catch(e) { console.error(e); }
+  }
+  window.location.href = 'perfil.html';
 };
 window.addEventListener('popstate', e => { if (e.state?.stage) showStage(e.state.stage); });
 
