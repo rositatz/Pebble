@@ -1241,7 +1241,11 @@ const db   = getFirestore(app);
 let uid = null;
 
 onAuthStateChanged(auth, async user => {
-  if (!user) { return; }
+  if (!user) {
+    const el = document.getElementById('loadingOverlay');
+    if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
+    return;
+  }
   uid = user.uid;
 
   // ── Cargar conversaciones guardadas de Firestore ──

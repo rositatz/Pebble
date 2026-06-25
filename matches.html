@@ -1176,7 +1176,11 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 onAuthStateChanged(auth, async user => {
-  if (!user) { return; }
+  if (!user) {
+    const el = document.getElementById('loadingOverlay');
+    if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
+    return;
+  }
 
   // Actualizar data-active en las cards según chats reales en Firestore
   try {
