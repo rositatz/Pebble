@@ -118,7 +118,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size
 .btn-regen:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
 
 /* ── BOTTOM NAV ── */
-.botnav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,10,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:14px 24px;display:flex;gap:12px;z-index:100;align-items:center}
+.botnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:rgba(10,10,10,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:14px 24px;display:flex;gap:12px;z-index:100;align-items:center;justify-content:center}
 .btn-back{height:44px;padding:0 20px;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-xl);color:var(--text-m);font-family:var(--fb);font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;touch-action:manipulation;flex-shrink:0}
 .btn-back:hover{color:var(--text);border-color:rgba(255,255,255,.18)}
 .btn-back:disabled{opacity:.22;cursor:default;pointer-events:none}
