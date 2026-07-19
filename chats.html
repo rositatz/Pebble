@@ -1231,7 +1231,7 @@ function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
@@ -1241,10 +1241,15 @@ const db   = getFirestore(app);
 let uid = null;
 
 onAuthStateChanged(auth, async user => {
-  if (!user) {
-    const el = document.getElementById('loadingOverlay');
-    if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
-    return;
+  if (!user) { window.location.href = './home.html'; return; }
+  // Expiración de sesión (24h)
+  const _SESSION_MS = 24 * 60 * 60 * 1000;
+  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
+  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
+  else if (Date.now() - _loginTime > _SESSION_MS) {
+    localStorage.removeItem('pebble_login_time');
+    await signOut(auth);
+    window.location.href = './home.html'; return;
   }
   uid = user.uid;
 

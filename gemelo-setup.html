@@ -810,7 +810,7 @@ body.is-upgrade .upgrade-banner{display:block}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp({
@@ -990,8 +990,11 @@ function buildGemelo() {
   if (e3.comoSoy) traits.push(...(e3.comoSoy || []).slice(0,3));
   if (estetica) traits.push(estetica);
   if (e6.conexionPrimero) traits.push('Conexión ' + e6.conexionPrimero.toLowerCase());
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
   document.getElementById('gemelo-traits').innerHTML =
-    traits.slice(0,6).map(t => `<span class="gtrait">${t}</span>`).join('');
+    traits.slice(0,6).map(t => `<span class="gtrait">${escHtml(t)}</span>`).join('');
 }
 
 window.regenGemelo = function() { buildGemelo(); };
@@ -1025,10 +1028,15 @@ window.finalizarGemelo = async function() {
 
 /* ─── AUTH ─── */
 onAuthStateChanged(auth, async user => {
-  if (!user) {
-    showStage(1);
-    document.getElementById('auth-gate').style.display = 'none';
-    return;
+  if (!user) { window.location.href = 'home.html'; return; }
+  // Expiración de sesión (24h)
+  const _SESSION_MS = 24 * 60 * 60 * 1000;
+  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
+  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
+  else if (Date.now() - _loginTime > _SESSION_MS) {
+    localStorage.removeItem('pebble_login_time');
+    await signOut(auth);
+    window.location.href = 'home.html'; return;
   }
   uid = user.uid;
 

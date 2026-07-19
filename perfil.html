@@ -2275,7 +2275,16 @@ function aplicarNombre(nombre) {
 }
 
 onAuthStateChanged(auth, async user => {
-  if (!user) { mostrarPagina(); return; }
+  if (!user) { window.location.href = './home.html'; return; }
+  // Expiración de sesión (24h)
+  const _SESSION_MS = 24 * 60 * 60 * 1000;
+  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
+  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
+  else if (Date.now() - _loginTime > _SESSION_MS) {
+    localStorage.removeItem('pebble_login_time');
+    await signOut(auth);
+    window.location.href = './home.html'; return;
+  }
   uid = user.uid;
 
   // Nombre base desde Firebase Auth
@@ -2375,7 +2384,7 @@ window._db_saveIntereses = async () => {
   await setDoc(doc(db, 'usuarios', uid), { intereses }, { merge: true });
 };
 
-window.doLogout = () => signOut(auth);
+window.doLogout = async () => { localStorage.removeItem('pebble_login_time'); await signOut(auth); };
 
 // Cambio real de contraseña con Firebase Auth
 window._changePassword = async (currentPass, newPass) => {
