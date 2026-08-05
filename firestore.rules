@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cuenta del usuario: perfil básico, chats guardados, plan, etc.
+    // (todo lo que ya escriben home.html, chats.html, perfil.html, pago.html...)
+    match /usuarios/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Respuestas crudas del onboarding (gemelo-setup.html).
+      match /gemelo_setup/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Perfil normalizado del gemelo: lo genera SOLO la Cloud Function
+      // (generar_perfil_gemelo, vía Admin SDK) a partir del onboarding.
+      // El cliente lo puede leer para mostrarlo, pero nunca escribirlo --
+      // si no, cualquiera podría inventarse rasgos falsos para matchear mejor.
+      match /gemelo/{docId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+
+    // Resultado de las simulaciones entre gemelos (simular_situacion). Las
+    // escribe solo la Cloud Function; las pueden leer los dos usuarios
+    // involucrados en esa pareja.
+    match /matches/{parId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == resource.data.usuario_1.uid ||
+         request.auth.uid == resource.data.usuario_2.uid);
+      allow write: if false;
+
+      match /simulaciones/{simId} {
+        allow read: if request.auth != null &&
+          (request.auth.uid == resource.data.usuario_1.uid ||
+           request.auth.uid == resource.data.usuario_2.uid);
+        allow write: if false;
+      }
+    }
+
+    // Waitlist pre-registro de index.html (todavía sin cuenta creada).
+    match /beta_waitlist/{emailId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+  }
+}
