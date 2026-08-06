@@ -1240,7 +1240,7 @@ body {
             <span class="privacy-desc">Tu nombre real aparece en tu tarjeta antes de conectar</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privNombre" checked onchange="updatePrivacyBadge('Nombre', this.checked)"/>
+            <input type="checkbox" class="toggle-input" id="privNombre" checked onchange="handlePrivacyToggle('Nombre', this)"/>
             <label class="toggle-label" for="privNombre"></label>
           </div>
         </div>
@@ -1250,7 +1250,7 @@ body {
             <span class="privacy-desc">Tu edad es visible en el feed de descubrimiento</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privEdad" checked onchange="updatePrivacyBadge('Edad', this.checked)"/>
+            <input type="checkbox" class="toggle-input" id="privEdad" checked onchange="handlePrivacyToggle('Edad', this)"/>
             <label class="toggle-label" for="privEdad"></label>
           </div>
         </div>
@@ -1260,7 +1260,7 @@ body {
             <span class="privacy-desc">Tu ciudad aparece en tu tarjeta en el feed</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privCiudad" checked onchange="updatePrivacyBadge('Ciudad', this.checked)"/>
+            <input type="checkbox" class="toggle-input" id="privCiudad" checked onchange="handlePrivacyToggle('Ciudad', this)"/>
             <label class="toggle-label" for="privCiudad"></label>
           </div>
         </div>
@@ -1270,7 +1270,7 @@ body {
             <span class="privacy-desc">Si lo desactivás, los demás ven solo tu inicial hasta conectar</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privFotos" checked/>
+            <input type="checkbox" class="toggle-input" id="privFotos" checked onchange="handlePrivacyToggle('Fotos', this)"/>
             <label class="toggle-label" for="privFotos"></label>
           </div>
         </div>
@@ -1280,7 +1280,7 @@ body {
             <span class="privacy-desc">Tu descripción es visible en tu perfil antes de conectar</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privBio" checked/>
+            <input type="checkbox" class="toggle-input" id="privBio" checked onchange="handlePrivacyToggle('Bio', this)"/>
             <label class="toggle-label" for="privBio"></label>
           </div>
         </div>
@@ -1290,7 +1290,7 @@ body {
             <span class="privacy-desc">Solo visible para personas con las que tu gemelo ya conectó</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privGenero"/>
+            <input type="checkbox" class="toggle-input" id="privGenero" onchange="handlePrivacyToggle('Genero', this)"/>
             <label class="toggle-label" for="privGenero"></label>
           </div>
         </div>
@@ -1300,7 +1300,7 @@ body {
             <span class="privacy-desc">Solo visible para personas con las que tu gemelo ya conectó</span>
           </div>
           <div class="toggle-wrap">
-            <input type="checkbox" class="toggle-input" id="privOrientacion"/>
+            <input type="checkbox" class="toggle-input" id="privOrientacion" onchange="handlePrivacyToggle('Orientacion', this)"/>
             <label class="toggle-label" for="privOrientacion"></label>
           </div>
         </div>
@@ -1736,8 +1736,42 @@ body {
    PHOTOS
 ══════════════════════════════ */
 const MAX_PHOTOS = 6;
-// In-memory store for this session — REEMPLAZAR con URLs del backend
 let photos = new Array(MAX_PHOTOS).fill(null);
+
+// Redimensiona y comprime la imagen en el navegador antes de guardarla
+// (así entra cómoda en el documento de Firestore, que tiene un límite de 1MB)
+function resizeAndCompress(file, maxDim = 400, quality = 0.65) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+        else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Persiste el array de fotos completo en Firestore
+async function savePhotos() {
+  if (typeof window._db_saveFotos !== 'function') return;
+  try {
+    await window._db_saveFotos(photos);
+  } catch (err) {
+    console.error('Error guardando fotos:', err);
+    showToast('No se pudo guardar la foto, probá con otra');
+  }
+}
 
 // Redibuja completamente la grilla de fotos del perfil
 // Muestra cada slot con la foto cargada (con botones de cambiar, hacer principal y eliminar)
@@ -1805,46 +1839,58 @@ function renderPhotoGrid() {
 // Cuando el usuario elige una imagen, la convierte a URL temporal y la guarda en el array
 function changePhoto(index) {
   const input = document.getElementById(`photoInput${index}`);
-  input.onchange = (e) => {
+  input.onchange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    photos[index] = url;
-    renderPhotoGrid();
-    showToast('Foto actualizada');
     input.value = '';
+    if (!file) return;
+    try {
+      photos[index] = await resizeAndCompress(file);
+      renderPhotoGrid();
+      showToast('Foto actualizada');
+      await savePhotos();
+    } catch (err) {
+      console.error('Error procesando la foto:', err);
+      showToast('No se pudo procesar la imagen');
+    }
   };
   input.click();
 }
 
 // Elimina la foto del índice dado y compacta el array hacia abajo
 // (no deja huecos: las fotos restantes se desplazan al principio del array)
-function removePhoto(index) {
+async function removePhoto(index) {
   photos[index] = null;
   // compact: shift remaining photos down
   photos = [...photos.filter(Boolean), ...new Array(MAX_PHOTOS - photos.filter(Boolean).length).fill(null)];
   renderPhotoGrid();
   showToast('Foto eliminada');
+  await savePhotos();
 }
 
 // Intercambia la foto del índice dado con la foto principal (índice 0)
-function setMainPhoto(index) {
+async function setMainPhoto(index) {
   const tmp = photos[0];
   photos[0] = photos[index];
   photos[index] = tmp;
   renderPhotoGrid();
   showToast('Foto principal actualizada');
+  await savePhotos();
 }
 
 // Main avatar change (hero button)
-document.getElementById('mainPhotoInput').addEventListener('change', (e) => {
+document.getElementById('mainPhotoInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  photos[0] = url;
-  renderPhotoGrid();
-  showToast('Foto principal actualizada');
   e.target.value = '';
+  if (!file) return;
+  try {
+    photos[0] = await resizeAndCompress(file);
+    renderPhotoGrid();
+    showToast('Foto principal actualizada');
+    await savePhotos();
+  } catch (err) {
+    console.error('Error procesando la foto:', err);
+    showToast('No se pudo procesar la imagen');
+  }
 });
 
 /* ══════════════════════════════
@@ -2031,6 +2077,27 @@ function updatePrivacyBadge(field, isVisible) {
   lock.className = 'field-lock ' + (isVisible ? 'visible' : 'hidden');
   lock.querySelector('svg').outerHTML = `<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;fill:none;stroke:currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
   lock.lastChild.textContent = isVisible ? ' Visible' : ' Al conectar';
+}
+
+// Se llama al tocar cualquiera de los 7 toggles de "Privacidad" (nombre, edad,
+// ciudad, fotos, bio, género, orientación): actualiza el badge visual (si ese
+// campo tiene uno) y persiste el estado de los 7 en Firestore
+function handlePrivacyToggle(field, checkbox) {
+  updatePrivacyBadge(field, checkbox.checked);
+  savePrivacidad();
+}
+
+function savePrivacidad() {
+  const data = {
+    nombre:      document.getElementById('privNombre').checked,
+    edad:        document.getElementById('privEdad').checked,
+    ciudad:      document.getElementById('privCiudad').checked,
+    fotos:       document.getElementById('privFotos').checked,
+    bio:         document.getElementById('privBio').checked,
+    genero:      document.getElementById('privGenero').checked,
+    orientacion: document.getElementById('privOrientacion').checked,
+  };
+  if (typeof window._db_savePrivacidad === 'function') window._db_savePrivacidad(data);
 }
 
 /* ══════════════════════════════
@@ -2349,6 +2416,27 @@ onAuthStateChanged(auth, async user => {
       if (p.pausada   !== undefined) document.getElementById('privPausar').checked    = p.pausada;
     }
 
+    // Privacidad de campos del perfil (mostrar nombre/edad/ciudad/fotos/bio/género/orientación)
+    if (d.privacidad) {
+      const pr = d.privacidad;
+      const campos = {
+        nombre: 'privNombre', edad: 'privEdad', ciudad: 'privCiudad', fotos: 'privFotos',
+        bio: 'privBio', genero: 'privGenero', orientacion: 'privOrientacion',
+      };
+      Object.entries(campos).forEach(([key, elId]) => {
+        if (pr[key] !== undefined) document.getElementById(elId).checked = pr[key];
+      });
+      updatePrivacyBadge('Nombre', document.getElementById('privNombre').checked);
+      updatePrivacyBadge('Edad',   document.getElementById('privEdad').checked);
+      updatePrivacyBadge('Ciudad', document.getElementById('privCiudad').checked);
+    }
+
+    // Fotos guardadas
+    if (Array.isArray(d.fotos) && d.fotos.length) {
+      photos = [...d.fotos, ...new Array(MAX_PHOTOS).fill(null)].slice(0, MAX_PHOTOS);
+      renderPhotoGrid();
+    }
+
     // Gemelo progress banner
     if (d.gemelo_completado === false && d.gemelo_progreso) {
       const pct = d.gemelo_progreso;
@@ -2405,6 +2493,18 @@ window._db_saveNotificaciones = async (data) => {
 window._db_savePrivacidadAvanzada = async (data) => {
   if (!uid) return;
   await setDoc(doc(db, 'usuarios', uid), { privacidadAvanzada: data }, { merge: true });
+};
+
+// Guardar privacidad de campos del perfil (nombre/edad/ciudad/fotos/bio/género/orientación)
+window._db_savePrivacidad = async (data) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), { privacidad: data }, { merge: true });
+};
+
+// Guardar el array de fotos (ya comprimidas a data URL) en Firestore
+window._db_saveFotos = async (fotos) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), { fotos }, { merge: true });
 };
 </script>
 </body>
