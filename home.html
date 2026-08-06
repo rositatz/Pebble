@@ -991,6 +991,56 @@ function ocultarPip(id) {
   if (pip) pip.remove();
 }
 
+/* ── Badges dinámicos de las tarjetas de sección (Matches / Chats / Notificaciones) ──
+   Mismos datos "por default" que usa chats.html para saber cuánto hay sin leer
+   por persona y por modo (gemelo/real); se descuenta lo que Firestore ya marcó
+   como leído (leido_{id}_{modo}). */
+const CHATS_DEFAULT_UNREAD = {
+  sofia:     { gemelo: 0, real: 2 },
+  mateo:     { gemelo: 0, real: 1 },
+  valentina: { gemelo: 1, real: 0 },
+  lucia:     { gemelo: 0, real: 0 },
+  agustin:   { gemelo: 0, real: 0 },
+};
+const NOTIFS_DEFAULT_COUNT = 4; // cantidad de .notif-card.unread en notificaciones.html
+
+// texto: función (cantidad) => string a mostrar. Si cantidad es 0, se vacía el
+// badge (mismo truco que ya usa la tarjeta "Mi perfil" con un <span> vacío) en
+// vez de display:none -- el footer usa justify-content:space-between con el
+// badge y la flecha como únicos hijos, así que ocultarlo del todo corre la
+// flecha hacia la izquierda.
+function actualizarBadge(label, cantidad, texto) {
+  // Se busca por .sec-card-footer span (no por .sec-badge) para que siga
+  // encontrando el elemento aunque una llamada previa le haya sacado la clase.
+  const badge = document.querySelector(`.sec-card[aria-label="${label}"] .sec-card-footer span`);
+  if (!badge) return;
+  if (cantidad > 0) {
+    badge.textContent = texto(cantidad);
+    badge.classList.add('sec-badge');
+  } else {
+    badge.textContent = '';
+    badge.classList.remove('sec-badge');
+  }
+}
+
+function actualizarBadgesSecciones(data) {
+  // Matches: cuántos todavía no se abrieron desde el home
+  const nuevosMatches = MATCH_IDS.filter(id => !data[`match_visto_${id}`]).length;
+  actualizarBadge('Matches', nuevosMatches, n => `${n} nuevo${n === 1 ? '' : 's'}`);
+
+  // Chats: suma de no leídos según lo que ya se marcó leído al abrir cada chat
+  let sinLeer = 0;
+  Object.entries(CHATS_DEFAULT_UNREAD).forEach(([id, modos]) => {
+    Object.entries(modos).forEach(([modo, cantidad]) => {
+      if (!data[`leido_${id}_${modo}`]) sinLeer += cantidad;
+    });
+  });
+  actualizarBadge('Chats', sinLeer, n => `${n} sin leer`);
+
+  // Notificaciones: se marcan todas leídas apenas se visita esa sección
+  actualizarBadge('Notificaciones', data.notifs_leidas ? 0 : NOTIFS_DEFAULT_COUNT, n => `${n} nueva${n === 1 ? '' : 's'}`);
+}
+
 // ── Sesión persistente: Firebase la maneja sola ──
 onAuthStateChanged(auth, async user => {
   if (user) {
@@ -1005,14 +1055,15 @@ onAuthStateChanged(auth, async user => {
     showApp(user);
     uid = user.uid;
 
-    // Cargar qué matches ya vio el usuario
+    // Cargar qué matches ya vio el usuario + badges de las tarjetas de sección
     try {
       const snap = await getDoc(doc(db, 'usuarios', uid));
+      const data = snap.exists() ? snap.data() : {};
       MATCH_IDS.forEach(id => {
-        const visto = snap.exists() && snap.data()[`match_visto_${id}`];
-        if (visto) ocultarPip(id);
-        else       mostrarPip(id);
+        if (data[`match_visto_${id}`]) ocultarPip(id);
+        else                            mostrarPip(id);
       });
+      actualizarBadgesSecciones(data);
     } catch(e) {
       // Si falla Firestore, mostrar todos como nuevos por defecto
       MATCH_IDS.forEach(id => mostrarPip(id));
