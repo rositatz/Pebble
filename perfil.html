@@ -1738,9 +1738,12 @@ body {
 const MAX_PHOTOS = 6;
 let photos = new Array(MAX_PHOTOS).fill(null);
 
-// Redimensiona y comprime la imagen en el navegador antes de guardarla
-// (así entra cómoda en el documento de Firestore, que tiene un límite de 1MB)
-function resizeAndCompress(file, maxDim = 400, quality = 0.65) {
+// Redimensiona y comprime la imagen en el navegador antes de guardarla (así
+// entra cómoda en el documento de Firestore, que tiene un límite de 1MB para
+// las 6 fotos juntas más el resto del perfil). En vez de una calidad fija baja
+// -- que dejaba las fotos borrosas -- arranca en calidad alta y solo la baja
+// de a pasos si hace falta para entrar en el presupuesto de tamaño.
+function resizeAndCompress(file, { maxDim = 640, targetBytes = 130000, minQuality = 0.5 } = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error);
@@ -1754,7 +1757,14 @@ function resizeAndCompress(file, maxDim = 400, quality = 0.65) {
         const canvas = document.createElement('canvas');
         canvas.width = width; canvas.height = height;
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+
+        let quality = 0.9;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        while (dataUrl.length > targetBytes && quality > minQuality) {
+          quality = Math.round((quality - 0.1) * 10) / 10;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(dataUrl);
       };
       img.src = reader.result;
     };
@@ -1970,7 +1980,10 @@ function saveInfo() {
 
   // Guardar en Firestore
   if (typeof window._db_saveInfo === 'function') {
-    window._db_saveInfo({ nombre, fechaNac, ciudad, genero, pronombres: pronomb, orientacion: orient, busco });
+    window._db_saveInfo({
+      nombre, fechaNac, ciudad, genero, pronombres: pronomb, orientacion: orient, busco,
+      rangoEdadMin: parseInt(rMin, 10), rangoEdadMax: parseInt(rMax, 10),
+    });
   }
   cancelEdit('info');
   showToast('Información guardada');
@@ -2062,9 +2075,11 @@ function addCustomInterest() {
    PRIVACY BADGES
 ══════════════════════════════ */
 const privacyFieldMap = {
-  Nombre: 'lockNombre',
-  Edad:   'lockEdad',
-  Ciudad: 'lockCiudad',
+  Nombre:      'lockNombre',
+  Edad:        'lockEdad',
+  Ciudad:      'lockCiudad',
+  Genero:      'lockGenero',
+  Orientacion: 'lockOrientacion',
 };
 
 // Actualiza el badge de privacidad (visible / al conectar) para un campo del perfil
@@ -2366,13 +2381,25 @@ onAuthStateChanged(auth, async user => {
     // Nombre (si fue editado por el usuario)
     if (d.nombre) aplicarNombre(d.nombre);
 
-    // Información básica
-    if (d.fechaNac)    document.getElementById('eFechaNac').value              = d.fechaNac;
-    if (d.ciudad)    { document.getElementById('vCiudad').textContent          = d.ciudad;       document.getElementById('eCiudad').value       = d.ciudad; }
-    if (d.genero)    { document.getElementById('vGenero').textContent          = d.genero;       document.getElementById('eGenero').value       = d.genero; }
-    if (d.pronombres){ document.getElementById('vPronombres').textContent      = d.pronombres;   document.getElementById('ePronombres').value   = d.pronombres; }
-    if (d.orientacion){document.getElementById('vOrientacion').textContent     = d.orientacion;  document.getElementById('eOrientacion').value  = d.orientacion; }
-    if (d.busco)     { document.getElementById('vBusco').textContent           = d.busco;        document.getElementById('eBusco').value        = d.busco; }
+    // Información básica -- se usa !== undefined (no truthy) para que un campo
+    // opcional que el usuario dejó vacío a propósito se guarde vacío de verdad
+    // y no vuelva a mostrar el valor anterior al recargar.
+    if (d.fechaNac)          document.getElementById('eFechaNac').value       = d.fechaNac;
+    if (d.ciudad      !== undefined) { document.getElementById('vCiudad').textContent      = d.ciudad      || '—'; document.getElementById('eCiudad').value      = d.ciudad; }
+    if (d.genero      !== undefined) { document.getElementById('vGenero').textContent      = d.genero      || '—'; document.getElementById('eGenero').value      = d.genero; }
+    if (d.pronombres  !== undefined) { document.getElementById('vPronombres').textContent  = d.pronombres  || '—'; document.getElementById('ePronombres').value  = d.pronombres; }
+    if (d.orientacion !== undefined) { document.getElementById('vOrientacion').textContent = d.orientacion || '—'; document.getElementById('eOrientacion').value = d.orientacion; }
+    if (d.busco       !== undefined) { document.getElementById('vBusco').textContent       = d.busco       || '—'; document.getElementById('eBusco').value       = d.busco; }
+
+    // Rango de edad preferido
+    if (d.rangoEdadMin !== undefined && d.rangoEdadMax !== undefined) {
+      const rMinEl = document.getElementById('rangeMin');
+      const rMaxEl = document.getElementById('rangeMax');
+      rMinEl.value = d.rangoEdadMin;
+      rMaxEl.value = d.rangoEdadMax;
+      rMinEl.dispatchEvent(new Event('input')); // reposiciona el slider y actualiza sus labels
+      document.getElementById('vRangoEdad').textContent = `${d.rangoEdadMin} – ${d.rangoEdadMax} años`;
+    }
 
     // Bio
     if (d.bio) {
@@ -2426,9 +2453,11 @@ onAuthStateChanged(auth, async user => {
       Object.entries(campos).forEach(([key, elId]) => {
         if (pr[key] !== undefined) document.getElementById(elId).checked = pr[key];
       });
-      updatePrivacyBadge('Nombre', document.getElementById('privNombre').checked);
-      updatePrivacyBadge('Edad',   document.getElementById('privEdad').checked);
-      updatePrivacyBadge('Ciudad', document.getElementById('privCiudad').checked);
+      updatePrivacyBadge('Nombre',      document.getElementById('privNombre').checked);
+      updatePrivacyBadge('Edad',        document.getElementById('privEdad').checked);
+      updatePrivacyBadge('Ciudad',      document.getElementById('privCiudad').checked);
+      updatePrivacyBadge('Genero',      document.getElementById('privGenero').checked);
+      updatePrivacyBadge('Orientacion', document.getElementById('privOrientacion').checked);
     }
 
     // Fotos guardadas

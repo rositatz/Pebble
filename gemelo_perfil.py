@@ -244,6 +244,7 @@ def _construir_identidad(e1):
         "ciudad": e1.get("ciudad", ""),
         "profesion": e1.get("ocupacion", ""),
         "convivencia": e1.get("convivo", ""),
+        "signo": e1.get("signo", ""),
     }
 
 

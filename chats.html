@@ -1225,6 +1225,9 @@ function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(
   const param = new URLSearchParams(location.search).get('persona');
   if (param && people[param]) {
     openChat(param);
+    // Sacamos el ?persona= de la URL para que un refresh no vuelva a abrir
+    // el chat si el usuario ya lo cerró.
+    history.replaceState(null, '', location.pathname + location.hash);
   }
 })();
 </script>

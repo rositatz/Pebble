@@ -206,6 +206,23 @@ body.is-upgrade .upgrade-banner{display:block}
         <button class="pill" onclick="selPill(this)">Con pareja</button>
       </div>
     </div>
+    <div class="q">
+      <div class="ql">¿Cuál es tu signo zodiacal?</div>
+      <div class="pills" data-field="signo">
+        <button class="pill" onclick="selPill(this)">Aries</button>
+        <button class="pill" onclick="selPill(this)">Tauro</button>
+        <button class="pill" onclick="selPill(this)">Géminis</button>
+        <button class="pill" onclick="selPill(this)">Cáncer</button>
+        <button class="pill" onclick="selPill(this)">Leo</button>
+        <button class="pill" onclick="selPill(this)">Virgo</button>
+        <button class="pill" onclick="selPill(this)">Libra</button>
+        <button class="pill" onclick="selPill(this)">Escorpio</button>
+        <button class="pill" onclick="selPill(this)">Sagitario</button>
+        <button class="pill" onclick="selPill(this)">Capricornio</button>
+        <button class="pill" onclick="selPill(this)">Acuario</button>
+        <button class="pill" onclick="selPill(this)">Piscis</button>
+      </div>
+    </div>
   </div>
 
   <div class="sec">
@@ -883,6 +900,17 @@ window.selBin = function(btn) {
   btn.classList.add('sel');
 };
 
+/* ─── AUTO-GROW TEXTAREAS ───
+   Las cajas de "a desarrollar" (.txa) y la del gemelo final (.gedit) crecen
+   hacia abajo a medida que escribís, en vez de quedar con scroll interno. */
+function autoGrowTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+document.querySelectorAll('.txa, .gedit').forEach(el => {
+  el.addEventListener('input', () => autoGrowTextarea(el));
+});
+
 /* ─── COLLECT ─── */
 function collectStage(n) {
   const stage = document.getElementById('stage-' + n);
@@ -940,8 +968,10 @@ window.goNext = async function() {
   if (currentStage === TOTAL) return;
   await saveStage(currentStage);
   const next = currentStage + 1;
-  if (next === TOTAL) buildGemelo();
   showStage(next);
+  // Se arma después de mostrar la etapa 7: el textarea necesita estar visible
+  // (display:block) para que autoGrowTextarea pueda medir su alto real.
+  if (next === TOTAL) buildGemelo();
 };
 window.goBack = function() {
   if (currentStage === 1) return;
@@ -983,7 +1013,9 @@ function buildGemelo() {
   const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Me sentís bien en "${lugar.toLowerCase()}" y con ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
 
   document.getElementById('gemelo-gen-text').textContent = text;
-  document.getElementById('gedit').value = text;
+  const geditEl = document.getElementById('gedit');
+  geditEl.value = text;
+  autoGrowTextarea(geditEl);
 
   const traits = [];
   if (amor) traits.push(amor);
