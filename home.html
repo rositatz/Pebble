@@ -1098,11 +1098,11 @@ window.goToMatch = async function(matchId) {
     } catch(e) { console.warn('Error guardando match visto:', e); }
 
     // Verificar si ya existe un chat real con esta persona
+    // (usuarios/{uid}/chats/{matchId}, no el campo suelto chats_{matchId}_real)
     try {
-      const snap = await getDoc(doc(db, 'usuarios', uid));
-      const data = snap.exists() ? snap.data() : {};
-      const chatKey = `chats_${matchId}_real`;
-      const hasChat = Array.isArray(data[chatKey]) && data[chatKey].length > 0;
+      const chatSnap = await getDoc(doc(db, 'usuarios', uid, 'chats', matchId));
+      const c = chatSnap.exists() ? chatSnap.data() : {};
+      const hasChat = Array.isArray(c.real?.msgs) && c.real.msgs.length > 0;
 
       if (hasChat) {
         // Ya hay mensajes → ir directo al chat
