@@ -1235,7 +1235,7 @@ function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
 const auth = getAuth(app);
@@ -1257,38 +1257,43 @@ onAuthStateChanged(auth, async user => {
   uid = user.uid;
 
   // ── Cargar conversaciones guardadas de Firestore ──
+  // Los chats viven en la subcolección usuarios/{uid}/chats/{personaId}, no
+  // como campos sueltos (chats_sofia_real, leido_sofia_real...) en el doc
+  // principal -- así no se acerca al límite de 1MB y se puede consultar.
   try {
     const snap = await getDoc(doc(db, 'usuarios', uid));
-    if (snap.exists()) {
-      const d = snap.data();
+    if (snap.exists() && snap.data().notifs_leidas) {
+      const pip = document.querySelector('.nav-icon-btn .notif-pip');
+      if (pip) pip.style.display = 'none';
+    }
 
-      // Pip de notificaciones
-      if (d.notifs_leidas) {
-        const pip = document.querySelector('.nav-icon-btn .notif-pip');
-        if (pip) pip.style.display = 'none';
-      }
+    const chatsSnap = await getDocs(collection(db, 'usuarios', uid, 'chats'));
+    const chatsMap = {};
+    chatsSnap.forEach(d => { chatsMap[d.id] = d.data(); });
 
-      ['sofia', 'mateo', 'valentina', 'lucia', 'agustin'].forEach(id => {
-        let hasMessages = false;
+    ['sofia', 'mateo', 'valentina', 'lucia', 'agustin'].forEach(id => {
+      const c = chatsMap[id];
+      let hasMessages = false;
+      if (c) {
         ['real', 'gemelo'].forEach(mode => {
-          const msgKey   = `chats_${id}_${mode}`;
-          const leidoKey = `leido_${id}_${mode}`;
-          if (Array.isArray(d[msgKey]) && d[msgKey].length > 0) {
-            people[id][mode].msgs = d[msgKey];
+          const modo = c[mode];
+          if (!modo) return;
+          if (Array.isArray(modo.msgs) && modo.msgs.length > 0) {
+            people[id][mode].msgs = modo.msgs;
             hasMessages = true;
           }
           // Si ya abrió este chat antes → sin badge de no leídos
-          if (d[leidoKey]) {
+          if (modo.leido) {
             people[id][mode].unread = 0;
           }
         });
-        // Para personas nuevas (lucia/agustín), solo mostrar en lista si tienen mensajes guardados
-        if (!document.getElementById(`conv-${id}`) && hasMessages) {
-          injectConvItem(id);
-        }
-        refreshListItem(id);
-      });
-    }
+      }
+      // Para personas nuevas (lucia/agustín), solo mostrar en lista si tienen mensajes guardados
+      if (!document.getElementById(`conv-${id}`) && hasMessages) {
+        injectConvItem(id);
+      }
+      refreshListItem(id);
+    });
   } catch(e) { console.warn('Error cargando chats:', e); }
 
   // Quitar overlay cuando todo esté listo
@@ -1300,18 +1305,19 @@ onAuthStateChanged(auth, async user => {
 // Se llama al abrir el panel de chat para eliminar los badges de no leídos
 window._db_marcarLeido = async (personaId) => {
   if (!uid) return;
-  await setDoc(doc(db, 'usuarios', uid), {
-    [`leido_${personaId}_real`]:   true,
-    [`leido_${personaId}_gemelo`]: true,
+  await setDoc(doc(db, 'usuarios', uid, 'chats', personaId), {
+    'real.leido':   true,
+    'gemelo.leido': true,
   }, { merge: true });
 };
 
-// Guarda el array completo de mensajes de una conversación en Firestore
-// La clave se forma como: chats_{personaId}_{mode} (ej: chats_sofia_real)
+// Guarda el array completo de mensajes de una conversación en Firestore,
+// en usuarios/{uid}/chats/{personaId} con la forma { real: {...}, gemelo: {...} }
 window._db_saveChat = async (personaId, mode, msgs) => {
   if (!uid) return;
-  const key = `chats_${personaId}_${mode}`;
-  await setDoc(doc(db, 'usuarios', uid), { [key]: msgs }, { merge: true });
+  await setDoc(doc(db, 'usuarios', uid, 'chats', personaId), {
+    [`${mode}.msgs`]: msgs,
+  }, { merge: true });
 };
 </script>
 </body>

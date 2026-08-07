@@ -16,6 +16,9 @@ def client():
     return _client
 
 
+# Cada escenario tiene "tipos_relacion": para qué opciones del campo "busco"
+# (perfil.html: Algo serio / Algo casual / Nuevas amistades / Sin definir) es
+# relevante correrlo. Ver escenarios_para_tipo() más abajo, que filtra por esto.
 escenarios_db = [
 
     {
@@ -40,7 +43,8 @@ escenarios_db = [
         autenticidad creativa y cambios culturales.
         """,
 
-        "tono": "Intelectual, relajado y curioso."
+        "tono": "Intelectual, relajado y curioso.",
+        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
     },
 
     {
@@ -64,7 +68,8 @@ escenarios_db = [
         planificación, consumo o visión del futuro.
         """,
 
-        "tono": "Maduro, honesto y relajado."
+        "tono": "Maduro, honesto y relajado.",
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -88,7 +93,8 @@ escenarios_db = [
         privacidad, apoyo emocional o independencia.
         """,
 
-        "tono": "Personal, emocional y reflexivo."
+        "tono": "Personal, emocional y reflexivo.",
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -113,7 +119,8 @@ escenarios_db = [
         pedir disculpas o expresar emociones.
         """,
 
-        "tono": "Honesto, introspectivo y respetuoso."
+        "tono": "Honesto, introspectivo y respetuoso.",
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -137,7 +144,8 @@ escenarios_db = [
         limpieza, rutina o formas de compartir responsabilidades.
         """,
 
-        "tono": "Liviano, cotidiano y natural."
+        "tono": "Liviano, cotidiano y natural.",
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -161,7 +169,8 @@ escenarios_db = [
         ritmo de vida, éxito profesional o balance personal.
         """,
 
-        "tono": "Motivador, reflexivo y maduro."
+        "tono": "Motivador, reflexivo y maduro.",
+        "tipos_relacion": ["Algo serio", "Nuevas amistades"]
     },
 
     {
@@ -185,7 +194,8 @@ escenarios_db = [
         comunicación, independencia o demostraciones afectivas.
         """,
 
-        "tono": "Emocional, abierto y sincero."
+        "tono": "Emocional, abierto y sincero.",
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -209,7 +219,8 @@ escenarios_db = [
         pueden generar debates interesantes o conexión profunda.
         """,
 
-        "tono": "Relajado, emocional y espontáneo."
+        "tono": "Relajado, emocional y espontáneo.",
+        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
     },
 
     {
@@ -233,9 +244,120 @@ escenarios_db = [
         humor o interpretación emocional de las historias.
         """,
 
-        "tono": "Reflexivo, relajado y cercano."
+        "tono": "Reflexivo, relajado y cercano.",
+        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Planes de finde y salidas",
+
+        "contexto": """
+        La conversación gira en torno a qué hacen un sábado a la noche,
+        salidas espontáneas, previas, recitales o planes de último momento.
+        Es una charla liviana, sin hablar de futuro ni de compromiso.
+        """,
+
+        "objetivo": [
+            "Evaluar compatibilidad de planes y ritmo social",
+            "Medir espontaneidad",
+            "Detectar química inmediata",
+            "Evaluar sentido del humor"
+        ],
+
+        "tension": """
+        Pueden chocar los ritmos: alguien más de planificar
+        contra alguien más de improvisar sobre la marcha.
+        """,
+
+        "tono": "Divertido, liviano y espontáneo.",
+        "tipos_relacion": ["Algo casual"]
+    },
+
+    {
+        "titulo": "Códigos de humor y coqueteo",
+
+        "contexto": """
+        Ambos empiezan a tirar chistes y ver si hay buena onda y química.
+        La charla se mueve con soltura entre bromas, indirectas
+        y algo de coqueteo, sin ninguna presión de que "vaya a algún lado".
+        """,
+
+        "objetivo": [
+            "Medir compatibilidad de humor",
+            "Evaluar química y coqueteo",
+            "Detectar soltura conversacional",
+            "Medir capacidad de seguir el juego sin incomodarse"
+        ],
+
+        "tension": """
+        El humor de uno puede no aterrizar en el otro,
+        o el nivel de coqueteo puede no estar parejo.
+        """,
+
+        "tono": "Juguetón, picante y relajado.",
+        "tipos_relacion": ["Algo casual"]
+    },
+
+    {
+        "titulo": "Hobbies y planes para compartir",
+
+        "contexto": """
+        Hablan de hobbies, deportes, juegos o series que les gustan,
+        pensando en cosas que podrían hacer juntos como amigos.
+        No hay ninguna carga romántica en la charla.
+        """,
+
+        "objetivo": [
+            "Detectar intereses en común",
+            "Evaluar compatibilidad de planes de amistad",
+            "Medir iniciativa social",
+            "Analizar afinidad de sentido del humor"
+        ],
+
+        "tension": """
+        Pueden no compartir casi ningún hobby,
+        o tener ritmos de vida social muy distintos.
+        """,
+
+        "tono": "Natural, cómodo y sin presión.",
+        "tipos_relacion": ["Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Buena onda en grupo",
+
+        "contexto": """
+        Charlan sobre cómo son en una juntada con amigos, si son de sumar
+        gente nueva al grupo o prefieren círculos chicos, y qué tipo de
+        energía aportan cuando están con otras personas.
+        """,
+
+        "objetivo": [
+            "Evaluar compatibilidad social",
+            "Medir apertura a integrarse a nuevos grupos",
+            "Detectar estilo de vínculo entre amigos",
+            "Analizar empatía grupal"
+        ],
+
+        "tension": """
+        Uno puede ser mucho más sociable/expansivo que el otro,
+        o tener expectativas distintas de qué tan seguido verse.
+        """,
+
+        "tono": "Cálido, sociable y genuino.",
+        "tipos_relacion": ["Nuevas amistades"]
     }
 ]
+
+
+def escenarios_para_tipo(tipo_relacion):
+    """Devuelve los índices de escenarios_db relevantes para el tipo de
+    relación buscado (perfil.get('busco'): "Algo serio" / "Algo casual" /
+    "Nuevas amistades" / "Sin definir"). Si no matchea nada corre todos."""
+
+    tipo = (tipo_relacion or "").strip()
+    indices = [i for i, e in enumerate(escenarios_db) if tipo in e.get("tipos_relacion", [])]
+    return indices if indices else list(range(len(escenarios_db)))
 
 
 def armar_escenario_personalizado(texto):
@@ -500,6 +622,12 @@ def analizar_conversacion(historial_chat):
 
 
 def actualizar_memoria(memoria, analisis):
+    """Si es la primera interacción entre este par de gemelos, memoria
+    todavía no existe (None) -- se crea acá. Si ya existía, se le hace append
+    del resumen de esta nueva interacción arriba de las anteriores."""
+
+    if memoria is None:
+        memoria = {"interacciones": []}
 
     memoria.setdefault("interacciones", []).append({
 
@@ -662,10 +790,15 @@ def calcular_compatibilidad(perfil1, perfil2, analisis):
     }
 
 
-def simular_cita(perfil1, perfil2, turnos=2, escenario=0):
-    """escenario puede ser un índice de escenarios_db (los 9 fijos) o un dict
+def simular_cita(perfil1, perfil2, turnos=2, escenario=0, memoria1=None, memoria2=None):
+    """escenario puede ser un índice de escenarios_db o un dict
     {"titulo","contexto","tono"} armado con armar_escenario_personalizado()
-    para una simulación a pedido del usuario."""
+    para una simulación a pedido del usuario.
+
+    memoria1/memoria2 son lo que cada gemelo recuerda de interacciones previas
+    con el otro (ver actualizar_memoria) -- se usan en simular_relacion_completa
+    para que, al correr varios escenarios seguidos, la charla se sienta
+    continuada en vez de arrancar de cero cada vez."""
 
     historial_chat = []
 
@@ -687,8 +820,8 @@ def simular_cita(perfil1, perfil2, turnos=2, escenario=0):
     nombre1 = perfil1.get("nombre", "ALPHA")
     nombre2 = perfil2.get("nombre", "BETA")
 
-    prompt_1 = generar_prompt_gemelo(perfil1)
-    prompt_2 = generar_prompt_gemelo(perfil2)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2)
 
     ultimo_mensaje = "Hola, me llamó la atención este tema. ¿Vos qué pensás?"
 
@@ -761,3 +894,42 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=2, escenario=0, umb
     return registro_simulacion(
         uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral
     )
+
+
+def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, turnos=2, umbral=0.75):
+    """Corre TODOS los escenarios que correspondan al tipo de relación que se
+    busca -- no solo uno. tipo_relacion: "Algo serio" / "Algo casual" /
+    "Nuevas amistades" / None (usa perfil1/perfil2["busco"] si no se pasa).
+
+    Igual que simular_y_registrar, no persiste nada -- devuelve la lista de
+    registros para que quien llame (main.py) decida cómo guardarlos en
+    Firestore. La memoria de cada gemelo se acumula escenario a escenario."""
+
+    tipo = tipo_relacion or perfil1.get("busco") or perfil2.get("busco") or ""
+    indices = escenarios_para_tipo(tipo)
+
+    memoria1, memoria2 = None, None
+    registros = []
+
+    for idx in indices:
+        historial_chat, analisis, score = simular_cita(
+            perfil1, perfil2, turnos=turnos, escenario=idx,
+            memoria1=memoria1, memoria2=memoria2,
+        )
+
+        memoria1 = actualizar_memoria(memoria1, analisis)
+        memoria2 = actualizar_memoria(memoria2, analisis)
+
+        registros.append(registro_simulacion(
+            uid1, perfil1, uid2, perfil2, idx, historial_chat, analisis, score, umbral
+        ))
+
+    promedio = sum(r["score"]["compatibilidad_total"] for r in registros) / len(registros)
+
+    return {
+        "tipo_relacion": tipo or "Sin definir",
+        "escenarios_corridos": len(registros),
+        "compatibilidad_promedio": round(promedio, 2),
+        "supera_umbral": promedio >= umbral,
+        "simulaciones": registros,
+    }

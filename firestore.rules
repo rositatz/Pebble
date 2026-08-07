@@ -13,6 +13,13 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
 
+      // Chats guardados por persona (chats.html, matches.html, home.html).
+      // Antes eran campos sueltos chats_{id}_{modo} / leido_{id}_{modo} en
+      // este mismo doc; ahora cada conversación es un doc propio acá.
+      match /chats/{personaId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
       // Perfil normalizado del gemelo: lo genera SOLO la Cloud Function
       // (generar_perfil_gemelo, vía Admin SDK) a partir del onboarding.
       // El cliente lo puede leer para mostrarlo, pero nunca escribirlo --

@@ -949,7 +949,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, GoogleAuthProvider, FacebookAuthProvider,
          onAuthStateChanged, signOut, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc }
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1023,16 +1023,18 @@ function actualizarBadge(label, cantidad, texto) {
   }
 }
 
-function actualizarBadgesSecciones(data) {
+function actualizarBadgesSecciones(data, chatsMap) {
   // Matches: cuántos todavía no se abrieron desde el home
   const nuevosMatches = MATCH_IDS.filter(id => !data[`match_visto_${id}`]).length;
   actualizarBadge('Matches', nuevosMatches, n => `${n} nuevo${n === 1 ? '' : 's'}`);
 
-  // Chats: suma de no leídos según lo que ya se marcó leído al abrir cada chat
+  // Chats: suma de no leídos según lo que ya se marcó leído al abrir cada chat.
+  // El "leído" vive en usuarios/{uid}/chats/{id}, no como campo suelto acá.
   let sinLeer = 0;
   Object.entries(CHATS_DEFAULT_UNREAD).forEach(([id, modos]) => {
     Object.entries(modos).forEach(([modo, cantidad]) => {
-      if (!data[`leido_${id}_${modo}`]) sinLeer += cantidad;
+      const leido = chatsMap[id] && chatsMap[id][modo] && chatsMap[id][modo].leido;
+      if (!leido) sinLeer += cantidad;
     });
   });
   actualizarBadge('Chats', sinLeer, n => `${n} sin leer`);
@@ -1063,7 +1065,12 @@ onAuthStateChanged(auth, async user => {
         if (data[`match_visto_${id}`]) ocultarPip(id);
         else                            mostrarPip(id);
       });
-      actualizarBadgesSecciones(data);
+
+      const chatsSnap = await getDocs(collection(db, 'usuarios', uid, 'chats'));
+      const chatsMap = {};
+      chatsSnap.forEach(d => { chatsMap[d.id] = d.data(); });
+
+      actualizarBadgesSecciones(data, chatsMap);
     } catch(e) {
       // Si falla Firestore, mostrar todos como nuevos por defecto
       MATCH_IDS.forEach(id => mostrarPip(id));

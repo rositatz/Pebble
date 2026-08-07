@@ -57,7 +57,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size
 .inp{width:100%;height:52px;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:0 16px;outline:none;transition:border .18s,box-shadow .18s;-webkit-appearance:none}
 .inp:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(255,117,31,.08)}
 .inp::placeholder,.txa::placeholder{color:var(--text-s)}
-.txa{width:100%;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:14px 16px;outline:none;resize:none;min-height:100px;transition:border .18s,box-shadow .18s;line-height:1.6}
+/* Los campos de una línea que se convirtieron en <textarea> (para que crezcan
+   hacia abajo en vez de scrollear el texto de costado) pisan el height fijo
+   de arriba y arrancan con el mismo alto visual que un input normal. */
+textarea.inp{height:auto;min-height:52px;padding:14px 16px;line-height:1.4;resize:none;overflow:hidden}
+.txa{width:100%;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:14px 16px;outline:none;resize:none;overflow:hidden;min-height:100px;transition:border .18s,box-shadow .18s;line-height:1.6}
 .txa:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(255,117,31,.08)}
 .ing{display:flex;flex-direction:column;gap:10px}
 
@@ -109,7 +113,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size
 .gtext{font-size:1rem;line-height:1.8;color:var(--text);font-style:italic}
 .gtraits{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px}
 .gtrait{padding:7px 14px;background:rgba(255,117,31,.1);border:1px solid rgba(255,117,31,.2);border-radius:var(--r-full);font-size:.78rem;color:var(--orange);font-weight:600}
-.gedit{width:100%;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:16px;resize:none;min-height:140px;outline:none;line-height:1.65;transition:border .18s,box-shadow .18s}
+.gedit{width:100%;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:16px;resize:none;overflow:hidden;min-height:140px;outline:none;line-height:1.65;transition:border .18s,box-shadow .18s}
 .gedit:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(255,117,31,.08)}
 .btn-confirm{width:100%;height:56px;background:var(--orange);border:none;border-radius:var(--r-xl);color:#fff;font-family:var(--fd);font-weight:800;font-size:1.05rem;cursor:pointer;transition:all .2s;margin-top:8px;touch-action:manipulation}
 .btn-confirm:hover{background:var(--orange-mid)}
@@ -192,11 +196,11 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">👤 Identidad básica</div>
-    <div class="q"><div class="ql">¿Cómo te llamás?</div><input class="inp" id="nombre" type="text" placeholder="Tu nombre"/></div>
-    <div class="q"><div class="ql">¿Cómo te gusta que te digan?</div><input class="inp" id="apodo" type="text" placeholder="Apodo o preferencia"/></div>
+    <div class="q"><div class="ql">¿Cómo te llamás?</div><textarea class="inp" id="nombre" placeholder="Tu nombre" rows="1"></textarea></div>
+    <div class="q"><div class="ql">¿Cómo te gusta que te digan?</div><textarea class="inp" id="apodo" placeholder="Apodo o preferencia" rows="1"></textarea></div>
     <div class="q"><div class="ql">¿Qué edad tenés?</div><input class="inp" id="edad" type="number" min="16" max="99" placeholder="Ej: 23" style="-moz-appearance:textfield"/></div>
     <div class="q"><div class="ql">¿Cuándo es tu cumpleaños?</div><input class="inp" id="cumple" type="date" style="color-scheme:dark"/></div>
-    <div class="q"><div class="ql">¿Dónde vivís?</div><input class="inp" id="ciudad" type="text" placeholder="Ciudad o barrio"/></div>
+    <div class="q"><div class="ql">¿Dónde vivís?</div><textarea class="inp" id="ciudad" placeholder="Ciudad o barrio" rows="1"></textarea></div>
     <div class="q">
       <div class="ql">¿Con quién vivís actualmente?</div>
       <div class="pills" data-field="convivo">
@@ -227,7 +231,7 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">💼 Estudio / Trabajo</div>
-    <div class="q"><div class="ql">¿Qué estudiás o a qué te dedicás?</div><input class="inp" id="ocupacion" type="text" placeholder="Carrera, trabajo, proyecto..."/></div>
+    <div class="q"><div class="ql">¿Qué estudiás o a qué te dedicás?</div><textarea class="inp" id="ocupacion" placeholder="Carrera, trabajo, proyecto..." rows="1"></textarea></div>
     <div class="q">
       <div class="ql">¿Te gusta lo que hacés actualmente?</div>
       <div class="pills" data-field="gustaOcup">
@@ -278,37 +282,37 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">🎵 Música</div>
-    <div class="q"><div class="ql">¿Cuál es tu artista favorito?</div><input class="inp" id="artista" type="text" placeholder="Nombre del artista"/></div>
+    <div class="q"><div class="ql">¿Cuál es tu artista favorito?</div><textarea class="inp" id="artista" placeholder="Nombre del artista" rows="1"></textarea></div>
     <div class="q">
       <div class="ql">Tu top 5 de canciones favoritas</div>
       <div class="ing">
-        <input class="inp" id="song1" type="text" placeholder="1."/>
-        <input class="inp" id="song2" type="text" placeholder="2."/>
-        <input class="inp" id="song3" type="text" placeholder="3."/>
-        <input class="inp" id="song4" type="text" placeholder="4."/>
-        <input class="inp" id="song5" type="text" placeholder="5."/>
+        <textarea class="inp" id="song1" placeholder="1." rows="1"></textarea>
+        <textarea class="inp" id="song2" placeholder="2." rows="1"></textarea>
+        <textarea class="inp" id="song3" placeholder="3." rows="1"></textarea>
+        <textarea class="inp" id="song4" placeholder="4." rows="1"></textarea>
+        <textarea class="inp" id="song5" placeholder="5." rows="1"></textarea>
       </div>
     </div>
-    <div class="q prem-only"><div class="ql">¿Qué canción te pone triste? <span class="ptag">★ Premium</span></div><input class="inp" id="canTriste" type="text" placeholder="Artista — Canción"/></div>
-    <div class="q prem-only"><div class="ql">¿Qué canción te da energía automáticamente? <span class="ptag">★ Premium</span></div><input class="inp" id="canEnergia" type="text" placeholder="Artista — Canción"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué canción te pone triste? <span class="ptag">★ Premium</span></div><textarea class="inp" id="canTriste" placeholder="Artista — Canción" rows="1"></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Qué canción te da energía automáticamente? <span class="ptag">★ Premium</span></div><textarea class="inp" id="canEnergia" placeholder="Artista — Canción" rows="1"></textarea></div>
     <div class="q">
       <div class="ql">¿Qué género escuchás más? (podés elegir varios)</div>
       <div class="pills multi" data-field="genero">
         <button class="pill" onclick="selMulti(this)">Pop</button><button class="pill" onclick="selMulti(this)">Reggaetón</button><button class="pill" onclick="selMulti(this)">Trap</button><button class="pill" onclick="selMulti(this)">Rock</button><button class="pill" onclick="selMulti(this)">Indie</button><button class="pill" onclick="selMulti(this)">Electrónica</button><button class="pill" onclick="selMulti(this)">Rap</button><button class="pill" onclick="selMulti(this)">Techno</button><button class="pill" onclick="selMulti(this)">Metal</button><button class="pill" onclick="selMulti(this)">Jazz</button><button class="pill" onclick="selMulti(this)">Clásica</button><button class="pill" onclick="selMulti(this)">K-pop</button><button class="pill" onclick="selMulti(this)">J-pop</button><button class="pill" onclick="selMulti(this)">R&amp;B</button><button class="pill" onclick="selMulti(this)">Hip hop</button><button class="pill" onclick="selMulti(this)">RKT</button><button class="pill" onclick="selMulti(this)">Otro</button>
       </div>
     </div>
-    <div class="q prem-only"><div class="ql">¿Cuál fue el mejor recital de tu vida? <span class="ptag">★ Premium</span></div><input class="inp" id="recital" type="text" placeholder="Artista o evento"/></div>
-    <div class="q prem-only"><div class="ql">¿Si solo pudieras escuchar una sola canción para siempre, cuál sería? <span class="ptag">★ Premium</span></div><input class="inp" id="canUnica" type="text" placeholder="Artista — Canción"/></div>
-    <div class="q"><div class="ql">¿Qué música escuchás para salir de fiesta?</div><input class="inp" id="musicaFiesta" type="text" placeholder="Género, artista o vibe..."/></div>
+    <div class="q prem-only"><div class="ql">¿Cuál fue el mejor recital de tu vida? <span class="ptag">★ Premium</span></div><textarea class="inp" id="recital" placeholder="Artista o evento" rows="1"></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Si solo pudieras escuchar una sola canción para siempre, cuál sería? <span class="ptag">★ Premium</span></div><textarea class="inp" id="canUnica" placeholder="Artista — Canción" rows="1"></textarea></div>
+    <div class="q"><div class="ql">¿Qué música escuchás para salir de fiesta?</div><textarea class="inp" id="musicaFiesta" placeholder="Género, artista o vibe..." rows="1"></textarea></div>
   </div>
 
   <div class="sec">
     <div class="sec-title">🎬 Series, películas y contenido</div>
-    <div class="q"><div class="ql">¿Cuál es tu serie preferida?</div><input class="inp" id="serie" type="text" placeholder="Nombre de la serie"/></div>
-    <div class="q prem-only"><div class="ql">¿Qué película te marcó emocionalmente? <span class="ptag">★ Premium</span></div><input class="inp" id="peliculaEmoc" type="text" placeholder="Nombre de la película"/></div>
+    <div class="q"><div class="ql">¿Cuál es tu serie preferida?</div><textarea class="inp" id="serie" placeholder="Nombre de la serie" rows="1"></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Qué película te marcó emocionalmente? <span class="ptag">★ Premium</span></div><textarea class="inp" id="peliculaEmoc" placeholder="Nombre de la película" rows="1"></textarea></div>
     <div class="q prem-only"><div class="ql">Si pudieras actuar en una serie o película, ¿quién serías y por qué? <span class="ptag">★ Premium</span></div><textarea class="txa" id="personajeSerie" placeholder="Contanos..."></textarea></div>
-    <div class="q prem-only"><div class="ql">¿Con qué personaje de película te identificás más? <span class="ptag">★ Premium</span></div><input class="inp" id="personajeIdent" type="text" placeholder="Personaje y película"/></div>
-    <div class="q prem-only"><div class="ql">¿Qué streamer o youtuber es tu favorito? <span class="ptag">★ Premium</span></div><input class="inp" id="streamer" type="text" placeholder="Nombre del creador"/></div>
+    <div class="q prem-only"><div class="ql">¿Con qué personaje de película te identificás más? <span class="ptag">★ Premium</span></div><textarea class="inp" id="personajeIdent" placeholder="Personaje y película" rows="1"></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Qué streamer o youtuber es tu favorito? <span class="ptag">★ Premium</span></div><textarea class="inp" id="streamer" placeholder="Nombre del creador" rows="1"></textarea></div>
   </div>
 
   <div class="sec">
@@ -319,7 +323,7 @@ body.is-upgrade .upgrade-banner{display:block}
         <button class="pill" onclick="selPill(this)">Clean</button><button class="pill" onclick="selPill(this)">Streetwear</button><button class="pill" onclick="selPill(this)">Vintage</button><button class="pill" onclick="selPill(this)">Deportiva</button><button class="pill" onclick="selPill(this)">Artística</button><button class="pill" onclick="selPill(this)">Elegante</button><button class="pill" onclick="selPill(this)">Comfy</button><button class="pill" onclick="selPill(this)">Alternativa</button><button class="pill" onclick="selPill(this)">Aesthetic</button>
       </div>
     </div>
-    <div class="q"><div class="ql">¿Qué color te representa más?</div><input class="inp" id="colorPers" type="text" placeholder="Ej: negro, naranja, azul cielo..."/></div>
+    <div class="q"><div class="ql">¿Qué color te representa más?</div><textarea class="inp" id="colorPers" placeholder="Ej: negro, naranja, azul cielo..." rows="1"></textarea></div>
     <div class="q prem-only">
       <div class="ql">¿Te gusta arreglarte mucho o ir cómodo/a? <span class="ptag">★ Premium</span></div>
       <div class="pills" data-field="arreglo"><button class="pill" onclick="selPill(this)">Me arreglo bastante</button><button class="pill" onclick="selPill(this)">Cómodo/a siempre</button><button class="pill" onclick="selPill(this)">Depende del día</button></div>
@@ -347,18 +351,18 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">🍕 Comida</div>
-    <div class="q"><div class="ql">¿Tu comida favorita?</div><input class="inp" id="comidaFav" type="text" placeholder="Lo que más te gusta"/></div>
-    <div class="q"><div class="ql">¿Qué comida no te gusta?</div><input class="inp" id="comidaNoGusta" type="text" placeholder="La que evitás siempre"/></div>
+    <div class="q"><div class="ql">¿Tu comida favorita?</div><textarea class="inp" id="comidaFav" placeholder="Lo que más te gusta" rows="1"></textarea></div>
+    <div class="q"><div class="ql">¿Qué comida no te gusta?</div><textarea class="inp" id="comidaNoGusta" placeholder="La que evitás siempre" rows="1"></textarea></div>
     <div class="q">
       <div class="ql">¿Preferís pedir, cocinar o ir a un restaurante?</div>
       <div class="pills" data-field="prefComida"><button class="pill" onclick="selPill(this)">Pedir delivery</button><button class="pill" onclick="selPill(this)">Cocinar</button><button class="pill" onclick="selPill(this)">Ir a un restaurante</button></div>
     </div>
-    <div class="q prem-only"><div class="ql">¿Cuál es tu snack favorito? <span class="ptag">★ Premium</span></div><input class="inp" id="snack" type="text" placeholder="El de madrugada"/></div>
+    <div class="q prem-only"><div class="ql">¿Cuál es tu snack favorito? <span class="ptag">★ Premium</span></div><textarea class="inp" id="snack" placeholder="El de madrugada" rows="1"></textarea></div>
     <div class="q prem-only">
       <div class="ql">¿Cocinar te relaja o te estresa? <span class="ptag">★ Premium</span></div>
       <div class="pills" data-field="cocinar"><button class="pill" onclick="selPill(this)">Me relaja</button><button class="pill" onclick="selPill(this)">Me estresa</button><button class="pill" onclick="selPill(this)">Depende del día</button></div>
     </div>
-    <div class="q prem-only"><div class="ql">¿Qué comida te recuerda a tu infancia? <span class="ptag">★ Premium</span></div><input class="inp" id="comidaInfancia" type="text" placeholder="Algo casero o especial"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué comida te recuerda a tu infancia? <span class="ptag">★ Premium</span></div><textarea class="inp" id="comidaInfancia" placeholder="Algo casero o especial" rows="1"></textarea></div>
     <div class="q prem-only">
       <div class="ql">¿Te gusta lavar los platos? <span class="ptag">★ Premium</span></div>
       <div class="pills" data-field="lavarPlatos"><button class="pill" onclick="selPill(this)">Sí, me relaja</button><button class="pill" onclick="selPill(this)">No, para nada</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
@@ -370,20 +374,20 @@ body.is-upgrade .upgrade-banner{display:block}
     <div class="q"><div class="ql">Una tarde libre, sin obligaciones. ¿Qué probablemente estabas haciendo?</div><textarea class="txa" id="tardeLibre" placeholder="Lo primero que se te viene..."></textarea></div>
     <div class="q prem-only"><div class="ql">Si tuvieras que probar algo completamente nuevo este fin de semana, ¿qué elegirías? <span class="ptag">★ Premium</span></div><textarea class="txa" id="probarNuevo" placeholder="Algo que nunca hiciste..."></textarea></div>
     <div class="q"><div class="ql">Después de un día agotador, ¿qué te ayuda a desconectar?</div><textarea class="txa" id="desconectar" placeholder="Esa cosa que siempre funciona..."></textarea></div>
-    <div class="q"><div class="ql">¿Hacés deporte? ¿Cuál?</div><input class="inp" id="deporte" type="text" placeholder="O escribí 'No hago'"/></div>
-    <div class="q"><div class="ql">¿De qué equipo de fútbol sos?</div><input class="inp" id="equipo" type="text" placeholder="El tuyo, sin miedo"/></div>
+    <div class="q"><div class="ql">¿Hacés deporte? ¿Cuál?</div><textarea class="inp" id="deporte" placeholder="O escribí 'No hago'" rows="1"></textarea></div>
+    <div class="q"><div class="ql">¿De qué equipo de fútbol sos?</div><textarea class="inp" id="equipo" placeholder="El tuyo, sin miedo" rows="1"></textarea></div>
   </div>
 
   <div class="sec">
     <div class="sec-title">📱 Redes y mundo digital</div>
-    <div class="q"><div class="ql">¿Qué app usás más?</div><input class="inp" id="appMas" type="text" placeholder="Instagram, TikTok, X..."/></div>
+    <div class="q"><div class="ql">¿Qué app usás más?</div><textarea class="inp" id="appMas" placeholder="Instagram, TikTok, X..." rows="1"></textarea></div>
     <div class="q">
       <div class="ql">¿Qué tipo de publicaciones guardás? (podés elegir varios)</div>
       <div class="pills multi" data-field="pubGuarda">
         <button class="pill" onclick="selMulti(this)">Memes</button><button class="pill" onclick="selMulti(this)">Edits</button><button class="pill" onclick="selMulti(this)">Frases</button><button class="pill" onclick="selMulti(this)">Reels</button><button class="pill" onclick="selMulti(this)">Recetas</button><button class="pill" onclick="selMulti(this)">Outfits</button><button class="pill" onclick="selMulti(this)">Canciones</button><button class="pill" onclick="selMulti(this)">Fotos</button><button class="pill" onclick="selMulti(this)">TikToks</button>
       </div>
     </div>
-    <div class="q"><div class="ql">¿Qué tipo de publicaciones compartís más?</div><input class="inp" id="pubComparte" type="text" placeholder="Memes, noticias, música..."/></div>
+    <div class="q"><div class="ql">¿Qué tipo de publicaciones compartís más?</div><textarea class="inp" id="pubComparte" placeholder="Memes, noticias, música..." rows="1"></textarea></div>
     <div class="q prem-only">
       <div class="ql">¿Te gusta que te presuman en redes? <span class="ptag">★ Premium</span></div>
       <div class="pills" data-field="presumir"><button class="pill" onclick="selPill(this)">Sí, me encanta</button><button class="pill" onclick="selPill(this)">Prefiero lo privado</button><button class="pill" onclick="selPill(this)">Depende con quién</button></div>
@@ -404,8 +408,8 @@ body.is-upgrade .upgrade-banner{display:block}
       <div class="ql">¿Subís indirectas?</div>
       <div class="pills" data-field="indirectas"><button class="pill" onclick="selPill(this)">Sí, claro</button><button class="pill" onclick="selPill(this)">Rara vez</button><button class="pill" onclick="selPill(this)">No, jamás</button></div>
     </div>
-    <div class="q prem-only"><div class="ql">¿Qué canción pondrías en una historia con alguien que te gusta? <span class="ptag">★ Premium</span></div><input class="inp" id="canHistory" type="text" placeholder="Artista — Canción"/></div>
-    <div class="q"><div class="ql">¿Sos de usar emojis? Poné tu favorito</div><input class="inp" id="emoji" type="text" placeholder="Tu emoji más usado 🫠"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué canción pondrías en una historia con alguien que te gusta? <span class="ptag">★ Premium</span></div><textarea class="inp" id="canHistory" placeholder="Artista — Canción" rows="1"></textarea></div>
+    <div class="q"><div class="ql">¿Sos de usar emojis? Poné tu favorito</div><textarea class="inp" id="emoji" placeholder="Tu emoji más usado 🫠" rows="1"></textarea></div>
   </div>
 </section>
 
@@ -756,8 +760,8 @@ body.is-upgrade .upgrade-banner{display:block}
       <div class="ql">¿Qué outfit te parece más atractivo? <span class="ptag">★ Premium</span></div>
       <div class="pills" data-field="outfitCrush"><button class="pill" onclick="selPill(this)">Natural / casual</button><button class="pill" onclick="selPill(this)">Elegante</button><button class="pill" onclick="selPill(this)">Sporty / gym</button><button class="pill" onclick="selPill(this)">Artístico</button><button class="pill" onclick="selPill(this)">Aesthetic</button><button class="pill" onclick="selPill(this)">Urbano / streetwear</button><button class="pill" onclick="selPill(this)">Relajado / comfy</button></div>
     </div>
-    <div class="q prem-only"><div class="ql">¿Qué detalle de estilo notás primero en alguien que te atrae? <span class="ptag">★ Premium</span></div><input class="inp" id="detalleAtrae" type="text" placeholder="Lo primero que ves"/></div>
-    <div class="q prem-only"><div class="ql">¿Qué detalle pequeño te parece MUY atractivo? <span class="ptag">★ Premium</span></div><input class="inp" id="detalleMuyAtrac" type="text" placeholder="Ese detalle que te vuela la cabeza"/></div>
+    <div class="q prem-only"><div class="ql">¿Qué detalle de estilo notás primero en alguien que te atrae? <span class="ptag">★ Premium</span></div><textarea class="inp" id="detalleAtrae" placeholder="Lo primero que ves" rows="1"></textarea></div>
+    <div class="q prem-only"><div class="ql">¿Qué detalle pequeño te parece MUY atractivo? <span class="ptag">★ Premium</span></div><textarea class="inp" id="detalleMuyAtrac" placeholder="Ese detalle que te vuela la cabeza" rows="1"></textarea></div>
     <div class="q">
       <div class="ql">¿Qué color de pelo te atrae más?</div>
       <div class="pills" data-field="colorPelo"><button class="pill" onclick="selPill(this)">Negro</button><button class="pill" onclick="selPill(this)">Castaño</button><button class="pill" onclick="selPill(this)">Rubio</button><button class="pill" onclick="selPill(this)">Pelirrojo</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
@@ -901,13 +905,15 @@ window.selBin = function(btn) {
 };
 
 /* ─── AUTO-GROW TEXTAREAS ───
-   Las cajas de "a desarrollar" (.txa) y la del gemelo final (.gedit) crecen
-   hacia abajo a medida que escribís, en vez de quedar con scroll interno. */
+   Todas las cajas de texto libre -- las de "a desarrollar" (.txa), la del
+   gemelo final (.gedit) y los campos de una línea que ahora son <textarea>
+   (textarea.inp) -- crecen hacia abajo a medida que escribís, en vez de
+   quedar con scroll interno o correr el texto de costado. */
 function autoGrowTextarea(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
 }
-document.querySelectorAll('.txa, .gedit').forEach(el => {
+document.querySelectorAll('.txa, .gedit, textarea.inp').forEach(el => {
   el.addEventListener('input', () => autoGrowTextarea(el));
 });
 
@@ -935,6 +941,67 @@ function collectStage(n) {
   return d;
 }
 
+/* ─── REPOBLAR (al volver a una sesión de onboarding sin terminar) ───
+   Sin esto, si el usuario salía a mitad del onboarding y volvía, los campos
+   aparecían vacíos -- y si avanzaba de etapa así, collectStage() pisaba lo ya
+   guardado en Firestore con esos campos vacíos. Se llama una sola vez, apenas
+   se carga stageData desde Firestore, y rellena el DOM de las etapas 1 a 6
+   para que collectStage() vuelva a incluir las respuestas ya dadas. */
+function repoblarFormulario() {
+  for (let n = 1; n <= 6; n++) {
+    const data = stageData['etapa' + n];
+    const stage = document.getElementById('stage-' + n);
+    if (!data || !stage) continue;
+
+    stage.querySelectorAll('input[id],textarea[id]').forEach(el => {
+      if (data[el.id] === undefined) return;
+      el.value = data[el.id];
+      // El auto-grow de este textarea se recalcula en showStage() cuando la
+      // etapa se muestra -- acá la mayoría de las etapas todavía están ocultas
+      // y scrollHeight daría 0.
+    });
+
+    stage.querySelectorAll('.pills:not(.multi)').forEach(p => {
+      const val = data[p.dataset.field];
+      if (!val) return;
+      p.querySelectorAll('.pill').forEach(btn => {
+        if (btn.textContent.trim() === val) btn.classList.add('sel');
+      });
+    });
+
+    stage.querySelectorAll('.pills.multi').forEach(p => {
+      const vals = data[p.dataset.field];
+      if (!Array.isArray(vals)) return;
+      p.querySelectorAll('.pill').forEach(btn => {
+        if (vals.includes(btn.textContent.trim())) btn.classList.add('sel');
+      });
+    });
+
+    stage.querySelectorAll('.rlist').forEach(r => {
+      const val = data[r.dataset.field];
+      if (!val) return;
+      r.querySelectorAll('.ritem').forEach(item => {
+        const txt = item.querySelector('.rtext');
+        if (txt && txt.textContent.trim() === val) item.classList.add('sel');
+      });
+    });
+
+    stage.querySelectorAll('.binary').forEach(b => {
+      const val = data[b.dataset.field];
+      if (!val) return;
+      b.querySelectorAll('.bbin').forEach(btn => {
+        if (btn.textContent.trim() === val) btn.classList.add('sel');
+      });
+    });
+  }
+
+  // Votos de green/red flags de la etapa 5 (el mini-juego arranca de nuevo
+  // visualmente, pero los votos ya dados no se pierden si no se retocan).
+  if (stageData.etapa5 && stageData.etapa5.flags) {
+    flagVotes = { ...stageData.etapa5.flags };
+  }
+}
+
 /* ─── SAVE ─── */
 async function saveStage(n) {
   if (!uid) return;
@@ -952,6 +1019,10 @@ function showStage(n, dir) {
   if (dir === 'back') incoming.classList.add('going-back');
   incoming.classList.add('active');
   currentStage = n;
+  // Recién ahora la etapa está visible (display:block), así que recién ahora
+  // scrollHeight da un valor real -- por eso el auto-grow de sus textareas se
+  // recalcula acá y no en repoblarFormulario(), que corre con casi todo oculto.
+  incoming.querySelectorAll('.txa, .gedit, textarea.inp').forEach(autoGrowTextarea);
   document.getElementById('prog-fill').style.width = (n / TOTAL * 100) + '%';
   document.getElementById('step-lbl').textContent = n + ' / ' + TOTAL;
   const back = document.getElementById('btn-back');
@@ -1086,6 +1157,7 @@ onAuthStateChanged(auth, async user => {
     if (snap.exists()) {
       const d = snap.data();
       for (const k in d) stageData[k] = d[k];
+      repoblarFormulario();
     }
   } catch(e) {}
 
