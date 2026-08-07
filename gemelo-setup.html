@@ -59,10 +59,19 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size
 .inp::placeholder,.txa::placeholder{color:var(--text-s)}
 /* Los campos de una línea que se convirtieron en <textarea> (para que crezcan
    hacia abajo en vez de scrollear el texto de costado) pisan el height fijo
-   de arriba y arrancan con el mismo alto visual que un input normal. */
-textarea.inp{height:auto;min-height:52px;padding:14px 16px;line-height:1.4;resize:none;overflow:hidden}
-.txa{width:100%;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:14px 16px;outline:none;resize:none;overflow:hidden;min-height:100px;transition:border .18s,box-shadow .18s;line-height:1.6}
+   de arriba y arrancan con el mismo alto visual que un input normal. Tienen
+   un tope de alto -- pasado eso, scrollean adentro en vez de seguir creciendo. */
+textarea.inp{height:auto;min-height:52px;max-height:160px;padding:14px 16px;line-height:1.4;resize:none;overflow-y:auto}
+.txa{width:100%;background:var(--surf-1);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:14px 16px;outline:none;resize:none;overflow-y:auto;min-height:100px;max-height:340px;transition:border .18s,box-shadow .18s;line-height:1.6}
 .txa:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(255,117,31,.08)}
+
+/* Scroll interno finito y gris (no el default ancho del navegador) para todas
+   las cajas de texto libre que pueden llegar a necesitar scroll. */
+textarea.inp,.txa,.gedit{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+textarea.inp::-webkit-scrollbar,.txa::-webkit-scrollbar,.gedit::-webkit-scrollbar{width:6px}
+textarea.inp::-webkit-scrollbar-track,.txa::-webkit-scrollbar-track,.gedit::-webkit-scrollbar-track{background:transparent}
+textarea.inp::-webkit-scrollbar-thumb,.txa::-webkit-scrollbar-thumb,.gedit::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:10px}
+textarea.inp::-webkit-scrollbar-thumb:hover,.txa::-webkit-scrollbar-thumb:hover,.gedit::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.32)}
 .ing{display:flex;flex-direction:column;gap:10px}
 
 /* ── PILLS ── */
@@ -113,7 +122,7 @@ textarea.inp{height:auto;min-height:52px;padding:14px 16px;line-height:1.4;resiz
 .gtext{font-size:1rem;line-height:1.8;color:var(--text);font-style:italic}
 .gtraits{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px}
 .gtrait{padding:7px 14px;background:rgba(255,117,31,.1);border:1px solid rgba(255,117,31,.2);border-radius:var(--r-full);font-size:.78rem;color:var(--orange);font-weight:600}
-.gedit{width:100%;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:16px;resize:none;overflow:hidden;min-height:140px;outline:none;line-height:1.65;transition:border .18s,box-shadow .18s}
+.gedit{width:100%;background:var(--surf-2);border:1.5px solid var(--border);border-radius:var(--r-md);color:var(--text);font-family:var(--fb);font-size:.95rem;padding:16px;resize:none;overflow-y:auto;min-height:140px;max-height:400px;outline:none;line-height:1.65;transition:border .18s,box-shadow .18s}
 .gedit:focus{border-color:var(--border-hi);box-shadow:0 0 0 3px rgba(255,117,31,.08)}
 .btn-confirm{width:100%;height:56px;background:var(--orange);border:none;border-radius:var(--r-xl);color:#fff;font-family:var(--fd);font-weight:800;font-size:1.05rem;cursor:pointer;transition:all .2s;margin-top:8px;touch-action:manipulation}
 .btn-confirm:hover{background:var(--orange-mid)}
