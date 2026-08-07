@@ -1238,7 +1238,7 @@ function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
 const auth = getAuth(app);
@@ -1308,19 +1308,28 @@ onAuthStateChanged(auth, async user => {
 // Se llama al abrir el panel de chat para eliminar los badges de no leídos
 window._db_marcarLeido = async (personaId) => {
   if (!uid) return;
-  await setDoc(doc(db, 'usuarios', uid, 'chats', personaId), {
-    'real.leido':   true,
-    'gemelo.leido': true,
-  }, { merge: true });
+  const ref = doc(db, 'usuarios', uid, 'chats', personaId);
+  try {
+    // updateDoc SÍ interpreta 'real.leido' como ruta anidada (setDoc con
+    // merge:true no -- crea un campo llamado literalmente "real.leido").
+    await updateDoc(ref, { 'real.leido': true, 'gemelo.leido': true });
+  } catch (e) {
+    // El documento todavía no existe (primera vez que se toca esta conversación)
+    await setDoc(ref, { real: { leido: true }, gemelo: { leido: true } }, { merge: true });
+  }
 };
 
 // Guarda el array completo de mensajes de una conversación en Firestore,
 // en usuarios/{uid}/chats/{personaId} con la forma { real: {...}, gemelo: {...} }
 window._db_saveChat = async (personaId, mode, msgs) => {
   if (!uid) return;
-  await setDoc(doc(db, 'usuarios', uid, 'chats', personaId), {
-    [`${mode}.msgs`]: msgs,
-  }, { merge: true });
+  const ref = doc(db, 'usuarios', uid, 'chats', personaId);
+  try {
+    await updateDoc(ref, { [`${mode}.msgs`]: msgs });
+  } catch (e) {
+    // El documento todavía no existe (primer mensaje con esta persona)
+    await setDoc(ref, { [mode]: { msgs } }, { merge: true });
+  }
 };
 </script>
 </body>
