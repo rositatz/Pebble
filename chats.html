@@ -926,12 +926,13 @@ function sendPanelMsg() {
   const mode    = curMode;
   const t       = nowTime();
   md.msgs.push({ from: 'me', text, time: t });
+  md.lastTime = t;
   // Primer mensaje con esta persona → inyectar en la lista de conversaciones
   if (md.msgs.length === 1) {
-    md.lastTime = t;
     injectConvItem(persona);
   }
   renderMessages();
+  refreshListItem(persona);
   input.value = ''; panelResize(input);
   setTimeout(scrollBottom, 40);
 
@@ -946,7 +947,9 @@ function sendPanelMsg() {
       removeTyping();
       const reply = autoReply(text, persona, mode);
       md.msgs.push({ from: 'them', text: reply, time: nowTime() });
+      md.lastTime = nowTime();
       renderMessages();
+      refreshListItem(persona);
       setTimeout(scrollBottom, 40);
       // Guardar respuesta automática en Firestore
       if (typeof window._db_saveChat === 'function') {

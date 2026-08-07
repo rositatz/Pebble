@@ -1304,6 +1304,16 @@ body {
             <label class="toggle-label" for="privOrientacion"></label>
           </div>
         </div>
+        <div class="privacy-row">
+          <div class="privacy-info">
+            <span class="privacy-label">Mostrar mis pronombres</span>
+            <span class="privacy-desc">Solo visible para personas con las que tu gemelo ya conectó</span>
+          </div>
+          <div class="toggle-wrap">
+            <input type="checkbox" class="toggle-input" id="privPronombres" onchange="handlePrivacyToggle('Pronombres', this)"/>
+            <label class="toggle-label" for="privPronombres"></label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2080,6 +2090,7 @@ const privacyFieldMap = {
   Ciudad:      'lockCiudad',
   Genero:      'lockGenero',
   Orientacion: 'lockOrientacion',
+  Pronombres:  'lockPronombres',
 };
 
 // Actualiza el badge de privacidad (visible / al conectar) para un campo del perfil
@@ -2111,6 +2122,7 @@ function savePrivacidad() {
     bio:         document.getElementById('privBio').checked,
     genero:      document.getElementById('privGenero').checked,
     orientacion: document.getElementById('privOrientacion').checked,
+    pronombres:  document.getElementById('privPronombres').checked,
   };
   if (typeof window._db_savePrivacidad === 'function') window._db_savePrivacidad(data);
 }
@@ -2443,12 +2455,12 @@ onAuthStateChanged(auth, async user => {
       if (p.pausada   !== undefined) document.getElementById('privPausar').checked    = p.pausada;
     }
 
-    // Privacidad de campos del perfil (mostrar nombre/edad/ciudad/fotos/bio/género/orientación)
+    // Privacidad de campos del perfil (mostrar nombre/edad/ciudad/fotos/bio/género/orientación/pronombres)
     if (d.privacidad) {
       const pr = d.privacidad;
       const campos = {
         nombre: 'privNombre', edad: 'privEdad', ciudad: 'privCiudad', fotos: 'privFotos',
-        bio: 'privBio', genero: 'privGenero', orientacion: 'privOrientacion',
+        bio: 'privBio', genero: 'privGenero', orientacion: 'privOrientacion', pronombres: 'privPronombres',
       };
       Object.entries(campos).forEach(([key, elId]) => {
         if (pr[key] !== undefined) document.getElementById(elId).checked = pr[key];
@@ -2458,6 +2470,7 @@ onAuthStateChanged(auth, async user => {
       updatePrivacyBadge('Ciudad',      document.getElementById('privCiudad').checked);
       updatePrivacyBadge('Genero',      document.getElementById('privGenero').checked);
       updatePrivacyBadge('Orientacion', document.getElementById('privOrientacion').checked);
+      updatePrivacyBadge('Pronombres',  document.getElementById('privPronombres').checked);
     }
 
     // Fotos guardadas
