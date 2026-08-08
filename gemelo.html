@@ -1,868 +1,1813 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pebble — Mi Gemelo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --orange:        #FF751F;
-  --orange-mid:    #FF9700;
-  --orange-light:  #FFBB30;
-  --bg:            #EEEDEC;
-  --surf-1:        #FFFFFF;
-  --surf-2:        #F5F4F3;
-  --surf-dark:     #000000;
-  --border:        rgba(0,0,0,0.08);
-  --border2:       rgba(0,0,0,0.13);
-  --text-primary:  #000000;
-  --text-secondary:#4D4D4D;
-  --text-muted:    rgba(0,0,0,0.35);
-  --text-inv:      #EEEDEC;
-  --font-display:  'Bricolage Grotesque', sans-serif;
-  --font-serif:    'Inria Serif', serif;
-  --font-body:     'Open Sans', sans-serif;
-  --nav-top: 62px;
-  --nav-bot: 68px;
-  --input-h: 70px;
-  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — Mi Gemelo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --orange: #ff751f;
+        --orange-mid: #ff9700;
+        --orange-light: #ffbb30;
+        --bg: #eeedec;
+        --surf-1: #ffffff;
+        --surf-2: #f5f4f3;
+        --surf-dark: #000000;
+        --border: rgba(0, 0, 0, 0.08);
+        --border2: rgba(0, 0, 0, 0.13);
+        --text-primary: #000000;
+        --text-secondary: #4d4d4d;
+        --text-muted: rgba(0, 0, 0, 0.35);
+        --text-inv: #eeedec;
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-serif: "Inria Serif", serif;
+        --font-body: "Open Sans", sans-serif;
+        --nav-top: 62px;
+        --nav-bot: 68px;
+        --input-h: 70px;
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --r-xl: 18px;
+      }
 
-html, body {
-  height: 100%; overflow: hidden;
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 16px; line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
 
-/* ── Top nav ── */
-.app-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-top);
-  background: var(--surf-1);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px 0 12px;
-}
-.nav-left { display: flex; align-items: center; gap: 4px; }
-.nav-back {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary);
-  transition: background 0.2s, color 0.2s;
-  touch-action: manipulation; text-decoration: none; flex-shrink: 0;
-}
-.nav-back:hover { background: var(--surf-2); color: var(--text-primary); }
+      /* ── Top nav ── */
+      .app-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-top);
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px 0 12px;
+      }
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .nav-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition:
+          background 0.2s,
+          color 0.2s;
+        touch-action: manipulation;
+        text-decoration: none;
+        flex-shrink: 0;
+      }
+      .nav-back:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
 
-.nav-twin {
-  display: flex; align-items: center; gap: 10px;
-}
-.twin-orb {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: var(--surf-dark);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; position: relative;
-}
-.twin-orb svg { width: 18px; height: 18px; }
-.twin-orb-dot {
-  position: absolute; bottom: 1px; right: 1px;
-  width: 10px; height: 10px; border-radius: 50%;
-  background: #22c55e; border: 2px solid var(--surf-1);
-}
-.nav-twin-info { display: flex; flex-direction: column; gap: 0; }
-.nav-twin-name {
-  font-family: var(--font-display); font-size: 0.92rem; font-weight: 700;
-  letter-spacing: -0.01em; line-height: 1.2;
-}
-.nav-twin-status {
-  font-size: 0.68rem; color: #22c55e; font-weight: 600;
-}
+      .nav-twin {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .twin-orb {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--surf-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .twin-orb svg {
+        width: 18px;
+        height: 18px;
+      }
+      .twin-orb-dot {
+        position: absolute;
+        bottom: 1px;
+        right: 1px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #22c55e;
+        border: 2px solid var(--surf-1);
+      }
+      .nav-twin-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .nav-twin-name {
+        font-family: var(--font-display);
+        font-size: 0.92rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+      }
+      .nav-twin-status {
+        font-size: 0.68rem;
+        color: #22c55e;
+        font-weight: 600;
+      }
 
-.nav-logo {
-  font-family: var(--font-display); font-size: 1.2rem; font-weight: 800;
-  letter-spacing: -0.02em; text-decoration: none;
-}
-.nav-logo .bb   { color: var(--orange); }
-.nav-logo .rest { color: var(--text-primary); }
-.nav-settings {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted); transition: all 0.2s;
-  text-decoration: none;
-}
-.nav-settings:hover { background: var(--surf-2); color: var(--text-primary); }
+      .nav-logo {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      .nav-logo .bb {
+        color: var(--orange);
+      }
+      .nav-logo .rest {
+        color: var(--text-primary);
+      }
+      .nav-settings {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+      .nav-settings:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
 
-/* ── Chat area ── */
-.chat-wrap {
-  position: fixed;
-  top: var(--nav-top);
-  bottom: calc(var(--nav-bot) + var(--input-h));
-  left: 0; right: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-.messages {
-  max-width: 720px; width: 100%;
-  margin: 0 auto;
-  padding: 20px 16px 70px;
-  display: flex; flex-direction: column; gap: 6px;
-}
+      /* ── Chat area ── */
+      .chat-wrap {
+        position: fixed;
+        top: var(--nav-top);
+        bottom: calc(var(--nav-bot) + var(--input-h));
+        left: 0;
+        right: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+      }
+      .messages {
+        max-width: 720px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 20px 16px 70px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
 
-/* Day separator */
-.day-sep {
-  display: flex; align-items: center; gap: 10px;
-  margin: 10px 0 6px;
-}
-.day-sep-line { flex: 1; height: 1px; background: var(--border2); }
-.day-sep-text {
-  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text-muted); white-space: nowrap;
-}
+      /* Day separator */
+      .day-sep {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 0 6px;
+      }
+      .day-sep-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border2);
+      }
+      .day-sep-text {
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
 
-/* ── Message rows ── */
-.msg {
-  display: flex; align-items: flex-end; gap: 8px;
-  max-width: 100%;
-}
-.msg.twin { justify-content: flex-start; }
-.msg.user { justify-content: flex-end; }
+      /* ── Message rows ── */
+      .msg {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        max-width: 100%;
+      }
+      .msg.twin {
+        justify-content: flex-start;
+      }
+      .msg.user {
+        justify-content: flex-end;
+      }
 
-/* Twin avatar (small orb) */
-.msg-av {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--surf-dark);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; align-self: flex-end; margin-bottom: 2px;
-}
-.msg-av svg { width: 14px; height: 14px; }
-.msg-av-spacer { width: 30px; flex-shrink: 0; }
+      /* Twin avatar (small orb) */
+      .msg-av {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--surf-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        align-self: flex-end;
+        margin-bottom: 2px;
+      }
+      .msg-av svg {
+        width: 14px;
+        height: 14px;
+      }
+      .msg-av-spacer {
+        width: 30px;
+        flex-shrink: 0;
+      }
 
-/* Bubbles */
-.bubble {
-  padding: 10px 14px;
-  border-radius: 18px;
-  max-width: min(72%, 460px);
-  font-size: 0.875rem; line-height: 1.6;
-  word-wrap: break-word;
-}
-.msg.twin .bubble {
-  background: var(--surf-1);
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
-  color: var(--text-primary);
-}
-.msg.user .bubble {
-  background: var(--surf-dark);
-  border-bottom-right-radius: 4px;
-  color: var(--text-inv);
-}
+      /* Bubbles */
+      .bubble {
+        padding: 10px 14px;
+        border-radius: 18px;
+        max-width: min(72%, 460px);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        word-wrap: break-word;
+      }
+      .msg.twin .bubble {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+        color: var(--text-primary);
+      }
+      .msg.user .bubble {
+        background: var(--surf-dark);
+        border-bottom-right-radius: 4px;
+        color: var(--text-inv);
+      }
 
-/* Timestamp */
-.msg-time {
-  font-size: 0.6rem; color: var(--text-muted);
-  align-self: flex-end; margin-bottom: 4px; flex-shrink: 0;
-}
-.msg.user .msg-time { order: -1; }
+      /* Timestamp */
+      .msg-time {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        align-self: flex-end;
+        margin-bottom: 4px;
+        flex-shrink: 0;
+      }
+      .msg.user .msg-time {
+        order: -1;
+      }
 
-/* Typing indicator */
-.typing-bubble {
-  background: var(--surf-1); border: 1px solid var(--border);
-  border-radius: 18px; border-bottom-left-radius: 4px;
-  padding: 12px 16px;
-  display: flex; gap: 5px; align-items: center;
-}
-.typing-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--text-muted);
-  animation: typing-bounce 1.2s infinite ease-in-out;
-}
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes typing-bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-6px); }
-}
+      /* Typing indicator */
+      .typing-bubble {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        border-bottom-left-radius: 4px;
+        padding: 12px 16px;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+      .typing-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        animation: typing-bounce 1.2s infinite ease-in-out;
+      }
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes typing-bounce {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-6px);
+        }
+      }
 
-/* ── Embedded cards ── */
-.card-wrap {
-  width: 100%; padding: 4px 0 2px;
-}
+      /* ── Embedded cards ── */
+      .card-wrap {
+        width: 100%;
+        padding: 4px 0 2px;
+      }
 
-/* Match card */
-.match-card {
-  background: var(--surf-1); border: 1px solid var(--border);
-  border-radius: var(--r-xl); overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-}
-.match-card-header {
-  background: var(--surf-dark); padding: 12px 16px;
-  display: flex; align-items: center; gap: 8px;
-}
-.match-card-label {
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--orange);
-}
-.match-card-label svg { width: 13px; height: 13px; stroke: var(--orange); fill: none; vertical-align: middle; margin-right: 4px; }
-.match-card-body {
-  padding: 16px;
-  display: flex; gap: 14px; align-items: center;
-}
-.match-av {
-  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 1.3rem; font-weight: 800;
-  color: #fff;
-}
-.match-info { flex: 1; min-width: 0; }
-.match-name {
-  font-family: var(--font-display); font-size: 1.05rem; font-weight: 800;
-  letter-spacing: -0.01em;
-}
-.match-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
-.match-score-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  flex-shrink: 0;
-}
-.score-ring { position: relative; width: 52px; height: 52px; }
-.score-ring svg { width: 52px; height: 52px; transform: rotate(-90deg); }
-.score-ring-bg  { fill: none; stroke: var(--surf-2); stroke-width: 4; }
-.score-ring-fill { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
-.score-num {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 0.8rem; font-weight: 800;
-  color: var(--text-primary); letter-spacing: -0.02em;
-}
-.score-label { font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+      /* Match card */
+      .match-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      }
+      .match-card-header {
+        background: var(--surf-dark);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .match-card-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--orange);
+      }
+      .match-card-label svg {
+        width: 13px;
+        height: 13px;
+        stroke: var(--orange);
+        fill: none;
+        vertical-align: middle;
+        margin-right: 4px;
+      }
+      .match-card-body {
+        padding: 16px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .match-av {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .match-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .match-name {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .match-meta {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 1px;
+      }
+      .match-score-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+      .score-ring {
+        position: relative;
+        width: 52px;
+        height: 52px;
+      }
+      .score-ring svg {
+        width: 52px;
+        height: 52px;
+        transform: rotate(-90deg);
+      }
+      .score-ring-bg {
+        fill: none;
+        stroke: var(--surf-2);
+        stroke-width: 4;
+      }
+      .score-ring-fill {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 1s ease;
+      }
+      .score-num {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+      }
+      .score-label {
+        font-size: 0.58rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+      }
 
-.match-reasons {
-  padding: 0 16px 14px;
-  display: flex; flex-wrap: wrap; gap: 6px;
-}
-.reason-chip {
-  font-size: 0.7rem; padding: 4px 10px; border-radius: 20px;
-  background: var(--surf-2); border: 1px solid var(--border2);
-  color: var(--text-secondary);
-}
-.match-actions {
-  display: flex; gap: 8px; padding: 0 16px 16px;
-}
-.match-btn {
-  flex: 1; padding: 9px 12px; border-radius: var(--r-md);
-  font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
-  cursor: pointer; transition: all 0.18s; border: none;
-  touch-action: manipulation;
-}
-.match-btn-primary { background: var(--surf-dark); color: #fff; }
-.match-btn-primary:hover { background: var(--orange); }
-.match-btn-secondary { background: var(--surf-2); border: 1px solid var(--border2); color: var(--text-secondary); }
-.match-btn-secondary:hover { border-color: var(--text-primary); color: var(--text-primary); }
+      .match-reasons {
+        padding: 0 16px 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .reason-chip {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        color: var(--text-secondary);
+      }
+      .match-actions {
+        display: flex;
+        gap: 8px;
+        padding: 0 16px 16px;
+      }
+      .match-btn {
+        flex: 1;
+        padding: 9px 12px;
+        border-radius: var(--r-md);
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+        border: none;
+        touch-action: manipulation;
+      }
+      .match-btn-primary {
+        background: var(--surf-dark);
+        color: #fff;
+      }
+      .match-btn-primary:hover {
+        background: var(--orange);
+      }
+      .match-btn-secondary {
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        color: var(--text-secondary);
+      }
+      .match-btn-secondary:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+      }
 
-/* Recommendation card */
-.recom-card {
-  background: var(--surf-1); border: 1px solid var(--border);
-  border-left: 3px solid var(--orange);
-  border-radius: var(--r-lg); overflow: hidden;
-  padding: 14px 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
-.recom-header {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 11px;
-}
-.recom-icon {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: rgba(255,117,31,0.1);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.recom-icon svg { width: 15px; height: 15px; stroke: var(--orange); fill: none; }
-.recom-title {
-  font-family: var(--font-display); font-size: 0.88rem; font-weight: 800;
-  letter-spacing: -0.01em;
-}
-.recom-context { font-size: 0.7rem; color: var(--text-muted); }
-.recom-tips { display: flex; flex-direction: column; gap: 8px; }
-.recom-tip {
-  display: flex; gap: 9px; align-items: flex-start;
-}
-.recom-tip-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--orange); flex-shrink: 0; margin-top: 6px;
-}
-.recom-tip-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55; }
-.recom-tip-text strong { color: var(--text-primary); font-weight: 600; }
+      /* Recommendation card */
+      .recom-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--orange);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        padding: 14px 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      }
+      .recom-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 11px;
+      }
+      .recom-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 117, 31, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .recom-icon svg {
+        width: 15px;
+        height: 15px;
+        stroke: var(--orange);
+        fill: none;
+      }
+      .recom-title {
+        font-family: var(--font-display);
+        font-size: 0.88rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .recom-context {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+      }
+      .recom-tips {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .recom-tip {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+      }
+      .recom-tip-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--orange);
+        flex-shrink: 0;
+        margin-top: 6px;
+      }
+      .recom-tip-text {
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        line-height: 1.55;
+      }
+      .recom-tip-text strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-/* Progress card */
-.progress-card {
-  background: var(--surf-1); border: 1px solid var(--border);
-  border-radius: var(--r-lg); padding: 14px 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
-.progress-card-header {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-}
-.progress-person-av {
-  width: 32px; height: 32px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 0.85rem; font-weight: 800; color: #fff;
-  flex-shrink: 0;
-}
-.progress-card-info { flex: 1; }
-.progress-card-name {
-  font-family: var(--font-display); font-size: 0.88rem; font-weight: 800;
-  letter-spacing: -0.01em; line-height: 1.2;
-}
-.progress-card-event { font-size: 0.7rem; color: var(--text-muted); }
-.progress-score-change {
-  font-family: var(--font-display); font-size: 1rem; font-weight: 800;
-  color: var(--orange); letter-spacing: -0.02em; flex-shrink: 0;
-}
-.progress-bar-wrap { display: flex; flex-direction: column; gap: 5px; }
-.progress-bar-labels {
-  display: flex; justify-content: space-between;
-  font-size: 0.68rem; color: var(--text-muted);
-}
-.progress-bar-labels span:last-child { color: var(--orange); font-weight: 600; }
-.progress-bar-track {
-  height: 6px; border-radius: 3px; background: var(--surf-2); overflow: hidden;
-}
-.progress-bar-fill {
-  height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--orange), var(--orange-light));
-  transition: width 0.8s ease;
-}
-.progress-unlock {
-  margin-top: 10px; padding: 8px 10px;
-  background: rgba(255,117,31,0.06); border-radius: var(--r-md);
-  border: 1px solid rgba(255,117,31,0.15);
-  font-size: 0.75rem; color: var(--text-secondary);
-  display: flex; align-items: center; gap: 7px;
-}
-.progress-unlock svg { width: 13px; height: 13px; stroke: var(--orange); fill: none; flex-shrink: 0; }
+      /* Progress card */
+      .progress-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      }
+      .progress-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .progress-person-av {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .progress-card-info {
+        flex: 1;
+      }
+      .progress-card-name {
+        font-family: var(--font-display);
+        font-size: 0.88rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+      }
+      .progress-card-event {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+      }
+      .progress-score-change {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--orange);
+        letter-spacing: -0.02em;
+        flex-shrink: 0;
+      }
+      .progress-bar-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .progress-bar-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.68rem;
+        color: var(--text-muted);
+      }
+      .progress-bar-labels span:last-child {
+        color: var(--orange);
+        font-weight: 600;
+      }
+      .progress-bar-track {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--surf-2);
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--orange), var(--orange-light));
+        transition: width 0.8s ease;
+      }
+      .progress-unlock {
+        margin-top: 10px;
+        padding: 8px 10px;
+        background: rgba(255, 117, 31, 0.06);
+        border-radius: var(--r-md);
+        border: 1px solid rgba(255, 117, 31, 0.15);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .progress-unlock svg {
+        width: 13px;
+        height: 13px;
+        stroke: var(--orange);
+        fill: none;
+        flex-shrink: 0;
+      }
 
-/* Feedback card */
-.feedback-card {
-  background: var(--surf-dark); border-radius: var(--r-lg); padding: 14px 16px;
-}
-.feedback-question {
-  font-family: var(--font-serif); font-style: italic;
-  font-size: 0.88rem; color: rgba(255,255,255,0.75); line-height: 1.55;
-  margin-bottom: 12px;
-}
-.feedback-opts { display: flex; flex-wrap: wrap; gap: 7px; }
-.feedback-opt {
-  padding: 7px 13px; border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.07);
-  font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.8);
-  cursor: pointer; transition: all 0.18s; touch-action: manipulation;
-}
-.feedback-opt:hover { background: var(--orange); border-color: var(--orange); color: #fff; }
-.feedback-opt.chosen { background: var(--orange); border-color: var(--orange); color: #fff; pointer-events: none; }
+      /* Feedback card */
+      .feedback-card {
+        background: var(--surf-dark);
+        border-radius: var(--r-lg);
+        padding: 14px 16px;
+      }
+      .feedback-question {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-size: 0.88rem;
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.55;
+        margin-bottom: 12px;
+      }
+      .feedback-opts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .feedback-opt {
+        padding: 7px 13px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.07);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: all 0.18s;
+        touch-action: manipulation;
+      }
+      .feedback-opt:hover {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #fff;
+      }
+      .feedback-opt.chosen {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #fff;
+        pointer-events: none;
+      }
 
-/* ── Quick replies ── */
-.quick-replies-wrap {
-  position: fixed;
-  bottom: calc(var(--nav-bot) + var(--input-h));
-  left: 0; right: 0; z-index: 150;
-  background: linear-gradient(to top, var(--bg) 60%, transparent);
-  padding: 10px 16px 6px;
-  pointer-events: none;
-}
-.quick-replies {
-  max-width: 720px; margin: 0 auto;
-  display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none;
-  pointer-events: all;
-}
-.quick-replies::-webkit-scrollbar { display: none; }
-.qr-chip {
-  flex-shrink: 0; padding: 7px 14px; border-radius: 20px;
-  background: var(--surf-1); border: 1px solid var(--border2);
-  font-size: 0.78rem; font-weight: 500; color: var(--text-secondary);
-  cursor: pointer; transition: all 0.18s; touch-action: manipulation;
-  white-space: nowrap;
-}
-.qr-chip:hover { border-color: var(--orange); color: var(--orange); }
+      /* ── Quick replies ── */
+      .quick-replies-wrap {
+        position: fixed;
+        bottom: calc(var(--nav-bot) + var(--input-h));
+        left: 0;
+        right: 0;
+        z-index: 150;
+        background: linear-gradient(to top, var(--bg) 60%, transparent);
+        padding: 10px 16px 6px;
+        pointer-events: none;
+      }
+      .quick-replies {
+        max-width: 720px;
+        margin: 0 auto;
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        pointer-events: all;
+      }
+      .quick-replies::-webkit-scrollbar {
+        display: none;
+      }
+      .qr-chip {
+        flex-shrink: 0;
+        padding: 7px 14px;
+        border-radius: 20px;
+        background: var(--surf-1);
+        border: 1px solid var(--border2);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.18s;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+      .qr-chip:hover {
+        border-color: var(--orange);
+        color: var(--orange);
+      }
 
-/* ── Input area ── */
-.input-wrap {
-  position: fixed;
-  bottom: var(--nav-bot);
-  left: 0; right: 0; z-index: 160;
-  height: var(--input-h);
-  background: var(--surf-1);
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center;
-  padding: 0 12px;
-  gap: 8px;
-}
-.input-plus-btn {
-  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-  background: var(--surf-2); border: 1px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s; touch-action: manipulation;
-  color: var(--text-secondary);
-}
-.input-plus-btn:hover { background: var(--surf-dark); color: #fff; border-color: var(--surf-dark); }
-.input-plus-btn svg { width: 18px; height: 18px; }
-.input-field-wrap { flex: 1; }
-.chat-input {
-  width: 100%; padding: 10px 14px;
-  border: 1.5px solid var(--border2); border-radius: 22px;
-  font-family: var(--font-body); font-size: 0.88rem; color: var(--text-primary);
-  background: var(--surf-2); outline: none; resize: none;
-  transition: border-color 0.18s;
-  line-height: 1.4; max-height: 100px; overflow-y: hidden;
-}
-.chat-input::placeholder { color: var(--text-muted); }
-.chat-input:focus { border-color: var(--orange); background: var(--surf-1); }
-.send-btn {
-  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-  background: var(--surf-dark); border: none;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s; touch-action: manipulation;
-}
-.send-btn:hover { background: var(--orange); }
-.send-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; }
-.send-btn:disabled { background: var(--surf-2); cursor: not-allowed; }
-.send-btn:disabled svg { stroke: var(--text-muted); }
+      /* ── Input area ── */
+      .input-wrap {
+        position: fixed;
+        bottom: var(--nav-bot);
+        left: 0;
+        right: 0;
+        z-index: 160;
+        height: var(--input-h);
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 8px;
+      }
+      .input-plus-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        touch-action: manipulation;
+        color: var(--text-secondary);
+      }
+      .input-plus-btn:hover {
+        background: var(--surf-dark);
+        color: #fff;
+        border-color: var(--surf-dark);
+      }
+      .input-plus-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+      .input-field-wrap {
+        flex: 1;
+      }
+      .chat-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1.5px solid var(--border2);
+        border-radius: 22px;
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        color: var(--text-primary);
+        background: var(--surf-2);
+        outline: none;
+        resize: none;
+        transition: border-color 0.18s;
+        line-height: 1.4;
+        max-height: 100px;
+        overflow-y: hidden;
+      }
+      .chat-input::placeholder {
+        color: var(--text-muted);
+      }
+      .chat-input:focus {
+        border-color: var(--orange);
+        background: var(--surf-1);
+      }
+      .send-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: var(--surf-dark);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        touch-action: manipulation;
+      }
+      .send-btn:hover {
+        background: var(--orange);
+      }
+      .send-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: #fff;
+        fill: none;
+      }
+      .send-btn:disabled {
+        background: var(--surf-2);
+        cursor: not-allowed;
+      }
+      .send-btn:disabled svg {
+        stroke: var(--text-muted);
+      }
 
-/* ── Plus menu ── */
-.plus-menu {
-  position: fixed; bottom: calc(var(--nav-bot) + var(--input-h) + 4px);
-  left: 12px; z-index: 300;
-  background: var(--surf-1); border: 1px solid var(--border2);
-  border-radius: var(--r-lg); box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  overflow: hidden; min-width: 220px;
-  transform-origin: bottom left;
-  transition: all 0.2s ease;
-}
-.plus-menu.hidden { opacity: 0; pointer-events: none; transform: scale(0.92) translateY(8px); }
-.plus-menu-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 16px; cursor: pointer;
-  transition: background 0.15s; touch-action: manipulation;
-  border-bottom: 1px solid var(--border);
-}
-.plus-menu-item:last-child { border-bottom: none; }
-.plus-menu-item:hover { background: var(--surf-2); }
-.plus-menu-icon {
-  width: 32px; height: 32px; border-radius: var(--r-md);
-  background: var(--surf-2); display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.plus-menu-icon svg { width: 15px; height: 15px; fill: none; stroke: var(--text-secondary); }
-.plus-menu-label { font-size: 0.84rem; font-weight: 500; color: var(--text-primary); }
+      /* ── Plus menu ── */
+      .plus-menu {
+        position: fixed;
+        bottom: calc(var(--nav-bot) + var(--input-h) + 4px);
+        left: 12px;
+        z-index: 300;
+        background: var(--surf-1);
+        border: 1px solid var(--border2);
+        border-radius: var(--r-lg);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        min-width: 220px;
+        transform-origin: bottom left;
+        transition: all 0.2s ease;
+      }
+      .plus-menu.hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.92) translateY(8px);
+      }
+      .plus-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.15s;
+        touch-action: manipulation;
+        border-bottom: 1px solid var(--border);
+      }
+      .plus-menu-item:last-child {
+        border-bottom: none;
+      }
+      .plus-menu-item:hover {
+        background: var(--surf-2);
+      }
+      .plus-menu-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--r-md);
+        background: var(--surf-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .plus-menu-icon svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: var(--text-secondary);
+      }
+      .plus-menu-label {
+        font-size: 0.84rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
 
-/* ── Bottom nav ── */
-.app-bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-bot);
-  background: var(--surf-1); border-top: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 16px;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-.bnav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; padding: 8px;
-  background: none; border: none; cursor: pointer;
-  color: var(--text-muted); text-decoration: none;
-  transition: color 0.2s; touch-action: manipulation; min-height: 48px;
-}
-.bnav-item:hover { color: var(--text-secondary); }
-.bnav-item.active { color: var(--orange); }
-.bnav-icon { position: relative; line-height: 1; }
-.bnav-icon svg { width: 22px; height: 22px; display: block; }
-.bnav-pip { position: absolute; top: -3px; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
-.bnav-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-.bnav-center {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; padding: 8px;
-  background: none; border: none; cursor: pointer;
-  text-decoration: none; touch-action: manipulation; min-height: 48px;
-}
-.bnav-center-orb {
-  width: 50px; height: 50px; border-radius: 50%;
-  background: var(--orange);
-  display: flex; align-items: center; justify-content: center;
-  margin-top: -20px;
-  box-shadow: 0 4px 20px rgba(255,117,31,0.4);
-  border: 3px solid var(--bg);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.bnav-center:hover .bnav-center-orb { transform: scale(1.08); }
-.bnav-center-orb svg { width: 22px; height: 22px; }
-.bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange); }
+      /* ── Bottom nav ── */
+      .app-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-bot);
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
+      .bnav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-item:hover {
+        color: var(--text-secondary);
+      }
+      .bnav-item.active {
+        color: var(--orange);
+      }
+      .bnav-icon {
+        position: relative;
+        line-height: 1;
+      }
+      .bnav-icon svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
+      .bnav-pip {
+        position: absolute;
+        top: -3px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .bnav-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .bnav-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-center-orb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -20px;
+        box-shadow: 0 4px 20px rgba(255, 117, 31, 0.4);
+        border: 3px solid var(--bg);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .bnav-center:hover .bnav-center-orb {
+        transform: scale(1.08);
+      }
+      .bnav-center-orb svg {
+        width: 22px;
+        height: 22px;
+      }
+      .bnav-center-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--orange);
+      }
 
-/* ── Misc ── */
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
-#loadingOverlay.hide{opacity:0;pointer-events:none}
-.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+      /* ── Misc ── */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      #loadingOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+      }
+      #loadingOverlay.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-spinner {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: var(--orange);
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-/* ══════════════════════════════════════
+      /* ══════════════════════════════════════
    RESPONSIVE — MOBILE
 ══════════════════════════════════════ */
-@media (max-width: 600px) {
-  /* Nav */
-  .app-nav { padding: 0 12px; }
+      @media (max-width: 600px) {
+        /* Nav */
+        .app-nav {
+          padding: 0 12px;
+        }
 
-  /* Área de chat — menos padding lateral */
-  .chat-main { padding: 16px 12px 70px; }
+        /* Área de chat — menos padding lateral */
+        .chat-main {
+          padding: 16px 12px 70px;
+        }
 
-  /* Burbujas — max width más generoso en pantallas chicas */
-  .pmsg .pbubble,
-  .pbubble { max-width: min(85%, 360px); }
+        /* Burbujas — max width más generoso en pantallas chicas */
+        .pmsg .pbubble,
+        .pbubble {
+          max-width: min(85%, 360px);
+        }
 
-  /* Input */
-  .input-wrap { padding: 8px 12px; }
-  .input-bar { padding: 8px 10px; }
+        /* Input */
+        .input-wrap {
+          padding: 8px 12px;
+        }
+        .input-bar {
+          padding: 8px 10px;
+        }
 
-  /* Tabs del gemelo — texto más chico si no entra */
-  .twin-tab { font-size: 0.72rem; padding: 6px 10px; }
+        /* Tabs del gemelo — texto más chico si no entra */
+        .twin-tab {
+          font-size: 0.72rem;
+          padding: 6px 10px;
+        }
 
-  /* Perfil overlay */
-  .profile-overlay-inner { padding: 16px 12px 28px; }
-}
-</style>
-</head>
-<body>
-<div id="loadingOverlay"><div class="loading-spinner"></div></div>
+        /* Perfil overlay */
+        .profile-overlay-inner {
+          padding: 16px 12px 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
-<!-- Top Nav -->
-<nav class="app-nav" aria-label="Navegación">
-  <div class="nav-left">
-    <a href="./home.html" class="nav-back" aria-label="Volver">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
-    </a>
-    <div class="nav-twin">
-      <div class="twin-orb">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-        <div class="twin-orb-dot"></div>
-      </div>
-      <div class="nav-twin-info">
-        <span class="nav-twin-name" id="navTwinName">Tu gemelo</span>
-        <span class="nav-twin-status">Activo · 12 conversaciones abiertas</span>
-      </div>
-    </div>
-  </div>
-  <a href="./home.html" class="nav-logo" aria-label="Pebble">
-    <span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span>
-  </a>
-</nav>
-
-<!-- Chat area -->
-<div class="chat-wrap" id="chatWrap">
-  <div class="messages" id="messages">
-
-    <!-- Day separator -->
-    <div class="day-sep">
-      <div class="day-sep-line"></div>
-      <span class="day-sep-text">Hoy</span>
-      <div class="day-sep-line"></div>
-    </div>
-
-    <!-- Twin greeting -->
-    <div class="msg twin" id="m0">
-      <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-      <div class="bubble">Hola, soy tu gemelo digital. Represento tu personalidad en Pebble y te voy a ir avisando todo lo que pase: nuevas conexiones, cómo van mis conversaciones y cuándo algo vale la pena que saltes vos.</div>
-      <span class="msg-time">10:14</span>
-    </div>
-
-    <!-- New match card -->
-    <div class="msg twin">
-      <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-      <div class="card-wrap">
-        <div class="match-card">
-          <div class="match-card-header">
-            <span class="match-card-label">
-              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              Nueva conexión encontrada
-            </span>
+    <!-- Top Nav -->
+    <nav class="app-nav" aria-label="Navegación">
+      <div class="nav-left">
+        <a href="./home.html" class="nav-back" aria-label="Volver">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            width="20"
+            height="20"
+          >
+            <path d="M19 12H5" />
+            <path d="M12 5l-7 7 7 7" />
+          </svg>
+        </a>
+        <div class="nav-twin">
+          <div class="twin-orb">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+            <div class="twin-orb-dot"></div>
           </div>
-          <div class="match-card-body">
-            <div class="match-av" style="background-image:url(./sofia.png);background-size:cover;background-position:center"></div>
-            <div class="match-info">
-              <div class="match-name">Sofía</div>
-              <div class="match-meta">26 años · Buenos Aires</div>
-            </div>
-            <div class="match-score-wrap">
-              <div class="score-ring">
-                <svg viewBox="0 0 52 52">
-                  <circle class="score-ring-bg" cx="26" cy="26" r="22"/>
-                  <circle class="score-ring-fill" cx="26" cy="26" r="22"
-                    stroke="#FF751F"
-                    stroke-dasharray="138.2"
-                    stroke-dashoffset="16.6"/>
-                </svg>
-                <div class="score-num">87%</div>
+          <div class="nav-twin-info">
+            <span class="nav-twin-name" id="navTwinName">Tu gemelo</span>
+            <span class="nav-twin-status"
+              >Activo · 12 conversaciones abiertas</span
+            >
+          </div>
+        </div>
+      </div>
+      <a href="./home.html" class="nav-logo" aria-label="Pebble">
+        <span class="rest">PE</span><span class="bb">BB</span
+        ><span class="rest">LE</span>
+      </a>
+    </nav>
+
+    <!-- Chat area -->
+    <div class="chat-wrap" id="chatWrap">
+      <div class="messages" id="messages">
+        <!-- Day separator -->
+        <div class="day-sep">
+          <div class="day-sep-line"></div>
+          <span class="day-sep-text">Hoy</span>
+          <div class="day-sep-line"></div>
+        </div>
+
+        <!-- Twin greeting -->
+        <div class="msg twin" id="m0">
+          <div class="msg-av">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div class="bubble">
+            Hola, soy tu gemelo digital. Represento tu personalidad en Pebble y
+            te voy a ir avisando todo lo que pase: nuevas conexiones, cómo van
+            mis conversaciones y cuándo algo vale la pena que saltes vos.
+          </div>
+          <span class="msg-time">10:14</span>
+        </div>
+
+        <!-- New match card -->
+        <div class="msg twin">
+          <div class="msg-av">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div class="card-wrap">
+            <div class="match-card">
+              <div class="match-card-header">
+                <span class="match-card-label">
+                  <svg
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                    />
+                  </svg>
+                  Nueva conexión encontrada
+                </span>
               </div>
-              <span class="score-label">Afinidad</span>
+              <div class="match-card-body">
+                <div
+                  class="match-av"
+                  style="
+                    background-image: url(./images/sofia.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+                <div class="match-info">
+                  <div class="match-name">Sofía</div>
+                  <div class="match-meta">26 años · Buenos Aires</div>
+                </div>
+                <div class="match-score-wrap">
+                  <div class="score-ring">
+                    <svg viewBox="0 0 52 52">
+                      <circle class="score-ring-bg" cx="26" cy="26" r="22" />
+                      <circle
+                        class="score-ring-fill"
+                        cx="26"
+                        cy="26"
+                        r="22"
+                        stroke="#FF751F"
+                        stroke-dasharray="138.2"
+                        stroke-dashoffset="16.6"
+                      />
+                    </svg>
+                    <div class="score-num">87%</div>
+                  </div>
+                  <span class="score-label">Afinidad</span>
+                </div>
+              </div>
+              <div class="match-reasons">
+                <span class="reason-chip">🎷 Jazz</span>
+                <span class="reason-chip">📚 Literatura</span>
+                <span class="reason-chip">💬 Comunicación directa</span>
+                <span class="reason-chip">🎥 Cine de autor</span>
+              </div>
+              <div class="match-actions">
+                <button
+                  class="match-btn match-btn-primary"
+                  onclick="goToMatches()"
+                >
+                  Ver en matches
+                </button>
+                <button
+                  class="match-btn match-btn-secondary"
+                  onclick="twinKeepGoing('Sofía')"
+                >
+                  Seguí interactuando
+                </button>
+              </div>
             </div>
           </div>
-          <div class="match-reasons">
-            <span class="reason-chip">🎷 Jazz</span>
-            <span class="reason-chip">📚 Literatura</span>
-            <span class="reason-chip">💬 Comunicación directa</span>
-            <span class="reason-chip">🎥 Cine de autor</span>
-          </div>
-          <div class="match-actions">
-            <button class="match-btn match-btn-primary" onclick="goToMatches()">Ver en matches</button>
-            <button class="match-btn match-btn-secondary" onclick="twinKeepGoing('Sofía')">Seguí interactuando</button>
-          </div>
+          <span class="msg-time">10:15</span>
         </div>
-      </div>
-      <span class="msg-time">10:15</span>
-    </div>
 
-    <!-- Twin explains match -->
-    <div class="msg twin">
-      <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-      <div class="bubble">Con Sofía conectamos muy bien. En el escenario de música apareció espontáneamente el jazz, los shows en vivo y hasta mencionó a Coltrane. Tiene humor seco y le gusta que la conversación vaya a algún lado, no el "¿cómo estás?" de siempre.</div>
-      <span class="msg-time">10:15</span>
-    </div>
+        <!-- Twin explains match -->
+        <div class="msg twin">
+          <div class="msg-av">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div class="bubble">
+            Con Sofía conectamos muy bien. En el escenario de música apareció
+            espontáneamente el jazz, los shows en vivo y hasta mencionó a
+            Coltrane. Tiene humor seco y le gusta que la conversación vaya a
+            algún lado, no el "¿cómo estás?" de siempre.
+          </div>
+          <span class="msg-time">10:15</span>
+        </div>
 
-    <!-- Recommendation card (auto) -->
-    <div class="msg twin">
-      <div class="msg-av-spacer"></div>
-      <div class="card-wrap">
-        <div class="recom-card">
-          <div class="recom-header">
-            <div class="recom-icon">
-              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <!-- Recommendation card (auto) -->
+        <div class="msg twin">
+          <div class="msg-av-spacer"></div>
+          <div class="card-wrap">
+            <div class="recom-card">
+              <div class="recom-header">
+                <div class="recom-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="recom-title">Cómo hablarle a Sofía</div>
+                  <div class="recom-context">
+                    Basado en nuestras conversaciones
+                  </div>
+                </div>
+              </div>
+              <div class="recom-tips">
+                <div class="recom-tip">
+                  <div class="recom-tip-dot"></div>
+                  <div class="recom-tip-text">
+                    <strong>Arrancá con algo concreto</strong>, no una pregunta
+                    genérica. Puede ser una recomendación de disco o una
+                    película que viste hace poco.
+                  </div>
+                </div>
+                <div class="recom-tip">
+                  <div class="recom-tip-dot"></div>
+                  <div class="recom-tip-text">
+                    <strong>Seguile el humor</strong>. Tiene ironia sutil — si
+                    lo recibís en serio, la conversación se pone rara. Respondé
+                    en el mismo tono.
+                  </div>
+                </div>
+                <div class="recom-tip">
+                  <div class="recom-tip-dot"></div>
+                  <div class="recom-tip-text">
+                    <strong>Evitá preguntas de trámite</strong> ("¿A qué te
+                    dedicás?", "¿De dónde sos?"). Le gustan las conversaciones
+                    que van a algún lugar de verdad.
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <div class="recom-title">Cómo hablarle a Sofía</div>
-              <div class="recom-context">Basado en nuestras conversaciones</div>
+          </div>
+          <span class="msg-time">10:15</span>
+        </div>
+
+        <!-- Progress update: Valentina -->
+        <div class="msg twin">
+          <div class="msg-av">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div class="card-wrap">
+            <div class="progress-card">
+              <div class="progress-card-header">
+                <div
+                  class="progress-person-av"
+                  style="
+                    background-image: url(./images/valentina.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+                <div class="progress-card-info">
+                  <div class="progress-card-name">Valentina</div>
+                  <div class="progress-card-event">
+                    Completé el escenario "Primera cita"
+                  </div>
+                </div>
+                <div class="progress-score-change">↑ 76%</div>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-labels">
+                  <span>Afinidad</span><span>76%</span>
+                </div>
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" style="width: 76%"></div>
+                </div>
+              </div>
+              <div class="progress-unlock">
+                <svg
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                </svg>
+                Se desbloqueó su nombre real · Valentina Méndez
+              </div>
             </div>
           </div>
-          <div class="recom-tips">
-            <div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text"><strong>Arrancá con algo concreto</strong>, no una pregunta genérica. Puede ser una recomendación de disco o una película que viste hace poco.</div></div>
-            <div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text"><strong>Seguile el humor</strong>. Tiene ironia sutil — si lo recibís en serio, la conversación se pone rara. Respondé en el mismo tono.</div></div>
-            <div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text"><strong>Evitá preguntas de trámite</strong> ("¿A qué te dedicás?", "¿De dónde sos?"). Le gustan las conversaciones que van a algún lugar de verdad.</div></div>
-          </div>
+          <span class="msg-time">10:28</span>
         </div>
-      </div>
-      <span class="msg-time">10:15</span>
-    </div>
 
-    <!-- Progress update: Valentina -->
-    <div class="msg twin">
-      <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-      <div class="card-wrap">
-        <div class="progress-card">
-          <div class="progress-card-header">
-            <div class="progress-person-av" style="background-image:url(./valentina.png);background-size:cover;background-position:center"></div>
-            <div class="progress-card-info">
-              <div class="progress-card-name">Valentina</div>
-              <div class="progress-card-event">Completé el escenario "Primera cita"</div>
+        <!-- Twin asks about Valentina -->
+        <div class="msg twin">
+          <div class="msg-av">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div class="bubble">
+            Con Valentina estamos bien pero todavía no llegamos al umbral para
+            desbloquearte el chat directo. ¿Querés que inicie otro escenario o
+            esperamos a ver cómo responde?
+          </div>
+          <span class="msg-time">10:28</span>
+        </div>
+
+        <!-- Feedback card -->
+        <div class="msg twin">
+          <div class="msg-av-spacer"></div>
+          <div class="card-wrap">
+            <div class="feedback-card" id="feedbackCard1">
+              <div class="feedback-question">
+                "¿Cómo te parece que me estoy desenvolviendo en las
+                conversaciones? Podés ajustar cómo me comporto si algo no te
+                representa."
+              </div>
+              <div class="feedback-opts">
+                <button
+                  class="feedback-opt"
+                  onclick="chooseFeedback(this, 'feedback1')"
+                >
+                  Bien así, seguí
+                </button>
+                <button
+                  class="feedback-opt"
+                  onclick="chooseFeedback(this, 'feedback1')"
+                >
+                  Sé más cálida al inicio
+                </button>
+                <button
+                  class="feedback-opt"
+                  onclick="chooseFeedback(this, 'feedback1')"
+                >
+                  Más directa, menos rodeos
+                </button>
+                <button
+                  class="feedback-opt"
+                  onclick="chooseFeedback(this, 'feedback1')"
+                >
+                  Mejor el humor
+                </button>
+              </div>
             </div>
-            <div class="progress-score-change">↑ 76%</div>
           </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-labels"><span>Afinidad</span><span>76%</span></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:76%"></div></div>
-          </div>
-          <div class="progress-unlock">
-            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-            Se desbloqueó su nombre real · Valentina Méndez
-          </div>
+          <span class="msg-time">10:29</span>
         </div>
       </div>
-      <span class="msg-time">10:28</span>
     </div>
 
-    <!-- Twin asks about Valentina -->
-    <div class="msg twin">
-      <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-      <div class="bubble">Con Valentina estamos bien pero todavía no llegamos al umbral para desbloquearte el chat directo. ¿Querés que inicie otro escenario o esperamos a ver cómo responde?</div>
-      <span class="msg-time">10:28</span>
-    </div>
-
-    <!-- Feedback card -->
-    <div class="msg twin">
-      <div class="msg-av-spacer"></div>
-      <div class="card-wrap">
-        <div class="feedback-card" id="feedbackCard1">
-          <div class="feedback-question">"¿Cómo te parece que me estoy desenvolviendo en las conversaciones? Podés ajustar cómo me comporto si algo no te representa."</div>
-          <div class="feedback-opts">
-            <button class="feedback-opt" onclick="chooseFeedback(this, 'feedback1')">Bien así, seguí</button>
-            <button class="feedback-opt" onclick="chooseFeedback(this, 'feedback1')">Sé más cálida al inicio</button>
-            <button class="feedback-opt" onclick="chooseFeedback(this, 'feedback1')">Más directa, menos rodeos</button>
-            <button class="feedback-opt" onclick="chooseFeedback(this, 'feedback1')">Mejor el humor</button>
-          </div>
-        </div>
+    <!-- Quick replies -->
+    <div class="quick-replies-wrap" id="quickRepliesWrap">
+      <div class="quick-replies" id="quickReplies">
+        <button class="qr-chip" onclick="sendQuick('¿Cómo hablo con Sofía?')">
+          ¿Cómo hablo con Sofía?
+        </button>
+        <button class="qr-chip" onclick="sendQuick('¿Cómo van mis matches?')">
+          ¿Cómo van mis matches?
+        </button>
+        <button
+          class="qr-chip"
+          onclick="sendQuick('Iniciá otro escenario con Valentina')"
+        >
+          Escenario con Valentina
+        </button>
+        <button class="qr-chip" onclick="sendQuick('Dame un consejo general')">
+          Dame un consejo
+        </button>
+        <button
+          class="qr-chip"
+          onclick="sendQuick('¿Quién tiene más potencial ahora?')"
+        >
+          ¿Quién tiene más potencial?
+        </button>
       </div>
-      <span class="msg-time">10:29</span>
     </div>
 
-  </div>
-</div>
-
-<!-- Quick replies -->
-<div class="quick-replies-wrap" id="quickRepliesWrap">
-  <div class="quick-replies" id="quickReplies">
-    <button class="qr-chip" onclick="sendQuick('¿Cómo hablo con Sofía?')">¿Cómo hablo con Sofía?</button>
-    <button class="qr-chip" onclick="sendQuick('¿Cómo van mis matches?')">¿Cómo van mis matches?</button>
-    <button class="qr-chip" onclick="sendQuick('Iniciá otro escenario con Valentina')">Escenario con Valentina</button>
-    <button class="qr-chip" onclick="sendQuick('Dame un consejo general')">Dame un consejo</button>
-    <button class="qr-chip" onclick="sendQuick('¿Quién tiene más potencial ahora?')">¿Quién tiene más potencial?</button>
-  </div>
-</div>
-
-<!-- Input -->
-<div class="input-wrap">
-  <button class="input-plus-btn" id="plusBtn" onclick="togglePlusMenu()" aria-label="Acciones rápidas">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
-  <div class="input-field-wrap">
-    <textarea class="chat-input" id="chatInput" placeholder="Escribile a tu gemelo..." rows="1"
-      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-  </div>
-  <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Enviar">
-    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-  </button>
-</div>
-
-<!-- Plus menu -->
-<div class="plus-menu hidden" id="plusMenu">
-  <div class="plus-menu-item" onclick="sendQuick('¿Cómo hablo con Sofía?'); togglePlusMenu()">
-    <div class="plus-menu-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-    <span class="plus-menu-label">Consejo para un match</span>
-  </div>
-  <div class="plus-menu-item" onclick="sendQuick('¿Cómo van mis matches?'); togglePlusMenu()">
-    <div class="plus-menu-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-    <span class="plus-menu-label">Resumen de mis matches</span>
-  </div>
-  <div class="plus-menu-item" onclick="sendQuick('Iniciá un escenario nuevo'); togglePlusMenu()">
-    <div class="plus-menu-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
-    <span class="plus-menu-label">Iniciar escenario</span>
-  </div>
-  <div class="plus-menu-item" onclick="sendQuick('Quiero darte feedback'); togglePlusMenu()">
-    <div class="plus-menu-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-    <span class="plus-menu-label">Darle feedback</span>
-  </div>
-</div>
-
-<!-- Bottom nav -->
-<nav class="app-bottom-nav" aria-label="Navegación inferior">
-  <a href="./home.html" class="bnav-item" aria-label="Inicio">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-    <span class="bnav-label">Inicio</span>
-  </a>
-  <a href="./matches.html" class="bnav-item" aria-label="Matches">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
-    <span class="bnav-label">Matches</span>
-  </a>
-  <a href="./gemelo.html" class="bnav-center active" aria-label="Gemelo" aria-current="page">
-    <div class="bnav-center-orb">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <!-- Input -->
+    <div class="input-wrap">
+      <button
+        class="input-plus-btn"
+        id="plusBtn"
+        onclick="togglePlusMenu()"
+        aria-label="Acciones rápidas"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
+      <div class="input-field-wrap">
+        <textarea
+          class="chat-input"
+          id="chatInput"
+          placeholder="Escribile a tu gemelo..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+      </div>
+      <button
+        class="send-btn"
+        id="sendBtn"
+        onclick="sendMessage()"
+        aria-label="Enviar"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      </button>
     </div>
-    <span class="bnav-center-label">Gemelo</span>
-  </a>
-  <a href="./chats.html" class="bnav-item" aria-label="Chats">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-    <span class="bnav-label">Chats</span>
-  </a>
-  <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-    <span class="bnav-label">Perfil</span>
-  </a>
-</nav>
 
-<script>
-// Referencias a los elementos principales del DOM
-const messagesEl = document.getElementById('messages'); // contenedor donde se agregan los mensajes
-const chatWrap   = document.getElementById('chatWrap'); // área scrolleable del chat
-const inputEl    = document.getElementById('chatInput'); // campo de texto donde el usuario escribe
-const plusMenu   = document.getElementById('plusMenu'); // menú desplegable del botón +
+    <!-- Plus menu -->
+    <div class="plus-menu hidden" id="plusMenu">
+      <div
+        class="plus-menu-item"
+        onclick="
+          sendQuick('¿Cómo hablo con Sofía?');
+          togglePlusMenu();
+        "
+      >
+        <div class="plus-menu-icon">
+          <svg
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            />
+          </svg>
+        </div>
+        <span class="plus-menu-label">Consejo para un match</span>
+      </div>
+      <div
+        class="plus-menu-item"
+        onclick="
+          sendQuick('¿Cómo van mis matches?');
+          togglePlusMenu();
+        "
+      >
+        <div class="plus-menu-icon">
+          <svg
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+        </div>
+        <span class="plus-menu-label">Resumen de mis matches</span>
+      </div>
+      <div
+        class="plus-menu-item"
+        onclick="
+          sendQuick('Iniciá un escenario nuevo');
+          togglePlusMenu();
+        "
+      >
+        <div class="plus-menu-icon">
+          <svg
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+        </div>
+        <span class="plus-menu-label">Iniciar escenario</span>
+      </div>
+      <div
+        class="plus-menu-item"
+        onclick="
+          sendQuick('Quiero darte feedback');
+          togglePlusMenu();
+        "
+      >
+        <div class="plus-menu-icon">
+          <svg
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            />
+          </svg>
+        </div>
+        <span class="plus-menu-label">Darle feedback</span>
+      </div>
+    </div>
 
-// Hace scroll hasta el último mensaje del chat
-// Si smooth=true lo hace con animación, si es false va directo (útil al cargar la página)
-function scrollBottom(smooth = true) {
-  chatWrap.scrollTo({ top: chatWrap.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
-}
-scrollBottom(false); // al cargar, posicionarse al final sin animación
+    <!-- Bottom nav -->
+    <nav class="app-bottom-nav" aria-label="Navegación inferior">
+      <a href="./home.html" class="bnav-item" aria-label="Inicio">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" /></svg
+        ></span>
+        <span class="bnav-label">Inicio</span>
+      </a>
+      <a href="./matches.html" class="bnav-item" aria-label="Matches">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            /></svg
+        ></span>
+        <span class="bnav-label">Matches</span>
+      </a>
+      <a
+        href="./gemelo.html"
+        class="bnav-center active"
+        aria-label="Gemelo"
+        aria-current="page"
+      >
+        <div class="bnav-center-orb">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4l3 3" />
+          </svg>
+        </div>
+        <span class="bnav-center-label">Gemelo</span>
+      </a>
+      <a href="./chats.html" class="bnav-item" aria-label="Chats">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            /></svg
+        ></span>
+        <span class="bnav-label">Chats</span>
+      </a>
+      <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" /></svg
+        ></span>
+        <span class="bnav-label">Perfil</span>
+      </a>
+    </nav>
 
-// Ajusta la altura del textarea automáticamente según el contenido
-// crece al escribir y tiene un máximo de 100px
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-}
+    <script>
+      // Referencias a los elementos principales del DOM
+      const messagesEl = document.getElementById("messages"); // contenedor donde se agregan los mensajes
+      const chatWrap = document.getElementById("chatWrap"); // área scrolleable del chat
+      const inputEl = document.getElementById("chatInput"); // campo de texto donde el usuario escribe
+      const plusMenu = document.getElementById("plusMenu"); // menú desplegable del botón +
 
-// Detecta cuando el usuario presiona Enter para enviar el mensaje
-// Shift+Enter hace salto de línea en vez de enviar
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
+      // Hace scroll hasta el último mensaje del chat
+      // Si smooth=true lo hace con animación, si es false va directo (útil al cargar la página)
+      function scrollBottom(smooth = true) {
+        chatWrap.scrollTo({
+          top: chatWrap.scrollHeight,
+          behavior: smooth ? "smooth" : "instant",
+        });
+      }
+      scrollBottom(false); // al cargar, posicionarse al final sin animación
 
-// Devuelve la hora actual en formato HH:MM (horario Argentina)
-// Se usa para mostrar el timestamp en cada mensaje
-function nowTime() {
-  return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-}
+      // Ajusta la altura del textarea automáticamente según el contenido
+      // crece al escribir y tiene un máximo de 100px
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 100) + "px";
+      }
 
-// Agrega un mensaje del usuario al chat (burbuja alineada a la derecha)
-// Escapa el HTML del texto para evitar inyección de código
-function addUserMsg(text) {
-  const t = nowTime();
-  const div = document.createElement('div');
-  div.className = 'msg user';
-  div.innerHTML = `<span class="msg-time">${t}</span><div class="bubble">${escHtml(text)}</div>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
+      // Detecta cuando el usuario presiona Enter para enviar el mensaje
+      // Shift+Enter hace salto de línea en vez de enviar
+      function handleKey(e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      }
 
-// Agrega un mensaje del gemelo al chat (burbuja alineada a la izquierda con ícono)
-// Retorna el elemento creado por si se necesita modificar después
-function addTwinMsg(text) {
-  const t = nowTime();
-  const div = document.createElement('div');
-  div.className = 'msg twin';
-  div.innerHTML = `
+      // Devuelve la hora actual en formato HH:MM (horario Argentina)
+      // Se usa para mostrar el timestamp en cada mensaje
+      function nowTime() {
+        return new Date().toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      // Agrega un mensaje del usuario al chat (burbuja alineada a la derecha)
+      // Escapa el HTML del texto para evitar inyección de código
+      function addUserMsg(text) {
+        const t = nowTime();
+        const div = document.createElement("div");
+        div.className = "msg user";
+        div.innerHTML = `<span class="msg-time">${t}</span><div class="bubble">${escHtml(text)}</div>`;
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
+
+      // Agrega un mensaje del gemelo al chat (burbuja alineada a la izquierda con ícono)
+      // Retorna el elemento creado por si se necesita modificar después
+      function addTwinMsg(text) {
+        const t = nowTime();
+        const div = document.createElement("div");
+        div.className = "msg twin";
+        div.innerHTML = `
     <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
     <div class="bubble">${text}</div>
     <span class="msg-time">${t}</span>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-  return div;
-}
+        messagesEl.appendChild(div);
+        scrollBottom();
+        return div;
+      }
 
-// Muestra el indicador de "escribiendo..." (tres puntos animados) mientras el gemelo procesa la respuesta
-function addTyping() {
-  const div = document.createElement('div');
-  div.className = 'msg twin'; div.id = 'typing';
-  div.innerHTML = `
+      // Muestra el indicador de "escribiendo..." (tres puntos animados) mientras el gemelo procesa la respuesta
+      function addTyping() {
+        const div = document.createElement("div");
+        div.className = "msg twin";
+        div.id = "typing";
+        div.innerHTML = `
     <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
     <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
 
-// Elimina el indicador de "escribiendo..." una vez que el gemelo ya tiene su respuesta lista
-function removeTyping() {
-  const el = document.getElementById('typing');
-  if (el) el.remove();
-}
+      // Elimina el indicador de "escribiendo..." una vez que el gemelo ya tiene su respuesta lista
+      function removeTyping() {
+        const el = document.getElementById("typing");
+        if (el) el.remove();
+      }
 
-// Agrega una tarjeta de recomendaciones en el chat
-// Muestra un título, contexto y una lista de tips personalizados sobre cómo hablarle a alguien
-function addRecomCard(title, context, tips) {
-  const t = nowTime();
-  const tipsHtml = tips.map(tp => `<div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text">${tp}</div></div>`).join('');
-  const div = document.createElement('div');
-  div.className = 'msg twin';
-  div.innerHTML = `
+      // Agrega una tarjeta de recomendaciones en el chat
+      // Muestra un título, contexto y una lista de tips personalizados sobre cómo hablarle a alguien
+      function addRecomCard(title, context, tips) {
+        const t = nowTime();
+        const tipsHtml = tips
+          .map(
+            (tp) =>
+              `<div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text">${tp}</div></div>`,
+          )
+          .join("");
+        const div = document.createElement("div");
+        div.className = "msg twin";
+        div.innerHTML = `
     <div class="msg-av-spacer"></div>
     <div class="card-wrap">
       <div class="recom-card">
@@ -874,20 +1819,25 @@ function addRecomCard(title, context, tips) {
       </div>
     </div>
     <span class="msg-time">${t}</span>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
 
-// Agrega una tarjeta de feedback con botones clicables
-// El usuario puede elegir una opción para ajustar el comportamiento del gemelo
-// Cada tarjeta tiene un ID único basado en el timestamp para poder referenciarlo después
-function addFeedbackCard(question, options) {
-  const id = 'fb_' + Date.now();
-  const t = nowTime();
-  const optsHtml = options.map(o => `<button class="feedback-opt" onclick="chooseFeedback(this,'${id}')">${o}</button>`).join('');
-  const div = document.createElement('div');
-  div.className = 'msg twin';
-  div.innerHTML = `
+      // Agrega una tarjeta de feedback con botones clicables
+      // El usuario puede elegir una opción para ajustar el comportamiento del gemelo
+      // Cada tarjeta tiene un ID único basado en el timestamp para poder referenciarlo después
+      function addFeedbackCard(question, options) {
+        const id = "fb_" + Date.now();
+        const t = nowTime();
+        const optsHtml = options
+          .map(
+            (o) =>
+              `<button class="feedback-opt" onclick="chooseFeedback(this,'${id}')">${o}</button>`,
+          )
+          .join("");
+        const div = document.createElement("div");
+        div.className = "msg twin";
+        div.innerHTML = `
     <div class="msg-av-spacer"></div>
     <div class="card-wrap">
       <div class="feedback-card" id="${id}">
@@ -896,20 +1846,22 @@ function addFeedbackCard(question, options) {
       </div>
     </div>
     <span class="msg-time">${t}</span>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
 
-// Agrega una tarjeta de progreso de afinidad con un match
-// Muestra el nombre, avatar con iniciales, porcentaje de afinidad y un mensaje de desbloqueo si corresponde
-function addProgressCard(name, initials, color, event, pct, unlockText) {
-  const t = nowTime();
-  const div = document.createElement('div');
-  div.className = 'msg twin';
-  const fill = `<div class="progress-bar-fill" style="width:${pct}%"></div>`;
-  // Si hay texto de desbloqueo, muestra una sección extra con ícono de candado
-  const unlock = unlockText ? `<div class="progress-unlock"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>${unlockText}</div>` : '';
-  div.innerHTML = `
+      // Agrega una tarjeta de progreso de afinidad con un match
+      // Muestra el nombre, avatar con iniciales, porcentaje de afinidad y un mensaje de desbloqueo si corresponde
+      function addProgressCard(name, initials, color, event, pct, unlockText) {
+        const t = nowTime();
+        const div = document.createElement("div");
+        div.className = "msg twin";
+        const fill = `<div class="progress-bar-fill" style="width:${pct}%"></div>`;
+        // Si hay texto de desbloqueo, muestra una sección extra con ícono de candado
+        const unlock = unlockText
+          ? `<div class="progress-unlock"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>${unlockText}</div>`
+          : "";
+        div.innerHTML = `
     <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
     <div class="card-wrap">
       <div class="progress-card">
@@ -929,214 +1881,420 @@ function addProgressCard(name, initials, color, event, pct, unlockText) {
       </div>
     </div>
     <span class="msg-time">${t}</span>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
 
-// Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
-// Convierte &, < y > en sus entidades HTML seguras
-function escHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+      // Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
+      // Convierte &, < y > en sus entidades HTML seguras
+      function escHtml(t) {
+        return t
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
 
-// Toma el texto del input, lo muestra como mensaje del usuario y dispara la respuesta del gemelo
-// Espera 300ms, muestra el indicador de escritura, y después de 1.2-1.8s muestra la respuesta
-function sendMessage() {
-  const text = inputEl.value.trim();
-  if (!text) return; // no hace nada si el input está vacío
-  inputEl.value = ''; autoResize(inputEl);
-  addUserMsg(text);
-  closePlusMenu();
-  setTimeout(() => { addTyping(); setTimeout(() => { removeTyping(); twinRespond(text); }, 1200 + Math.random()*600); }, 300);
-}
+      // Toma el texto del input, lo muestra como mensaje del usuario y dispara la respuesta del gemelo
+      // Espera 300ms, muestra el indicador de escritura, y después de 1.2-1.8s muestra la respuesta
+      function sendMessage() {
+        const text = inputEl.value.trim();
+        if (!text) return; // no hace nada si el input está vacío
+        inputEl.value = "";
+        autoResize(inputEl);
+        addUserMsg(text);
+        closePlusMenu();
+        setTimeout(() => {
+          addTyping();
+          setTimeout(
+            () => {
+              removeTyping();
+              twinRespond(text);
+            },
+            1200 + Math.random() * 600,
+          );
+        }, 300);
+      }
 
-// Envía un mensaje desde los chips de respuesta rápida
-// Pone el texto en el input y llama a sendMessage() directamente
-function sendQuick(text) {
-  inputEl.value = text;
-  sendMessage();
-  updateQuickReplies(text);
-}
+      // Envía un mensaje desde los chips de respuesta rápida
+      // Pone el texto en el input y llama a sendMessage() directamente
+      function sendQuick(text) {
+        inputEl.value = text;
+        sendMessage();
+        updateQuickReplies(text);
+      }
 
-// Analiza el mensaje del usuario con palabras clave y elige la respuesta apropiada del gemelo
-// Cubre escenarios para Sofía, Valentina, Lucas, resumen de matches, feedback y respuestas genéricas
-function twinRespond(text) {
-  const t = text.toLowerCase();
+      // Analiza el mensaje del usuario con palabras clave y elige la respuesta apropiada del gemelo
+      // Cubre escenarios para Sofía, Valentina, Lucas, resumen de matches, feedback y respuestas genéricas
+      function twinRespond(text) {
+        const t = text.toLowerCase();
 
-  // Consejo sobre Sofía
-  if (t.includes('sofía') && (t.includes('hablo') || t.includes('hablar') || t.includes('consejo'))) {
-    addTwinMsg('Con Sofía la clave es la naturalidad. Le aburre el protocolo de las apps. Acá van mis recomendaciones basadas en lo que hablamos:');
-    setTimeout(() => {
-      addRecomCard('Cómo hablarle a Sofía', 'Basado en 3 escenarios compartidos', [
-        '<strong>Primera línea con sustancia:</strong> mencioná algo concreto que te llamó la atención de ella, no "hola, ¿cómo estás?".',
-        '<strong>El jazz como puente:</strong> preguntale por el último show que fue. Le encanta hablar de música en vivo, no de teoría.',
-        '<strong>No fuerces el encuentro rápido.</strong> Le gusta que la conexión se construya sola. Si apurás, se enfría.',
-      ]);
-    }, 400);
-    setQuickReplies(['¿Cómo van mis matches?', 'Consejo para Valentina', 'Iniciá escenario con Sofía', 'Dame un consejo general']);
+        // Consejo sobre Sofía
+        if (
+          t.includes("sofía") &&
+          (t.includes("hablo") || t.includes("hablar") || t.includes("consejo"))
+        ) {
+          addTwinMsg(
+            "Con Sofía la clave es la naturalidad. Le aburre el protocolo de las apps. Acá van mis recomendaciones basadas en lo que hablamos:",
+          );
+          setTimeout(() => {
+            addRecomCard(
+              "Cómo hablarle a Sofía",
+              "Basado en 3 escenarios compartidos",
+              [
+                '<strong>Primera línea con sustancia:</strong> mencioná algo concreto que te llamó la atención de ella, no "hola, ¿cómo estás?".',
+                "<strong>El jazz como puente:</strong> preguntale por el último show que fue. Le encanta hablar de música en vivo, no de teoría.",
+                "<strong>No fuerces el encuentro rápido.</strong> Le gusta que la conexión se construya sola. Si apurás, se enfría.",
+              ],
+            );
+          }, 400);
+          setQuickReplies([
+            "¿Cómo van mis matches?",
+            "Consejo para Valentina",
+            "Iniciá escenario con Sofía",
+            "Dame un consejo general",
+          ]);
 
-  // Iniciar escenario con Valentina
-  } else if (t.includes('valentina') && (t.includes('escenario') || t.includes('inicia') || t.includes('iniciá'))) {
-    addTwinMsg('Dale. Voy a iniciar un escenario de "conversación de fondo" con Valentina, que es donde mejor nos fue. Te aviso cuando tengamos resultado.');
-    setTimeout(() => {
-      addProgressCard('Valentina', 'V', 'linear-gradient(135deg,#7c3aed,#a855f7)', 'Escenario iniciado · Conversación de fondo', 76, null);
-    }, 500);
-    setTimeout(() => { addTwinMsg('Escenario iniciado. Suele tardar entre 20 y 40 minutos dependiendo de la profundidad. Te notifico cuando terminemos.'); }, 1000);
-    setQuickReplies(['¿Cómo van mis otros matches?', 'Consejo para Sofía', '¿Quién tiene más potencial?']);
+          // Iniciar escenario con Valentina
+        } else if (
+          t.includes("valentina") &&
+          (t.includes("escenario") ||
+            t.includes("inicia") ||
+            t.includes("iniciá"))
+        ) {
+          addTwinMsg(
+            'Dale. Voy a iniciar un escenario de "conversación de fondo" con Valentina, que es donde mejor nos fue. Te aviso cuando tengamos resultado.',
+          );
+          setTimeout(() => {
+            addProgressCard(
+              "Valentina",
+              "V",
+              "linear-gradient(135deg,#7c3aed,#a855f7)",
+              "Escenario iniciado · Conversación de fondo",
+              76,
+              null,
+            );
+          }, 500);
+          setTimeout(() => {
+            addTwinMsg(
+              "Escenario iniciado. Suele tardar entre 20 y 40 minutos dependiendo de la profundidad. Te notifico cuando terminemos.",
+            );
+          }, 1000);
+          setQuickReplies([
+            "¿Cómo van mis otros matches?",
+            "Consejo para Sofía",
+            "¿Quién tiene más potencial?",
+          ]);
 
-  // Resumen del estado de todos los matches
-  } else if (t.includes('matches') && (t.includes('van') || t.includes('resumen') || t.includes('cómo'))) {
-    addTwinMsg('Este es el estado actual de mis conversaciones:');
-    setTimeout(() => {
-      addProgressCard('Sofía', 'S', 'linear-gradient(135deg,#FF9700,#FF751F)', '3 escenarios completados · Chat desbloqueado', 87, 'Chat directo disponible · Podés escribirle ahora');
-    }, 300);
-    setTimeout(() => {
-      addProgressCard('Valentina', 'V', 'linear-gradient(135deg,#7c3aed,#a855f7)', '2 escenarios completados · Nombre desbloqueado', 76, 'Se desbloqueó su nombre real · Valentina Méndez');
-    }, 700);
-    setTimeout(() => {
-      addProgressCard('Lucas', 'L', 'linear-gradient(135deg,#0ea5e9,#2563eb)', '1 escenario · Conversación en progreso', 54, null);
-    }, 1100);
-    setTimeout(() => {
-      addTwinMsg('Con Sofía ya podés hablar directamente. Con Valentina y Lucas necesito un poco más para darte más contexto.');
-      setQuickReplies(['Consejo para Sofía', 'Consejo para Valentina', 'Escenario con Lucas', '¿Quién tiene más potencial?']);
-    }, 1600);
+          // Resumen del estado de todos los matches
+        } else if (
+          t.includes("matches") &&
+          (t.includes("van") || t.includes("resumen") || t.includes("cómo"))
+        ) {
+          addTwinMsg("Este es el estado actual de mis conversaciones:");
+          setTimeout(() => {
+            addProgressCard(
+              "Sofía",
+              "S",
+              "linear-gradient(135deg,#FF9700,#FF751F)",
+              "3 escenarios completados · Chat desbloqueado",
+              87,
+              "Chat directo disponible · Podés escribirle ahora",
+            );
+          }, 300);
+          setTimeout(() => {
+            addProgressCard(
+              "Valentina",
+              "V",
+              "linear-gradient(135deg,#7c3aed,#a855f7)",
+              "2 escenarios completados · Nombre desbloqueado",
+              76,
+              "Se desbloqueó su nombre real · Valentina Méndez",
+            );
+          }, 700);
+          setTimeout(() => {
+            addProgressCard(
+              "Lucas",
+              "L",
+              "linear-gradient(135deg,#0ea5e9,#2563eb)",
+              "1 escenario · Conversación en progreso",
+              54,
+              null,
+            );
+          }, 1100);
+          setTimeout(() => {
+            addTwinMsg(
+              "Con Sofía ya podés hablar directamente. Con Valentina y Lucas necesito un poco más para darte más contexto.",
+            );
+            setQuickReplies([
+              "Consejo para Sofía",
+              "Consejo para Valentina",
+              "Escenario con Lucas",
+              "¿Quién tiene más potencial?",
+            ]);
+          }, 1600);
 
-  // Pregunta sobre quién tiene más potencial
-  } else if (t.includes('potencial') || t.includes('mejor')) {
-    addTwinMsg('Ahora mismo Sofía tiene el mayor potencial: 87% de afinidad, conversación muy natural y ya desbloqueaste el chat. Si querés apostar a una sola persona esta semana, es ella. Valentina tiene recorrido pero todavía necesitamos más escenarios para confirmarlo.');
-    setQuickReplies(['Consejo para Sofía', '¿Cómo hablo con Sofía?', 'Escenario con Valentina', '¿Cómo van mis matches?']);
+          // Pregunta sobre quién tiene más potencial
+        } else if (t.includes("potencial") || t.includes("mejor")) {
+          addTwinMsg(
+            "Ahora mismo Sofía tiene el mayor potencial: 87% de afinidad, conversación muy natural y ya desbloqueaste el chat. Si querés apostar a una sola persona esta semana, es ella. Valentina tiene recorrido pero todavía necesitamos más escenarios para confirmarlo.",
+          );
+          setQuickReplies([
+            "Consejo para Sofía",
+            "¿Cómo hablo con Sofía?",
+            "Escenario con Valentina",
+            "¿Cómo van mis matches?",
+          ]);
 
-  // Solicitud de feedback o ajuste de comportamiento del gemelo
-  } else if (t.includes('feedback') || t.includes('ajusta') || t.includes('cambiar') || t.includes('mejorar')) {
-    addTwinMsg('Perfecto, contame qué querés que cambie. O si preferís podés elegir una de estas opciones:');
-    setTimeout(() => {
-      addFeedbackCard('¿Qué querés que ajuste en mi forma de relacionarme?', [
-        'Sé más cálida al inicio', 'Más directa, sin rodeos', 'Mejor timing con el humor', 'Profundidad emocional primero', 'Escuchá más, hablá menos'
-      ]);
-    }, 400);
+          // Solicitud de feedback o ajuste de comportamiento del gemelo
+        } else if (
+          t.includes("feedback") ||
+          t.includes("ajusta") ||
+          t.includes("cambiar") ||
+          t.includes("mejorar")
+        ) {
+          addTwinMsg(
+            "Perfecto, contame qué querés que cambie. O si preferís podés elegir una de estas opciones:",
+          );
+          setTimeout(() => {
+            addFeedbackCard(
+              "¿Qué querés que ajuste en mi forma de relacionarme?",
+              [
+                "Sé más cálida al inicio",
+                "Más directa, sin rodeos",
+                "Mejor timing con el humor",
+                "Profundidad emocional primero",
+                "Escuchá más, hablá menos",
+              ],
+            );
+          }, 400);
 
-  // Consejo o escenario con Lucas
-  } else if (t.includes('lucas') && (t.includes('escenario') || t.includes('hablo') || t.includes('consejo'))) {
-    addTwinMsg('Con Lucas todavía tengo poco contexto (un solo escenario), pero puedo decirte que le gusta ir despacio y que la conversación sea recíproca. No le tires todo junto, dejá espacio para que él también cuente.');
-    setQuickReplies(['Iniciá otro escenario con Lucas', 'Ver mis matches', 'Consejo para Sofía']);
+          // Consejo o escenario con Lucas
+        } else if (
+          t.includes("lucas") &&
+          (t.includes("escenario") ||
+            t.includes("hablo") ||
+            t.includes("consejo"))
+        ) {
+          addTwinMsg(
+            "Con Lucas todavía tengo poco contexto (un solo escenario), pero puedo decirte que le gusta ir despacio y que la conversación sea recíproca. No le tires todo junto, dejá espacio para que él también cuente.",
+          );
+          setQuickReplies([
+            "Iniciá otro escenario con Lucas",
+            "Ver mis matches",
+            "Consejo para Sofía",
+          ]);
 
-  // Solicitud de escenario sin especificar con quién
-  } else if (t.includes('escenario') && !t.includes('valentina') && !t.includes('lucas')) {
-    addTwinMsg('¿Con quién querés que inicie un escenario? Ahora mismo tengo conversaciones abiertas con Sofía (87%), Valentina (76%) y Lucas (54%).');
-    setQuickReplies(['Escenario con Sofía', 'Escenario con Valentina', 'Escenario con Lucas']);
+          // Solicitud de escenario sin especificar con quién
+        } else if (
+          t.includes("escenario") &&
+          !t.includes("valentina") &&
+          !t.includes("lucas")
+        ) {
+          addTwinMsg(
+            "¿Con quién querés que inicie un escenario? Ahora mismo tengo conversaciones abiertas con Sofía (87%), Valentina (76%) y Lucas (54%).",
+          );
+          setQuickReplies([
+            "Escenario con Sofía",
+            "Escenario con Valentina",
+            "Escenario con Lucas",
+          ]);
 
-  // Respuestas de confirmación o agradecimiento — elige una al azar
-  } else if (t.includes('gracias') || t.includes('perfecto') || t.includes('genial') || t.includes('dale') || t.includes('bueno')) {
-    const ack = [
-      'Para eso estoy. Cualquier cosa que quieras ajustar o preguntar, acá estoy.',
-      'Entendido. Te aviso cuando haya novedades con alguno de los matches.',
-      '¡Dale! Si en algún momento querés devolverme feedback, acordate que puedo ajustar mi forma de relacionarme.',
-    ];
-    addTwinMsg(ack[Math.floor(Math.random() * ack.length)]);
+          // Respuestas de confirmación o agradecimiento — elige una al azar
+        } else if (
+          t.includes("gracias") ||
+          t.includes("perfecto") ||
+          t.includes("genial") ||
+          t.includes("dale") ||
+          t.includes("bueno")
+        ) {
+          const ack = [
+            "Para eso estoy. Cualquier cosa que quieras ajustar o preguntar, acá estoy.",
+            "Entendido. Te aviso cuando haya novedades con alguno de los matches.",
+            "¡Dale! Si en algún momento querés devolverme feedback, acordate que puedo ajustar mi forma de relacionarme.",
+          ];
+          addTwinMsg(ack[Math.floor(Math.random() * ack.length)]);
 
-  // Respuesta genérica para mensajes que no coinciden con ningún patrón conocido
-  } else {
-    const generic = [
-      'Entendido. ¿Querés que profundice en algún match en particular o que te dé un resumen general?',
-      'Anotado. Podés pedirme consejos sobre cualquiera de tus matches o darme feedback para ajustar cómo me relaciono.',
-      'Claro. Si querés saber más sobre alguna persona específica o necesitás un consejo puntual, estoy para eso.',
-    ];
-    addTwinMsg(generic[Math.floor(Math.random() * generic.length)]);
-    setQuickReplies(['¿Cómo van mis matches?', 'Consejo para Sofía', 'Dame un consejo', 'Quiero darte feedback']);
-  }
-}
+          // Respuesta genérica para mensajes que no coinciden con ningún patrón conocido
+        } else {
+          const generic = [
+            "Entendido. ¿Querés que profundice en algún match en particular o que te dé un resumen general?",
+            "Anotado. Podés pedirme consejos sobre cualquiera de tus matches o darme feedback para ajustar cómo me relaciono.",
+            "Claro. Si querés saber más sobre alguna persona específica o necesitás un consejo puntual, estoy para eso.",
+          ];
+          addTwinMsg(generic[Math.floor(Math.random() * generic.length)]);
+          setQuickReplies([
+            "¿Cómo van mis matches?",
+            "Consejo para Sofía",
+            "Dame un consejo",
+            "Quiero darte feedback",
+          ]);
+        }
+      }
 
-// Reemplaza los chips de respuesta rápida con una nueva lista de opciones
-// Se llama cada vez que el gemelo responde para mostrar sugerencias relevantes
-function setQuickReplies(opts) {
-  const qr = document.getElementById('quickReplies');
-  qr.innerHTML = opts.map(o => `<button class="qr-chip" onclick="sendQuick('${o}')">${o}</button>`).join('');
-}
+      // Reemplaza los chips de respuesta rápida con una nueva lista de opciones
+      // Se llama cada vez que el gemelo responde para mostrar sugerencias relevantes
+      function setQuickReplies(opts) {
+        const qr = document.getElementById("quickReplies");
+        qr.innerHTML = opts
+          .map(
+            (o) =>
+              `<button class="qr-chip" onclick="sendQuick('${o}')">${o}</button>`,
+          )
+          .join("");
+      }
 
-// Actualiza los chips de respuesta rápida según el último mensaje enviado por el usuario
-// Mantiene las sugerencias siempre relevantes al contexto de la conversación
-function updateQuickReplies(sent) {
-  const s = sent.toLowerCase();
-  if (s.includes('matches'))         setQuickReplies(['Consejo para Sofía', 'Consejo para Valentina', '¿Quién tiene más potencial?', 'Iniciá un escenario']);
-  else if (s.includes('sofía'))      setQuickReplies(['Consejo para Valentina', '¿Cómo van mis matches?', 'Iniciá escenario con Sofía', '¿Quién tiene más potencial?']);
-  else if (s.includes('valentina'))  setQuickReplies(['Consejo para Sofía', '¿Cómo van mis matches?', 'Escenario con Lucas']);
-  else if (s.includes('consejo'))    setQuickReplies(['¿Cómo van mis matches?', 'Quiero darte feedback', 'Iniciá un escenario']);
-  else                               setQuickReplies(['¿Cómo van mis matches?', 'Consejo para Sofía', 'Dame un consejo', 'Quiero darte feedback']);
-}
+      // Actualiza los chips de respuesta rápida según el último mensaje enviado por el usuario
+      // Mantiene las sugerencias siempre relevantes al contexto de la conversación
+      function updateQuickReplies(sent) {
+        const s = sent.toLowerCase();
+        if (s.includes("matches"))
+          setQuickReplies([
+            "Consejo para Sofía",
+            "Consejo para Valentina",
+            "¿Quién tiene más potencial?",
+            "Iniciá un escenario",
+          ]);
+        else if (s.includes("sofía"))
+          setQuickReplies([
+            "Consejo para Valentina",
+            "¿Cómo van mis matches?",
+            "Iniciá escenario con Sofía",
+            "¿Quién tiene más potencial?",
+          ]);
+        else if (s.includes("valentina"))
+          setQuickReplies([
+            "Consejo para Sofía",
+            "¿Cómo van mis matches?",
+            "Escenario con Lucas",
+          ]);
+        else if (s.includes("consejo"))
+          setQuickReplies([
+            "¿Cómo van mis matches?",
+            "Quiero darte feedback",
+            "Iniciá un escenario",
+          ]);
+        else
+          setQuickReplies([
+            "¿Cómo van mis matches?",
+            "Consejo para Sofía",
+            "Dame un consejo",
+            "Quiero darte feedback",
+          ]);
+      }
 
-// Procesa la elección del usuario en una tarjeta de feedback
-// Marca el botón elegido visualmente y el gemelo confirma que incorporó el ajuste
-function chooseFeedback(btn, cardId) {
-  const card = document.getElementById(cardId);
-  if (!card) return;
-  card.querySelectorAll('.feedback-opt').forEach(b => b.classList.remove('chosen')); // deselecciona todos
-  btn.classList.add('chosen'); // marca el elegido
-  const choice = btn.textContent;
-  setTimeout(() => {
-    addTyping();
-    setTimeout(() => {
-      removeTyping();
-      addTwinMsg(`Anotado: "${choice}". Voy a incorporarlo a partir de ahora en todas mis conversaciones. Si en algún momento querés ajustar algo más, avisame.`);
-      setQuickReplies(['¿Cómo van mis matches?', 'Consejo para Sofía', 'Quiero darte más feedback']);
-    }, 900);
-  }, 300);
-}
+      // Procesa la elección del usuario en una tarjeta de feedback
+      // Marca el botón elegido visualmente y el gemelo confirma que incorporó el ajuste
+      function chooseFeedback(btn, cardId) {
+        const card = document.getElementById(cardId);
+        if (!card) return;
+        card
+          .querySelectorAll(".feedback-opt")
+          .forEach((b) => b.classList.remove("chosen")); // deselecciona todos
+        btn.classList.add("chosen"); // marca el elegido
+        const choice = btn.textContent;
+        setTimeout(() => {
+          addTyping();
+          setTimeout(() => {
+            removeTyping();
+            addTwinMsg(
+              `Anotado: "${choice}". Voy a incorporarlo a partir de ahora en todas mis conversaciones. Si en algún momento querés ajustar algo más, avisame.`,
+            );
+            setQuickReplies([
+              "¿Cómo van mis matches?",
+              "Consejo para Sofía",
+              "Quiero darte más feedback",
+            ]);
+          }, 900);
+        }, 300);
+      }
 
-// Navega a la pantalla de matches
-function goToMatches() {
-  window.location.href = './matches.html';
-}
+      // Navega a la pantalla de matches
+      function goToMatches() {
+        window.location.href = "./matches.html";
+      }
 
-// Le dice al gemelo que continúe interactuando con el match especificado
-// Muestra typing y confirma que seguirá trabajando en esa conexión
-function twinKeepGoing(name) {
-  addTyping();
-  setTimeout(() => {
-    removeTyping();
-    addTwinMsg(`Perfecto, voy a seguir interactuando con ${name}. Te aviso cuando haya un cambio en el score de afinidad o cuando se desbloquee algo nuevo.`);
-    setQuickReplies(['¿Cómo van mis matches?', `Consejo para ${name}`, '¿Quién tiene más potencial?']);
-  }, 1100);
-}
+      // Le dice al gemelo que continúe interactuando con el match especificado
+      // Muestra typing y confirma que seguirá trabajando en esa conexión
+      function twinKeepGoing(name) {
+        addTyping();
+        setTimeout(() => {
+          removeTyping();
+          addTwinMsg(
+            `Perfecto, voy a seguir interactuando con ${name}. Te aviso cuando haya un cambio en el score de afinidad o cuando se desbloquee algo nuevo.`,
+          );
+          setQuickReplies([
+            "¿Cómo van mis matches?",
+            `Consejo para ${name}`,
+            "¿Quién tiene más potencial?",
+          ]);
+        }, 1100);
+      }
 
-// Abre o cierra el menú del botón + (opciones adicionales del chat)
-function togglePlusMenu() {
-  plusMenu.classList.toggle('hidden');
-}
+      // Abre o cierra el menú del botón + (opciones adicionales del chat)
+      function togglePlusMenu() {
+        plusMenu.classList.toggle("hidden");
+      }
 
-// Cierra el menú del botón +
-function closePlusMenu() { plusMenu.classList.add('hidden'); }
+      // Cierra el menú del botón +
+      function closePlusMenu() {
+        plusMenu.classList.add("hidden");
+      }
 
-// Cierra el menú + si el usuario hace click en cualquier lugar fuera de él
-document.addEventListener('click', e => {
-  if (!plusMenu.contains(e.target) && e.target.id !== 'plusBtn') closePlusMenu();
-});
-</script>
+      // Cierra el menú + si el usuario hace click en cualquier lugar fuera de él
+      document.addEventListener("click", (e) => {
+        if (!plusMenu.contains(e.target) && e.target.id !== "plusBtn")
+          closePlusMenu();
+      });
+    </script>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-const auth = getAuth(initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" }));
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = './home.html'; return; }
-  // Expiración de sesión (24h)
-  const _SESSION_MS = 24 * 60 * 60 * 1000;
-  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
-  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
-  else if (Date.now() - _loginTime > _SESSION_MS) {
-    localStorage.removeItem('pebble_login_time');
-    await signOut(auth);
-    window.location.href = './home.html'; return;
-  }
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      const auth = getAuth(
+        initializeApp({
+          apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+          authDomain: "pebble-78e95.firebaseapp.com",
+          projectId: "pebble-78e95",
+          storageBucket: "pebble-78e95.firebasestorage.app",
+          messagingSenderId: "56434257024",
+          appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+        }),
+      );
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = "./home.html";
+          return;
+        }
+        // Expiración de sesión (24h)
+        const _SESSION_MS = 24 * 60 * 60 * 1000;
+        const _loginTime = parseInt(
+          localStorage.getItem("pebble_login_time") || "0",
+        );
+        if (!_loginTime) {
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+        } else if (Date.now() - _loginTime > _SESSION_MS) {
+          localStorage.removeItem("pebble_login_time");
+          await signOut(auth);
+          window.location.href = "./home.html";
+          return;
+        }
 
-  // Mostrar nombre real en el nav
-  const nombre = user.displayName || user.email.split('@')[0];
-  const primerNombre = nombre.trim().split(/\s+/)[0];
-  const navName = document.getElementById('navTwinName');
-  if (navName) navName.textContent = `Tu gemelo · ${primerNombre}`;
+        // Mostrar nombre real en el nav
+        const nombre = user.displayName || user.email.split("@")[0];
+        const primerNombre = nombre.trim().split(/\s+/)[0];
+        const navName = document.getElementById("navTwinName");
+        if (navName) navName.textContent = `Tu gemelo · ${primerNombre}`;
 
-  const el = document.getElementById('loadingOverlay');
-  if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
-});
-</script>
-</body>
+        const el = document.getElementById("loadingOverlay");
+        if (el) {
+          el.classList.add("hide");
+          setTimeout(() => el.remove(), 350);
+        }
+      });
+    </script>
+  </body>
 </html>

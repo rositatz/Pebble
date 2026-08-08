@@ -1,852 +1,2563 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pebble — Ya se conocieron. Todavía no lo saben.</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;0,400;1,300;1,400&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --black: #000000; --gray: #4D4D4D; --cream: #EEEDEC;
-    --orange: #FF751F; --orange-mid: #FF9700; --orange-light: #FFBB30;
-    --font-display: 'Bricolage Grotesque', sans-serif;
-    --font-serif: 'Inria Serif', serif;
-    --font-body: 'Open Sans', sans-serif;
-  }
-  html { scroll-behavior: smooth; }
-  body { background: var(--cream); color: var(--black); font-family: var(--font-body); overflow-x: hidden; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — Ya se conocieron. Todavía no lo saben.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;0,400;1,300;1,400&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --black: #000000;
+        --gray: #4d4d4d;
+        --cream: #eeedec;
+        --orange: #ff751f;
+        --orange-mid: #ff9700;
+        --orange-light: #ffbb30;
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-serif: "Inria Serif", serif;
+        --font-body: "Open Sans", sans-serif;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--cream);
+        color: var(--black);
+        font-family: var(--font-body);
+        overflow-x: hidden;
+      }
 
-  /* ── NAV: fijo con fondo sólido, no transparente ── */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.1rem 3rem;
-    background: var(--cream);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-  }
-  .nav-logo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; text-decoration: none; }
-  .nav-logo .bb { color: var(--orange); } .nav-logo .rest { color: var(--black); }
-  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
-  .nav-links a { font-family: var(--font-body); font-size: 0.82rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gray); text-decoration: none; transition: color 0.2s; }
-  .nav-links a:hover { color: var(--orange); }
+      /* ── NAV: fijo con fondo sólido, no transparente ── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.1rem 3rem;
+        background: var(--cream);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+      }
+      .nav-logo {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      .nav-logo .bb {
+        color: var(--orange);
+      }
+      .nav-logo .rest {
+        color: var(--black);
+      }
+      .nav-links {
+        display: flex;
+        gap: 2.5rem;
+        list-style: none;
+      }
+      .nav-links a {
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--gray);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover {
+        color: var(--orange);
+      }
 
-  /* ── BUTTONS ── */
-  .btn-primary { background: var(--black); color: var(--cream); font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 1rem 2.2rem; border: none; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.25s, transform 0.2s; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
-  .btn-primary:hover { background: var(--orange); transform: translateY(-2px); }
-  .btn-secondary { font-family: var(--font-body); font-size: 0.82rem; font-weight: 500; color: var(--gray); text-decoration: none; display: flex; align-items: center; gap: 0.4rem; transition: color 0.2s; }
-  .btn-secondary:hover { color: var(--orange); }
-  .btn-secondary::after { content: '→'; transition: transform 0.2s; }
-  .btn-secondary:hover::after { transform: translateX(4px); }
+      /* ── BUTTONS ── */
+      .btn-primary {
+        background: var(--black);
+        color: var(--cream);
+        font-family: var(--font-body);
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 1rem 2.2rem;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition:
+          background 0.25s,
+          transform 0.2s;
+        clip-path: polygon(
+          0 0,
+          calc(100% - 12px) 0,
+          100% 12px,
+          100% 100%,
+          12px 100%,
+          0 calc(100% - 12px)
+        );
+      }
+      .btn-primary:hover {
+        background: var(--orange);
+        transform: translateY(-2px);
+      }
+      .btn-secondary {
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: var(--gray);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: color 0.2s;
+      }
+      .btn-secondary:hover {
+        color: var(--orange);
+      }
+      .btn-secondary::after {
+        content: "→";
+        transition: transform 0.2s;
+      }
+      .btn-secondary:hover::after {
+        transform: translateX(4px);
+      }
 
-  /* ── HERO ── */
-  .hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; position: relative; overflow: hidden; padding-top: 64px; }
-  .hero-left { display: flex; flex-direction: column; justify-content: center; padding: 6rem 4rem 6rem 5rem; position: relative; z-index: 2; }
-  .hero-eyebrow { font-family: var(--font-body); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); margin-bottom: 1.5rem; opacity: 0; animation: fadeUp 0.8s ease forwards 0.2s; }
-  .hero-title { font-family: var(--font-display); font-size: clamp(3.5rem, 6vw, 6rem); font-weight: 800; line-height: 0.95; letter-spacing: -0.03em; color: var(--black); margin-bottom: 2rem; opacity: 0; animation: fadeUp 0.8s ease forwards 0.4s; }
-  .hero-title .accent { color: var(--orange); font-style: italic; }
-  .hero-subtitle { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 300; line-height: 1.65; color: var(--gray); max-width: 420px; margin-bottom: 3rem; opacity: 0; animation: fadeUp 0.8s ease forwards 0.6s; }
-  .hero-cta { display: flex; align-items: center; gap: 1.25rem; opacity: 0; animation: fadeUp 0.8s ease forwards 0.8s; }
-  .hero-right { position: relative; overflow: hidden; /* PINGÜINO */background-image: url('penguin-outline.png'); background-repeat: no-repeat; background-position: center center;  background-size: 600px auto; }
-  .hero-bg-text { position: absolute; font-family: var(--font-display); font-size: 15vw; font-weight: 800; color: transparent; -webkit-text-stroke: 1px rgba(0,0,0,0.06); line-height: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none; user-select: none; }
-  /* Pingüino detrás de las cards */
-  .hero-right::before {  content: "";  position: absolute;  inset: 0;  background-image: url('penguin-outline.png');  background-repeat: no-repeat;  background-position: center;  background-size: 600px auto;  opacity: 0.18;  z-index: 1;  pointer-events: none;}
-  .twin-cards { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 400px; }
-  .twin-card { position: absolute; width: 200px; background: white; border: 1px solid rgba(0,0,0,0.08); padding: 1.5rem; animation: floatCard 4s ease-in-out infinite; }
-  .twin-card:first-child { top: 40px; left: 0;  --rot: -3deg; }
-  .twin-card:last-child { bottom: 40px; right: 0;  --rot: 3deg; }
-  .twin-card-avatar { width: 40px; height: 40px; border-radius: 50%; margin-bottom: 0.75rem; }
-  .twin-card-name { font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.25rem; }
-  .twin-card-msg { font-family: var(--font-serif); font-size: 0.75rem; font-style: italic; color: var(--gray); line-height: 1.5; }
-  .compatibility-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--orange); color: white; font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.4rem 0.8rem; white-space: nowrap; z-index: 10; animation: pulse 2s ease-in-out infinite; }
-  .connector-line { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2px; height: 80px; background: linear-gradient(to bottom, var(--orange-light), var(--orange)); margin-left: -1px; margin-top: -40px; opacity: 0.6; }
+      /* ── HERO ── */
+      .hero {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        position: relative;
+        overflow: hidden;
+        padding-top: 64px;
+      }
+      .hero-left {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 6rem 4rem 6rem 5rem;
+        position: relative;
+        z-index: 2;
+      }
+      .hero-eyebrow {
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--orange);
+        margin-bottom: 1.5rem;
+        opacity: 0;
+        animation: fadeUp 0.8s ease forwards 0.2s;
+      }
+      .hero-title {
+        font-family: var(--font-display);
+        font-size: clamp(3.5rem, 6vw, 6rem);
+        font-weight: 800;
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+        color: var(--black);
+        margin-bottom: 2rem;
+        opacity: 0;
+        animation: fadeUp 0.8s ease forwards 0.4s;
+      }
+      .hero-title .accent {
+        color: var(--orange);
+        font-style: italic;
+      }
+      .hero-subtitle {
+        font-family: var(--font-serif);
+        font-size: 1.25rem;
+        font-weight: 300;
+        line-height: 1.65;
+        color: var(--gray);
+        max-width: 420px;
+        margin-bottom: 3rem;
+        opacity: 0;
+        animation: fadeUp 0.8s ease forwards 0.6s;
+      }
+      .hero-cta {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        opacity: 0;
+        animation: fadeUp 0.8s ease forwards 0.8s;
+      }
+      .hero-right {
+        position: relative;
+        overflow: hidden; /* PINGÜINO */
+        background-image: url("./images/penguin-outline.png");
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: 600px auto;
+      }
+      .hero-bg-text {
+        position: absolute;
+        font-family: var(--font-display);
+        font-size: 15vw;
+        font-weight: 800;
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(0, 0, 0, 0.06);
+        line-height: 1;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        white-space: nowrap;
+        pointer-events: none;
+        user-select: none;
+      }
+      /* Pingüino detrás de las cards */
+      .hero-right::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: url("./images/penguin-outline.png");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 600px auto;
+        opacity: 0.18;
+        z-index: 1;
+        pointer-events: none;
+      }
+      .twin-cards {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 320px;
+        height: 400px;
+      }
+      .twin-card {
+        position: absolute;
+        width: 200px;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 1.5rem;
+        animation: floatCard 4s ease-in-out infinite;
+      }
+      .twin-card:first-child {
+        top: 40px;
+        left: 0;
+        --rot: -3deg;
+      }
+      .twin-card:last-child {
+        bottom: 40px;
+        right: 0;
+        --rot: 3deg;
+      }
+      .twin-card-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-bottom: 0.75rem;
+      }
+      .twin-card-name {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+      .twin-card-msg {
+        font-family: var(--font-serif);
+        font-size: 0.75rem;
+        font-style: italic;
+        color: var(--gray);
+        line-height: 1.5;
+      }
+      .compatibility-badge {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--orange);
+        color: white;
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.4rem 0.8rem;
+        white-space: nowrap;
+        z-index: 10;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      .connector-line {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 80px;
+        background: linear-gradient(
+          to bottom,
+          var(--orange-light),
+          var(--orange)
+        );
+        margin-left: -1px;
+        margin-top: -40px;
+        opacity: 0.6;
+      }
 
-  /* ── PROBLEM ── */
-  .section-problem { padding: 8rem 5rem; background: var(--black); color: var(--cream); position: relative; overflow: hidden; }
-  .section-problem::before { content: '"'; position: absolute; font-family: var(--font-display); font-size: 40vw; font-weight: 800; color: rgba(255,255,255,0.02); top: -10%; left: -5%; line-height: 1; pointer-events: none; }
-  .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; max-width: 1100px; margin: 0 auto; align-items: center; }
-  .problem-label { font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); margin-bottom: 1.5rem; }
-  .problem-title { font-family: var(--font-display); font-size: clamp(2.2rem, 3.5vw, 3.5rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 2rem; }
-  .problem-body { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 300; line-height: 1.8; color: rgba(238,237,236,0.95); }
-  .stats-stack { display: flex; flex-direction: column; gap: 1.5rem; }
-  .stat-item { border-left: 2px solid var(--orange); padding-left: 1.5rem; }
-  .stat-number { font-family: var(--font-display); font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; color: var(--cream); line-height: 1; margin-bottom: 0.3rem; }
-  .stat-number span { color: var(--orange); }
-  .stat-label { font-family: var(--font-body); font-size: 0.82rem; color: rgba(238,237,236,0.95); line-height: 1.4; }
+      /* ── PROBLEM ── */
+      .section-problem {
+        padding: 8rem 5rem;
+        background: var(--black);
+        color: var(--cream);
+        position: relative;
+        overflow: hidden;
+      }
+      .section-problem::before {
+        content: '"';
+        position: absolute;
+        font-family: var(--font-display);
+        font-size: 40vw;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.02);
+        top: -10%;
+        left: -5%;
+        line-height: 1;
+        pointer-events: none;
+      }
+      .problem-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        align-items: center;
+      }
+      .problem-label {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--orange);
+        margin-bottom: 1.5rem;
+      }
+      .problem-title {
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 3.5vw, 3.5rem);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin-bottom: 2rem;
+      }
+      .problem-body {
+        font-family: var(--font-serif);
+        font-size: 1.1rem;
+        font-weight: 300;
+        line-height: 1.8;
+        color: rgba(238, 237, 236, 0.95);
+      }
+      .stats-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .stat-item {
+        border-left: 2px solid var(--orange);
+        padding-left: 1.5rem;
+      }
+      .stat-number {
+        font-family: var(--font-display);
+        font-size: 3rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: var(--cream);
+        line-height: 1;
+        margin-bottom: 0.3rem;
+      }
+      .stat-number span {
+        color: var(--orange);
+      }
+      .stat-label {
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        color: rgba(238, 237, 236, 0.95);
+        line-height: 1.4;
+      }
 
-  /* ── HOW IT WORKS ── */
-  .section-how { padding: 8rem 5rem; background: var(--cream); }
-  .section-header { text-align: center; margin-bottom: 5rem; }
-  .section-label { font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); margin-bottom: 1rem; display: block; }
-  .section-title { font-family: var(--font-display); font-size: clamp(2rem, 3vw, 3rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; max-width: 600px; margin: 0 auto; }
-  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1100px; margin: 0 auto; position: relative; }
-  .steps-grid::before { content: ''; position: absolute; top: 2.5rem; left: calc(16.66% + 2rem); right: calc(16.66% + 2rem); height: 1px; background: linear-gradient(to right, var(--orange-light), var(--orange), var(--orange-light)); opacity: 0.3; }
-  .step-card { background: white; padding: 2.5rem 2rem; border: 1px solid rgba(0,0,0,0.06); position: relative; transition: transform 0.3s, box-shadow 0.3s; }
-  .step-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
-  .step-number { font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; color: var(--orange); margin-bottom: 1.5rem; display: block; }
-  .step-icon { font-size: 2rem; margin-bottom: 1.25rem; display: block; }
-  .step-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.75rem; }
-  .step-body { font-family: var(--font-body); font-size: 0.88rem; line-height: 1.7; color: var(--gray); }
+      /* ── HOW IT WORKS ── */
+      .section-how {
+        padding: 8rem 5rem;
+        background: var(--cream);
+      }
+      .section-header {
+        text-align: center;
+        margin-bottom: 5rem;
+      }
+      .section-label {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--orange);
+        margin-bottom: 1rem;
+        display: block;
+      }
+      .section-title {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 3vw, 3rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        position: relative;
+      }
+      .steps-grid::before {
+        content: "";
+        position: absolute;
+        top: 2.5rem;
+        left: calc(16.66% + 2rem);
+        right: calc(16.66% + 2rem);
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          var(--orange-light),
+          var(--orange),
+          var(--orange-light)
+        );
+        opacity: 0.3;
+      }
+      .step-card {
+        background: white;
+        padding: 2.5rem 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        position: relative;
+        transition:
+          transform 0.3s,
+          box-shadow 0.3s;
+      }
+      .step-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      }
+      .step-number {
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        color: var(--orange);
+        margin-bottom: 1.5rem;
+        display: block;
+      }
+      .step-icon {
+        font-size: 2rem;
+        margin-bottom: 1.25rem;
+        display: block;
+      }
+      .step-title {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-bottom: 0.75rem;
+      }
+      .step-body {
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        line-height: 1.7;
+        color: var(--gray);
+      }
 
-  /* ── DEMO ── */
-  .section-demo { padding: 5rem 4rem; background: white; }
-  .demo-inner { max-width: 900px; margin: 0 auto; }
-  .demo-header { text-align: center; margin-bottom: 4rem; }
-  .demo-header .section-title { margin: 0 auto; }
-  .demo-phone-wrap { display: flex; justify-content: center; gap: 2rem; align-items: flex-start; }
-  .demo-phone { width: 220px; background: var(--black); border-radius: 24px; padding: 1.2rem 0.85rem; box-shadow: 0 30px 60px rgba(0,0,0,0.18); flex-shrink: 0; }
-  .demo-phone-notch { width: 80px; height: 6px; background: #222; border-radius: 3px; margin: 0 auto 1.25rem; }
-  .demo-phone-header { display: flex; align-items: center; gap: 0.6rem; padding: 0 0.5rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 1rem; }
-  .demo-phone-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; color: white; }
-  .demo-phone-name { font-family: var(--font-display); font-size: 0.72rem; font-weight: 600; color: white; }
-  .demo-phone-sub { font-family: var(--font-body); font-size: 0.6rem; color: rgba(255,255,255,0.4); }
-  .demo-score { background: rgba(255,117,31,0.12); border: 1px solid rgba(255,117,31,0.25); border-radius: 8px; padding: 0.6rem 0.75rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
-  .demo-score-label { font-family: var(--font-body); font-size: 0.6rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.08em; }
-  .demo-score-value { font-family: var(--font-display); font-size: 0.95rem; font-weight: 800; color: var(--orange); }
-  .demo-bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-bottom: 1.25rem; overflow: hidden; }
-  .demo-bar-fill { height: 100%; background: linear-gradient(to right, var(--orange-light), var(--orange)); border-radius: 2px; }
-  .chat-bubble { margin-bottom: 0.6rem; display: flex; }
-  .chat-bubble.right { justify-content: flex-end; }
-  .bubble-text { font-family: var(--font-serif); font-size: 0.65rem; font-style: italic; line-height: 1.5; padding: 0.4rem 0.6rem; border-radius: 10px; max-width: 80%; }
-  .chat-bubble.left .bubble-text { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); border-bottom-left-radius: 3px; }
-  .chat-bubble.right .bubble-text { background: var(--orange); color: white; border-bottom-right-radius: 3px; }
-  .chat-label { font-family: var(--font-body); font-size: 0.55rem; color: rgba(255,255,255,0.35); margin-bottom: 0.2rem; }
-  .demo-unlock { background: rgba(255,187,48,0.1); border: 1px solid rgba(255,187,48,0.25); border-radius: 8px; padding: 0.75rem; text-align: center; margin-top: 1rem; }
-  .demo-unlock-text { font-family: var(--font-display); font-size: 0.6rem; font-weight: 600; color: var(--orange-light); }
-  .demo-caption { flex: 1; max-width: 270px; padding-top: 1rem; }
-  .demo-caption-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.75rem; line-height: 1.2; }
-  .demo-caption p { font-family: var(--font-serif); font-size: 0.9rem; font-weight: 300; line-height: 1.7; color: var(--gray); margin-bottom: 0.75rem; }
-  .demo-steps-mini { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
-  .demo-step-mini { display: flex; gap: 0.75rem; align-items: flex-start; }
-  .demo-step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); flex-shrink: 0; margin-top: 0.4rem; }
-  .demo-step-text { font-family: var(--font-body); font-size: 0.78rem; color: var(--gray); line-height: 1.5; }
+      /* ── DEMO ── */
+      .section-demo {
+        padding: 5rem 4rem;
+        background: white;
+      }
+      .demo-inner {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .demo-header {
+        text-align: center;
+        margin-bottom: 4rem;
+      }
+      .demo-header .section-title {
+        margin: 0 auto;
+      }
+      .demo-phone-wrap {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        align-items: flex-start;
+      }
+      .demo-phone {
+        width: 220px;
+        background: var(--black);
+        border-radius: 24px;
+        padding: 1.2rem 0.85rem;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.18);
+        flex-shrink: 0;
+      }
+      .demo-phone-notch {
+        width: 80px;
+        height: 6px;
+        background: #222;
+        border-radius: 3px;
+        margin: 0 auto 1.25rem;
+      }
+      .demo-phone-header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0 0.5rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        margin-bottom: 1rem;
+      }
+      .demo-phone-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: white;
+      }
+      .demo-phone-name {
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: white;
+      }
+      .demo-phone-sub {
+        font-family: var(--font-body);
+        font-size: 0.6rem;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .demo-score {
+        background: rgba(255, 117, 31, 0.12);
+        border: 1px solid rgba(255, 117, 31, 0.25);
+        border-radius: 8px;
+        padding: 0.6rem 0.75rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .demo-score-label {
+        font-family: var(--font-body);
+        font-size: 0.6rem;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .demo-score-value {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--orange);
+      }
+      .demo-bar {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        margin-bottom: 1.25rem;
+        overflow: hidden;
+      }
+      .demo-bar-fill {
+        height: 100%;
+        background: linear-gradient(
+          to right,
+          var(--orange-light),
+          var(--orange)
+        );
+        border-radius: 2px;
+      }
+      .chat-bubble {
+        margin-bottom: 0.6rem;
+        display: flex;
+      }
+      .chat-bubble.right {
+        justify-content: flex-end;
+      }
+      .bubble-text {
+        font-family: var(--font-serif);
+        font-size: 0.65rem;
+        font-style: italic;
+        line-height: 1.5;
+        padding: 0.4rem 0.6rem;
+        border-radius: 10px;
+        max-width: 80%;
+      }
+      .chat-bubble.left .bubble-text {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.85);
+        border-bottom-left-radius: 3px;
+      }
+      .chat-bubble.right .bubble-text {
+        background: var(--orange);
+        color: white;
+        border-bottom-right-radius: 3px;
+      }
+      .chat-label {
+        font-family: var(--font-body);
+        font-size: 0.55rem;
+        color: rgba(255, 255, 255, 0.35);
+        margin-bottom: 0.2rem;
+      }
+      .demo-unlock {
+        background: rgba(255, 187, 48, 0.1);
+        border: 1px solid rgba(255, 187, 48, 0.25);
+        border-radius: 8px;
+        padding: 0.75rem;
+        text-align: center;
+        margin-top: 1rem;
+      }
+      .demo-unlock-text {
+        font-family: var(--font-display);
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--orange-light);
+      }
+      .demo-caption {
+        flex: 1;
+        max-width: 270px;
+        padding-top: 1rem;
+      }
+      .demo-caption-title {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+        line-height: 1.2;
+      }
+      .demo-caption p {
+        font-family: var(--font-serif);
+        font-size: 0.9rem;
+        font-weight: 300;
+        line-height: 1.7;
+        color: var(--gray);
+        margin-bottom: 0.75rem;
+      }
+      .demo-steps-mini {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        margin-top: 1.5rem;
+      }
+      .demo-step-mini {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+      }
+      .demo-step-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--orange);
+        flex-shrink: 0;
+        margin-top: 0.4rem;
+      }
+      .demo-step-text {
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        color: var(--gray);
+        line-height: 1.5;
+      }
 
-  /* ── VS TABLE ── */
-  .section-vs { padding: 8rem 5rem; background: var(--black); color: var(--cream); }
-  .vs-inner { max-width: 1000px; margin: 0 auto; }
-  .vs-header { text-align: center; margin-bottom: 4rem; }
-  .vs-header .section-title { color: var(--cream); margin: 0 auto; }
-  .vs-table { width: 100%; border-collapse: collapse; }
-  .vs-table th { font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.12); }
-  .vs-table th:first-child { color: rgba(255,255,255,0.5); width: 40%; }
-  .vs-table th:nth-child(2) { color: rgba(255,255,255,0.5); text-align: center; width: 30%; }
-  .vs-table th:nth-child(3) { color: var(--orange); text-align: center; width: 30%; }
-  /* texto de celdas más visible */
-  .vs-table td { font-family: var(--font-body); font-size: 0.9rem; padding: 1.1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
-  .vs-table td:nth-child(2) { text-align: center; color: rgba(255,255,255,0.6); }
-  .vs-table td:nth-child(3) { text-align: center; color: var(--cream); font-weight: 500; }
-  .vs-table tr:hover td { background: rgba(255,255,255,0.03); }
-  /* cruces y checks más visibles */
-  .vs-no { color: rgba(255,255,255,0.45); font-size: 1.1rem; font-weight: 700; }
-  .vs-yes { color: var(--orange); font-size: 1.1rem; font-weight: 700; }
+      /* ── VS TABLE ── */
+      .section-vs {
+        padding: 8rem 5rem;
+        background: var(--black);
+        color: var(--cream);
+      }
+      .vs-inner {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .vs-header {
+        text-align: center;
+        margin-bottom: 4rem;
+      }
+      .vs-header .section-title {
+        color: var(--cream);
+        margin: 0 auto;
+      }
+      .vs-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .vs-table th {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 1rem 1.5rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .vs-table th:first-child {
+        color: rgba(255, 255, 255, 0.5);
+        width: 40%;
+      }
+      .vs-table th:nth-child(2) {
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+        width: 30%;
+      }
+      .vs-table th:nth-child(3) {
+        color: var(--orange);
+        text-align: center;
+        width: 30%;
+      }
+      /* texto de celdas más visible */
+      .vs-table td {
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        padding: 1.1rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .vs-table td:nth-child(2) {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .vs-table td:nth-child(3) {
+        text-align: center;
+        color: var(--cream);
+        font-weight: 500;
+      }
+      .vs-table tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      /* cruces y checks más visibles */
+      .vs-no {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+      .vs-yes {
+        color: var(--orange);
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
 
-  /* VS — mobile alternative (oculto en desktop) */
-  .vs-mobile { display: none; }
-  .vs-mob-row { padding: 1.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .vs-mob-row:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
-  .vs-mob-feature { font-family: var(--font-body); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; margin-bottom: 0.6rem; }
-  .vs-mob-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .vs-mob-col { display: flex; flex-direction: column; gap: 0.3rem; }
-  .vs-mob-badge { font-family: var(--font-body); font-size: 0.52rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.18rem 0.45rem; display: inline-block; margin-bottom: 0.25rem; }
-  .vs-mob-badge.them { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.38); }
-  .vs-mob-badge.us { background: var(--orange); color: white; }
-  .vs-mob-them-text { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.4; color: rgba(255,255,255,0.45); }
-  .vs-mob-us-text { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.4; color: var(--cream); font-weight: 500; }
+      /* VS — mobile alternative (oculto en desktop) */
+      .vs-mobile {
+        display: none;
+      }
+      .vs-mob-row {
+        padding: 1.25rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .vs-mob-row:first-child {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .vs-mob-feature {
+        font-family: var(--font-body);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #fff;
+        margin-bottom: 0.6rem;
+      }
+      .vs-mob-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+      .vs-mob-col {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+      .vs-mob-badge {
+        font-family: var(--font-body);
+        font-size: 0.52rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.18rem 0.45rem;
+        display: inline-block;
+        margin-bottom: 0.25rem;
+      }
+      .vs-mob-badge.them {
+        background: rgba(255, 255, 255, 0.07);
+        color: rgba(255, 255, 255, 0.38);
+      }
+      .vs-mob-badge.us {
+        background: var(--orange);
+        color: white;
+      }
+      .vs-mob-them-text {
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        line-height: 1.4;
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .vs-mob-us-text {
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        line-height: 1.4;
+        color: var(--cream);
+        font-weight: 500;
+      }
 
-  /* ── QUOTE ── */
-  .section-quote { padding: 8rem 5rem; background: var(--black); text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }
-  .quote-text { font-family: var(--font-serif); font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 300; font-style: italic; color: var(--cream); line-height: 1.5; max-width: 800px; margin: 0 auto 2rem; }
-  .quote-text em { color: var(--orange-light); font-style: normal; }
-  .quote-source { font-family: var(--font-body); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(238,237,236,0.35); }
+      /* ── QUOTE ── */
+      .section-quote {
+        padding: 8rem 5rem;
+        background: var(--black);
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .quote-text {
+        font-family: var(--font-serif);
+        font-size: clamp(1.8rem, 3.5vw, 3rem);
+        font-weight: 300;
+        font-style: italic;
+        color: var(--cream);
+        line-height: 1.5;
+        max-width: 800px;
+        margin: 0 auto 2rem;
+      }
+      .quote-text em {
+        color: var(--orange-light);
+        font-style: normal;
+      }
+      .quote-source {
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(238, 237, 236, 0.35);
+      }
 
-  /* ── FEATURES (sin freemium) ── */
-  .section-features { padding: 8rem 5rem; background: var(--cream); }
-  .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; max-width: 1100px; margin: 0 auto; align-items: start; }
-  .features-left .section-label { text-align: left; }
-  .features-left .section-title { text-align: left; margin: 0 0 1.5rem; font-size: clamp(1.8rem, 2.5vw, 2.5rem); }
-  .features-left p { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 300; line-height: 1.8; color: var(--gray); }
-  .features-right { display: flex; flex-direction: column; }
-  .feature-row { display: flex; gap: 1.5rem; padding: 1.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.08); transition: padding-left 0.3s; }
-  .feature-row:first-child { border-top: 1px solid rgba(0,0,0,0.08); }
-  .feature-row:hover { padding-left: 0.75rem; }
-  .feature-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); flex-shrink: 0; margin-top: 0.35rem; }
-  .feature-name { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
-  .feature-desc { font-family: var(--font-body); font-size: 0.83rem; color: var(--gray); line-height: 1.6; }
+      /* ── FEATURES (sin freemium) ── */
+      .section-features {
+        padding: 8rem 5rem;
+        background: var(--cream);
+      }
+      .features-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        align-items: start;
+      }
+      .features-left .section-label {
+        text-align: left;
+      }
+      .features-left .section-title {
+        text-align: left;
+        margin: 0 0 1.5rem;
+        font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+      }
+      .features-left p {
+        font-family: var(--font-serif);
+        font-size: 1.05rem;
+        font-weight: 300;
+        line-height: 1.8;
+        color: var(--gray);
+      }
+      .features-right {
+        display: flex;
+        flex-direction: column;
+      }
+      .feature-row {
+        display: flex;
+        gap: 1.5rem;
+        padding: 1.75rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        transition: padding-left 0.3s;
+      }
+      .feature-row:first-child {
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      .feature-row:hover {
+        padding-left: 0.75rem;
+      }
+      .feature-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        flex-shrink: 0;
+        margin-top: 0.35rem;
+      }
+      .feature-name {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+      }
+      .feature-desc {
+        font-family: var(--font-body);
+        font-size: 0.83rem;
+        color: var(--gray);
+        line-height: 1.6;
+      }
 
-  /* ── PLANES FREE vs PREMIUM ── */
-  .section-plans { padding: 5rem 4rem; background: white; }
-  .plans-inner { max-width: 760px; margin: 0 auto; }
-  .plans-header { text-align: center; margin-bottom: 4rem; }
-  .plans-header .section-title { margin: 0 auto; }
-  .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-  .plan-card { border: 1px solid rgba(0,0,0,0.1); padding: 2rem 1.75rem; position: relative; transition: transform 0.3s, box-shadow 0.3s; }
-  .plan-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.07); }
-  .plan-card.premium { background: var(--black); color: var(--cream); border-color: var(--orange); }
-  .plan-badge { font-family: var(--font-body); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; display: inline-block; padding: 0.3rem 0.75rem; margin-bottom: 1rem; }
-  .plan-card:not(.premium) .plan-badge { background: rgba(0,0,0,0.06); color: var(--gray); }
-  .plan-card.premium .plan-badge { background: var(--orange); color: white; }
-  .plan-name { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
-  .plan-card.premium .plan-name { color: var(--cream); }
-  .plan-price { font-family: var(--font-display); font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.2rem; color: var(--orange); }
-  .plan-price-sub { font-family: var(--font-body); font-size: 0.72rem; color: var(--gray); margin-bottom: 1.5rem; }
-  .plan-card.premium .plan-price-sub { color: rgba(238,237,236,0.5); }
-  .plan-divider { height: 1px; background: rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
-  .plan-card.premium .plan-divider { background: rgba(255,255,255,0.1); }
-  .plan-items { display: flex; flex-direction: column; gap: 0.65rem; }
-  .plan-item { display: flex; align-items: flex-start; gap: 0.75rem; font-family: var(--font-body); font-size: 0.82rem; line-height: 1.5; color: var(--gray); }
-  .plan-card.premium .plan-item { color: rgba(238,237,236,0.8); }
-  .plan-item-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.1rem; }
-  .plan-item.included .plan-item-icon { color: var(--orange); }
-  .plan-item.excluded .plan-item-icon { color: rgba(0,0,0,0.3); }
-  .plan-card.premium .plan-item.excluded .plan-item-icon { color: rgba(255,255,255,0.2); }
-  .plan-item.excluded span { color: rgba(0,0,0,0.35); }
-  .plan-card.premium .plan-item.excluded span { color: rgba(238,237,236,0.3); }
+      /* ── PLANES FREE vs PREMIUM ── */
+      .section-plans {
+        padding: 5rem 4rem;
+        background: white;
+      }
+      .plans-inner {
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      .plans-header {
+        text-align: center;
+        margin-bottom: 4rem;
+      }
+      .plans-header .section-title {
+        margin: 0 auto;
+      }
+      .plans-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+      .plan-card {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 2rem 1.75rem;
+        position: relative;
+        transition:
+          transform 0.3s,
+          box-shadow 0.3s;
+      }
+      .plan-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.07);
+      }
+      .plan-card.premium {
+        background: var(--black);
+        color: var(--cream);
+        border-color: var(--orange);
+      }
+      .plan-badge {
+        font-family: var(--font-body);
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        display: inline-block;
+        padding: 0.3rem 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .plan-card:not(.premium) .plan-badge {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--gray);
+      }
+      .plan-card.premium .plan-badge {
+        background: var(--orange);
+        color: white;
+      }
+      .plan-name {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.4rem;
+      }
+      .plan-card.premium .plan-name {
+        color: var(--cream);
+      }
+      .plan-price {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.2rem;
+        color: var(--orange);
+      }
+      .plan-price-sub {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        color: var(--gray);
+        margin-bottom: 1.5rem;
+      }
+      .plan-card.premium .plan-price-sub {
+        color: rgba(238, 237, 236, 0.5);
+      }
+      .plan-divider {
+        height: 1px;
+        background: rgba(0, 0, 0, 0.08);
+        margin-bottom: 1.5rem;
+      }
+      .plan-card.premium .plan-divider {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .plan-items {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+      .plan-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        color: var(--gray);
+      }
+      .plan-card.premium .plan-item {
+        color: rgba(238, 237, 236, 0.8);
+      }
+      .plan-item-icon {
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+      }
+      .plan-item.included .plan-item-icon {
+        color: var(--orange);
+      }
+      .plan-item.excluded .plan-item-icon {
+        color: rgba(0, 0, 0, 0.3);
+      }
+      .plan-card.premium .plan-item.excluded .plan-item-icon {
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .plan-item.excluded span {
+        color: rgba(0, 0, 0, 0.35);
+      }
+      .plan-card.premium .plan-item.excluded span {
+        color: rgba(238, 237, 236, 0.3);
+      }
 
-  /* ── MANIFIESTO ── */
-  .section-manifesto { padding: 10rem 5rem; background: var(--cream); }
-  .manifesto-inner { max-width: 760px; margin: 0 auto; text-align: center; }
-  .manifesto-eyebrow { font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--orange); margin-bottom: 2.5rem; display: block; }
-  .manifesto-lines { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 3rem; }
-  .manifesto-line { font-family: var(--font-serif); font-size: clamp(1.3rem, 2.2vw, 1.8rem); font-weight: 300; line-height: 1.4; color: var(--black); opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
-  .manifesto-line.visible { opacity: 1; transform: translateY(0); }
-  /* solo el fragmento especificado en naranja */
-  .manifesto-line .hl { color: var(--orange); font-style: italic; }
-  .manifesto-closer { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--black); margin-top: 3rem; }
-  .manifesto-closer .bb { color: var(--orange); }
+      /* ── MANIFIESTO ── */
+      .section-manifesto {
+        padding: 10rem 5rem;
+        background: var(--cream);
+      }
+      .manifesto-inner {
+        max-width: 760px;
+        margin: 0 auto;
+        text-align: center;
+      }
+      .manifesto-eyebrow {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--orange);
+        margin-bottom: 2.5rem;
+        display: block;
+      }
+      .manifesto-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+      }
+      .manifesto-line {
+        font-family: var(--font-serif);
+        font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+        font-weight: 300;
+        line-height: 1.4;
+        color: var(--black);
+        opacity: 0;
+        transform: translateY(20px);
+        transition:
+          opacity 0.7s ease,
+          transform 0.7s ease;
+      }
+      .manifesto-line.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      /* solo el fragmento especificado en naranja */
+      .manifesto-line .hl {
+        color: var(--orange);
+        font-style: italic;
+      }
+      .manifesto-closer {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        color: var(--black);
+        margin-top: 3rem;
+      }
+      .manifesto-closer .bb {
+        color: var(--orange);
+      }
 
-  /* ── ORIGIN ── */
-  .section-origin { padding: 8rem 5rem; background: white; display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: center; }
-  .origin-visual { position: relative; height: 400px; display: flex; align-items: center; justify-content: center; }
-  .pebble-stone { width: 120px; height: 80px; background: linear-gradient(135deg, #888 0%, #555 50%, #333 100%); border-radius: 50%; position: absolute; box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: stoneBob 3s ease-in-out infinite; }
-  .origin-ring { width: 220px; height: 220px; border-radius: 50%; border: 1px solid rgba(255,117,31,0.2); position: absolute; animation: ringPulse 3s ease-in-out infinite; }
-  .origin-ring:nth-child(2) { width: 300px; height: 300px; animation-delay: 0.5s; border-color: rgba(255,117,31,0.12); }
-  .origin-ring:nth-child(3) { width: 380px; height: 380px; animation-delay: 1s; border-color: rgba(255,117,31,0.06); }
-  .origin-text .section-label { text-align: left; }
-  .origin-text .section-title { text-align: left; margin: 0 0 1.5rem; font-size: clamp(1.8rem, 2.5vw, 2.5rem); }
-  .origin-text p { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 300; line-height: 1.85; color: var(--gray); margin-bottom: 1.25rem; }
+      /* ── ORIGIN ── */
+      .section-origin {
+        padding: 8rem 5rem;
+        background: white;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6rem;
+        align-items: center;
+      }
+      .origin-visual {
+        position: relative;
+        height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pebble-stone {
+        width: 120px;
+        height: 80px;
+        background: linear-gradient(135deg, #888 0%, #555 50%, #333 100%);
+        border-radius: 50%;
+        position: absolute;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        animation: stoneBob 3s ease-in-out infinite;
+      }
+      .origin-ring {
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 117, 31, 0.2);
+        position: absolute;
+        animation: ringPulse 3s ease-in-out infinite;
+      }
+      .origin-ring:nth-child(2) {
+        width: 300px;
+        height: 300px;
+        animation-delay: 0.5s;
+        border-color: rgba(255, 117, 31, 0.12);
+      }
+      .origin-ring:nth-child(3) {
+        width: 380px;
+        height: 380px;
+        animation-delay: 1s;
+        border-color: rgba(255, 117, 31, 0.06);
+      }
+      .origin-text .section-label {
+        text-align: left;
+      }
+      .origin-text .section-title {
+        text-align: left;
+        margin: 0 0 1.5rem;
+        font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+      }
+      .origin-text p {
+        font-family: var(--font-serif);
+        font-size: 1.05rem;
+        font-weight: 300;
+        line-height: 1.85;
+        color: var(--gray);
+        margin-bottom: 1.25rem;
+      }
 
-  /* ── BETA FORM ── */
-  .section-beta { padding: 8rem 5rem; background: var(--black); color: var(--cream); position: relative; overflow: hidden; }
-  .section-beta::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(255,117,31,0.08) 0%, transparent 70%); pointer-events: none; }
-  .beta-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: flex-end; position: relative; z-index: 1; }
-  /* Estado éxito — centrado */
-  .beta-inner.success-mode { display: flex; align-items: center; justify-content: center; gap: 5rem; }
-  .beta-inner.success-mode .beta-content { text-align: center; }
-  .beta-inner.success-mode .beta-image { display: flex !important; padding-left: 0; margin-right: 0; justify-content: center; }
-  .beta-inner.success-mode .beta-image img { width: 200%; max-width: none; }
-  .beta-content { text-align: left; }
-  .beta-image { display: flex; align-items: flex-end; justify-content: flex-end; padding-left: 12rem; margin-right: -5rem; }
-  .beta-image img { width: 240%; max-width: none; opacity: 0.88; }
-  .beta-title { font-family: var(--font-display); font-size: clamp(2.5rem, 4vw, 4rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-bottom: 1rem; }
-  .beta-title .bb { color: var(--orange); }
-  .beta-subtitle { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 300; font-style: italic; color: rgba(238,237,236,0.8); margin-bottom: 3rem; line-height: 1.6; }
-  .beta-form { display: flex; flex-direction: column; gap: 1rem; text-align: left; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .form-field { display: flex; flex-direction: column; gap: 0.4rem; }
-  .form-label { font-family: var(--font-body); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(238,237,236,0.95); }
-  .form-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.45); color: var(--cream); font-family: var(--font-body); font-size: 0.9rem; padding: 0.85rem 1rem; outline: none; transition: border-color 0.2s, background 0.2s; }
-  .form-input::placeholder { color: rgba(238,237,236,0.65); }
-  select.form-input { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(238,237,236,0.6)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; cursor: pointer; }
-  select.form-input option { background: #1a1a1a; color: #EEEDEC; }
-  .form-input:focus { border-color: var(--orange); background: rgba(255,255,255,0.22); }
-  .btn-submit { background: var(--orange); color: white; font-family: var(--font-body); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 1.1rem 2rem; border: none; cursor: pointer; width: 100%; margin-top: 0.5rem; transition: background 0.25s, transform 0.2s; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
-  .btn-submit:hover { background: var(--orange-mid); transform: translateY(-2px); }
-  .form-note { font-family: var(--font-body); font-size: 0.72rem; color: rgba(238,237,236,0.45); margin-top: 0.5rem; text-align: center; }
-  /* Ocultar spinner en inputs numéricos */
-  input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
-  .form-duplicate { display: none; background: rgba(255,117,31,0.1); border: 1px solid rgba(255,117,31,0.35); padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
-  .form-duplicate p { font-family: var(--font-body); font-size: 0.82rem; color: var(--orange); margin: 0; line-height: 1.4; }
-  .form-success { display: none; text-align: center; padding: 2rem 0; }
-  .form-success-icon { width: 64px; height: 64px; margin: 0 auto 1.25rem; }
-  .form-success-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; color: var(--cream); margin-bottom: 0.75rem; }
-  .form-success-sub { font-family: var(--font-serif); font-size: 1.05rem; font-style: italic; color: rgba(238,237,236,0.5); line-height: 1.6; }
+      /* ── BETA FORM ── */
+      .section-beta {
+        padding: 8rem 5rem;
+        background: var(--black);
+        color: var(--cream);
+        position: relative;
+        overflow: hidden;
+      }
+      .section-beta::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(255, 117, 31, 0.08) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .beta-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5rem;
+        align-items: flex-end;
+        position: relative;
+        z-index: 1;
+      }
+      /* Estado éxito — centrado */
+      .beta-inner.success-mode {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5rem;
+      }
+      .beta-inner.success-mode .beta-content {
+        text-align: center;
+      }
+      .beta-inner.success-mode .beta-image {
+        display: flex !important;
+        padding-left: 0;
+        margin-right: 0;
+        justify-content: center;
+      }
+      .beta-inner.success-mode .beta-image img {
+        width: 200%;
+        max-width: none;
+      }
+      .beta-content {
+        text-align: left;
+      }
+      .beta-image {
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+        padding-left: 12rem;
+        margin-right: -5rem;
+      }
+      .beta-image img {
+        width: 240%;
+        max-width: none;
+        opacity: 0.88;
+      }
+      .beta-title {
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 4vw, 4rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-bottom: 1rem;
+      }
+      .beta-title .bb {
+        color: var(--orange);
+      }
+      .beta-subtitle {
+        font-family: var(--font-serif);
+        font-size: 1.15rem;
+        font-weight: 300;
+        font-style: italic;
+        color: rgba(238, 237, 236, 0.8);
+        margin-bottom: 3rem;
+        line-height: 1.6;
+      }
+      .beta-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: left;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .form-label {
+        font-family: var(--font-body);
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(238, 237, 236, 0.95);
+      }
+      .form-input {
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        color: var(--cream);
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        padding: 0.85rem 1rem;
+        outline: none;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+      .form-input::placeholder {
+        color: rgba(238, 237, 236, 0.65);
+      }
+      select.form-input {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(238,237,236,0.6)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        padding-right: 2.5rem;
+        cursor: pointer;
+      }
+      select.form-input option {
+        background: #1a1a1a;
+        color: #eeedec;
+      }
+      .form-input:focus {
+        border-color: var(--orange);
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .btn-submit {
+        background: var(--orange);
+        color: white;
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 1.1rem 2rem;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 0.5rem;
+        transition:
+          background 0.25s,
+          transform 0.2s;
+        clip-path: polygon(
+          0 0,
+          calc(100% - 12px) 0,
+          100% 12px,
+          100% 100%,
+          12px 100%,
+          0 calc(100% - 12px)
+        );
+      }
+      .btn-submit:hover {
+        background: var(--orange-mid);
+        transform: translateY(-2px);
+      }
+      .form-note {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        color: rgba(238, 237, 236, 0.45);
+        margin-top: 0.5rem;
+        text-align: center;
+      }
+      /* Ocultar spinner en inputs numéricos */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+      .form-duplicate {
+        display: none;
+        background: rgba(255, 117, 31, 0.1);
+        border: 1px solid rgba(255, 117, 31, 0.35);
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+      }
+      .form-duplicate p {
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        color: var(--orange);
+        margin: 0;
+        line-height: 1.4;
+      }
+      .form-success {
+        display: none;
+        text-align: center;
+        padding: 2rem 0;
+      }
+      .form-success-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1.25rem;
+      }
+      .form-success-title {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--cream);
+        margin-bottom: 0.75rem;
+      }
+      .form-success-sub {
+        font-family: var(--font-serif);
+        font-size: 1.05rem;
+        font-style: italic;
+        color: rgba(238, 237, 236, 0.5);
+        line-height: 1.6;
+      }
 
-  /* ── FOOTER ── */
-  footer { background: var(--black); border-top: 1px solid rgba(238,237,236,0.08); padding: 2.5rem 5rem; display: flex; align-items: center; justify-content: space-between; }
-  .footer-logo { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; text-decoration: none; }
-  .footer-logo .bb { color: var(--orange); } .footer-logo .rest { color: var(--cream); }
-  .footer-tagline { font-family: var(--font-serif); font-size: 1rem; font-style: italic; color: rgba(238,237,236,0.3); }
+      /* ── FOOTER ── */
+      footer {
+        background: var(--black);
+        border-top: 1px solid rgba(238, 237, 236, 0.08);
+        padding: 2.5rem 5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .footer-logo {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 800;
+        text-decoration: none;
+      }
+      .footer-logo .bb {
+        color: var(--orange);
+      }
+      .footer-logo .rest {
+        color: var(--cream);
+      }
+      .footer-tagline {
+        font-family: var(--font-serif);
+        font-size: 1rem;
+        font-style: italic;
+        color: rgba(238, 237, 236, 0.3);
+      }
 
-  /* ── ANIMATIONS ── */
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes floatCard { 0%,100% { transform: rotate(var(--rot,-4deg)) translateY(0); } 50% { transform: rotate(var(--rot,-4deg)) translateY(-12px); } }
-  @keyframes pulse { 0%,100% { opacity:1; transform:translate(-50%,-50%) scale(1); } 50% { opacity:0.8; transform:translate(-50%,-50%) scale(1.05); } }
-  @keyframes stoneBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
-  @keyframes ringPulse { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.04); opacity:0.7; } }
-  .reveal { opacity:0; transform:translateY(30px); transition:opacity 0.7s ease, transform 0.7s ease; }
-  .reveal.visible { opacity:1; transform:translateY(0); }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+      /* ── ANIMATIONS ── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes floatCard {
+        0%,
+        100% {
+          transform: rotate(var(--rot, -4deg)) translateY(0);
+        }
+        50% {
+          transform: rotate(var(--rot, -4deg)) translateY(-12px);
+        }
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        50% {
+          opacity: 0.8;
+          transform: translate(-50%, -50%) scale(1.05);
+        }
+      }
+      @keyframes stoneBob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+      @keyframes ringPulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.04);
+          opacity: 0.7;
+        }
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition:
+          opacity 0.7s ease,
+          transform 0.7s ease;
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
 
-  /* ══════════════════════════════════════
+      /* ══════════════════════════════════════
      RESPONSIVE — MOBILE
   ══════════════════════════════════════ */
-  @media (max-width: 768px) {
+      @media (max-width: 768px) {
+        /* Nav */
+        nav {
+          padding: 1rem 1.5rem;
+        }
+        .nav-links {
+          display: none;
+        }
 
-    /* Nav */
-    nav { padding: 1rem 1.5rem; }
-    .nav-links { display: none; }
+        /* Hero */
+        .hero {
+          grid-template-columns: 1fr;
+          min-height: auto;
+        }
+        .hero-left {
+          padding: 5rem 1.5rem 3rem;
+        }
+        .hero-right {
+          display: none;
+        }
+        .hero-title {
+          font-size: clamp(2.2rem, 9vw, 3rem);
+        }
+        .hero-subtitle {
+          font-size: 0.92rem;
+          max-width: 100%;
+        }
+        .hero-cta {
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .btn-primary {
+          width: 100%;
+          text-align: center;
+          font-size: 0.78rem;
+          padding: 0.85rem 1.5rem;
+          letter-spacing: 0.06em;
+        }
+        .btn-secondary {
+          width: 100%;
+          text-align: center;
+          font-size: 0.78rem;
+          justify-content: center;
+        }
 
-    /* Hero */
-    .hero { grid-template-columns: 1fr; min-height: auto; }
-    .hero-left { padding: 5rem 1.5rem 3rem; }
-    .hero-right { display: none; }
-    .hero-title { font-size: clamp(2.2rem, 9vw, 3rem); }
-    .hero-subtitle { font-size: 0.92rem; max-width: 100%; }
-    .hero-cta { flex-direction: column; gap: 0.75rem; }
-    .btn-primary { width: 100%; text-align: center; font-size: 0.78rem; padding: 0.85rem 1.5rem; letter-spacing: 0.06em; }
-    .btn-secondary { width: 100%; text-align: center; font-size: 0.78rem; justify-content: center; }
+        /* Secciones — reducir padding */
+        .section-problem,
+        .section-how,
+        .section-vs,
+        .section-quote,
+        .section-features,
+        .section-manifesto,
+        .section-beta {
+          padding: 4rem 1.5rem;
+        }
+        .section-demo,
+        .section-plans {
+          padding: 3rem 1.5rem;
+        }
+        .section-origin {
+          padding: 4rem 1.5rem;
+          grid-template-columns: 1fr;
+          gap: 2.5rem;
+        }
 
-    /* Secciones — reducir padding */
-    .section-problem,
-    .section-how,
-    .section-vs,
-    .section-quote,
-    .section-features,
-    .section-manifesto,
-    .section-beta { padding: 4rem 1.5rem; }
-    .section-demo,
-    .section-plans { padding: 3rem 1.5rem; }
-    .section-origin { padding: 4rem 1.5rem; grid-template-columns: 1fr; gap: 2.5rem; }
+        /* Problem */
+        .problem-grid {
+          grid-template-columns: 1fr;
+          gap: 3rem;
+        }
 
-    /* Problem */
-    .problem-grid { grid-template-columns: 1fr; gap: 3rem; }
+        /* How — 3 pasos → 1 columna */
+        .steps-grid {
+          grid-template-columns: 1fr;
+          gap: 1.25rem;
+        }
+        .section-header {
+          margin-bottom: 2.5rem;
+        }
 
-    /* How — 3 pasos → 1 columna */
-    .steps-grid { grid-template-columns: 1fr; gap: 1.25rem; }
-    .section-header { margin-bottom: 2.5rem; }
+        /* Demo — teléfono centrado, caption abajo */
+        .demo-phone-wrap {
+          flex-direction: column;
+          align-items: center;
+        }
+        .demo-caption {
+          max-width: 100%;
+          padding-top: 0;
+        }
 
-    /* Demo — teléfono centrado, caption abajo */
-    .demo-phone-wrap { flex-direction: column; align-items: center; }
-    .demo-caption { max-width: 100%; padding-top: 0; }
+        /* VS — ocultar tabla, mostrar versión mobile */
+        .vs-inner {
+          overflow-x: unset;
+        }
+        .vs-table {
+          display: none;
+        }
+        .vs-mobile {
+          display: block;
+        }
 
-    /* VS — ocultar tabla, mostrar versión mobile */
-    .vs-inner { overflow-x: unset; }
-    .vs-table { display: none; }
-    .vs-mobile { display: block; }
+        /* Features — 2 columnas → 1 */
+        .features-grid {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
 
-    /* Features — 2 columnas → 1 */
-    .features-grid { grid-template-columns: 1fr; gap: 0; }
+        /* Plans */
+        .plans-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
 
-    /* Plans */
-    .plans-grid { grid-template-columns: 1fr; gap: 1rem; }
+        /* Origin */
+        .origin-visual {
+          height: 260px;
+        }
+        .origin-ring:nth-child(3) {
+          display: none;
+        }
 
-    /* Origin */
-    .origin-visual { height: 260px; }
-    .origin-ring:nth-child(3) { display: none; }
+        /* Beta — ocultar pingüino, form ocupa todo el ancho */
+        .beta-inner {
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+        .beta-image {
+          display: none;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
 
-    /* Beta — ocultar pingüino, form ocupa todo el ancho */
-    .beta-inner { grid-template-columns: 1fr; gap: 2rem; }
-    .beta-image { display: none; }
-    .form-row { grid-template-columns: 1fr; }
+        /* Footer */
+        footer {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+          padding: 2rem 1.5rem;
+        }
+      }
 
-    /* Footer */
-    footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
-  }
-
-  /* ══════════════════════════════════════
+      /* ══════════════════════════════════════
      RESPONSIVE — TELÉFONOS CHICOS (< 400px)
   ══════════════════════════════════════ */
-  @media (max-width: 400px) {
-    .hero-title { font-size: 2.6rem; }
-    nav { padding: 0.85rem 1.25rem; }
-    .section-problem,
-    .section-how,
-    .section-vs,
-    .section-quote,
-    .section-features,
-    .section-manifesto,
-    .section-beta,
-    .section-origin { padding: 3rem 1.25rem; }
-  }
-</style>
-</head>
-<body>
-
-<!-- NAV: fondo sólido, siempre visible -->
-<nav>
-  <a href="#" class="nav-logo"><span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span></a>
-  <ul class="nav-links">
-    <li><a href="#como-funciona">Cómo funciona</a></li>
-    <li><a href="#diferencial">Por qué Pebble</a></li>
-    <li><a href="#beta">Unirse a la beta</a></li>
-  </ul>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-left">
-    <p class="hero-eyebrow">Conexión real antes del primer contacto</p>
-    <h1 class="hero-title">Ya se<br/>conocieron.<br/><span class="accent">Todavía no<br/>lo saben.</span></h1>
-    <p class="hero-subtitle">Tu gemelo digital ya habló con el suyo. Ya hay contexto, afinidad y algo que cuidar. Solo falta que se encuentren.</p>
-    <div class="hero-cta">
-      <a href="#beta" class="btn-primary">Quiero estar en la beta</a>
-      <a href="#como-funciona" class="btn-secondary">Cómo funciona</a>
-    </div>
-  </div>
-  <div class="hero-right">
-    <div class="twin-cards">
-      <div class="twin-card">
-        <svg class="twin-card-avatar" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#FFBB30"/><circle cx="20" cy="16" r="7" fill="#FF9700"/><ellipse cx="20" cy="34" rx="11" ry="8" fill="#FF9700"/></svg>
-        <div class="twin-card-name">Gemelo de Sofía</div>
-        <div class="twin-card-msg">"Me encanta que también pienses que los silencios cómodos dicen más que las conversaciones perfectas."</div>
-      </div>
-      <div class="compatibility-badge">92% afinidad</div>
-      <div class="twin-card">
-        <svg class="twin-card-avatar" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="20" fill="#4D4D4D"/><circle cx="20" cy="16" r="7" fill="#888"/><ellipse cx="20" cy="34" rx="11" ry="8" fill="#888"/></svg>
-        <div class="twin-card-name">Gemelo de Mateo</div>
-        <div class="twin-card-msg">"Exacto. Las palabras de más a veces arruinan lo que estaba bien."</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PROBLEM -->
-<section class="section-problem">
-  <div class="problem-grid">
-    <div class="reveal">
-      <p class="problem-label">El problema</p>
-      <h2 class="problem-title">Las apps optimizan actividad.<br/>No compatibilidad.</h2>
-      <p class="problem-body">Nunca fue tan fácil hablar con alguien. Y nunca fue tan difícil conocer a alguien de verdad. Los matches se acumulan, las conversaciones se evaporan y la sensación que queda es de haber perdido el tiempo.</p>
-    </div>
-    <div class="stats-stack reveal">
-      <div class="stat-item"><div class="stat-number">7 de <span>10</span></div><div class="stat-label">usuarios calificó su experiencia con apps de citas con 3 o menos sobre 6</div></div>
-      <div class="stat-item"><div class="stat-number"><span>84%</span></div><div class="stat-label">mostró interés real en conocer a alguien a través de un gemelo digital</div></div>
-      <div class="stat-item"><div class="stat-number"><span>65%</span></div><div class="stat-label">considera muy útil ver compatibilidad antes del primer mensaje</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="section-how" id="como-funciona">
-  <div class="section-header reveal">
-    <span class="section-label">Cómo funciona</span>
-    <h2 class="section-title">Tres etapas. Una conexión que ya existe antes del encuentro.</h2>
-  </div>
-  <div class="steps-grid">
-    <div class="step-card reveal"><span class="step-number">01</span><span class="step-icon">◎</span><h3 class="step-title">Creás tu gemelo</h3><p class="step-body">Respondés un cuestionario de personalidad. La IA construye una representación autónoma de quién sos: tus valores, tu forma de relacionarte, lo que buscás en el otro.</p></div>
-    <div class="step-card reveal" style="transition-delay:.15s"><span class="step-number">02</span><span class="step-icon">⟡</span><h3 class="step-title">Los gemelos se conocen</h3><p class="step-body">Tu gemelo interactúa de forma autónoma con otros. Conversan, atraviesan escenarios, construyen contexto. Vos no hacés nada. Ellos trabajan por vos.</p></div>
-    <div class="step-card reveal" style="transition-delay:.3s"><span class="step-number">03</span><span class="step-icon">◈</span><h3 class="step-title">Llegás con historia</h3><p class="step-body">Cuando la compatibilidad supera el umbral, te avisamos. Podés leer todo lo que hablaron, conversar con el gemelo del otro, o escribirle directo. Vos elegís cuándo y cómo.</p></div>
-  </div>
-</section>
-
-<!-- DEMO -->
-<section class="section-demo">
-  <div class="demo-inner">
-    <div class="demo-header reveal">
-      <span class="section-label">El producto</span>
-      <h2 class="section-title">Así se ve una conexión antes del primer hola.</h2>
-    </div>
-    <div class="demo-phone-wrap">
-      <div class="demo-phone reveal">
-        <div class="demo-phone-notch"></div>
-        <div class="demo-phone-header">
-          <div class="demo-phone-avatar">M</div>
-          <div><div class="demo-phone-name">Gemelo de Mateo</div><div class="demo-phone-sub">hablando con gemelo de Sofía</div></div>
-        </div>
-        <div class="demo-score"><div><div class="demo-score-label">Afinidad actual</div></div><div class="demo-score-value">92%</div></div>
-        <div class="chat-label">Gemelo de Sofía</div>
-        <div class="chat-bubble left"><span class="bubble-text">¿Vos también sentís que las primeras citas son como una entrevista de trabajo?</span></div>
-        <div class="chat-label" style="text-align:right">Tu gemelo</div>
-        <div class="chat-bubble right"><span class="bubble-text">Sí, y terminás siendo la versión que creés que el otro quiere ver.</span></div>
-        <div class="chat-bubble left"><span class="bubble-text">Exacto. Por eso me gustás. Sé que con vos no tendría que actuar.</span></div>
-        <div class="demo-unlock"><div class="demo-unlock-text">🔓 Compatibilidad alcanzada — ya podés hablar con Sofía</div></div>
-      </div>
-      <div class="demo-caption reveal" style="transition-delay:.2s">
-        <h3 class="demo-caption-title">Tu gemelo habla.<br/>Vos llegás con contexto.</h3>
-        <p>Mientras hacés tu vida, tu gemelo construye una conexión real con alguien que puede importarte. Cuando hay compatibilidad genuina, te avisamos.</p>
-        <p>Podés leer toda la conversación, hablar con el gemelo del otro para practicar, o ir directo a la persona.</p>
-        <div class="demo-steps-mini">
-          <div class="demo-step-mini"><div class="demo-step-dot"></div><div class="demo-step-text">Leé el historial completo de los gemelos</div></div>
-          <div class="demo-step-mini"><div class="demo-step-dot"></div><div class="demo-step-text">Hablá con el gemelo del otro antes de decidir</div></div>
-          <div class="demo-step-mini"><div class="demo-step-dot"></div><div class="demo-step-text">Escribile directo cuando estés listo/a</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- VS TABLE -->
-<section class="section-vs" id="diferencial">
-  <div class="vs-inner">
-    <div class="vs-header reveal">
-      <span class="section-label" style="color:var(--orange)">Por qué Pebble</span>
-      <h2 class="section-title" style="color:var(--cream);margin:0 auto">No es una app de citas más.<br/>Es otra cosa.</h2>
-    </div>
-    <table class="vs-table reveal" aria-label="Comparación Pebble vs apps actuales">
-      <thead>
-        <tr><th scope="col"></th><th scope="col">Apps actuales</th><th scope="col">Pebble</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Primer filtro</td><td>Foto y apariencia física</td><td>Personalidad y valores</td></tr>
-        <tr><td>Cómo empieza la conversación</td><td>Mensaje en frío sin contexto</td><td>Ya hay historia antes del primer hola</td></tr>
-        <tr><td>Conocés la personalidad del otro</td><td>Después de hablar mucho</td><td>Antes de escribirle</td></tr>
-        <tr><td>Optimiza</td><td>Cantidad de matches</td><td>Calidad del vínculo</td></tr>
-        <tr><td>Podés comprender antes de hablar</td><td><span class="vs-no">✗</span></td><td> Hablá con el gemelo del otro</td></tr>
-      </tbody>
-    </table>
-
-    <!-- Versión mobile — tarjetas por feature -->
-    <div class="vs-mobile reveal">
-      <div class="vs-mob-row">
-        <div class="vs-mob-feature">Primer filtro</div>
-        <div class="vs-mob-cols">
-          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Foto y apariencia física</span></div>
-          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Personalidad y valores</span></div>
-        </div>
-      </div>
-      <div class="vs-mob-row">
-        <div class="vs-mob-feature">Cómo empieza la conversación</div>
-        <div class="vs-mob-cols">
-          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Mensaje en frío sin contexto</span></div>
-          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Ya hay historia antes del primer hola</span></div>
-        </div>
-      </div>
-      <div class="vs-mob-row">
-        <div class="vs-mob-feature">Conocés la personalidad del otro</div>
-        <div class="vs-mob-cols">
-          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Después de hablar mucho</span></div>
-          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Antes de escribirle</span></div>
-        </div>
-      </div>
-      <div class="vs-mob-row">
-        <div class="vs-mob-feature">Optimiza</div>
-        <div class="vs-mob-cols">
-          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text">Cantidad de matches</span></div>
-          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Calidad del vínculo</span></div>
-        </div>
-      </div>
-      <div class="vs-mob-row">
-        <div class="vs-mob-feature">Podés comprender antes de hablar</div>
-        <div class="vs-mob-cols">
-          <div class="vs-mob-col"><span class="vs-mob-badge them">Apps actuales</span><span class="vs-mob-them-text vs-no">✗</span></div>
-          <div class="vs-mob-col"><span class="vs-mob-badge us">Pebble</span><span class="vs-mob-us-text">Hablá con el gemelo del otro</span></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<!-- QUOTE -->
-<section class="section-quote">
-  <p class="quote-text reveal">"Para que el primer encuentro<br/>se sienta como <em>un reencuentro</em>."</p>
-  <span class="quote-source">Pebble — conexión real antes del primer contacto</span>
-</section>
-
-<!-- FEATURES (sin freemium) -->
-<section class="section-features">
-  <div class="features-grid">
-    <div class="features-left reveal">
-      <span class="section-label">Qué te da Pebble</span>
-      <h2 class="section-title">Más que una app de citas. Un proceso de conexión.</h2>
-      <p>Pebble no es un catálogo de perfiles. Es una plataforma que construye el vínculo antes de que te atrevas a dar el primer paso.</p>
-    </div>
-    <div class="features-right reveal">
-      <div class="feature-row"><div class="feature-dot"></div><div class="feature-content"><div class="feature-name">Gemelo digital con IA</div><div class="feature-desc">Una representación autónoma de tu personalidad que interactúa por vos mientras hacés tu vida.</div></div></div>
-      <div class="feature-row"><div class="feature-dot"></div><div class="feature-content"><div class="feature-name">Simulaciones de escenarios</div><div class="feature-desc">Los gemelos atraviesan situaciones reales que revelan valores, humor y formas de resolver conflictos.</div></div></div>
-      <div class="feature-row"><div class="feature-dot"></div><div class="feature-content"><div class="feature-name">Desbloqueo progresivo</div><div class="feature-desc">La información personal se revela a medida que crece la compatibilidad. Vos controlás cuándo mostrás más.</div></div></div>
-      <div class="feature-row"><div class="feature-dot"></div><div class="feature-content"><div class="feature-name">Para todas las orientaciones</div><div class="feature-desc">Como los pingüinos de Adelia, que eligen sin distinción. Pebble es un espacio para todos.</div></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- PLANES FREE vs PREMIUM -->
-<section class="section-plans">
-  <div class="plans-inner">
-    <div class="plans-header reveal">
-      <span class="section-label">Planes</span>
-      <h2 class="section-title">Empezá gratis. Conectá sin límites.</h2>
-    </div>
-    <div class="plans-grid">
-      <!-- FREE -->
-      <div class="plan-card reveal">
-        <span class="plan-badge">Gratis</span>
-        <div class="plan-name">Free</div>
-        <div class="plan-price">$0</div>
-        <div class="plan-price-sub">Para siempre</div>
-        <div class="plan-divider"></div>
-        <div class="plan-items">
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Creá tu gemelo digital</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Interacciones diarias limitadas</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Ver historial de conversaciones</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Acceso al score de compatibilidad</span></div>
-          <div class="plan-item excluded"><span class="plan-item-icon">—</span><span>Interacciones limitadas</span></div>
-          <div class="plan-item excluded"><span class="plan-item-icon">—</span><span>Menor visibilidad en el feed</span></div>
-          <div class="plan-item excluded"><span class="plan-item-icon">—</span><span>Personalización superficial del gemelo</span></div>
-          <div class="plan-item excluded"><span class="plan-item-icon">—</span><span>Simulaciones de escenarios limitadas</span></div>
-        </div>
-      </div>
-      <!-- PREMIUM -->
-      <div class="plan-card premium reveal" style="transition-delay:.15s">
-        <span class="plan-badge">Recomendado</span>
-        <div class="plan-name">Premium</div>
-        <div class="plan-price">$5</div>
-        <div class="plan-price-sub">por mes · cancelá cuando quieras</div>
-        <div class="plan-divider"></div>
-        <div class="plan-items">
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Interacciones ilimitadas todos los días</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Mayor visibilidad dentro del feed</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Personalización profunda del gemelo</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Simulaciones de escenarios ilimitadas</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Acceso prioritario a nuevas funciones</span></div>
-          <div class="plan-item included"><span class="plan-item-icon">✓</span><span>Soporte prioritario</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- MANIFIESTO -->
-<section class="section-manifesto">
-  <div class="manifesto-inner">
-    <span class="manifesto-eyebrow reveal">Para los que todavía creen</span>
-    <div class="manifesto-lines">
-      <p class="manifesto-line">Para los que borraron la app. <span class="hl">Y la volvieron a bajar.</span></p>
-      <p class="manifesto-line" style="transition-delay:.1s">Para los que saben que si alguien los conociera de verdad, <span class="hl">se quedaría.</span></p>
-      <p class="manifesto-line" style="transition-delay:.2s">Para los que tuvieron suficientes conversaciones que <span class="hl">no llegaron a nada.</span></p>
-      <p class="manifesto-line" style="transition-delay:.3s">Para los que todavía tienen fe en que <span class="hl">existe alguien para ellos.</span></p>
-      <p class="manifesto-line" style="transition-delay:.4s">Para los que quieren que cuando llegue, <span class="hl">no sea casualidad.</span></p>
-    </div>
-    <div class="manifesto-closer reveal">
-      <span>PE</span><span class="bb">BB</span><span>LE</span><br/>
-      <span style="font-size:clamp(1rem,1.5vw,1.3rem);font-weight:300;color:var(--gray);font-family:var(--font-serif);font-style:italic">Conexión real antes del primer contacto.</span>
-    </div>
-  </div>
-</section>
-
-<!-- ORIGIN -->
-<section class="section-origin" id="nosotros">
-  <div class="origin-visual">
-    <div class="origin-ring"></div><div class="origin-ring"></div><div class="origin-ring"></div>
-    <div class="pebble-stone"></div>
-  </div>
-  <div class="origin-text reveal">
-    <span class="section-label">Por qué Pebble</span>
-    <h2 class="section-title">Una piedra, una elección. Para toda la vida.</h2>
-    <p>Los pingüinos de Adelia tienen uno de los rituales de cortejo más precisos del reino animal. Un pingüino recorre largas distancias para encontrar la piedra perfecta y ofrecérsela a quien eligió. No cualquier piedra. La indicada.</p>
-    <p>Lo que hace especial este ritual es que no distingue género ni orientación. Los pingüinos eligen por elección, no por convención.</p>
-    <p>Ese gesto es lo que Pebble quiere devolver a las relaciones digitales. La piedra no es un objeto: es la primera señal de que alguien te vio, te eligió, y está dispuesto a hacer algo por eso.</p>
-  </div>
-</section>
-
-<!-- BETA FORM conectado a Formspree -->
-<section class="section-beta" id="beta">
-  <div class="beta-inner">
-
-    <!-- Columna izquierda: formulario -->
-    <div class="beta-content">
-      <h2 class="beta-title reveal"><span>PE</span><span class="bb">BB</span><span>LE</span></h2>
-      <p class="beta-subtitle reveal">Estamos construyendo algo diferente.<br/>Sé de los primeros en probarlo.</p>
-
-      <form class="beta-form reveal" id="betaForm"
-        action="https://formspree.io/f/mzdwgqvj"
-        method="POST">
-
-        <div class="form-row">
-          <div class="form-field">
-            <label class="form-label" for="f-name">Nombre</label>
-            <input class="form-input" type="text" id="f-name" name="nombre" placeholder="Tu nombre" required/>
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="f-last">Apellido</label>
-            <input class="form-input" type="text" id="f-last" name="apellido" placeholder="Tu apellido" required/>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label class="form-label" for="f-email">Email</label>
-          <input class="form-input" type="email" id="f-email" name="email" placeholder="tu@email.com" required/>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label class="form-label" for="f-age">Edad</label>
-            <input class="form-input" type="number" id="f-age" name="edad" placeholder="Tu edad" min="18" max="99" required/>
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="f-ocupacion">Ocupación</label>
-            <select class="form-input" id="f-ocupacion" name="ocupacion" required>
-              <option value="" disabled selected>Seleccioná una opción</option>
-              <option value="Estudio">Estudio</option>
-              <option value="Trabajo">Trabajo</option>
-              <option value="Estudio y trabajo">Estudio y trabajo</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-field" id="field-donde" style="display:none">
-          <label class="form-label" id="label-donde" for="f-donde">¿Dónde estudiás?</label>
-          <input class="form-input" type="text" id="f-donde" name="institucion" placeholder="Universidad / instituto"/>
-        </div>
-
-        <!-- campo oculto para identificar la fuente -->
-        <input type="hidden" name="_subject" value="Nueva inscripción beta Pebble"/>
-        <input type="hidden" name="_next" value=""/>
-
-        <div class="form-duplicate" id="formDuplicate">
-          <p>⚠ Este email ya está en la lista. Te avisamos cuando sea tu turno.</p>
-        </div>
-        <button type="submit" class="btn-submit">Quiero estar en la beta →</button>
-        <p class="form-note">No spam. Solo te avisamos cuando estés listo para entrar.</p>
-      </form>
-
-      <div class="form-success" id="formSuccess">
-        <svg class="form-success-icon" viewBox="0 0 64 64" fill="none">
-          <circle cx="32" cy="32" r="32" fill="rgba(255,117,31,0.12)"/>
-          <path d="M20 32 L28 40 L44 24" stroke="#FF751F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <div class="form-success-title">Ya estás en lista.</div>
-        <div class="form-success-sub">Tu gemelo se está preparando.<br/>Te avisamos cuando sea el momento.</div>
-      </div>
-    </div>
-
-    <!-- Columna derecha: imagen pingüino -->
-    <div class="beta-image reveal">
-      <img src="penguin-outline2.png" alt="Pebble penguin"/>
-    </div>
-
-  </div>
-</section>
-
-<footer>
-  <a href="#" class="footer-logo"><span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span></a>
-  <span class="footer-tagline">Ya se conocieron. Todavía no lo saben.</span>
-</footer>
-
-<script>
-  // Siempre empezar arriba al refrescar
-  if ('scrollRestoration' in history) {
-    history.scrollRestoration = 'manual';
-  }
-
-  window.onload = () => {
-    window.scrollTo(0, 0);
-  };
-</script>
-
-<script>
-  // Scroll reveal
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal, .manifesto-line').forEach(el => observer.observe(el));
-</script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  // Conseguir estados de firestore
-  const db = getFirestore(initializeApp({
-    apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
-    authDomain: "pebble-78e95.firebaseapp.com",
-    projectId: "pebble-78e95",
-    storageBucket: "pebble-78e95.firebasestorage.app",
-    messagingSenderId: "56434257024",
-    appId: "1:56434257024:web:3e2625f73bad3d4c004a65"
-  }));
-
-  const form    = document.getElementById('betaForm');
-  const dupMsg  = document.getElementById('formDuplicate');
-
-  // Ocultar aviso al editar email
-  document.getElementById('f-email').addEventListener('input', () => {
-    dupMsg.style.display = 'none';
-  });
-
-  // Mostrar campo institución/empresa según ocupación
-  document.getElementById('f-ocupacion').addEventListener('change', (e) => {
-    const v = e.target.value;
-    const field = document.getElementById('field-donde');
-    const label = document.getElementById('label-donde');
-    const input = document.getElementById('f-donde');
-    if (v === 'Estudio') {
-      label.textContent = '¿Dónde estudiás?';
-      input.placeholder = 'Universidad / instituto';
-      input.name = 'institucion';
-      field.style.display = 'flex';
-    } else if (v === 'Trabajo') {
-      label.textContent = '¿Dónde trabajás?';
-      input.placeholder = 'Empresa / organización';
-      input.name = 'empresa';
-      field.style.display = 'flex';
-    } else if (v === 'Estudio y trabajo') {
-      label.textContent = '¿Dónde estudiás y trabajás?';
-      input.placeholder = 'Universidad y/o empresa';
-      input.name = 'institucion_empresa';
-      field.style.display = 'flex';
-    }
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn    = form.querySelector('.btn-submit');
-    const email  = document.getElementById('f-email').value.toLowerCase().trim();
-    // Firestore no acepta '/' en IDs — encodeURIComponent lo evita
-    const emailId = encodeURIComponent(email);
-
-    btn.textContent = 'Verificando...';
-    btn.disabled = true;
-
-    // — Chequeo duplicado en Firestore —
-    try {
-      const snap = await getDoc(doc(db, 'beta_waitlist', emailId));
-      if (snap.exists()) {
-        dupMsg.style.display = 'block';
-        btn.textContent = 'Quiero estar en la beta →';
-        btn.disabled = false;
-        return;
-      }
-    } catch (err) {
-      console.warn('Firestore check falló, continuando:', err);
-    }
-
-    dupMsg.style.display = 'none';
-    btn.textContent = 'Enviando...';
-
-    // — Envío a Formspree —
-    try {
-      const res = await fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: { 'Accept': 'application/json' }
-      });
-      if (res.ok) {
-        // Guardar email en Firestore para futuras verificaciones
-        try {
-          await setDoc(doc(db, 'beta_waitlist', emailId), {
-            email,
-            nombre:   document.getElementById('f-name').value.trim(),
-            apellido: document.getElementById('f-last').value.trim(),
-            edad:     document.getElementById('f-age').value,
-            fecha:    new Date().toISOString()
-          });
-        } catch (err) {
-          console.warn('No se pudo guardar en Firestore:', err);
+      @media (max-width: 400px) {
+        .hero-title {
+          font-size: 2.6rem;
         }
-        mostrarExito();
-      } else {
-        btn.textContent = 'Error — intentá de nuevo';
-        btn.disabled = false;
+        nav {
+          padding: 0.85rem 1.25rem;
+        }
+        .section-problem,
+        .section-how,
+        .section-vs,
+        .section-quote,
+        .section-features,
+        .section-manifesto,
+        .section-beta,
+        .section-origin {
+          padding: 3rem 1.25rem;
+        }
       }
-    } catch {
-      btn.textContent = 'Error — intentá de nuevo';
-      btn.disabled = false;
-    }
-  });
+    </style>
+  </head>
+  <body>
+    <!-- NAV: fondo sólido, siempre visible -->
+    <nav>
+      <a href="#" class="nav-logo"
+        ><span class="rest">PE</span><span class="bb">BB</span
+        ><span class="rest">LE</span></a
+      >
+      <ul class="nav-links">
+        <li><a href="#como-funciona">Cómo funciona</a></li>
+        <li><a href="#diferencial">Por qué Pebble</a></li>
+        <li><a href="#beta">Unirse a la beta</a></li>
+      </ul>
+    </nav>
 
-  function mostrarExito() {
-    form.style.display = 'none';
-    document.querySelector('.beta-title').style.display   = 'none';
-    document.querySelector('.beta-subtitle').style.display = 'none';
-    document.getElementById('formSuccess').style.display  = 'block';
-    document.querySelector('.beta-inner').classList.add('success-mode');
-  }
-</script>
-</body>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-left">
+        <p class="hero-eyebrow">Conexión real antes del primer contacto</p>
+        <h1 class="hero-title">
+          Ya se<br />conocieron.<br /><span class="accent"
+            >Todavía no<br />lo saben.</span
+          >
+        </h1>
+        <p class="hero-subtitle">
+          Tu gemelo digital ya habló con el suyo. Ya hay contexto, afinidad y
+          algo que cuidar. Solo falta que se encuentren.
+        </p>
+        <div class="hero-cta">
+          <a href="#beta" class="btn-primary">Quiero estar en la beta</a>
+          <a href="#como-funciona" class="btn-secondary">Cómo funciona</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="twin-cards">
+          <div class="twin-card">
+            <svg class="twin-card-avatar" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="20" fill="#FFBB30" />
+              <circle cx="20" cy="16" r="7" fill="#FF9700" />
+              <ellipse cx="20" cy="34" rx="11" ry="8" fill="#FF9700" />
+            </svg>
+            <div class="twin-card-name">Gemelo de Sofía</div>
+            <div class="twin-card-msg">
+              "Me encanta que también pienses que los silencios cómodos dicen
+              más que las conversaciones perfectas."
+            </div>
+          </div>
+          <div class="compatibility-badge">92% afinidad</div>
+          <div class="twin-card">
+            <svg class="twin-card-avatar" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="20" fill="#4D4D4D" />
+              <circle cx="20" cy="16" r="7" fill="#888" />
+              <ellipse cx="20" cy="34" rx="11" ry="8" fill="#888" />
+            </svg>
+            <div class="twin-card-name">Gemelo de Mateo</div>
+            <div class="twin-card-msg">
+              "Exacto. Las palabras de más a veces arruinan lo que estaba bien."
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="section-problem">
+      <div class="problem-grid">
+        <div class="reveal">
+          <p class="problem-label">El problema</p>
+          <h2 class="problem-title">
+            Las apps optimizan actividad.<br />No compatibilidad.
+          </h2>
+          <p class="problem-body">
+            Nunca fue tan fácil hablar con alguien. Y nunca fue tan difícil
+            conocer a alguien de verdad. Los matches se acumulan, las
+            conversaciones se evaporan y la sensación que queda es de haber
+            perdido el tiempo.
+          </p>
+        </div>
+        <div class="stats-stack reveal">
+          <div class="stat-item">
+            <div class="stat-number">7 de <span>10</span></div>
+            <div class="stat-label">
+              usuarios calificó su experiencia con apps de citas con 3 o menos
+              sobre 6
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number"><span>84%</span></div>
+            <div class="stat-label">
+              mostró interés real en conocer a alguien a través de un gemelo
+              digital
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number"><span>65%</span></div>
+            <div class="stat-label">
+              considera muy útil ver compatibilidad antes del primer mensaje
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section-how" id="como-funciona">
+      <div class="section-header reveal">
+        <span class="section-label">Cómo funciona</span>
+        <h2 class="section-title">
+          Tres etapas. Una conexión que ya existe antes del encuentro.
+        </h2>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card reveal">
+          <span class="step-number">01</span><span class="step-icon">◎</span>
+          <h3 class="step-title">Creás tu gemelo</h3>
+          <p class="step-body">
+            Respondés un cuestionario de personalidad. La IA construye una
+            representación autónoma de quién sos: tus valores, tu forma de
+            relacionarte, lo que buscás en el otro.
+          </p>
+        </div>
+        <div class="step-card reveal" style="transition-delay: 0.15s">
+          <span class="step-number">02</span><span class="step-icon">⟡</span>
+          <h3 class="step-title">Los gemelos se conocen</h3>
+          <p class="step-body">
+            Tu gemelo interactúa de forma autónoma con otros. Conversan,
+            atraviesan escenarios, construyen contexto. Vos no hacés nada. Ellos
+            trabajan por vos.
+          </p>
+        </div>
+        <div class="step-card reveal" style="transition-delay: 0.3s">
+          <span class="step-number">03</span><span class="step-icon">◈</span>
+          <h3 class="step-title">Llegás con historia</h3>
+          <p class="step-body">
+            Cuando la compatibilidad supera el umbral, te avisamos. Podés leer
+            todo lo que hablaron, conversar con el gemelo del otro, o escribirle
+            directo. Vos elegís cuándo y cómo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEMO -->
+    <section class="section-demo">
+      <div class="demo-inner">
+        <div class="demo-header reveal">
+          <span class="section-label">El producto</span>
+          <h2 class="section-title">
+            Así se ve una conexión antes del primer hola.
+          </h2>
+        </div>
+        <div class="demo-phone-wrap">
+          <div class="demo-phone reveal">
+            <div class="demo-phone-notch"></div>
+            <div class="demo-phone-header">
+              <div class="demo-phone-avatar">M</div>
+              <div>
+                <div class="demo-phone-name">Gemelo de Mateo</div>
+                <div class="demo-phone-sub">hablando con gemelo de Sofía</div>
+              </div>
+            </div>
+            <div class="demo-score">
+              <div><div class="demo-score-label">Afinidad actual</div></div>
+              <div class="demo-score-value">92%</div>
+            </div>
+            <div class="chat-label">Gemelo de Sofía</div>
+            <div class="chat-bubble left">
+              <span class="bubble-text"
+                >¿Vos también sentís que las primeras citas son como una
+                entrevista de trabajo?</span
+              >
+            </div>
+            <div class="chat-label" style="text-align: right">Tu gemelo</div>
+            <div class="chat-bubble right">
+              <span class="bubble-text"
+                >Sí, y terminás siendo la versión que creés que el otro quiere
+                ver.</span
+              >
+            </div>
+            <div class="chat-bubble left">
+              <span class="bubble-text"
+                >Exacto. Por eso me gustás. Sé que con vos no tendría que
+                actuar.</span
+              >
+            </div>
+            <div class="demo-unlock">
+              <div class="demo-unlock-text">
+                🔓 Compatibilidad alcanzada — ya podés hablar con Sofía
+              </div>
+            </div>
+          </div>
+          <div class="demo-caption reveal" style="transition-delay: 0.2s">
+            <h3 class="demo-caption-title">
+              Tu gemelo habla.<br />Vos llegás con contexto.
+            </h3>
+            <p>
+              Mientras hacés tu vida, tu gemelo construye una conexión real con
+              alguien que puede importarte. Cuando hay compatibilidad genuina,
+              te avisamos.
+            </p>
+            <p>
+              Podés leer toda la conversación, hablar con el gemelo del otro
+              para practicar, o ir directo a la persona.
+            </p>
+            <div class="demo-steps-mini">
+              <div class="demo-step-mini">
+                <div class="demo-step-dot"></div>
+                <div class="demo-step-text">
+                  Leé el historial completo de los gemelos
+                </div>
+              </div>
+              <div class="demo-step-mini">
+                <div class="demo-step-dot"></div>
+                <div class="demo-step-text">
+                  Hablá con el gemelo del otro antes de decidir
+                </div>
+              </div>
+              <div class="demo-step-mini">
+                <div class="demo-step-dot"></div>
+                <div class="demo-step-text">
+                  Escribile directo cuando estés listo/a
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VS TABLE -->
+    <section class="section-vs" id="diferencial">
+      <div class="vs-inner">
+        <div class="vs-header reveal">
+          <span class="section-label" style="color: var(--orange)"
+            >Por qué Pebble</span
+          >
+          <h2 class="section-title" style="color: var(--cream); margin: 0 auto">
+            No es una app de citas más.<br />Es otra cosa.
+          </h2>
+        </div>
+        <table
+          class="vs-table reveal"
+          aria-label="Comparación Pebble vs apps actuales"
+        >
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col">Apps actuales</th>
+              <th scope="col">Pebble</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Primer filtro</td>
+              <td>Foto y apariencia física</td>
+              <td>Personalidad y valores</td>
+            </tr>
+            <tr>
+              <td>Cómo empieza la conversación</td>
+              <td>Mensaje en frío sin contexto</td>
+              <td>Ya hay historia antes del primer hola</td>
+            </tr>
+            <tr>
+              <td>Conocés la personalidad del otro</td>
+              <td>Después de hablar mucho</td>
+              <td>Antes de escribirle</td>
+            </tr>
+            <tr>
+              <td>Optimiza</td>
+              <td>Cantidad de matches</td>
+              <td>Calidad del vínculo</td>
+            </tr>
+            <tr>
+              <td>Podés comprender antes de hablar</td>
+              <td><span class="vs-no">✗</span></td>
+              <td>Hablá con el gemelo del otro</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Versión mobile — tarjetas por feature -->
+        <div class="vs-mobile reveal">
+          <div class="vs-mob-row">
+            <div class="vs-mob-feature">Primer filtro</div>
+            <div class="vs-mob-cols">
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge them">Apps actuales</span
+                ><span class="vs-mob-them-text">Foto y apariencia física</span>
+              </div>
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge us">Pebble</span
+                ><span class="vs-mob-us-text">Personalidad y valores</span>
+              </div>
+            </div>
+          </div>
+          <div class="vs-mob-row">
+            <div class="vs-mob-feature">Cómo empieza la conversación</div>
+            <div class="vs-mob-cols">
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge them">Apps actuales</span
+                ><span class="vs-mob-them-text"
+                  >Mensaje en frío sin contexto</span
+                >
+              </div>
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge us">Pebble</span
+                ><span class="vs-mob-us-text"
+                  >Ya hay historia antes del primer hola</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="vs-mob-row">
+            <div class="vs-mob-feature">Conocés la personalidad del otro</div>
+            <div class="vs-mob-cols">
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge them">Apps actuales</span
+                ><span class="vs-mob-them-text">Después de hablar mucho</span>
+              </div>
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge us">Pebble</span
+                ><span class="vs-mob-us-text">Antes de escribirle</span>
+              </div>
+            </div>
+          </div>
+          <div class="vs-mob-row">
+            <div class="vs-mob-feature">Optimiza</div>
+            <div class="vs-mob-cols">
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge them">Apps actuales</span
+                ><span class="vs-mob-them-text">Cantidad de matches</span>
+              </div>
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge us">Pebble</span
+                ><span class="vs-mob-us-text">Calidad del vínculo</span>
+              </div>
+            </div>
+          </div>
+          <div class="vs-mob-row">
+            <div class="vs-mob-feature">Podés comprender antes de hablar</div>
+            <div class="vs-mob-cols">
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge them">Apps actuales</span
+                ><span class="vs-mob-them-text vs-no">✗</span>
+              </div>
+              <div class="vs-mob-col">
+                <span class="vs-mob-badge us">Pebble</span
+                ><span class="vs-mob-us-text"
+                  >Hablá con el gemelo del otro</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUOTE -->
+    <section class="section-quote">
+      <p class="quote-text reveal">
+        "Para que el primer encuentro<br />se sienta como
+        <em>un reencuentro</em>."
+      </p>
+      <span class="quote-source"
+        >Pebble — conexión real antes del primer contacto</span
+      >
+    </section>
+
+    <!-- FEATURES (sin freemium) -->
+    <section class="section-features">
+      <div class="features-grid">
+        <div class="features-left reveal">
+          <span class="section-label">Qué te da Pebble</span>
+          <h2 class="section-title">
+            Más que una app de citas. Un proceso de conexión.
+          </h2>
+          <p>
+            Pebble no es un catálogo de perfiles. Es una plataforma que
+            construye el vínculo antes de que te atrevas a dar el primer paso.
+          </p>
+        </div>
+        <div class="features-right reveal">
+          <div class="feature-row">
+            <div class="feature-dot"></div>
+            <div class="feature-content">
+              <div class="feature-name">Gemelo digital con IA</div>
+              <div class="feature-desc">
+                Una representación autónoma de tu personalidad que interactúa
+                por vos mientras hacés tu vida.
+              </div>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-dot"></div>
+            <div class="feature-content">
+              <div class="feature-name">Simulaciones de escenarios</div>
+              <div class="feature-desc">
+                Los gemelos atraviesan situaciones reales que revelan valores,
+                humor y formas de resolver conflictos.
+              </div>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-dot"></div>
+            <div class="feature-content">
+              <div class="feature-name">Desbloqueo progresivo</div>
+              <div class="feature-desc">
+                La información personal se revela a medida que crece la
+                compatibilidad. Vos controlás cuándo mostrás más.
+              </div>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-dot"></div>
+            <div class="feature-content">
+              <div class="feature-name">Para todas las orientaciones</div>
+              <div class="feature-desc">
+                Como los pingüinos de Adelia, que eligen sin distinción. Pebble
+                es un espacio para todos.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLANES FREE vs PREMIUM -->
+    <section class="section-plans">
+      <div class="plans-inner">
+        <div class="plans-header reveal">
+          <span class="section-label">Planes</span>
+          <h2 class="section-title">Empezá gratis. Conectá sin límites.</h2>
+        </div>
+        <div class="plans-grid">
+          <!-- FREE -->
+          <div class="plan-card reveal">
+            <span class="plan-badge">Gratis</span>
+            <div class="plan-name">Free</div>
+            <div class="plan-price">$0</div>
+            <div class="plan-price-sub">Para siempre</div>
+            <div class="plan-divider"></div>
+            <div class="plan-items">
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Creá tu gemelo digital</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Interacciones diarias limitadas</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Ver historial de conversaciones</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Acceso al score de compatibilidad</span>
+              </div>
+              <div class="plan-item excluded">
+                <span class="plan-item-icon">—</span
+                ><span>Interacciones limitadas</span>
+              </div>
+              <div class="plan-item excluded">
+                <span class="plan-item-icon">—</span
+                ><span>Menor visibilidad en el feed</span>
+              </div>
+              <div class="plan-item excluded">
+                <span class="plan-item-icon">—</span
+                ><span>Personalización superficial del gemelo</span>
+              </div>
+              <div class="plan-item excluded">
+                <span class="plan-item-icon">—</span
+                ><span>Simulaciones de escenarios limitadas</span>
+              </div>
+            </div>
+          </div>
+          <!-- PREMIUM -->
+          <div class="plan-card premium reveal" style="transition-delay: 0.15s">
+            <span class="plan-badge">Recomendado</span>
+            <div class="plan-name">Premium</div>
+            <div class="plan-price">$5</div>
+            <div class="plan-price-sub">por mes · cancelá cuando quieras</div>
+            <div class="plan-divider"></div>
+            <div class="plan-items">
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Interacciones ilimitadas todos los días</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Mayor visibilidad dentro del feed</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Personalización profunda del gemelo</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Simulaciones de escenarios ilimitadas</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Acceso prioritario a nuevas funciones</span>
+              </div>
+              <div class="plan-item included">
+                <span class="plan-item-icon">✓</span
+                ><span>Soporte prioritario</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MANIFIESTO -->
+    <section class="section-manifesto">
+      <div class="manifesto-inner">
+        <span class="manifesto-eyebrow reveal">Para los que todavía creen</span>
+        <div class="manifesto-lines">
+          <p class="manifesto-line">
+            Para los que borraron la app.
+            <span class="hl">Y la volvieron a bajar.</span>
+          </p>
+          <p class="manifesto-line" style="transition-delay: 0.1s">
+            Para los que saben que si alguien los conociera de verdad,
+            <span class="hl">se quedaría.</span>
+          </p>
+          <p class="manifesto-line" style="transition-delay: 0.2s">
+            Para los que tuvieron suficientes conversaciones que
+            <span class="hl">no llegaron a nada.</span>
+          </p>
+          <p class="manifesto-line" style="transition-delay: 0.3s">
+            Para los que todavía tienen fe en que
+            <span class="hl">existe alguien para ellos.</span>
+          </p>
+          <p class="manifesto-line" style="transition-delay: 0.4s">
+            Para los que quieren que cuando llegue,
+            <span class="hl">no sea casualidad.</span>
+          </p>
+        </div>
+        <div class="manifesto-closer reveal">
+          <span>PE</span><span class="bb">BB</span><span>LE</span><br />
+          <span
+            style="
+              font-size: clamp(1rem, 1.5vw, 1.3rem);
+              font-weight: 300;
+              color: var(--gray);
+              font-family: var(--font-serif);
+              font-style: italic;
+            "
+            >Conexión real antes del primer contacto.</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ORIGIN -->
+    <section class="section-origin" id="nosotros">
+      <div class="origin-visual">
+        <div class="origin-ring"></div>
+        <div class="origin-ring"></div>
+        <div class="origin-ring"></div>
+        <div class="pebble-stone"></div>
+      </div>
+      <div class="origin-text reveal">
+        <span class="section-label">Por qué Pebble</span>
+        <h2 class="section-title">
+          Una piedra, una elección. Para toda la vida.
+        </h2>
+        <p>
+          Los pingüinos de Adelia tienen uno de los rituales de cortejo más
+          precisos del reino animal. Un pingüino recorre largas distancias para
+          encontrar la piedra perfecta y ofrecérsela a quien eligió. No
+          cualquier piedra. La indicada.
+        </p>
+        <p>
+          Lo que hace especial este ritual es que no distingue género ni
+          orientación. Los pingüinos eligen por elección, no por convención.
+        </p>
+        <p>
+          Ese gesto es lo que Pebble quiere devolver a las relaciones digitales.
+          La piedra no es un objeto: es la primera señal de que alguien te vio,
+          te eligió, y está dispuesto a hacer algo por eso.
+        </p>
+      </div>
+    </section>
+
+    <!-- BETA FORM conectado a Formspree -->
+    <section class="section-beta" id="beta">
+      <div class="beta-inner">
+        <!-- Columna izquierda: formulario -->
+        <div class="beta-content">
+          <h2 class="beta-title reveal">
+            <span>PE</span><span class="bb">BB</span><span>LE</span>
+          </h2>
+          <p class="beta-subtitle reveal">
+            Estamos construyendo algo diferente.<br />Sé de los primeros en
+            probarlo.
+          </p>
+
+          <form
+            class="beta-form reveal"
+            id="betaForm"
+            action="https://formspree.io/f/mzdwgqvj"
+            method="POST"
+          >
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label" for="f-name">Nombre</label>
+                <input
+                  class="form-input"
+                  type="text"
+                  id="f-name"
+                  name="nombre"
+                  placeholder="Tu nombre"
+                  required
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-last">Apellido</label>
+                <input
+                  class="form-input"
+                  type="text"
+                  id="f-last"
+                  name="apellido"
+                  placeholder="Tu apellido"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="f-email">Email</label>
+              <input
+                class="form-input"
+                type="email"
+                id="f-email"
+                name="email"
+                placeholder="tu@email.com"
+                required
+              />
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label" for="f-age">Edad</label>
+                <input
+                  class="form-input"
+                  type="number"
+                  id="f-age"
+                  name="edad"
+                  placeholder="Tu edad"
+                  min="18"
+                  max="99"
+                  required
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="f-ocupacion">Ocupación</label>
+                <select
+                  class="form-input"
+                  id="f-ocupacion"
+                  name="ocupacion"
+                  required
+                >
+                  <option value="" disabled selected>
+                    Seleccioná una opción
+                  </option>
+                  <option value="Estudio">Estudio</option>
+                  <option value="Trabajo">Trabajo</option>
+                  <option value="Estudio y trabajo">Estudio y trabajo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-field" id="field-donde" style="display: none">
+              <label class="form-label" id="label-donde" for="f-donde"
+                >¿Dónde estudiás?</label
+              >
+              <input
+                class="form-input"
+                type="text"
+                id="f-donde"
+                name="institucion"
+                placeholder="Universidad / instituto"
+              />
+            </div>
+
+            <!-- campo oculto para identificar la fuente -->
+            <input
+              type="hidden"
+              name="_subject"
+              value="Nueva inscripción beta Pebble"
+            />
+            <input type="hidden" name="_next" value="" />
+
+            <div class="form-duplicate" id="formDuplicate">
+              <p>
+                ⚠ Este email ya está en la lista. Te avisamos cuando sea tu
+                turno.
+              </p>
+            </div>
+            <button type="submit" class="btn-submit">
+              Quiero estar en la beta →
+            </button>
+            <p class="form-note">
+              No spam. Solo te avisamos cuando estés listo para entrar.
+            </p>
+          </form>
+
+          <div class="form-success" id="formSuccess">
+            <svg class="form-success-icon" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="32" fill="rgba(255,117,31,0.12)" />
+              <path
+                d="M20 32 L28 40 L44 24"
+                stroke="#FF751F"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div class="form-success-title">Ya estás en lista.</div>
+            <div class="form-success-sub">
+              Tu gemelo se está preparando.<br />Te avisamos cuando sea el
+              momento.
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: imagen pingüino -->
+        <div class="beta-image reveal">
+          <img src="./images/penguin-outline2.png" alt="Pebble penguin" />
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <a href="#" class="footer-logo"
+        ><span class="rest">PE</span><span class="bb">BB</span
+        ><span class="rest">LE</span></a
+      >
+      <span class="footer-tagline">Ya se conocieron. Todavía no lo saben.</span>
+    </footer>
+
+    <script>
+      // Siempre empezar arriba al refrescar
+      if ("scrollRestoration" in history) {
+        history.scrollRestoration = "manual";
+      }
+
+      window.onload = () => {
+        window.scrollTo(0, 0);
+      };
+    </script>
+
+    <script>
+      // Scroll reveal
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add("visible");
+              observer.unobserve(e.target);
+            }
+          });
+        },
+        { threshold: 0.12 },
+      );
+      document
+        .querySelectorAll(".reveal, .manifesto-line")
+        .forEach((el) => observer.observe(el));
+    </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      // Conseguir estados de firestore
+      const db = getFirestore(
+        initializeApp({
+          apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+          authDomain: "pebble-78e95.firebaseapp.com",
+          projectId: "pebble-78e95",
+          storageBucket: "pebble-78e95.firebasestorage.app",
+          messagingSenderId: "56434257024",
+          appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+        }),
+      );
+
+      const form = document.getElementById("betaForm");
+      const dupMsg = document.getElementById("formDuplicate");
+
+      // Ocultar aviso al editar email
+      document.getElementById("f-email").addEventListener("input", () => {
+        dupMsg.style.display = "none";
+      });
+
+      // Mostrar campo institución/empresa según ocupación
+      document.getElementById("f-ocupacion").addEventListener("change", (e) => {
+        const v = e.target.value;
+        const field = document.getElementById("field-donde");
+        const label = document.getElementById("label-donde");
+        const input = document.getElementById("f-donde");
+        if (v === "Estudio") {
+          label.textContent = "¿Dónde estudiás?";
+          input.placeholder = "Universidad / instituto";
+          input.name = "institucion";
+          field.style.display = "flex";
+        } else if (v === "Trabajo") {
+          label.textContent = "¿Dónde trabajás?";
+          input.placeholder = "Empresa / organización";
+          input.name = "empresa";
+          field.style.display = "flex";
+        } else if (v === "Estudio y trabajo") {
+          label.textContent = "¿Dónde estudiás y trabajás?";
+          input.placeholder = "Universidad y/o empresa";
+          input.name = "institucion_empresa";
+          field.style.display = "flex";
+        }
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector(".btn-submit");
+        const email = document
+          .getElementById("f-email")
+          .value.toLowerCase()
+          .trim();
+        // Firestore no acepta '/' en IDs — encodeURIComponent lo evita
+        const emailId = encodeURIComponent(email);
+
+        btn.textContent = "Verificando...";
+        btn.disabled = true;
+
+        // — Chequeo duplicado en Firestore —
+        try {
+          const snap = await getDoc(doc(db, "beta_waitlist", emailId));
+          if (snap.exists()) {
+            dupMsg.style.display = "block";
+            btn.textContent = "Quiero estar en la beta →";
+            btn.disabled = false;
+            return;
+          }
+        } catch (err) {
+          console.warn("Firestore check falló, continuando:", err);
+        }
+
+        dupMsg.style.display = "none";
+        btn.textContent = "Enviando...";
+
+        // — Envío a Formspree —
+        try {
+          const res = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { Accept: "application/json" },
+          });
+          if (res.ok) {
+            // Guardar email en Firestore para futuras verificaciones
+            try {
+              await setDoc(doc(db, "beta_waitlist", emailId), {
+                email,
+                nombre: document.getElementById("f-name").value.trim(),
+                apellido: document.getElementById("f-last").value.trim(),
+                edad: document.getElementById("f-age").value,
+                fecha: new Date().toISOString(),
+              });
+            } catch (err) {
+              console.warn("No se pudo guardar en Firestore:", err);
+            }
+            mostrarExito();
+          } else {
+            btn.textContent = "Error — intentá de nuevo";
+            btn.disabled = false;
+          }
+        } catch {
+          btn.textContent = "Error — intentá de nuevo";
+          btn.disabled = false;
+        }
+      });
+
+      function mostrarExito() {
+        form.style.display = "none";
+        document.querySelector(".beta-title").style.display = "none";
+        document.querySelector(".beta-subtitle").style.display = "none";
+        document.getElementById("formSuccess").style.display = "block";
+        document.querySelector(".beta-inner").classList.add("success-mode");
+      }
+    </script>
+  </body>
 </html>

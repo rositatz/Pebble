@@ -1,836 +1,1731 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pebble — App</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  /* Brand */
-  --orange:       #FF751F;
-  --orange-mid:   #FF9700;
-  --orange-light: #FFBB30;
-  /* Surfaces — light, matching landing */
-  --bg:      #EEEDEC;
-  --surf-1:  #FFFFFF;
-  --surf-2:  #F5F4F3;
-  --surf-3:  #EEEDEC;
-  --surf-dark: #000000;
-  --border:  rgba(0,0,0,0.08);
-  --border2: rgba(0,0,0,0.13);
-  /* Text */
-  --text-primary:   #000000;
-  --text-secondary: #4D4D4D;
-  --text-muted:     rgba(0,0,0,0.35);
-  --text-inv:       #EEEDEC;
-  /* Fonts */
-  --font-display: 'Bricolage Grotesque', sans-serif;
-  --font-serif:   'Inria Serif', serif;
-  --font-body:    'Open Sans', sans-serif;
-  /* 8pt spacing grid */
-  --s1:4px; --s2:8px; --s3:12px; --s4:16px;
-  --s5:20px; --s6:24px; --s8:32px; --s10:40px; --s12:48px;
-  /* Heights */
-  --nav-top: 62px;
-  --nav-bot: 68px;
-  /* Radius */
-  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        /* Brand */
+        --orange: #ff751f;
+        --orange-mid: #ff9700;
+        --orange-light: #ffbb30;
+        /* Surfaces — light, matching landing */
+        --bg: #eeedec;
+        --surf-1: #ffffff;
+        --surf-2: #f5f4f3;
+        --surf-3: #eeedec;
+        --surf-dark: #000000;
+        --border: rgba(0, 0, 0, 0.08);
+        --border2: rgba(0, 0, 0, 0.13);
+        /* Text */
+        --text-primary: #000000;
+        --text-secondary: #4d4d4d;
+        --text-muted: rgba(0, 0, 0, 0.35);
+        --text-inv: #eeedec;
+        /* Fonts */
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-serif: "Inria Serif", serif;
+        --font-body: "Open Sans", sans-serif;
+        /* 8pt spacing grid */
+        --s1: 4px;
+        --s2: 8px;
+        --s3: 12px;
+        --s4: 16px;
+        --s5: 20px;
+        --s6: 24px;
+        --s8: 32px;
+        --s10: 40px;
+        --s12: 48px;
+        /* Heights */
+        --nav-top: 62px;
+        --nav-bot: 68px;
+        /* Radius */
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --r-xl: 18px;
+      }
 
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.5;
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.5;
+        min-height: 100vh;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
 
-/* ══════════════════════════════════════
+      /* ══════════════════════════════════════
    AUTH GATE
 ══════════════════════════════════════ */
-#auth-gate {
-  position: fixed; inset: 0; z-index: 999;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  padding: var(--s4);
-}
-#auth-gate.hidden { display: none; }
+      #auth-gate {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--s4);
+      }
+      #auth-gate.hidden {
+        display: none;
+      }
 
-.auth-wrap {
-  width: 100%; max-width: 420px;
-  display: flex; flex-direction: column; align-items: stretch;
-}
+      .auth-wrap {
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
 
-.auth-logo {
-  font-family: var(--font-display);
-  font-size: 2.6rem; font-weight: 800;
-  letter-spacing: -0.03em; text-align: center;
-  display: block; margin-bottom: var(--s2);
-  text-decoration: none;
-}
-.auth-logo .bb  { color: var(--orange); }
-.auth-logo .rest{ color: var(--text-primary); }
+      .auth-logo {
+        font-family: var(--font-display);
+        font-size: 2.6rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        text-align: center;
+        display: block;
+        margin-bottom: var(--s2);
+        text-decoration: none;
+      }
+      .auth-logo .bb {
+        color: var(--orange);
+      }
+      .auth-logo .rest {
+        color: var(--text-primary);
+      }
 
-.auth-tagline {
-  font-family: var(--font-serif);
-  font-size: 0.95rem; font-style: italic; font-weight: 300;
-  color: var(--text-secondary); text-align: center;
-  margin-bottom: var(--s8);
-}
+      .auth-tagline {
+        font-family: var(--font-serif);
+        font-size: 0.95rem;
+        font-style: italic;
+        font-weight: 300;
+        color: var(--text-secondary);
+        text-align: center;
+        margin-bottom: var(--s8);
+      }
 
-.auth-card {
-  background: var(--surf-1);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-xl);
-  padding: var(--s8);
-  display: flex; flex-direction: column; gap: var(--s5);
-  box-shadow: 0 4px 32px rgba(0,0,0,0.07);
-}
+      .auth-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border2);
+        border-radius: var(--r-xl);
+        padding: var(--s8);
+        display: flex;
+        flex-direction: column;
+        gap: var(--s5);
+        box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07);
+      }
 
-.auth-tabs {
-  display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--surf-2); border-radius: var(--r-md);
-  padding: 3px; gap: 3px;
-}
-.auth-tab {
-  padding: 10px; font-family: var(--font-body);
-  font-size: 0.8rem; font-weight: 600;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  background: transparent; color: var(--text-muted);
-  border: none; cursor: pointer; border-radius: var(--r-sm);
-  transition: background 0.2s, color 0.2s;
-  touch-action: manipulation;
-}
-.auth-tab.active { background: var(--orange); color: #fff; }
+      .auth-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: var(--surf-2);
+        border-radius: var(--r-md);
+        padding: 3px;
+        gap: 3px;
+      }
+      .auth-tab {
+        padding: 10px;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: transparent;
+        color: var(--text-muted);
+        border: none;
+        cursor: pointer;
+        border-radius: var(--r-sm);
+        transition:
+          background 0.2s,
+          color 0.2s;
+        touch-action: manipulation;
+      }
+      .auth-tab.active {
+        background: var(--orange);
+        color: #fff;
+      }
 
-.auth-form { display: flex; flex-direction: column; gap: var(--s4); }
-.auth-form.hidden { display: none; }
-.auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
-.auth-row .auth-field {  min-width: 0;}
+      .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--s4);
+      }
+      .auth-form.hidden {
+        display: none;
+      }
+      .auth-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--s3);
+      }
+      .auth-row .auth-field {
+        min-width: 0;
+      }
 
-.auth-field { display: flex; flex-direction: column; gap: var(--s1); }
-.auth-label {
-  font-family: var(--font-body); font-size: 0.68rem; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary);
-}
-.auth-input {
-  width: 100%;
-  background: var(--surf-2); border: 1px solid var(--border2);
-  color: var(--text-primary); font-family: var(--font-body); font-size: 0.9rem;
-  padding: 12px 14px; border-radius: var(--r-sm); outline: none;
-  transition: border-color 0.2s, background 0.2s;
-  touch-action: manipulation;
-}
-.auth-input::placeholder { color: var(--text-muted); }
-.auth-input:focus { border-color: var(--orange); background: var(--surf-1); }
+      .auth-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--s1);
+      }
+      .auth-label {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+      }
+      .auth-input {
+        width: 100%;
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        padding: 12px 14px;
+        border-radius: var(--r-sm);
+        outline: none;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+        touch-action: manipulation;
+      }
+      .auth-input::placeholder {
+        color: var(--text-muted);
+      }
+      .auth-input:focus {
+        border-color: var(--orange);
+        background: var(--surf-1);
+      }
 
-.auth-btn {
-  background: var(--text-primary); color: var(--text-inv);
-  font-family: var(--font-body); font-size: 0.88rem; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 14px; border: none; border-radius: var(--r-sm);
-  cursor: pointer; transition: background 0.2s, transform 0.15s;
-  touch-action: manipulation; min-height: 48px;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-}
-.auth-btn:hover { background: var(--orange); transform: translateY(-1px); }
-.auth-btn:active { transform: translateY(0); }
+      .auth-btn {
+        background: var(--text-primary);
+        color: var(--text-inv);
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 14px;
+        border: none;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.15s;
+        touch-action: manipulation;
+        min-height: 48px;
+        clip-path: polygon(
+          0 0,
+          calc(100% - 10px) 0,
+          100% 10px,
+          100% 100%,
+          10px 100%,
+          0 calc(100% - 10px)
+        );
+      }
+      .auth-btn:hover {
+        background: var(--orange);
+        transform: translateY(-1px);
+      }
+      .auth-btn:active {
+        transform: translateY(0);
+      }
 
-.auth-divider {
-  display: flex; align-items: center; gap: var(--s3);
-  font-size: 0.72rem; color: var(--text-muted);
-}
-.auth-divider::before, .auth-divider::after {
-  content: ''; flex: 1; height: 1px; background: var(--border);
-}
+      .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: var(--s3);
+        font-size: 0.72rem;
+        color: var(--text-muted);
+      }
+      .auth-divider::before,
+      .auth-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
 
-.auth-social { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--s3); }
-.auth-social-btn {
-  background: var(--surf-2); border: 1px solid var(--border2);
-  color: var(--text-secondary); font-family: var(--font-body);
-  font-size: 0.78rem; font-weight: 500;
-  padding: 10px var(--s2); border-radius: var(--r-sm);
-  cursor: pointer; display: flex; align-items: center;
-  justify-content: center; gap: var(--s2);
-  transition: border-color 0.2s, background 0.2s;
-  touch-action: manipulation; min-height: 44px;
-}
-.auth-social-btn:hover { border-color: var(--orange); background: var(--surf-1); color: var(--text-primary); }
+      .auth-social {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--s3);
+      }
+      .auth-social-btn {
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        color: var(--text-secondary);
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        font-weight: 500;
+        padding: 10px var(--s2);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--s2);
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+        touch-action: manipulation;
+        min-height: 44px;
+      }
+      .auth-social-btn:hover {
+        border-color: var(--orange);
+        background: var(--surf-1);
+        color: var(--text-primary);
+      }
 
-.auth-switch {
-  font-family: var(--font-body); font-size: 0.8rem;
-  color: var(--text-secondary); text-align: center;
-}
-.auth-switch button {
-  background: none; border: none; color: var(--orange);
-  font-weight: 600; cursor: pointer;
-  font-size: 0.8rem; font-family: var(--font-body);
-  touch-action: manipulation;
-}
-.auth-switch button:hover { text-decoration: underline; }
+      .auth-switch {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+      .auth-switch button {
+        background: none;
+        border: none;
+        color: var(--orange);
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-family: var(--font-body);
+        touch-action: manipulation;
+      }
+      .auth-switch button:hover {
+        text-decoration: underline;
+      }
 
-/* ══════════════════════════════════════
+      /* ══════════════════════════════════════
    APP SHELL
 ══════════════════════════════════════ */
-#app-shell { display: none; flex-direction: column; min-height: 100vh; }
-#app-shell.visible { display: flex; }
+      #app-shell {
+        display: none;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      #app-shell.visible {
+        display: flex;
+      }
 
-/* ── Top nav ── */
-.app-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-top);
-  background: var(--surf-1);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 var(--s8);
-  box-shadow: 0 1px 0 var(--border);
-}
-.app-nav-logo {
-  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800;
-  letter-spacing: -0.02em; text-decoration: none;
-}
-.app-nav-logo .bb  { color: var(--orange); }
-.app-nav-logo .rest{ color: var(--text-primary); }
+      /* ── Top nav ── */
+      .app-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-top);
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 var(--s8);
+        box-shadow: 0 1px 0 var(--border);
+      }
+      .app-nav-logo {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      .app-nav-logo .bb {
+        color: var(--orange);
+      }
+      .app-nav-logo .rest {
+        color: var(--text-primary);
+      }
 
-.app-nav-actions { display: flex; align-items: center; gap: var(--s3); }
-.nav-icon-btn {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: transparent; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary); position: relative;
-  transition: background 0.2s, color 0.2s;
-  touch-action: manipulation;
-}
-.nav-icon-btn:hover { background: var(--surf-2); color: var(--text-primary); }
-.notif-pip {
-  position: absolute; top: 8px; right: 8px;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--orange); border: 2px solid var(--surf-1);
-}
-.nav-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--text-primary);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 0.78rem; font-weight: 700;
-  color: var(--text-inv); cursor: pointer;
-  border: 2px solid transparent;
-  transition: border-color 0.2s;
-  touch-action: manipulation;
-}
-.nav-avatar:hover { border-color: var(--orange); }
+      .app-nav-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--s3);
+      }
+      .nav-icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        position: relative;
+        transition:
+          background 0.2s,
+          color 0.2s;
+        touch-action: manipulation;
+      }
+      .nav-icon-btn:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
+      .notif-pip {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .nav-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-inv);
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+        touch-action: manipulation;
+      }
+      .nav-avatar:hover {
+        border-color: var(--orange);
+      }
 
-/* ── Scroll area ── */
-.app-main {
-  margin-top: var(--nav-top);
-  margin-bottom: var(--nav-bot);
-  max-width: 780px;
-  width: 100%;
-  margin-left: auto; margin-right: auto;
-  padding: var(--s8) var(--s8);
-  display: flex; flex-direction: column; gap: var(--s10);
-}
+      /* ── Scroll area ── */
+      .app-main {
+        margin-top: var(--nav-top);
+        margin-bottom: var(--nav-bot);
+        max-width: 780px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding: var(--s8) var(--s8);
+        display: flex;
+        flex-direction: column;
+        gap: var(--s10);
+      }
 
-/* ── Section wrapper ── */
-.home-section { display: flex; flex-direction: column; gap: var(--s5); }
+      /* ── Section wrapper ── */
+      .home-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--s5);
+      }
 
-/* ── Greeting ── */
-.greeting-eyebrow {
-  font-family: var(--font-body); font-size: 0.7rem; font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase; color: var(--orange);
-}
-.greeting-title {
-  font-family: var(--font-display); font-size: 2rem; font-weight: 800;
-  letter-spacing: -0.03em; line-height: 1.1; color: var(--text-primary);
-}
-.greeting-title span { color: var(--orange); }
-.greeting-sub {
-  font-family: var(--font-serif); font-size: 1rem; font-weight: 300;
-  font-style: italic; color: var(--text-secondary); margin-top: var(--s1);
-}
+      /* ── Greeting ── */
+      .greeting-eyebrow {
+        font-family: var(--font-body);
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--orange);
+      }
+      .greeting-title {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        color: var(--text-primary);
+      }
+      .greeting-title span {
+        color: var(--orange);
+      }
+      .greeting-sub {
+        font-family: var(--font-serif);
+        font-size: 1rem;
+        font-weight: 300;
+        font-style: italic;
+        color: var(--text-secondary);
+        margin-top: var(--s1);
+      }
 
-/* ── Section heading ── */
-.sec-heading {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.sec-heading-title {
-  font-family: var(--font-display); font-size: 0.85rem; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
-}
-.sec-heading-link {
-  font-family: var(--font-body); font-size: 0.75rem; font-weight: 600;
-  color: var(--orange); text-decoration: none; letter-spacing: 0.04em;
-  display: flex; align-items: center; gap: 4px;
-  transition: gap 0.2s;
-}
-.sec-heading-link:hover { gap: 7px; }
+      /* ── Section heading ── */
+      .sec-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .sec-heading-title {
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .sec-heading-link {
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--orange);
+        text-decoration: none;
+        letter-spacing: 0.04em;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: gap 0.2s;
+      }
+      .sec-heading-link:hover {
+        gap: 7px;
+      }
 
-/* ── Gemelo banner ── */
-.gemelo-banner {
-  background: var(--text-primary);
-  border-radius: var(--r-lg);
-  padding: var(--s6) var(--s6);
-  display: flex; align-items: center; gap: var(--s5);
-  cursor: pointer; text-decoration: none;
-  transition: box-shadow 0.22s, transform 0.22s;
-  touch-action: manipulation;
-}
-.gemelo-banner:hover {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  transform: translateY(-2px);
-}
-.gemelo-orb {
-  width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--orange-light), var(--orange));
-  display: flex; align-items: center; justify-content: center;
-  animation: orb-pulse 3s ease-in-out infinite;
-}
-.gemelo-orb svg { width: 24px; height: 24px; }
-.gemelo-info { flex: 1; }
-.gemelo-info-title {
-  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
-  color: var(--text-inv); margin-bottom: 3px;
-}
-.gemelo-info-sub {
-  font-family: var(--font-body); font-size: 0.8rem;
-  color: rgba(238,237,236,0.6); line-height: 1.4;
-}
-.gemelo-info-sub strong { color: var(--orange-light); font-weight: 600; }
-.gemelo-live {
-  display: flex; align-items: center; gap: var(--s2); flex-shrink: 0;
-}
-.live-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: #4ade80;
-  box-shadow: 0 0 8px rgba(74,222,128,0.7);
-}
-.live-label {
-  font-family: var(--font-body); font-size: 0.65rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(238,237,236,0.5);
-}
-.gemelo-chevron { color: rgba(238,237,236,0.35); transition: transform 0.2s, color 0.2s; }
-.gemelo-banner:hover .gemelo-chevron { transform: translateX(4px); color: var(--orange-light); }
+      /* ── Gemelo banner ── */
+      .gemelo-banner {
+        background: var(--text-primary);
+        border-radius: var(--r-lg);
+        padding: var(--s6) var(--s6);
+        display: flex;
+        align-items: center;
+        gap: var(--s5);
+        cursor: pointer;
+        text-decoration: none;
+        transition:
+          box-shadow 0.22s,
+          transform 0.22s;
+        touch-action: manipulation;
+      }
+      .gemelo-banner:hover {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+        transform: translateY(-2px);
+      }
+      .gemelo-orb {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, var(--orange-light), var(--orange));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: orb-pulse 3s ease-in-out infinite;
+      }
+      .gemelo-orb svg {
+        width: 24px;
+        height: 24px;
+      }
+      .gemelo-info {
+        flex: 1;
+      }
+      .gemelo-info-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-inv);
+        margin-bottom: 3px;
+      }
+      .gemelo-info-sub {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: rgba(238, 237, 236, 0.6);
+        line-height: 1.4;
+      }
+      .gemelo-info-sub strong {
+        color: var(--orange-light);
+        font-weight: 600;
+      }
+      .gemelo-live {
+        display: flex;
+        align-items: center;
+        gap: var(--s2);
+        flex-shrink: 0;
+      }
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4ade80;
+        box-shadow: 0 0 8px rgba(74, 222, 128, 0.7);
+      }
+      .live-label {
+        font-family: var(--font-body);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(238, 237, 236, 0.5);
+      }
+      .gemelo-chevron {
+        color: rgba(238, 237, 236, 0.35);
+        transition:
+          transform 0.2s,
+          color 0.2s;
+      }
+      .gemelo-banner:hover .gemelo-chevron {
+        transform: translateX(4px);
+        color: var(--orange-light);
+      }
 
-/* ── Matches strip ── */
-.matches-strip {
-  display: flex;
-  gap: var(--s5);
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 6px 4px 10px;
-  scrollbar-width: none;
-}
+      /* ── Matches strip ── */
+      .matches-strip {
+        display: flex;
+        gap: var(--s5);
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 6px 4px 10px;
+        scrollbar-width: none;
+      }
 
-.matches-strip::-webkit-scrollbar { display: none; }
+      .matches-strip::-webkit-scrollbar {
+        display: none;
+      }
 
-.match-item {
-  flex-shrink: 0; display: flex; flex-direction: column;
-  align-items: center; gap: var(--s2);
-  text-decoration: none; cursor: pointer;
-  touch-action: manipulation;
-  padding: 4px;
-}
-.match-av-wrap { position: relative; }
-.match-av {
-  width: 58px; height: 58px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 1.15rem; font-weight: 700;
-  color: #fff; border: 2.5px solid var(--border2);
-  transition: border-color 0.2s, transform 0.2s;
-}
-.match-item:hover .match-av { border-color: var(--orange); transform: scale(1.06); }
-.match-av.is-new { border-color: var(--orange); }
-.match-new-pip {
-  position: absolute; bottom: 2px; right: 2px;
-  width: 13px; height: 13px; border-radius: 50%;
-  background: var(--orange); border: 2px solid var(--bg);
-}
-.match-score {
-  font-family: var(--font-display); font-size: 0.65rem; font-weight: 700;
-  color: var(--orange);
-}
-.match-name {
-  font-family: var(--font-body); font-size: 0.68rem;
-  color: var(--text-secondary); max-width: 58px; text-align: center;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+      .match-item {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--s2);
+        text-decoration: none;
+        cursor: pointer;
+        touch-action: manipulation;
+        padding: 4px;
+      }
+      .match-av-wrap {
+        position: relative;
+      }
+      .match-av {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #fff;
+        border: 2.5px solid var(--border2);
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+      }
+      .match-item:hover .match-av {
+        border-color: var(--orange);
+        transform: scale(1.06);
+      }
+      .match-av.is-new {
+        border-color: var(--orange);
+      }
+      .match-new-pip {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--bg);
+      }
+      .match-score {
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--orange);
+      }
+      .match-name {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        color: var(--text-secondary);
+        max-width: 58px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
-/* ── Section grid: 2 columns ── */
-.sec-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4);
-}
+      /* ── Section grid: 2 columns ── */
+      .sec-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--s4);
+      }
 
-.sec-card {
-  background: var(--surf-1);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: var(--s5) var(--s5) var(--s5);
-  display: flex; flex-direction: column; gap: var(--s3);
-  text-decoration: none; cursor: pointer;
-  transition: border-color 0.22s, transform 0.22s, box-shadow 0.22s;
-  touch-action: manipulation;
-}
-.sec-card:hover {
-  border-color: rgba(255,117,31,0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.08);
-}
-.sec-card:active { transform: translateY(0); }
+      .sec-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: var(--s5) var(--s5) var(--s5);
+        display: flex;
+        flex-direction: column;
+        gap: var(--s3);
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+          border-color 0.22s,
+          transform 0.22s,
+          box-shadow 0.22s;
+        touch-action: manipulation;
+      }
+      .sec-card:hover {
+        border-color: rgba(255, 117, 31, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+      }
+      .sec-card:active {
+        transform: translateY(0);
+      }
 
-.sec-icon {
-  width: 46px; height: 46px; border-radius: var(--r-md); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.sec-icon svg { width: 20px; height: 20px; }
-.si-matches { background: rgba(255,187,48,0.12); color: var(--orange-light); }
-.si-chats   { background: rgba(255,151,0,0.1);  color: var(--orange-mid); }
-.si-notif   { background: rgba(255,117,31,0.08); color: var(--orange); }
-.si-perfil  { background: rgba(0,0,0,0.05); color: var(--text-secondary); }
+      .sec-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: var(--r-md);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sec-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+      .si-matches {
+        background: rgba(255, 187, 48, 0.12);
+        color: var(--orange-light);
+      }
+      .si-chats {
+        background: rgba(255, 151, 0, 0.1);
+        color: var(--orange-mid);
+      }
+      .si-notif {
+        background: rgba(255, 117, 31, 0.08);
+        color: var(--orange);
+      }
+      .si-perfil {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-secondary);
+      }
 
-.sec-card-title {
-  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
-  color: var(--text-primary); letter-spacing: -0.01em;
-}
-.sec-card-desc {
-  font-family: var(--font-body); font-size: 0.78rem;
-  color: var(--text-secondary); line-height: 1.45; flex: 1;
-}
-.sec-card-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: var(--s1);
-}
-.sec-badge {
-  display: inline-flex; align-items: center;
-  background: rgba(255,117,31,0.1); color: var(--orange);
-  font-family: var(--font-body); font-size: 0.62rem; font-weight: 700;
-  letter-spacing: 0.04em; padding: 3px 9px; border-radius: 20px;
-}
-.sec-arrow {
-  color: var(--text-muted); flex-shrink: 0;
-  transition: transform 0.2s, color 0.2s;
-}
-.sec-card:hover .sec-arrow { transform: translateX(3px); color: var(--orange); }
+      .sec-card-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+      }
+      .sec-card-desc {
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        line-height: 1.45;
+        flex: 1;
+      }
+      .sec-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--s1);
+      }
+      .sec-badge {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255, 117, 31, 0.1);
+        color: var(--orange);
+        font-family: var(--font-body);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 3px 9px;
+        border-radius: 20px;
+      }
+      .sec-arrow {
+        color: var(--text-muted);
+        flex-shrink: 0;
+        transition:
+          transform 0.2s,
+          color 0.2s;
+      }
+      .sec-card:hover .sec-arrow {
+        transform: translateX(3px);
+        color: var(--orange);
+      }
 
-/* ── Divider ── */
-.home-divider {
-  height: 1px; background: var(--border); margin: 0;
-}
+      /* ── Divider ── */
+      .home-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0;
+      }
 
-/* ── Logout ── */
-.logout-btn {
-  background: none; border: 1px solid var(--border);
-  color: var(--text-muted); font-family: var(--font-body);
-  font-size: 0.75rem; font-weight: 500; letter-spacing: 0.06em;
-  text-transform: uppercase; padding: 10px var(--s4); border-radius: var(--r-sm);
-  cursor: pointer; transition: border-color 0.2s, color 0.2s;
-  display: inline-flex; align-items: center; gap: var(--s2);
-  touch-action: manipulation;
-}
-.logout-btn:hover { border-color: var(--orange); color: var(--orange); }
+      /* ── Logout ── */
+      .logout-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 10px var(--s4);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s2);
+        touch-action: manipulation;
+      }
+      .logout-btn:hover {
+        border-color: var(--orange);
+        color: var(--orange);
+      }
 
-/* ── Bottom nav ── */
-.app-bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-bot);
-  background: var(--surf-1);
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center;
-  padding: 0 var(--s4);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  box-shadow: 0 -1px 0 var(--border);
-}
-.bnav-item {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 4px; padding: var(--s2);
-  background: none; border: none; cursor: pointer;
-  color: var(--text-muted); text-decoration: none;
-  transition: color 0.2s; touch-action: manipulation; min-height: 48px;
-}
-.bnav-item:hover { color: var(--text-secondary); }
-.bnav-item.active { color: var(--orange); }
-.bnav-icon { position: relative; line-height: 1; }
-.bnav-icon svg { width: 22px; height: 22px; display: block; }
-.bnav-pip {
-  position: absolute; top: -3px; right: -5px;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--orange); border: 2px solid var(--surf-1);
-}
-.bnav-label {
-  font-family: var(--font-body); font-size: 0.58rem;
-  font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-}
-.bnav-center {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 4px; padding: var(--s2);
-  background: none; border: none; cursor: pointer;
-  text-decoration: none; touch-action: manipulation; min-height: 48px;
-}
-.bnav-center-orb {
-  width: 50px; height: 50px; border-radius: 50%;
-  background: var(--text-primary);
-  display: flex; align-items: center; justify-content: center;
-  margin-top: -20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  border: 3px solid var(--bg);
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-}
-.bnav-center:hover .bnav-center-orb {
-  transform: scale(1.08); background: var(--orange);
-  box-shadow: 0 6px 28px rgba(255,117,31,0.4);
-}
-.bnav-center-orb svg { width: 22px; height: 22px; }
-.bnav-center-label {
-  font-family: var(--font-body); font-size: 0.58rem;
-  font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.bnav-center:hover .bnav-center-label { color: var(--orange); }
+      /* ── Bottom nav ── */
+      .app-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-bot);
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 var(--s4);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        box-shadow: 0 -1px 0 var(--border);
+      }
+      .bnav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: var(--s2);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-item:hover {
+        color: var(--text-secondary);
+      }
+      .bnav-item.active {
+        color: var(--orange);
+      }
+      .bnav-icon {
+        position: relative;
+        line-height: 1;
+      }
+      .bnav-icon svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
+      .bnav-pip {
+        position: absolute;
+        top: -3px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .bnav-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .bnav-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: var(--s2);
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-center-orb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        border: 3px solid var(--bg);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+      }
+      .bnav-center:hover .bnav-center-orb {
+        transform: scale(1.08);
+        background: var(--orange);
+        box-shadow: 0 6px 28px rgba(255, 117, 31, 0.4);
+      }
+      .bnav-center-orb svg {
+        width: 22px;
+        height: 22px;
+      }
+      .bnav-center-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+      }
+      .bnav-center:hover .bnav-center-label {
+        color: var(--orange);
+      }
 
-/* ── Animations ── */
-@keyframes orb-pulse {
-  0%,100% { box-shadow: 0 0 12px rgba(255,117,31,0.3); }
-  50%      { box-shadow: 0 0 28px rgba(255,117,31,0.55); }
-}
-@keyframes fade-up {
-  from { opacity:0; transform:translateY(14px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-.fu { opacity:0; animation: fade-up 0.42s ease forwards; }
-.fu:nth-child(1) { animation-delay:0.04s; }
-.fu:nth-child(2) { animation-delay:0.09s; }
-.fu:nth-child(3) { animation-delay:0.14s; }
-.fu:nth-child(4) { animation-delay:0.19s; }
-.fu:nth-child(5) { animation-delay:0.24s; }
-.fu:nth-child(6) { animation-delay:0.29s; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
-}
-#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
-#loadingOverlay.hide{opacity:0;pointer-events:none}
-.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+      /* ── Animations ── */
+      @keyframes orb-pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 12px rgba(255, 117, 31, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 28px rgba(255, 117, 31, 0.55);
+        }
+      }
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .fu {
+        opacity: 0;
+        animation: fade-up 0.42s ease forwards;
+      }
+      .fu:nth-child(1) {
+        animation-delay: 0.04s;
+      }
+      .fu:nth-child(2) {
+        animation-delay: 0.09s;
+      }
+      .fu:nth-child(3) {
+        animation-delay: 0.14s;
+      }
+      .fu:nth-child(4) {
+        animation-delay: 0.19s;
+      }
+      .fu:nth-child(5) {
+        animation-delay: 0.24s;
+      }
+      .fu:nth-child(6) {
+        animation-delay: 0.29s;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      #loadingOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+      }
+      #loadingOverlay.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-spinner {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: var(--orange);
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-/* ══════════════════════════════════════
+      /* ══════════════════════════════════════
    RESPONSIVE — MOBILE
 ══════════════════════════════════════ */
-@media (max-width: 600px) {
-  /* Nav */
-  .app-nav { padding: 0 var(--s4); }
+      @media (max-width: 600px) {
+        /* Nav */
+        .app-nav {
+          padding: 0 var(--s4);
+        }
 
-  /* Contenido principal */
-  .app-main { padding: var(--s6) var(--s4); gap: var(--s8); }
+        /* Contenido principal */
+        .app-main {
+          padding: var(--s6) var(--s4);
+          gap: var(--s8);
+        }
 
-  /* Saludo */
-  .greeting-title { font-size: 1.65rem; }
+        /* Saludo */
+        .greeting-title {
+          font-size: 1.65rem;
+        }
 
-  /* Cards 2col → 1col en pantallas muy chicas */
-  @media (max-width: 360px) {
-    .sec-grid { grid-template-columns: 1fr; }
-  }
+        /* Cards 2col → 1col en pantallas muy chicas */
+        @media (max-width: 360px) {
+          .sec-grid {
+            grid-template-columns: 1fr;
+          }
+        }
 
-  /* Auth form — apellido y nombre debajo del nombre */
-  .auth-row { grid-template-columns: 1fr; }
+        /* Auth form — apellido y nombre debajo del nombre */
+        .auth-row {
+          grid-template-columns: 1fr;
+        }
 
-  /* Auth card — menos padding */
-  .auth-card { padding: var(--s6); }
+        /* Auth card — menos padding */
+        .auth-card {
+          padding: var(--s6);
+        }
 
-  /* Bottom nav — labels más chicos */
-  .bot-label { font-size: 0.58rem; }
-}
-</style>
-</head>
-<body>
-<div id="loadingOverlay"><div class="loading-spinner"></div></div>
+        /* Bottom nav — labels más chicos */
+        .bot-label {
+          font-size: 0.58rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
-<!-- ══════════════════════════════════════
+    <!-- ══════════════════════════════════════
      AUTH GATE
 ══════════════════════════════════════ -->
-<div id="auth-gate">
-  <div class="auth-wrap">
+    <div id="auth-gate">
+      <div class="auth-wrap">
+        <a
+          href="./index.html"
+          class="auth-logo"
+          aria-label="Pebble — volver al inicio"
+        >
+          <span class="rest">PE</span><span class="bb">BB</span
+          ><span class="rest">LE</span>
+        </a>
+        <p class="auth-tagline">Conexión real antes del primer contacto.</p>
 
-    <a href="./index.html" class="auth-logo" aria-label="Pebble — volver al inicio">
-      <span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span>
-    </a>
-    <p class="auth-tagline">Conexión real antes del primer contacto.</p>
+        <div class="auth-card">
+          <div class="auth-tabs" role="tablist">
+            <button
+              class="auth-tab active"
+              role="tab"
+              aria-selected="true"
+              onclick="switchTab('signin')"
+            >
+              Iniciar sesión
+            </button>
+            <button
+              class="auth-tab"
+              role="tab"
+              aria-selected="false"
+              onclick="switchTab('signup')"
+            >
+              Crear cuenta
+            </button>
+          </div>
 
-    <div class="auth-card">
-      <div class="auth-tabs" role="tablist">
-        <button class="auth-tab active" role="tab" aria-selected="true" onclick="switchTab('signin')">Iniciar sesión</button>
-        <button class="auth-tab" role="tab" aria-selected="false" onclick="switchTab('signup')">Crear cuenta</button>
+          <!-- SIGN IN -->
+          <!-- ── REEMPLAZAR por fetch real al endpoint de login ── -->
+          <form class="auth-form" id="form-signin" novalidate>
+            <div class="auth-field">
+              <label class="auth-label" for="si-email">Email</label>
+              <input
+                class="auth-input"
+                type="email"
+                id="si-email"
+                placeholder="tu@email.com"
+                autocomplete="email"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="si-pass">Contraseña</label>
+              <input
+                class="auth-input"
+                type="password"
+                id="si-pass"
+                placeholder="••••••••"
+                autocomplete="current-password"
+              />
+            </div>
+            <button type="button" class="auth-btn" onclick="doLogin()">
+              Entrar
+            </button>
+            <div class="auth-divider">o continuá con</div>
+            <div class="auth-social" style="grid-template-columns: 1fr 1fr">
+              <button
+                type="button"
+                class="auth-social-btn"
+                onclick="doLoginGoogle()"
+                aria-label="Google"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google
+              </button>
+              <button
+                type="button"
+                class="auth-social-btn"
+                onclick="doLoginFacebook()"
+                aria-label="Facebook"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#1877F2">
+                  <path
+                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+                  />
+                </svg>
+                Facebook
+              </button>
+            </div>
+          </form>
+
+          <!-- SIGN UP -->
+          <form class="auth-form hidden" id="form-signup" novalidate>
+            <div class="auth-row">
+              <div class="auth-field">
+                <label class="auth-label" for="su-name">Nombre</label>
+                <input
+                  class="auth-input"
+                  type="text"
+                  id="su-name"
+                  placeholder="Tu nombre"
+                  autocomplete="given-name"
+                />
+              </div>
+              <div class="auth-field">
+                <label class="auth-label" for="su-last">Apellido</label>
+                <input
+                  class="auth-input"
+                  type="text"
+                  id="su-last"
+                  placeholder="Tu apellido"
+                  autocomplete="family-name"
+                />
+              </div>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="su-email">Email</label>
+              <input
+                class="auth-input"
+                type="email"
+                id="su-email"
+                placeholder="tu@email.com"
+                autocomplete="email"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="su-pass">Contraseña</label>
+              <input
+                class="auth-input"
+                type="password"
+                id="su-pass"
+                placeholder="Mínimo 8 caracteres"
+                autocomplete="new-password"
+              />
+            </div>
+            <button type="button" class="auth-btn" onclick="doSignup()">
+              Crear cuenta
+            </button>
+            <div class="auth-divider">o continuá con</div>
+            <div class="auth-social" style="grid-template-columns: 1fr 1fr">
+              <button
+                type="button"
+                class="auth-social-btn"
+                onclick="doLoginGoogle()"
+                aria-label="Google"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Google
+              </button>
+              <button
+                type="button"
+                class="auth-social-btn"
+                onclick="doLoginFacebook()"
+                aria-label="Facebook"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#1877F2">
+                  <path
+                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+                  />
+                </svg>
+                Facebook
+              </button>
+            </div>
+          </form>
+
+          <p class="auth-switch" id="auth-switch-text">
+            ¿No tenés cuenta?
+            <button onclick="switchTab('signup')">Crear una</button>
+          </p>
+        </div>
       </div>
-
-      <!-- SIGN IN -->
-      <!-- ── REEMPLAZAR por fetch real al endpoint de login ── -->
-      <form class="auth-form" id="form-signin" novalidate>
-        <div class="auth-field">
-          <label class="auth-label" for="si-email">Email</label>
-          <input class="auth-input" type="email" id="si-email" placeholder="tu@email.com" autocomplete="email"/>
-        </div>
-        <div class="auth-field">
-          <label class="auth-label" for="si-pass">Contraseña</label>
-          <input class="auth-input" type="password" id="si-pass" placeholder="••••••••" autocomplete="current-password"/>
-        </div>
-        <button type="button" class="auth-btn" onclick="doLogin()">Entrar</button>
-        <div class="auth-divider">o continuá con</div>
-        <div class="auth-social" style="grid-template-columns:1fr 1fr">
-          <button type="button" class="auth-social-btn" onclick="doLoginGoogle()" aria-label="Google">
-            <svg width="15" height="15" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Google
-          </button>
-          <button type="button" class="auth-social-btn" onclick="doLoginFacebook()" aria-label="Facebook">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            Facebook
-          </button>
-        </div>
-      </form>
-
-      <!-- SIGN UP -->
-      <form class="auth-form hidden" id="form-signup" novalidate>
-        <div class="auth-row">
-          <div class="auth-field">
-            <label class="auth-label" for="su-name">Nombre</label>
-            <input class="auth-input" type="text" id="su-name" placeholder="Tu nombre" autocomplete="given-name"/>
-          </div>
-          <div class="auth-field">
-            <label class="auth-label" for="su-last">Apellido</label>
-            <input class="auth-input" type="text" id="su-last" placeholder="Tu apellido" autocomplete="family-name"/>
-          </div>
-        </div>
-        <div class="auth-field">
-          <label class="auth-label" for="su-email">Email</label>
-          <input class="auth-input" type="email" id="su-email" placeholder="tu@email.com" autocomplete="email"/>
-        </div>
-        <div class="auth-field">
-          <label class="auth-label" for="su-pass">Contraseña</label>
-          <input class="auth-input" type="password" id="su-pass" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
-        </div>
-        <button type="button" class="auth-btn" onclick="doSignup()">Crear cuenta</button>
-        <div class="auth-divider">o continuá con</div>
-        <div class="auth-social" style="grid-template-columns:1fr 1fr">
-          <button type="button" class="auth-social-btn" onclick="doLoginGoogle()" aria-label="Google">
-            <svg width="15" height="15" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Google
-          </button>
-          <button type="button" class="auth-social-btn" onclick="doLoginFacebook()" aria-label="Facebook">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            Facebook
-          </button>
-        </div>
-      </form>
-
-      <p class="auth-switch" id="auth-switch-text">
-        ¿No tenés cuenta? <button onclick="switchTab('signup')">Crear una</button>
-      </p>
     </div>
-  </div>
-</div>
 
-<!-- ══════════════════════════════════════
+    <!-- ══════════════════════════════════════
      APP SHELL
 ══════════════════════════════════════ -->
-<div id="app-shell">
-
-  <!-- Top nav -->
-  <nav class="app-nav" aria-label="Navegación principal">
-    <a href="./index.html" class="app-nav-logo" aria-label="Pebble">
-      <span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span>
-    </a>
-    <div class="app-nav-actions">
-      <button class="nav-icon-btn" onclick="window.location.href='./notificaciones.html'" aria-label="Notificaciones">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-      </button>
-      <!-- ── REEMPLAZAR onclick por window.location.href='./perfil.html' ── -->
-      <div class="nav-avatar" id="nav-avatar" onclick="goTo('perfil')"
-           role="button" tabindex="0" aria-label="Mi perfil">U</div>
-    </div>
-  </nav>
-
-  <!-- Main -->
-  <main class="app-main">
-
-    <!-- 1. Greeting -->
-    <section class="home-section fu" aria-label="Saludo">
-      <p class="greeting-eyebrow">Bienvenido/a de vuelta</p>
-      <h1 class="greeting-title">Hola, <span id="user-name">Usuario</span></h1>
-      <p class="greeting-sub">Tu gemelo estuvo trabajando mientras no estabas.</p>
-    </section>
-
-    <!-- 2. Gemelo banner -->
-    <!-- ── REEMPLAZAR href por ./gemelo.html cuando esté lista ── -->
-    <section class="home-section fu" aria-label="Estado del gemelo">
-      <div class="sec-heading">
-        <span class="sec-heading-title">Tu gemelo</span>
-      </div>
-      <a href="#" class="gemelo-banner" onclick="goTo('gemelo'); return false;" aria-label="Ver chat con tu gemelo">
-        <div class="gemelo-orb" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
-          </svg>
+    <div id="app-shell">
+      <!-- Top nav -->
+      <nav class="app-nav" aria-label="Navegación principal">
+        <a href="./index.html" class="app-nav-logo" aria-label="Pebble">
+          <span class="rest">PE</span><span class="bb">BB</span
+          ><span class="rest">LE</span>
+        </a>
+        <div class="app-nav-actions">
+          <button
+            class="nav-icon-btn"
+            onclick="window.location.href = './notificaciones.html'"
+            aria-label="Notificaciones"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </button>
+          <!-- ── REEMPLAZAR onclick por window.location.href='./perfil.html' ── -->
+          <div
+            class="nav-avatar"
+            id="nav-avatar"
+            onclick="goTo('perfil')"
+            role="button"
+            tabindex="0"
+            aria-label="Mi perfil"
+          >
+            U
+          </div>
         </div>
-        <div class="gemelo-info">
-          <div class="gemelo-info-title">Tu gemelo está activo</div>
-          <div class="gemelo-info-sub">Tuvo <strong>3 conversaciones</strong> hoy · Mayor afinidad con Sofía: <strong>92%</strong></div>
+      </nav>
+
+      <!-- Main -->
+      <main class="app-main">
+        <!-- 1. Greeting -->
+        <section class="home-section fu" aria-label="Saludo">
+          <p class="greeting-eyebrow">Bienvenido/a de vuelta</p>
+          <h1 class="greeting-title">
+            Hola, <span id="user-name">Usuario</span>
+          </h1>
+          <p class="greeting-sub">
+            Tu gemelo estuvo trabajando mientras no estabas.
+          </p>
+        </section>
+
+        <!-- 2. Gemelo banner -->
+        <!-- ── REEMPLAZAR href por ./gemelo.html cuando esté lista ── -->
+        <section class="home-section fu" aria-label="Estado del gemelo">
+          <div class="sec-heading">
+            <span class="sec-heading-title">Tu gemelo</span>
+          </div>
+          <a
+            href="#"
+            class="gemelo-banner"
+            onclick="
+              goTo('gemelo');
+              return false;
+            "
+            aria-label="Ver chat con tu gemelo"
+          >
+            <div class="gemelo-orb" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4l3 3" />
+              </svg>
+            </div>
+            <div class="gemelo-info">
+              <div class="gemelo-info-title">Tu gemelo está activo</div>
+              <div class="gemelo-info-sub">
+                Tuvo <strong>3 conversaciones</strong> hoy · Mayor afinidad con
+                Sofía: <strong>92%</strong>
+              </div>
+            </div>
+            <div class="gemelo-live">
+              <span class="live-dot" aria-label="Activo"></span>
+              <span class="live-label">Live</span>
+            </div>
+            <svg
+              class="gemelo-chevron"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </a>
+        </section>
+
+        <div class="home-divider fu"></div>
+
+        <!-- 3. Matches recientes -->
+        <section class="home-section fu" aria-label="Matches recientes">
+          <div class="sec-heading">
+            <span class="sec-heading-title">Matches recientes</span>
+            <a
+              href="#"
+              class="sec-heading-link"
+              onclick="
+                window.location.href = './matches.html';
+                return false;
+              "
+            >
+              Ver todos
+              <svg
+                viewBox="0 0 24 24"
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                aria-hidden="true"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </a>
+          </div>
+          <div class="matches-strip" role="list">
+            <a
+              href="#"
+              class="match-item"
+              onclick="
+                goToMatch('sofia');
+                return false;
+              "
+              role="listitem"
+              aria-label="Sofía, 92%"
+            >
+              <div class="match-av-wrap" id="mav-sofia">
+                <div
+                  class="match-av"
+                  style="
+                    background-image: url(./images/sofia.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+              </div>
+              <span class="match-score">92%</span>
+              <span class="match-name">Sofía</span>
+            </a>
+            <a
+              href="#"
+              class="match-item"
+              onclick="
+                goToMatch('mateo');
+                return false;
+              "
+              role="listitem"
+              aria-label="Mateo, 87%"
+            >
+              <div class="match-av-wrap" id="mav-mateo">
+                <div
+                  class="match-av"
+                  style="
+                    background-image: url(./images/mateo.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+              </div>
+              <span class="match-score">87%</span>
+              <span class="match-name">Mateo</span>
+            </a>
+            <a
+              href="#"
+              class="match-item"
+              onclick="
+                goToMatch('valentina');
+                return false;
+              "
+              role="listitem"
+              aria-label="Valentina, 81%"
+            >
+              <div class="match-av-wrap" id="mav-valentina">
+                <div
+                  class="match-av"
+                  style="
+                    background-image: url(./images/valentina.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+              </div>
+              <span class="match-score">81%</span>
+              <span class="match-name">Valentina</span>
+            </a>
+            <a
+              href="#"
+              class="match-item"
+              onclick="
+                goToMatch('lucia');
+                return false;
+              "
+              role="listitem"
+              aria-label="Lucía, 76%"
+            >
+              <div class="match-av-wrap" id="mav-lucia">
+                <div
+                  class="match-av"
+                  style="
+                    background-image: url(./images/lucia.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+              </div>
+              <span class="match-score">76%</span>
+              <span class="match-name">Lucía</span>
+            </a>
+            <a
+              href="#"
+              class="match-item"
+              onclick="
+                goToMatch('agustin');
+                return false;
+              "
+              role="listitem"
+              aria-label="Agustín, 71%"
+            >
+              <div class="match-av-wrap" id="mav-agustin">
+                <div
+                  class="match-av"
+                  style="
+                    background-image: url(./images/Agustin.png);
+                    background-size: cover;
+                    background-position: center;
+                  "
+                ></div>
+              </div>
+              <span class="match-score">71%</span>
+              <span class="match-name">Agustín</span>
+            </a>
+          </div>
+        </section>
+
+        <div class="home-divider fu"></div>
+
+        <!-- 4. Secciones -->
+        <section class="home-section fu" aria-label="Secciones principales">
+          <div class="sec-heading">
+            <span class="sec-heading-title">Secciones</span>
+          </div>
+          <div class="sec-grid">
+            <!-- ── MATCHES — REEMPLAZAR href por ./matches.html ── -->
+            <a
+              href="#"
+              class="sec-card"
+              onclick="
+                window.location.href = './matches.html';
+                return false;
+              "
+              aria-label="Matches"
+            >
+              <div class="sec-icon si-matches" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                  />
+                </svg>
+              </div>
+              <span class="sec-card-title">Matches</span>
+              <span class="sec-card-desc"
+                >Tus conexiones con mayor compatibilidad.</span
+              >
+              <div class="sec-card-footer">
+                <span class="sec-badge">5 matches</span>
+                <svg
+                  class="sec-arrow"
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
+            </a>
+
+            <!-- ── CHATS — REEMPLAZAR href por ./chats.html ── -->
+            <a
+              href="#"
+              class="sec-card"
+              onclick="
+                goTo('chats');
+                return false;
+              "
+              aria-label="Chats"
+            >
+              <div class="sec-icon si-chats" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                  />
+                </svg>
+              </div>
+              <span class="sec-card-title">Chats</span>
+              <span class="sec-card-desc"
+                >Hablá con tus matches o sus gemelos.</span
+              >
+              <div class="sec-card-footer">
+                <span class="sec-badge">2 sin leer</span>
+                <svg
+                  class="sec-arrow"
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
+            </a>
+
+            <!-- ── NOTIFICACIONES — REEMPLAZAR href por ./notificaciones.html ── -->
+            <a
+              href="#"
+              class="sec-card"
+              onclick="
+                goTo('notificaciones');
+                return false;
+              "
+              aria-label="Notificaciones"
+            >
+              <div class="sec-icon si-notif" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </div>
+              <span class="sec-card-title">Notificaciones</span>
+              <span class="sec-card-desc"
+                >Nuevos matches, mensajes y desbloqueos.</span
+              >
+              <div class="sec-card-footer">
+                <span class="sec-badge">4 nuevas</span>
+                <svg
+                  class="sec-arrow"
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
+            </a>
+
+            <!-- ── PERFIL — REEMPLAZAR href por ./perfil.html ── -->
+            <a
+              href="#"
+              class="sec-card"
+              onclick="
+                goTo('perfil');
+                return false;
+              "
+              aria-label="Mi perfil"
+            >
+              <div class="sec-icon si-perfil" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <span class="sec-card-title">Mi perfil</span>
+              <span class="sec-card-desc"
+                >Editá tu info y configuración del gemelo.</span
+              >
+              <div class="sec-card-footer">
+                <span></span>
+                <svg
+                  class="sec-arrow"
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <div class="home-divider fu"></div>
+
+        <!-- Logout -->
+        <div class="fu" style="padding-bottom: var(--s4)">
+          <button
+            class="logout-btn"
+            onclick="doLogout()"
+            aria-label="Cerrar sesión"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Cerrar sesión
+          </button>
         </div>
-        <div class="gemelo-live">
-          <span class="live-dot" aria-label="Activo"></span>
-          <span class="live-label">Live</span>
-        </div>
-        <svg class="gemelo-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-      </a>
-    </section>
+      </main>
 
-    <div class="home-divider fu"></div>
-
-    <!-- 3. Matches recientes -->
-    <section class="home-section fu" aria-label="Matches recientes">
-      <div class="sec-heading">
-        <span class="sec-heading-title">Matches recientes</span>
-        <a href="#" class="sec-heading-link" onclick="window.location.href='./matches.html'; return false;">
-          Ver todos
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-        </a>
-      </div>
-      <div class="matches-strip" role="list">
-        <a href="#" class="match-item" onclick="goToMatch('sofia'); return false;" role="listitem" aria-label="Sofía, 92%">
-          <div class="match-av-wrap" id="mav-sofia">
-            <div class="match-av" style="background-image:url(./sofia.png);background-size:cover;background-position:center"></div>
-          </div>
-          <span class="match-score">92%</span>
-          <span class="match-name">Sofía</span>
-        </a>
-        <a href="#" class="match-item" onclick="goToMatch('mateo'); return false;" role="listitem" aria-label="Mateo, 87%">
-          <div class="match-av-wrap" id="mav-mateo">
-            <div class="match-av" style="background-image:url(./mateo.png);background-size:cover;background-position:center"></div>
-          </div>
-          <span class="match-score">87%</span>
-          <span class="match-name">Mateo</span>
-        </a>
-        <a href="#" class="match-item" onclick="goToMatch('valentina'); return false;" role="listitem" aria-label="Valentina, 81%">
-          <div class="match-av-wrap" id="mav-valentina">
-            <div class="match-av" style="background-image:url(./valentina.png);background-size:cover;background-position:center"></div>
-          </div>
-          <span class="match-score">81%</span>
-          <span class="match-name">Valentina</span>
-        </a>
-        <a href="#" class="match-item" onclick="goToMatch('lucia'); return false;" role="listitem" aria-label="Lucía, 76%">
-          <div class="match-av-wrap" id="mav-lucia">
-            <div class="match-av" style="background-image:url(./lucia.png);background-size:cover;background-position:center"></div>
-          </div>
-          <span class="match-score">76%</span>
-          <span class="match-name">Lucía</span>
-        </a>
-        <a href="#" class="match-item" onclick="goToMatch('agustin'); return false;" role="listitem" aria-label="Agustín, 71%">
-          <div class="match-av-wrap" id="mav-agustin">
-            <div class="match-av" style="background-image:url(./Agustin.png);background-size:cover;background-position:center"></div>
-          </div>
-          <span class="match-score">71%</span>
-          <span class="match-name">Agustín</span>
-        </a>
-      </div>
-    </section>
-
-    <div class="home-divider fu"></div>
-
-    <!-- 4. Secciones -->
-    <section class="home-section fu" aria-label="Secciones principales">
-      <div class="sec-heading">
-        <span class="sec-heading-title">Secciones</span>
-      </div>
-      <div class="sec-grid">
-
-        <!-- ── MATCHES — REEMPLAZAR href por ./matches.html ── -->
-        <a href="#" class="sec-card" onclick="window.location.href='./matches.html'; return false;" aria-label="Matches">
-          <div class="sec-icon si-matches" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </div>
-          <span class="sec-card-title">Matches</span>
-          <span class="sec-card-desc">Tus conexiones con mayor compatibilidad.</span>
-          <div class="sec-card-footer">
-            <span class="sec-badge">5 matches</span>
-            <svg class="sec-arrow" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-          </div>
-        </a>
-
-        <!-- ── CHATS — REEMPLAZAR href por ./chats.html ── -->
-        <a href="#" class="sec-card" onclick="goTo('chats'); return false;" aria-label="Chats">
-          <div class="sec-icon si-chats" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <span class="sec-card-title">Chats</span>
-          <span class="sec-card-desc">Hablá con tus matches o sus gemelos.</span>
-          <div class="sec-card-footer">
-            <span class="sec-badge">2 sin leer</span>
-            <svg class="sec-arrow" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-          </div>
-        </a>
-
-        <!-- ── NOTIFICACIONES — REEMPLAZAR href por ./notificaciones.html ── -->
-        <a href="#" class="sec-card" onclick="goTo('notificaciones'); return false;" aria-label="Notificaciones">
-          <div class="sec-icon si-notif" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-          </div>
-          <span class="sec-card-title">Notificaciones</span>
-          <span class="sec-card-desc">Nuevos matches, mensajes y desbloqueos.</span>
-          <div class="sec-card-footer">
-            <span class="sec-badge">4 nuevas</span>
-            <svg class="sec-arrow" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-          </div>
-        </a>
-
-        <!-- ── PERFIL — REEMPLAZAR href por ./perfil.html ── -->
-        <a href="#" class="sec-card" onclick="goTo('perfil'); return false;" aria-label="Mi perfil">
-          <div class="sec-icon si-perfil" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <span class="sec-card-title">Mi perfil</span>
-          <span class="sec-card-desc">Editá tu info y configuración del gemelo.</span>
-          <div class="sec-card-footer">
-            <span></span>
-            <svg class="sec-arrow" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-          </div>
-        </a>
-
-      </div>
-    </section>
-
-    <div class="home-divider fu"></div>
-
-    <!-- Logout -->
-    <div class="fu" style="padding-bottom: var(--s4);">
-      <button class="logout-btn" onclick="doLogout()" aria-label="Cerrar sesión">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-        Cerrar sesión
-      </button>
-    </div>
-
-  </main>
-
-  <!-- Bottom nav -->
-  <nav class="app-bottom-nav" aria-label="Navegación inferior">
-    <!--
+      <!-- Bottom nav -->
+      <nav class="app-bottom-nav" aria-label="Navegación inferior">
+        <!--
       ══ BOTTOM NAV ══
       REEMPLAZAR cada href:
         Inicio:          href="./app.html"
@@ -839,392 +1734,557 @@ body {
         Chats:           href="./chats.html"
         Perfil:          href="./perfil.html"
     -->
-    <a href="#" class="bnav-item active" aria-label="Inicio" aria-current="page" onclick="return false;">
-      <span class="bnav-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      </span>
-      <span class="bnav-label">Inicio</span>
-    </a>
+        <a
+          href="#"
+          class="bnav-item active"
+          aria-label="Inicio"
+          aria-current="page"
+          onclick="return false;"
+        >
+          <span class="bnav-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </span>
+          <span class="bnav-label">Inicio</span>
+        </a>
 
-    <a href="#" class="bnav-item" aria-label="Matches" onclick="goTo('matches'); return false;">
-      <span class="bnav-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-      </span>
-      <span class="bnav-label">Matches</span>
-    </a>
+        <a
+          href="#"
+          class="bnav-item"
+          aria-label="Matches"
+          onclick="
+            goTo('matches');
+            return false;
+          "
+        >
+          <span class="bnav-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              />
+            </svg>
+          </span>
+          <span class="bnav-label">Matches</span>
+        </a>
 
-    <a href="#" class="bnav-center" aria-label="Chat con tu gemelo" onclick="goTo('gemelo'); return false;">
-      <div class="bnav-center-orb" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
-        </svg>
-      </div>
-      <span class="bnav-center-label">Gemelo</span>
-    </a>
+        <a
+          href="#"
+          class="bnav-center"
+          aria-label="Chat con tu gemelo"
+          onclick="
+            goTo('gemelo');
+            return false;
+          "
+        >
+          <div class="bnav-center-orb" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <span class="bnav-center-label">Gemelo</span>
+        </a>
 
-    <a href="#" class="bnav-item" aria-label="Chats" onclick="goTo('chats'); return false;">
-      <span class="bnav-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      </span>
-      <span class="bnav-label">Chats</span>
-    </a>
+        <a
+          href="#"
+          class="bnav-item"
+          aria-label="Chats"
+          onclick="
+            goTo('chats');
+            return false;
+          "
+        >
+          <span class="bnav-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+          </span>
+          <span class="bnav-label">Chats</span>
+        </a>
 
-    <a href="#" class="bnav-item" aria-label="Mi perfil" onclick="goTo('perfil'); return false;">
-      <span class="bnav-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-        </svg>
-      </span>
-      <span class="bnav-label">Perfil</span>
-    </a>
-  </nav>
+        <a
+          href="#"
+          class="bnav-item"
+          aria-label="Mi perfil"
+          onclick="
+            goTo('perfil');
+            return false;
+          "
+        >
+          <span class="bnav-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </span>
+          <span class="bnav-label">Perfil</span>
+        </a>
+      </nav>
+    </div>
 
-</div>
+    <script>
+      // Funciones de UI (no-módulo, accesibles desde onclick en HTML)
+      function showGate() {
+        document.getElementById("auth-gate").classList.remove("hidden");
+        const s = document.getElementById("app-shell");
+        s.classList.remove("visible");
+        s.style.display = "none";
+      }
+      function showApp(user) {
+        document.getElementById("auth-gate").classList.add("hidden");
+        const s = document.getElementById("app-shell");
+        s.style.display = "flex";
+        s.classList.add("visible");
+        const nombre =
+          user?.displayName || user?.email?.split("@")[0] || "Usuario";
+        document.getElementById("user-name").textContent = nombre;
+        document.getElementById("nav-avatar").textContent =
+          nombre[0].toUpperCase();
+      }
+      function switchTab(tab) {
+        const isSignin = tab === "signin";
+        document
+          .getElementById("form-signin")
+          .classList.toggle("hidden", !isSignin);
+        document
+          .getElementById("form-signup")
+          .classList.toggle("hidden", isSignin);
+        document.querySelectorAll(".auth-tab").forEach((t, i) => {
+          t.classList.toggle("active", isSignin ? i === 0 : i === 1);
+          t.setAttribute("aria-selected", String(isSignin ? i === 0 : i === 1));
+        });
+        document.getElementById("auth-switch-text").innerHTML = isSignin
+          ? "¿No tenés cuenta? <button onclick=\"switchTab('signup')\">Crear una</button>"
+          : "¿Ya tenés cuenta? <button onclick=\"switchTab('signin')\">Iniciar sesión</button>";
+        clearAuthError();
+      }
+      function goTo(page) {
+        const map = {
+          gemelo: "./gemelo.html",
+          matches: "./matches.html",
+          chats: "./chats.html",
+          notificaciones: "./notificaciones.html",
+          perfil: "./perfil.html",
+        };
+        const url = map[page];
+        if (url) window.location.href = url;
+      }
+      function showAuthError(msg) {
+        let el = document.getElementById("auth-error");
+        if (!el) {
+          el = document.createElement("p");
+          el.id = "auth-error";
+          el.style.cssText =
+            "color:#ef4444;font-size:0.78rem;text-align:center;margin-top:-6px;font-family:var(--font-body)";
+          document.querySelector(".auth-card").appendChild(el);
+        }
+        el.textContent = msg;
+      }
+      function clearAuthError() {
+        const el = document.getElementById("auth-error");
+        if (el) el.textContent = "";
+      }
+      function setBtnLoading(btnEl, loading) {
+        btnEl.disabled = loading;
+        if (loading) {
+          btnEl.dataset.orig = btnEl.textContent;
+          btnEl.textContent = "Cargando…";
+        } else {
+          btnEl.textContent = btnEl.dataset.orig || btnEl.textContent;
+        }
+      }
+      // Las funciones doLogin/doSignup/doLoginGoogle/doLogout las expone el módulo de abajo
+    </script>
 
-<script>
-// Funciones de UI (no-módulo, accesibles desde onclick en HTML)
-function showGate() {
-  document.getElementById('auth-gate').classList.remove('hidden');
-  const s = document.getElementById('app-shell');
-  s.classList.remove('visible'); s.style.display = 'none';
-}
-function showApp(user) {
-  document.getElementById('auth-gate').classList.add('hidden');
-  const s = document.getElementById('app-shell');
-  s.style.display = 'flex'; s.classList.add('visible');
-  const nombre = user?.displayName || user?.email?.split('@')[0] || 'Usuario';
-  document.getElementById('user-name').textContent = nombre;
-  document.getElementById('nav-avatar').textContent = nombre[0].toUpperCase();
-}
-function switchTab(tab) {
-  const isSignin = tab === 'signin';
-  document.getElementById('form-signin').classList.toggle('hidden', !isSignin);
-  document.getElementById('form-signup').classList.toggle('hidden', isSignin);
-  document.querySelectorAll('.auth-tab').forEach((t, i) => {
-    t.classList.toggle('active', isSignin ? i === 0 : i === 1);
-    t.setAttribute('aria-selected', String(isSignin ? i === 0 : i === 1));
-  });
-  document.getElementById('auth-switch-text').innerHTML = isSignin
-    ? '¿No tenés cuenta? <button onclick="switchTab(\'signup\')">Crear una</button>'
-    : '¿Ya tenés cuenta? <button onclick="switchTab(\'signin\')">Iniciar sesión</button>';
-  clearAuthError();
-}
-function goTo(page) {
-  const map = { gemelo:'./gemelo.html', matches:'./matches.html', chats:'./chats.html', notificaciones:'./notificaciones.html', perfil:'./perfil.html' };
-  const url = map[page];
-  if (url) window.location.href = url;
-}
-function showAuthError(msg) {
-  let el = document.getElementById('auth-error');
-  if (!el) {
-    el = document.createElement('p');
-    el.id = 'auth-error';
-    el.style.cssText = 'color:#ef4444;font-size:0.78rem;text-align:center;margin-top:-6px;font-family:var(--font-body)';
-    document.querySelector('.auth-card').appendChild(el);
-  }
-  el.textContent = msg;
-}
-function clearAuthError() {
-  const el = document.getElementById('auth-error');
-  if (el) el.textContent = '';
-}
-function setBtnLoading(btnEl, loading) {
-  btnEl.disabled = loading;
-  if (loading) { btnEl.dataset.orig = btnEl.textContent; btnEl.textContent = 'Cargando…'; }
-  else { btnEl.textContent = btnEl.dataset.orig || btnEl.textContent; }
-}
-// Las funciones doLogin/doSignup/doLoginGoogle/doLogout las expone el módulo de abajo
-</script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signInWithPopup,
+        GoogleAuthProvider,
+        FacebookAuthProvider,
+        onAuthStateChanged,
+        signOut,
+        updateProfile,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        collection,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script type="module">
-import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         signInWithPopup, GoogleAuthProvider, FacebookAuthProvider,
-         onAuthStateChanged, signOut, updateProfile }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      const firebaseConfig = {
+        apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+        authDomain: "pebble-78e95.firebaseapp.com",
+        projectId: "pebble-78e95",
+        storageBucket: "pebble-78e95.firebasestorage.app",
+        messagingSenderId: "56434257024",
+        appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+      };
 
-const firebaseConfig = {
-  apiKey:            "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
-  authDomain:        "pebble-78e95.firebaseapp.com",
-  projectId:         "pebble-78e95",
-  storageBucket:     "pebble-78e95.firebasestorage.app",
-  messagingSenderId: "56434257024",
-  appId:             "1:56434257024:web:3e2625f73bad3d4c004a65"
-};
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const googleProvider = new GoogleAuthProvider();
+      const facebookProvider = new FacebookAuthProvider();
+      let uid = null;
 
-const app      = initializeApp(firebaseConfig);
-const auth     = getAuth(app);
-const db       = getFirestore(app);
-const googleProvider   = new GoogleAuthProvider();
-const facebookProvider = new FacebookAuthProvider();
-let   uid = null;
+      const MATCH_IDS = ["sofia", "mateo", "valentina", "lucia", "agustin"];
 
-const MATCH_IDS = ['sofia', 'mateo', 'valentina', 'lucia', 'agustin'];
+      // Muestra el pip naranja en el match-av-wrap dado
+      function mostrarPip(id) {
+        const wrap = document.getElementById(`mav-${id}`);
+        if (!wrap) return;
+        wrap.querySelector(".match-av").classList.add("is-new");
+        if (!wrap.querySelector(".match-new-pip")) {
+          const pip = document.createElement("span");
+          pip.className = "match-new-pip";
+          pip.setAttribute("aria-hidden", "true");
+          wrap.appendChild(pip);
+        }
+      }
+      // Oculta el pip
+      function ocultarPip(id) {
+        const wrap = document.getElementById(`mav-${id}`);
+        if (!wrap) return;
+        wrap.querySelector(".match-av").classList.remove("is-new");
+        const pip = wrap.querySelector(".match-new-pip");
+        if (pip) pip.remove();
+      }
 
-// Muestra el pip naranja en el match-av-wrap dado
-function mostrarPip(id) {
-  const wrap = document.getElementById(`mav-${id}`);
-  if (!wrap) return;
-  wrap.querySelector('.match-av').classList.add('is-new');
-  if (!wrap.querySelector('.match-new-pip')) {
-    const pip = document.createElement('span');
-    pip.className = 'match-new-pip';
-    pip.setAttribute('aria-hidden', 'true');
-    wrap.appendChild(pip);
-  }
-}
-// Oculta el pip
-function ocultarPip(id) {
-  const wrap = document.getElementById(`mav-${id}`);
-  if (!wrap) return;
-  wrap.querySelector('.match-av').classList.remove('is-new');
-  const pip = wrap.querySelector('.match-new-pip');
-  if (pip) pip.remove();
-}
-
-/* ── Badges dinámicos de las tarjetas de sección (Matches / Chats / Notificaciones) ──
+      /* ── Badges dinámicos de las tarjetas de sección (Matches / Chats / Notificaciones) ──
    Mismos datos "por default" que usa chats.html para saber cuánto hay sin leer
    por persona y por modo (gemelo/real); se descuenta lo que Firestore ya marcó
    como leído (leido_{id}_{modo}). */
-const CHATS_DEFAULT_UNREAD = {
-  sofia:     { gemelo: 0, real: 2 },
-  mateo:     { gemelo: 0, real: 1 },
-  valentina: { gemelo: 1, real: 0 },
-  lucia:     { gemelo: 0, real: 0 },
-  agustin:   { gemelo: 0, real: 0 },
-};
-const NOTIFS_DEFAULT_COUNT = 4; // cantidad de .notif-card.unread en notificaciones.html
+      const CHATS_DEFAULT_UNREAD = {
+        sofia: { gemelo: 0, real: 2 },
+        mateo: { gemelo: 0, real: 1 },
+        valentina: { gemelo: 1, real: 0 },
+        lucia: { gemelo: 0, real: 0 },
+        agustin: { gemelo: 0, real: 0 },
+      };
+      const NOTIFS_DEFAULT_COUNT = 4; // cantidad de .notif-card.unread en notificaciones.html
 
-// texto: función (cantidad) => string a mostrar. Si cantidad es 0, se vacía el
-// badge (mismo truco que ya usa la tarjeta "Mi perfil" con un <span> vacío) en
-// vez de display:none -- el footer usa justify-content:space-between con el
-// badge y la flecha como únicos hijos, así que ocultarlo del todo corre la
-// flecha hacia la izquierda.
-function actualizarBadge(label, cantidad, texto) {
-  // Se busca por .sec-card-footer span (no por .sec-badge) para que siga
-  // encontrando el elemento aunque una llamada previa le haya sacado la clase.
-  const badge = document.querySelector(`.sec-card[aria-label="${label}"] .sec-card-footer span`);
-  if (!badge) return;
-  if (cantidad > 0) {
-    badge.textContent = texto(cantidad);
-    badge.classList.add('sec-badge');
-  } else {
-    badge.textContent = '';
-    badge.classList.remove('sec-badge');
-  }
-}
+      // texto: función (cantidad) => string a mostrar. Si cantidad es 0, se vacía el
+      // badge (mismo truco que ya usa la tarjeta "Mi perfil" con un <span> vacío) en
+      // vez de display:none -- el footer usa justify-content:space-between con el
+      // badge y la flecha como únicos hijos, así que ocultarlo del todo corre la
+      // flecha hacia la izquierda.
+      function actualizarBadge(label, cantidad, texto) {
+        // Se busca por .sec-card-footer span (no por .sec-badge) para que siga
+        // encontrando el elemento aunque una llamada previa le haya sacado la clase.
+        const badge = document.querySelector(
+          `.sec-card[aria-label="${label}"] .sec-card-footer span`,
+        );
+        if (!badge) return;
+        if (cantidad > 0) {
+          badge.textContent = texto(cantidad);
+          badge.classList.add("sec-badge");
+        } else {
+          badge.textContent = "";
+          badge.classList.remove("sec-badge");
+        }
+      }
 
-function actualizarBadgesSecciones(data, chatsMap) {
-  // Matches: cuántos todavía no se abrieron desde el home
-  const nuevosMatches = MATCH_IDS.filter(id => !data[`match_visto_${id}`]).length;
-  actualizarBadge('Matches', nuevosMatches, n => `${n} nuevo${n === 1 ? '' : 's'}`);
+      function actualizarBadgesSecciones(data, chatsMap) {
+        // Matches: cuántos todavía no se abrieron desde el home
+        const nuevosMatches = MATCH_IDS.filter(
+          (id) => !data[`match_visto_${id}`],
+        ).length;
+        actualizarBadge(
+          "Matches",
+          nuevosMatches,
+          (n) => `${n} nuevo${n === 1 ? "" : "s"}`,
+        );
 
-  // Chats: suma de no leídos según lo que ya se marcó leído al abrir cada chat.
-  // El "leído" vive en usuarios/{uid}/chats/{id}, no como campo suelto acá.
-  let sinLeer = 0;
-  Object.entries(CHATS_DEFAULT_UNREAD).forEach(([id, modos]) => {
-    Object.entries(modos).forEach(([modo, cantidad]) => {
-      const leido = chatsMap[id] && chatsMap[id][modo] && chatsMap[id][modo].leido;
-      if (!leido) sinLeer += cantidad;
-    });
-  });
-  actualizarBadge('Chats', sinLeer, n => `${n} sin leer`);
+        // Chats: suma de no leídos según lo que ya se marcó leído al abrir cada chat.
+        // El "leído" vive en usuarios/{uid}/chats/{id}, no como campo suelto acá.
+        let sinLeer = 0;
+        Object.entries(CHATS_DEFAULT_UNREAD).forEach(([id, modos]) => {
+          Object.entries(modos).forEach(([modo, cantidad]) => {
+            const leido =
+              chatsMap[id] && chatsMap[id][modo] && chatsMap[id][modo].leido;
+            if (!leido) sinLeer += cantidad;
+          });
+        });
+        actualizarBadge("Chats", sinLeer, (n) => `${n} sin leer`);
 
-  // Notificaciones: se marcan todas leídas apenas se visita esa sección
-  actualizarBadge('Notificaciones', data.notifs_leidas ? 0 : NOTIFS_DEFAULT_COUNT, n => `${n} nueva${n === 1 ? '' : 's'}`);
-}
+        // Notificaciones: se marcan todas leídas apenas se visita esa sección
+        actualizarBadge(
+          "Notificaciones",
+          data.notifs_leidas ? 0 : NOTIFS_DEFAULT_COUNT,
+          (n) => `${n} nueva${n === 1 ? "" : "s"}`,
+        );
+      }
 
-// ── Sesión persistente: Firebase la maneja sola ──
-onAuthStateChanged(auth, async user => {
-  if (user) {
-    // Expiración de sesión (24h)
-    const _SESSION_MS = 24 * 60 * 60 * 1000;
-    const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
-    if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
-    else if (Date.now() - _loginTime > _SESSION_MS) {
-      localStorage.removeItem('pebble_login_time');
-      await signOut(auth); return;
-    }
-    showApp(user);
-    uid = user.uid;
+      // ── Sesión persistente: Firebase la maneja sola ──
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // Expiración de sesión (24h)
+          const _SESSION_MS = 24 * 60 * 60 * 1000;
+          const _loginTime = parseInt(
+            localStorage.getItem("pebble_login_time") || "0",
+          );
+          if (!_loginTime) {
+            localStorage.setItem("pebble_login_time", Date.now().toString());
+          } else if (Date.now() - _loginTime > _SESSION_MS) {
+            localStorage.removeItem("pebble_login_time");
+            await signOut(auth);
+            return;
+          }
+          showApp(user);
+          uid = user.uid;
 
-    // Cargar qué matches ya vio el usuario + badges de las tarjetas de sección
-    try {
-      const snap = await getDoc(doc(db, 'usuarios', uid));
-      const data = snap.exists() ? snap.data() : {};
-      MATCH_IDS.forEach(id => {
-        if (data[`match_visto_${id}`]) ocultarPip(id);
-        else                            mostrarPip(id);
+          // Cargar qué matches ya vio el usuario + badges de las tarjetas de sección
+          try {
+            const snap = await getDoc(doc(db, "usuarios", uid));
+            const data = snap.exists() ? snap.data() : {};
+            MATCH_IDS.forEach((id) => {
+              if (data[`match_visto_${id}`]) ocultarPip(id);
+              else mostrarPip(id);
+            });
+
+            const chatsSnap = await getDocs(
+              collection(db, "usuarios", uid, "chats"),
+            );
+            const chatsMap = {};
+            chatsSnap.forEach((d) => {
+              chatsMap[d.id] = d.data();
+            });
+
+            actualizarBadgesSecciones(data, chatsMap);
+          } catch (e) {
+            // Si falla Firestore, mostrar todos como nuevos por defecto
+            MATCH_IDS.forEach((id) => mostrarPip(id));
+          }
+        } else {
+          showGate();
+          uid = null;
+        }
+
+        // Quitar el overlay una vez que Firebase resolvió el estado
+        const overlay = document.getElementById("loadingOverlay");
+        if (overlay) {
+          overlay.classList.add("hide");
+          setTimeout(() => overlay.remove(), 350);
+        }
       });
 
-      const chatsSnap = await getDocs(collection(db, 'usuarios', uid, 'chats'));
-      const chatsMap = {};
-      chatsSnap.forEach(d => { chatsMap[d.id] = d.data(); });
+      // Marcar como visto y navegar según si ya hay chat con esa persona
+      window.goToMatch = async function (matchId) {
+        ocultarPip(matchId); // feedback inmediato sin esperar Firestore
+        if (uid) {
+          // Marcar como visto
+          try {
+            await setDoc(
+              doc(db, "usuarios", uid),
+              { [`match_visto_${matchId}`]: true },
+              { merge: true },
+            );
+          } catch (e) {
+            console.warn("Error guardando match visto:", e);
+          }
 
-      actualizarBadgesSecciones(data, chatsMap);
-    } catch(e) {
-      // Si falla Firestore, mostrar todos como nuevos por defecto
-      MATCH_IDS.forEach(id => mostrarPip(id));
-    }
-  } else {
-    showGate();
-    uid = null;
-  }
+          // Verificar si ya existe un chat real con esta persona
+          // (usuarios/{uid}/chats/{matchId}, no el campo suelto chats_{matchId}_real)
+          try {
+            const chatSnap = await getDoc(
+              doc(db, "usuarios", uid, "chats", matchId),
+            );
+            const c = chatSnap.exists() ? chatSnap.data() : {};
+            const hasChat =
+              Array.isArray(c.real?.msgs) && c.real.msgs.length > 0;
 
-  // Quitar el overlay una vez que Firebase resolvió el estado
-  const overlay = document.getElementById('loadingOverlay');
-  if (overlay) { overlay.classList.add('hide'); setTimeout(() => overlay.remove(), 350); }
-});
+            if (hasChat) {
+              // Ya hay mensajes → ir directo al chat
+              window.location.href = `./chats.html?persona=${matchId}`;
+            } else {
+              // Nunca hablaron → ir al perfil para que pueda decidir
+              window.location.href = `./matches.html?persona=${matchId}`;
+            }
+          } catch (e) {
+            // Si Firestore falla, ir al perfil por defecto
+            window.location.href = `./matches.html?persona=${matchId}`;
+          }
+        } else {
+          window.location.href = `./matches.html?persona=${matchId}`;
+        }
+      };
 
-// Marcar como visto y navegar según si ya hay chat con esa persona
-window.goToMatch = async function(matchId) {
-  ocultarPip(matchId); // feedback inmediato sin esperar Firestore
-  if (uid) {
-    // Marcar como visto
-    try {
-      await setDoc(doc(db, 'usuarios', uid),
-        { [`match_visto_${matchId}`]: true },
-        { merge: true }
-      );
-    } catch(e) { console.warn('Error guardando match visto:', e); }
+      // ── LOGIN con email/contraseña ──
+      window.doLogin = async function () {
+        const email = document.getElementById("si-email").value.trim();
+        const pass = document.getElementById("si-pass").value;
+        const btn = document.querySelector("#form-signin .auth-btn");
+        clearAuthError();
+        if (!email || !pass) {
+          showAuthError("Completá email y contraseña.");
+          return;
+        }
+        setBtnLoading(btn, true);
+        try {
+          await signInWithEmailAndPassword(auth, email, pass);
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+          // onAuthStateChanged se encarga de mostrar la app
+        } catch (err) {
+          showAuthError(loginMsg(err.code));
+          setBtnLoading(btn, false);
+        }
+      };
 
-    // Verificar si ya existe un chat real con esta persona
-    // (usuarios/{uid}/chats/{matchId}, no el campo suelto chats_{matchId}_real)
-    try {
-      const chatSnap = await getDoc(doc(db, 'usuarios', uid, 'chats', matchId));
-      const c = chatSnap.exists() ? chatSnap.data() : {};
-      const hasChat = Array.isArray(c.real?.msgs) && c.real.msgs.length > 0;
+      // ── REGISTRO con email/contraseña ──
+      window.doSignup = async function () {
+        const nombre = document.getElementById("su-name").value.trim();
+        const email = document.getElementById("su-email").value.trim();
+        const pass = document.getElementById("su-pass").value;
+        const btn = document.querySelector("#form-signup .auth-btn");
+        clearAuthError();
+        if (!nombre || !email || !pass) {
+          showAuthError("Completá todos los campos.");
+          return;
+        }
+        if (pass.length < 8) {
+          showAuthError("La contraseña debe tener al menos 8 caracteres.");
+          return;
+        }
+        setBtnLoading(btn, true);
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, email, pass);
+          await updateProfile(cred.user, { displayName: nombre });
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+          window.location.href = "./planes.html";
+        } catch (err) {
+          showAuthError(signupMsg(err.code));
+          setBtnLoading(btn, false);
+        }
+      };
 
-      if (hasChat) {
-        // Ya hay mensajes → ir directo al chat
-        window.location.href = `./chats.html?persona=${matchId}`;
-      } else {
-        // Nunca hablaron → ir al perfil para que pueda decidir
-        window.location.href = `./matches.html?persona=${matchId}`;
+      // ── LOGIN / REGISTRO con Google (popup) ──
+      window.doLoginGoogle = async function () {
+        clearAuthError();
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+          const isNew = result._tokenResponse?.isNewUser;
+          if (isNew) window.location.href = "./planes.html";
+          // Si ya tenía cuenta, onAuthStateChanged lo lleva a la app
+        } catch (err) {
+          if (err.code !== "auth/popup-closed-by-user")
+            showAuthError("No se pudo iniciar con Google.");
+        }
+      };
+
+      // ── LOGIN / REGISTRO con Facebook (popup) ──
+      window.doLoginFacebook = async function () {
+        clearAuthError();
+        try {
+          const result = await signInWithPopup(auth, facebookProvider);
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+          const isNew = result._tokenResponse?.isNewUser;
+          if (isNew) window.location.href = "./planes.html";
+        } catch (err) {
+          console.error("Facebook login error:", err.code, err.message);
+          if (err.code === "auth/popup-closed-by-user") return;
+          if (err.code === "auth/popup-blocked") {
+            showAuthError(
+              "El popup fue bloqueado. Permití los popups en tu browser e intentá de nuevo.",
+            );
+          } else if (err.code === "auth/operation-not-allowed") {
+            showAuthError(
+              "Facebook no está habilitado en Firebase. Verificá la configuración.",
+            );
+          } else if (err.code === "auth/invalid-api-key") {
+            showAuthError("Error de configuración de Firebase.");
+          } else {
+            showAuthError("Error: " + (err.code || err.message));
+          }
+        }
+      };
+
+      // ── Apple (requiere cuenta de desarrollador paga — no disponible) ──
+      window.doLoginApple = function () {
+        showAuthError(
+          "Apple Sign-In no está disponible todavía. Usá email o Google.",
+        );
+      };
+
+      // ── LOGOUT (lo llama perfil.html vía window) ──
+      window.doLogout = async function () {
+        localStorage.removeItem("pebble_login_time");
+        await signOut(auth);
+      };
+
+      // ── Mensajes de error legibles ──
+      function loginMsg(code) {
+        return (
+          {
+            "auth/invalid-credential": "Email o contraseña incorrectos.",
+            "auth/user-not-found": "No existe una cuenta con ese email.",
+            "auth/wrong-password": "Contraseña incorrecta.",
+            "auth/invalid-email": "El email no es válido.",
+            "auth/too-many-requests": "Demasiados intentos. Intentá más tarde.",
+            "auth/user-disabled": "Esta cuenta fue deshabilitada.",
+          }[code] || "Ocurrió un error. Intentá de nuevo."
+        );
       }
-    } catch(e) {
-      // Si Firestore falla, ir al perfil por defecto
-      window.location.href = `./matches.html?persona=${matchId}`;
-    }
-  } else {
-    window.location.href = `./matches.html?persona=${matchId}`;
-  }
-};
-
-// ── LOGIN con email/contraseña ──
-window.doLogin = async function() {
-  const email = document.getElementById('si-email').value.trim();
-  const pass  = document.getElementById('si-pass').value;
-  const btn   = document.querySelector('#form-signin .auth-btn');
-  clearAuthError();
-  if (!email || !pass) { showAuthError('Completá email y contraseña.'); return; }
-  setBtnLoading(btn, true);
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-    localStorage.setItem('pebble_login_time', Date.now().toString());
-    // onAuthStateChanged se encarga de mostrar la app
-  } catch (err) {
-    showAuthError(loginMsg(err.code));
-    setBtnLoading(btn, false);
-  }
-};
-
-// ── REGISTRO con email/contraseña ──
-window.doSignup = async function() {
-  const nombre = document.getElementById('su-name').value.trim();
-  const email  = document.getElementById('su-email').value.trim();
-  const pass   = document.getElementById('su-pass').value;
-  const btn    = document.querySelector('#form-signup .auth-btn');
-  clearAuthError();
-  if (!nombre || !email || !pass) { showAuthError('Completá todos los campos.'); return; }
-  if (pass.length < 8) { showAuthError('La contraseña debe tener al menos 8 caracteres.'); return; }
-  setBtnLoading(btn, true);
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(cred.user, { displayName: nombre });
-    localStorage.setItem('pebble_login_time', Date.now().toString());
-    window.location.href = './planes.html';
-  } catch (err) {
-    showAuthError(signupMsg(err.code));
-    setBtnLoading(btn, false);
-  }
-};
-
-// ── LOGIN / REGISTRO con Google (popup) ──
-window.doLoginGoogle = async function() {
-  clearAuthError();
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    localStorage.setItem('pebble_login_time', Date.now().toString());
-    const isNew  = result._tokenResponse?.isNewUser;
-    if (isNew) window.location.href = './planes.html';
-    // Si ya tenía cuenta, onAuthStateChanged lo lleva a la app
-  } catch (err) {
-    if (err.code !== 'auth/popup-closed-by-user') showAuthError('No se pudo iniciar con Google.');
-  }
-};
-
-// ── LOGIN / REGISTRO con Facebook (popup) ──
-window.doLoginFacebook = async function() {
-  clearAuthError();
-  try {
-    const result = await signInWithPopup(auth, facebookProvider);
-    localStorage.setItem('pebble_login_time', Date.now().toString());
-    const isNew  = result._tokenResponse?.isNewUser;
-    if (isNew) window.location.href = './planes.html';
-  } catch (err) {
-    console.error('Facebook login error:', err.code, err.message);
-    if (err.code === 'auth/popup-closed-by-user') return;
-    if (err.code === 'auth/popup-blocked') {
-      showAuthError('El popup fue bloqueado. Permití los popups en tu browser e intentá de nuevo.');
-    } else if (err.code === 'auth/operation-not-allowed') {
-      showAuthError('Facebook no está habilitado en Firebase. Verificá la configuración.');
-    } else if (err.code === 'auth/invalid-api-key') {
-      showAuthError('Error de configuración de Firebase.');
-    } else {
-      showAuthError('Error: ' + (err.code || err.message));
-    }
-  }
-};
-
-// ── Apple (requiere cuenta de desarrollador paga — no disponible) ──
-window.doLoginApple = function() {
-  showAuthError('Apple Sign-In no está disponible todavía. Usá email o Google.');
-};
-
-// ── LOGOUT (lo llama perfil.html vía window) ──
-window.doLogout = async function() {
-  localStorage.removeItem('pebble_login_time');
-  await signOut(auth);
-};
-
-// ── Mensajes de error legibles ──
-function loginMsg(code) {
-  return {
-    'auth/invalid-credential':   'Email o contraseña incorrectos.',
-    'auth/user-not-found':       'No existe una cuenta con ese email.',
-    'auth/wrong-password':       'Contraseña incorrecta.',
-    'auth/invalid-email':        'El email no es válido.',
-    'auth/too-many-requests':    'Demasiados intentos. Intentá más tarde.',
-    'auth/user-disabled':        'Esta cuenta fue deshabilitada.',
-  }[code] || 'Ocurrió un error. Intentá de nuevo.';
-}
-function signupMsg(code) {
-  return {
-    'auth/email-already-in-use': 'Ya existe una cuenta con ese email.',
-    'auth/weak-password':        'La contraseña debe tener al menos 6 caracteres.',
-    'auth/invalid-email':        'El email no es válido.',
-  }[code] || 'Ocurrió un error al crear la cuenta.';
-}
-</script>
-</body>
+      function signupMsg(code) {
+        return (
+          {
+            "auth/email-already-in-use": "Ya existe una cuenta con ese email.",
+            "auth/weak-password":
+              "La contraseña debe tener al menos 6 caracteres.",
+            "auth/invalid-email": "El email no es válido.",
+          }[code] || "Ocurrió un error al crear la cuenta."
+        );
+      }
+    </script>
+  </body>
 </html>

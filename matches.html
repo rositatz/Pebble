@@ -1,1037 +1,2328 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pebble — Matches</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --orange:        #FF751F;
-  --orange-mid:    #FF9700;
-  --orange-light:  #FFBB30;
-  --bg:            #EEEDEC;
-  --surf-1:        #FFFFFF;
-  --surf-2:        #F5F4F3;
-  --surf-dark:     #000000;
-  --border:        rgba(0,0,0,0.08);
-  --border2:       rgba(0,0,0,0.13);
-  --text-primary:  #000000;
-  --text-secondary:#4D4D4D;
-  --text-muted:    rgba(0,0,0,0.35);
-  --text-inv:      #EEEDEC;
-  --font-display:  'Bricolage Grotesque', sans-serif;
-  --font-serif:    'Inria Serif', serif;
-  --font-body:     'Open Sans', sans-serif;
-  --nav-top: 62px;
-  --nav-bot: 68px;
-  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
-}
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 16px; line-height: 1.5;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — Matches</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --orange: #ff751f;
+        --orange-mid: #ff9700;
+        --orange-light: #ffbb30;
+        --bg: #eeedec;
+        --surf-1: #ffffff;
+        --surf-2: #f5f4f3;
+        --surf-dark: #000000;
+        --border: rgba(0, 0, 0, 0.08);
+        --border2: rgba(0, 0, 0, 0.13);
+        --text-primary: #000000;
+        --text-secondary: #4d4d4d;
+        --text-muted: rgba(0, 0, 0, 0.35);
+        --text-inv: #eeedec;
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-serif: "Inria Serif", serif;
+        --font-body: "Open Sans", sans-serif;
+        --nav-top: 62px;
+        --nav-bot: 68px;
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --r-xl: 18px;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.5;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
 
-/* ── Top nav ── */
-.app-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-top);
-  background: var(--surf-1);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px;
-}
-.nav-left { display: flex; align-items: center; gap: 12px; }
-.nav-back {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary);
-  transition: background 0.2s, color 0.2s;
-  touch-action: manipulation; text-decoration: none;
-}
-.nav-back:hover { background: var(--surf-2); color: var(--text-primary); }
-.nav-title {
-  font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.nav-logo {
-  font-family: var(--font-display); font-size: 1.35rem; font-weight: 800;
-  letter-spacing: -0.02em; text-decoration: none;
-}
-.nav-logo .bb  { color: var(--orange); }
-.nav-logo .rest{ color: var(--text-primary); }
-.nav-actions { display: flex; align-items: center; gap: 8px; }
-.nav-icon-btn {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: transparent; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary); position: relative;
-  transition: background 0.2s, color 0.2s; touch-action: manipulation;
-}
-.nav-icon-btn:hover { background: var(--surf-2); color: var(--text-primary); }
-.notif-pip {
-  position: absolute; top: 8px; right: 8px;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--orange); border: 2px solid var(--surf-1);
-}
-.nav-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--text-primary);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 0.85rem; font-weight: 800;
-  color: #fff; cursor: pointer; border: 2px solid transparent;
-  transition: border-color 0.2s; touch-action: manipulation; text-decoration: none;
-}
-.nav-avatar:hover { border-color: var(--orange); }
+      /* ── Top nav ── */
+      .app-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-top);
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+      }
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition:
+          background 0.2s,
+          color 0.2s;
+        touch-action: manipulation;
+        text-decoration: none;
+      }
+      .nav-back:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
+      .nav-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .nav-logo {
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      .nav-logo .bb {
+        color: var(--orange);
+      }
+      .nav-logo .rest {
+        color: var(--text-primary);
+      }
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .nav-icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        position: relative;
+        transition:
+          background 0.2s,
+          color 0.2s;
+        touch-action: manipulation;
+      }
+      .nav-icon-btn:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
+      .notif-pip {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .nav-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #fff;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+        touch-action: manipulation;
+        text-decoration: none;
+      }
+      .nav-avatar:hover {
+        border-color: var(--orange);
+      }
 
-/* ── Main ── */
-.app-main {
-  margin-top: var(--nav-top);
-  margin-bottom: var(--nav-bot);
-  max-width: 780px; width: 100%;
-  margin-left: auto; margin-right: auto;
-  padding: 28px 24px;
-  display: flex; flex-direction: column; gap: 28px;
-}
+      /* ── Main ── */
+      .app-main {
+        margin-top: var(--nav-top);
+        margin-bottom: var(--nav-bot);
+        max-width: 780px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 28px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
 
-/* ── Sort / filter bar ── */
-.toolbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-}
-.sort-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-.sort-chips::-webkit-scrollbar { display: none; }
-.sort-chip {
-  flex-shrink: 0; padding: 6px 13px;
-  background: var(--surf-1); border: 1px solid var(--border2);
-  border-radius: 20px; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.75rem; font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.18s; touch-action: manipulation; white-space: nowrap;
-}
-.sort-chip:hover { border-color: var(--orange); color: var(--text-primary); }
-.sort-chip.active { background: var(--text-primary); border-color: var(--text-primary); color: #fff; }
-.match-count {
-  font-family: var(--font-display); font-size: 0.8rem; font-weight: 700;
-  color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
-}
+      /* ── Sort / filter bar ── */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .sort-chips {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .sort-chips::-webkit-scrollbar {
+        display: none;
+      }
+      .sort-chip {
+        flex-shrink: 0;
+        padding: 6px 13px;
+        background: var(--surf-1);
+        border: 1px solid var(--border2);
+        border-radius: 20px;
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        transition: all 0.18s;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+      .sort-chip:hover {
+        border-color: var(--orange);
+        color: var(--text-primary);
+      }
+      .sort-chip.active {
+        background: var(--text-primary);
+        border-color: var(--text-primary);
+        color: #fff;
+      }
+      .match-count {
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
 
-/* ── Match card ── */
-.match-card {
-  background: var(--surf-1);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  transition: box-shadow 0.22s, transform 0.22s;
-}
-.match-card:hover {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.09);
-  transform: translateY(-2px);
-}
+      /* ── Match card ── */
+      .match-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+        transition:
+          box-shadow 0.22s,
+          transform 0.22s;
+      }
+      .match-card:hover {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.09);
+        transform: translateY(-2px);
+      }
 
-/* Match nuevo: mismo fondo y colores que siempre, solo con el borde
+      /* Match nuevo: mismo fondo y colores que siempre, solo con el borde
    resaltado en naranja para que se note que es nuevo. */
-.match-card[data-new="true"] {
-  border-color: var(--orange);
-  box-shadow: 0 0 0 1px rgba(255,117,31,.3), 0 8px 28px rgba(255,117,31,.12);
-}
-.match-card[data-new="true"]:hover {
-  box-shadow: 0 0 0 1px rgba(255,117,31,.45), 0 10px 34px rgba(255,117,31,.18);
-}
+      .match-card[data-new="true"] {
+        border-color: var(--orange);
+        box-shadow:
+          0 0 0 1px rgba(255, 117, 31, 0.3),
+          0 8px 28px rgba(255, 117, 31, 0.12);
+      }
+      .match-card[data-new="true"]:hover {
+        box-shadow:
+          0 0 0 1px rgba(255, 117, 31, 0.45),
+          0 10px 34px rgba(255, 117, 31, 0.18);
+      }
 
-/* Card top row */
-.card-top {
-  display: flex; align-items: center; gap: 16px;
-  padding: 20px 20px 16px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.card-av {
-  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800;
-  color: #fff; position: relative;
-  border: 2.5px solid transparent;
-  transition: border-color 0.2s, transform 0.2s;
-}
-.card-top:hover .card-av { border-color: var(--orange); transform: scale(1.04); }
-.card-av-new::after {
-  content: ''; position: absolute; bottom: 2px; right: 2px;
-  width: 13px; height: 13px; border-radius: 50%;
-  background: var(--orange); border: 2px solid var(--surf-1);
-}
+      /* Card top row */
+      .card-top {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 20px 16px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .card-av {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #fff;
+        position: relative;
+        border: 2.5px solid transparent;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+      }
+      .card-top:hover .card-av {
+        border-color: var(--orange);
+        transform: scale(1.04);
+      }
+      .card-av-new::after {
+        content: "";
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
 
-.card-info { flex: 1; min-width: 0; }
-.card-name {
-  font-family: var(--font-display); font-size: 1.05rem; font-weight: 800;
-  letter-spacing: -0.01em; color: var(--text-primary);
-}
-.card-meta {
-  font-family: var(--font-body); font-size: 0.78rem;
-  color: var(--text-muted); margin-top: 2px;
-}
-.card-tags {
-  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px;
-}
-.card-tag {
-  font-family: var(--font-body); font-size: 0.65rem; font-weight: 600;
-  letter-spacing: 0.03em;
-  padding: 3px 9px; border-radius: 20px;
-  background: var(--surf-2); color: var(--text-secondary);
-  border: 1px solid var(--border2);
-}
+      .card-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-name {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+      }
+      .card-meta {
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      .card-tags {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-top: 7px;
+      }
+      .card-tag {
+        font-family: var(--font-body);
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        padding: 3px 9px;
+        border-radius: 20px;
+        background: var(--surf-2);
+        color: var(--text-secondary);
+        border: 1px solid var(--border2);
+      }
 
-/* Score ring */
-.score-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  flex-shrink: 0;
-}
-.score-ring {
-  position: relative; width: 56px; height: 56px;
-}
-.score-ring svg { width: 56px; height: 56px; transform: rotate(-90deg); }
-.score-ring-bg { fill: none; stroke: var(--surf-2); stroke-width: 4; }
-.score-ring-fill { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
-.score-number {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 0.85rem; font-weight: 800;
-  color: var(--text-primary); letter-spacing: -0.02em;
-}
-.score-label {
-  font-family: var(--font-body); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
-}
+      /* Score ring */
+      .score-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        flex-shrink: 0;
+      }
+      .score-ring {
+        position: relative;
+        width: 56px;
+        height: 56px;
+      }
+      .score-ring svg {
+        width: 56px;
+        height: 56px;
+        transform: rotate(-90deg);
+      }
+      .score-ring-bg {
+        fill: none;
+        stroke: var(--surf-2);
+        stroke-width: 4;
+      }
+      .score-ring-fill {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.6s ease;
+      }
+      .score-number {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+      }
+      .score-label {
+        font-family: var(--font-body);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
 
-/* Reasons section */
-.card-reasons {
-  padding: 0 20px 16px;
-  display: flex; flex-direction: column; gap: 7px;
-}
-.reasons-title {
-  font-family: var(--font-body); font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--text-muted); margin-bottom: 2px;
-}
-.reason-row {
-  display: flex; align-items: flex-start; gap: 10px;
-}
-.reason-icon {
-  width: 28px; height: 28px; border-radius: var(--r-sm); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(255,117,31,0.08);
-}
-.reason-icon svg { width: 14px; height: 14px; color: var(--orange); }
-.reason-text {
-  font-family: var(--font-body); font-size: 0.8rem;
-  color: var(--text-secondary); line-height: 1.45; padding-top: 5px;
-}
-.reason-text strong { color: var(--text-primary); font-weight: 600; }
+      /* Reasons section */
+      .card-reasons {
+        padding: 0 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .reasons-title {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+      }
+      .reason-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .reason-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--r-sm);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 117, 31, 0.08);
+      }
+      .reason-icon svg {
+        width: 14px;
+        height: 14px;
+        color: var(--orange);
+      }
+      .reason-text {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        line-height: 1.45;
+        padding-top: 5px;
+      }
+      .reason-text strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
 
-/* Score bar (mini) inside reasons */
-.reason-score-row {
-  display: flex; align-items: center; gap: 8px; margin-top: 2px;
-}
-.reason-bar-wrap {
-  flex: 1; height: 5px; background: var(--surf-2); border-radius: 3px; overflow: hidden;
-}
-.reason-bar { height: 100%; border-radius: 3px; background: var(--orange); }
-.reason-bar-label {
-  font-family: var(--font-display); font-size: 0.68rem; font-weight: 700;
-  color: var(--orange); width: 28px; text-align: right;
-}
+      /* Score bar (mini) inside reasons */
+      .reason-score-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .reason-bar-wrap {
+        flex: 1;
+        height: 5px;
+        background: var(--surf-2);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .reason-bar {
+        height: 100%;
+        border-radius: 3px;
+        background: var(--orange);
+      }
+      .reason-bar-label {
+        font-family: var(--font-display);
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--orange);
+        width: 28px;
+        text-align: right;
+      }
 
-/* CTA row */
-.card-actions {
-  padding: 14px 20px 20px;
-  display: flex; gap: 10px;
-  border-top: 1px solid var(--border);
-}
-.btn-profile {
-  flex: 1; padding: 10px;
-  background: var(--surf-2); border: 1px solid var(--border2);
-  border-radius: var(--r-sm); cursor: pointer;
-  font-family: var(--font-body); font-size: 0.78rem; font-weight: 600;
-  color: var(--text-secondary); letter-spacing: 0.04em; text-transform: uppercase;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
-  touch-action: manipulation;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.btn-profile:hover { border-color: var(--text-primary); color: var(--text-primary); background: var(--surf-1); }
-.btn-chat {
-  flex: 2; padding: 10px;
-  background: var(--text-primary); border: none; border-radius: var(--r-sm); cursor: pointer;
-  font-family: var(--font-body); font-size: 0.78rem; font-weight: 700;
-  color: #fff; letter-spacing: 0.05em; text-transform: uppercase;
-  transition: background 0.2s, transform 0.15s;
-  touch-action: manipulation;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  clip-path: polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
-}
-.btn-chat:hover { background: var(--orange); transform: translateY(-1px); }
-.btn-chat:active { transform: translateY(0); }
+      /* CTA row */
+      .card-actions {
+        padding: 14px 20px 20px;
+        display: flex;
+        gap: 10px;
+        border-top: 1px solid var(--border);
+      }
+      .btn-profile {
+        flex: 1;
+        padding: 10px;
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        transition:
+          border-color 0.2s,
+          color 0.2s,
+          background 0.2s;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-profile:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+        background: var(--surf-1);
+      }
+      .btn-chat {
+        flex: 2;
+        padding: 10px;
+        background: var(--text-primary);
+        border: none;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        transition:
+          background 0.2s,
+          transform 0.15s;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        clip-path: polygon(
+          0 0,
+          calc(100% - 8px) 0,
+          100% 8px,
+          100% 100%,
+          8px 100%,
+          0 calc(100% - 8px)
+        );
+      }
+      .btn-chat:hover {
+        background: var(--orange);
+        transform: translateY(-1px);
+      }
+      .btn-chat:active {
+        transform: translateY(0);
+      }
 
-/* ── Profile modal ── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(0,0,0,0.5);
+      /* ── Profile modal ── */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: rgba(0, 0, 0, 0.5);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
-  padding: 24px;
+        padding: 24px;
 
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s;
-}
-.modal-overlay.open { opacity: 1; pointer-events: all; }
-.modal-sheet {
-  background: var(--surf-1);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s;
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal-sheet {
+        background: var(--surf-1);
 
-  width: 100%;
-  max-width: 720px;
+        width: 100%;
+        max-width: 720px;
 
-  max-height: 82vh;
+        max-height: 82vh;
 
-  border-radius: 24px;
+        border-radius: 24px;
 
-  overflow-y: auto;
-  overflow-x: hidden;
+        overflow-y: auto;
+        overflow-x: hidden;
 
-  box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
 
-  padding-bottom: 24px;
+        padding-bottom: 24px;
 
-  transform: translateY(20px) scale(0.98);
+        transform: translateY(20px) scale(0.98);
 
-  transition:
-    transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
-    opacity 0.3s;
+        transition:
+          transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 0.3s;
 
-  /* scrollbar firefox */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,0,0,0.18) transparent;
-}
+        /* scrollbar firefox */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+      }
 
-/* scrollbar chrome/edge/safari */
-.modal-sheet::-webkit-scrollbar {
-  width: 8px;
-}
+      /* scrollbar chrome/edge/safari */
+      .modal-sheet::-webkit-scrollbar {
+        width: 8px;
+      }
 
-.modal-sheet::-webkit-scrollbar-track {
-  background: transparent;
-  margin: 12px 0;
-}
+      .modal-sheet::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 12px 0;
+      }
 
-.modal-sheet::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.16);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
+      .modal-sheet::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.16);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
 
-.modal-sheet::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,0,0,0.26);
-  background-clip: padding-box;
-}
-.modal-body {
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.modal-overlay.open .modal-sheet {  transform: translateY(0) scale(1);}
-.modal-handle {
-  width: 40px; height: 4px; border-radius: 2px;
-  background: var(--border2); margin: 12px auto 20px;
-}
-.modal-header {
-  display: flex; align-items: center; gap: 18px;
-  padding: 0 24px 20px;
-  border-bottom: 1px solid var(--border);
-}
-.modal-av {
-  width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 1.6rem; font-weight: 800;
-  color: #fff;
-}
-.modal-name-wrap { flex: 1; }
-.modal-name {
-  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.modal-meta { font-family: var(--font-body); font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
-.modal-score-big {
-  font-family: var(--font-display); font-size: 2rem; font-weight: 800;
-  color: var(--orange); letter-spacing: -0.03em;
-}
-.modal-score-sub { font-family: var(--font-body); font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+      .modal-sheet::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.26);
+        background-clip: padding-box;
+      }
+      .modal-body {
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      .modal-overlay.open .modal-sheet {
+        transform: translateY(0) scale(1);
+      }
+      .modal-handle {
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--border2);
+        margin: 12px auto 20px;
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 24px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .modal-av {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .modal-name-wrap {
+        flex: 1;
+      }
+      .modal-name {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .modal-meta {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      .modal-score-big {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--orange);
+        letter-spacing: -0.03em;
+      }
+      .modal-score-sub {
+        font-family: var(--font-body);
+        font-size: 0.62rem;
+        color: var(--text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
 
-.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 24px; }
+      .modal-body {
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
 
-.modal-section-title {
-  font-family: var(--font-body); font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
-  margin-bottom: 10px;
-}
+      .modal-section-title {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+      }
 
-/* Compat bars */
-.compat-row { display: flex; flex-direction: column; gap: 10px; }
-.compat-item { display: flex; flex-direction: column; gap: 4px; }
-.compat-item-header { display: flex; justify-content: space-between; }
-.compat-item-label { font-family: var(--font-body); font-size: 0.82rem; font-weight: 500; color: var(--text-primary); }
-.compat-item-pct { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--orange); }
-.compat-bar-wrap { height: 6px; background: var(--surf-2); border-radius: 3px; overflow: hidden; }
-.compat-bar { height: 100%; border-radius: 3px; background: linear-gradient(to right, var(--orange-light), var(--orange)); transition: width 0.8s ease; }
+      /* Compat bars */
+      .compat-row {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .compat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .compat-item-header {
+        display: flex;
+        justify-content: space-between;
+      }
+      .compat-item-label {
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+      .compat-item-pct {
+        font-family: var(--font-display);
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--orange);
+      }
+      .compat-bar-wrap {
+        height: 6px;
+        background: var(--surf-2);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .compat-bar {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(
+          to right,
+          var(--orange-light),
+          var(--orange)
+        );
+        transition: width 0.8s ease;
+      }
 
-/* Interests */
-.interest-tags { display: flex; gap: 7px; flex-wrap: wrap; }
-.interest-tag {
-  padding: 5px 12px; border-radius: 20px;
-  background: var(--surf-2); border: 1px solid var(--border2);
-  font-family: var(--font-body); font-size: 0.78rem; color: var(--text-secondary);
-}
-.interest-tag.shared {
-  background: rgba(255,117,31,0.08); border-color: rgba(255,117,31,0.25);
-  color: var(--orange);
-}
+      /* Interests */
+      .interest-tags {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .interest-tag {
+        padding: 5px 12px;
+        border-radius: 20px;
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+      }
+      .interest-tag.shared {
+        background: rgba(255, 117, 31, 0.08);
+        border-color: rgba(255, 117, 31, 0.25);
+        color: var(--orange);
+      }
 
-/* Profile photos grid */
-.profile-photos-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  grid-template-rows: 110px 110px;
-  gap: 6px;
-}
-.profile-photo-thumb {
-  border-radius: var(--r-md); overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 1.8rem; font-weight: 800;
-  color: rgba(255,255,255,0.35); letter-spacing: -0.02em;
-  user-select: none;
-}
-.profile-photo-thumb:first-child { grid-row: 1 / 3; font-size: 2.8rem; }
+      /* Profile photos grid */
+      .profile-photos-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-rows: 110px 110px;
+        gap: 6px;
+      }
+      .profile-photo-thumb {
+        border-radius: var(--r-md);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.35);
+        letter-spacing: -0.02em;
+        user-select: none;
+      }
+      .profile-photo-thumb:first-child {
+        grid-row: 1 / 3;
+        font-size: 2.8rem;
+      }
 
-/* Gemelo chat preview */
-.gemelo-preview {
-  background: var(--surf-2); border-radius: var(--r-lg);
-  padding: 14px; display: flex; flex-direction: column; gap: 8px;
-}
-.gemelo-preview-title {
-  font-family: var(--font-body); font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
-  margin-bottom: 2px;
-}
-.preview-bubble {
-  padding: 10px 14px; border-radius: 18px; max-width: 85%;
-  font-family: var(--font-serif); font-size: 0.875rem; font-style: italic;
-  font-weight: 300; line-height: 1.68; word-wrap: break-word;
-}
-.preview-bubble.left { background: var(--surf-1); color: var(--text-secondary); border-bottom-left-radius: 3px; align-self: flex-start; }
-.preview-bubble.right { background: var(--orange); color: #fff; border-bottom-right-radius: 3px; align-self: flex-end; }
+      /* Gemelo chat preview */
+      .gemelo-preview {
+        background: var(--surf-2);
+        border-radius: var(--r-lg);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .gemelo-preview-title {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+      }
+      .preview-bubble {
+        padding: 10px 14px;
+        border-radius: 18px;
+        max-width: 85%;
+        font-family: var(--font-serif);
+        font-size: 0.875rem;
+        font-style: italic;
+        font-weight: 300;
+        line-height: 1.68;
+        word-wrap: break-word;
+      }
+      .preview-bubble.left {
+        background: var(--surf-1);
+        color: var(--text-secondary);
+        border-bottom-left-radius: 3px;
+        align-self: flex-start;
+      }
+      .preview-bubble.right {
+        background: var(--orange);
+        color: #fff;
+        border-bottom-right-radius: 3px;
+        align-self: flex-end;
+      }
 
-/* Modal CTA */
-.modal-cta-row {
-  padding: 24px 24px 0;
-  display: flex;
-  gap: 10px;
-}
+      /* Modal CTA */
+      .modal-cta-row {
+        padding: 24px 24px 0;
+        display: flex;
+        gap: 10px;
+      }
 
-/* ── Bottom nav ── */
-.app-bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-bot);
-  background: var(--surf-1); border-top: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 16px;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-.bnav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; padding: 8px;
-  background: none; border: none; cursor: pointer;
-  color: var(--text-muted); text-decoration: none;
-  transition: color 0.2s; touch-action: manipulation; min-height: 48px;
-}
-.bnav-item:hover { color: var(--text-secondary); }
-.bnav-item.active { color: var(--orange); }
-.bnav-icon { position: relative; line-height: 1; }
-.bnav-icon svg { width: 22px; height: 22px; display: block; }
-.bnav-pip { position: absolute; top: -3px; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
-.bnav-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-.bnav-center {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; padding: 8px;
-  background: none; border: none; cursor: pointer;
-  text-decoration: none; touch-action: manipulation; min-height: 48px;
-}
-.bnav-center-orb {
-  width: 50px; height: 50px; border-radius: 50%;
-  background: var(--text-primary);
-  display: flex; align-items: center; justify-content: center;
-  margin-top: -20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  border: 3px solid var(--bg);
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-}
-.bnav-center:hover .bnav-center-orb { transform: scale(1.08); background: var(--orange); box-shadow: 0 6px 28px rgba(255,117,31,0.4); }
-.bnav-center-orb svg { width: 22px; height: 22px; }
-.bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
-.bnav-center:hover .bnav-center-label { color: var(--orange); }
+      /* ── Bottom nav ── */
+      .app-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-bot);
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
+      .bnav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-item:hover {
+        color: var(--text-secondary);
+      }
+      .bnav-item.active {
+        color: var(--orange);
+      }
+      .bnav-icon {
+        position: relative;
+        line-height: 1;
+      }
+      .bnav-icon svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
+      .bnav-pip {
+        position: absolute;
+        top: -3px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .bnav-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .bnav-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-center-orb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        border: 3px solid var(--bg);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+      }
+      .bnav-center:hover .bnav-center-orb {
+        transform: scale(1.08);
+        background: var(--orange);
+        box-shadow: 0 6px 28px rgba(255, 117, 31, 0.4);
+      }
+      .bnav-center-orb svg {
+        width: 22px;
+        height: 22px;
+      }
+      .bnav-center-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+      }
+      .bnav-center:hover .bnav-center-label {
+        color: var(--orange);
+      }
 
-/* ── Animations ── */
-@keyframes fade-up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-.fu { opacity:0; animation: fade-up 0.4s ease forwards; }
-.fu:nth-child(1){animation-delay:.04s}
-.fu:nth-child(2){animation-delay:.09s}
-.fu:nth-child(3){animation-delay:.14s}
-.fu:nth-child(4){animation-delay:.19s}
-.fu:nth-child(5){animation-delay:.24s}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
-#loadingOverlay.hide{opacity:0;pointer-events:none}
-.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+      /* ── Animations ── */
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .fu {
+        opacity: 0;
+        animation: fade-up 0.4s ease forwards;
+      }
+      .fu:nth-child(1) {
+        animation-delay: 0.04s;
+      }
+      .fu:nth-child(2) {
+        animation-delay: 0.09s;
+      }
+      .fu:nth-child(3) {
+        animation-delay: 0.14s;
+      }
+      .fu:nth-child(4) {
+        animation-delay: 0.19s;
+      }
+      .fu:nth-child(5) {
+        animation-delay: 0.24s;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      #loadingOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+      }
+      #loadingOverlay.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-spinner {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: var(--orange);
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-/* ══════════════════════════════════════
+      /* ══════════════════════════════════════
    RESPONSIVE — MOBILE
 ══════════════════════════════════════ */
-@media (max-width: 600px) {
-  /* Nav */
-  .app-nav { padding: 0 16px; }
+      @media (max-width: 600px) {
+        /* Nav */
+        .app-nav {
+          padding: 0 16px;
+        }
 
-  /* Main padding */
-  .app-main { padding: 20px 12px; }
+        /* Main padding */
+        .app-main {
+          padding: 20px 12px;
+        }
 
-  /* Cards de matches — menos padding interno */
-  .match-card { padding: 16px 16px 14px; }
+        /* Cards de matches — menos padding interno */
+        .match-card {
+          padding: 16px 16px 14px;
+        }
 
-  /* Foto + info dentro del card */
-  .match-card-top { gap: 12px; }
+        /* Foto + info dentro del card */
+        .match-card-top {
+          gap: 12px;
+        }
 
-  /* Grid de fotos 2fr 1fr 1fr: ajuste para pantallas chicas */
-  .photo-grid {
-    grid-template-columns: 1.8fr 1fr 1fr;
-    gap: 4px;
-  }
+        /* Grid de fotos 2fr 1fr 1fr: ajuste para pantallas chicas */
+        .photo-grid {
+          grid-template-columns: 1.8fr 1fr 1fr;
+          gap: 4px;
+        }
 
-  /* Modal de match — ocupa toda la pantalla */
-  .modal-inner {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    border-radius: 20px 20px 0 0;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 92vh;
-    overflow-y: auto;
-  }
-  .modal-body { padding: 16px; }
+        /* Modal de match — ocupa toda la pantalla */
+        .modal-inner {
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
+          border-radius: 20px 20px 0 0;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          max-height: 92vh;
+          overflow-y: auto;
+        }
+        .modal-body {
+          padding: 16px;
+        }
 
-  /* Filtros de matches */
-  .filter-bar { padding: 0 12px 14px; gap: 6px; }
-  .filter-chip { padding: 5px 11px; font-size: 0.75rem; }
-}
-</style>
-</head>
-<body>
-<div id="loadingOverlay"><div class="loading-spinner"></div></div>
+        /* Filtros de matches */
+        .filter-bar {
+          padding: 0 12px 14px;
+          gap: 6px;
+        }
+        .filter-chip {
+          padding: 5px 11px;
+          font-size: 0.75rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
-<!-- Top nav -->
-<nav class="app-nav" aria-label="Navegación">
-  <div class="nav-left">
-    <a href="./home.html" class="nav-back" aria-label="Volver al inicio">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-    </a>
-    <span class="nav-title">Matches</span>
-  </div>
-  <a href="./home.html" class="nav-logo" aria-label="Pebble"><span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span></a>
-  <div class="nav-actions">
-    <button class="nav-icon-btn" onclick="window.location.href='./notificaciones.html'" aria-label="Notificaciones">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    </button>
-    <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
-  </div>
-</nav>
+    <!-- Top nav -->
+    <nav class="app-nav" aria-label="Navegación">
+      <div class="nav-left">
+        <a href="./home.html" class="nav-back" aria-label="Volver al inicio">
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <span class="nav-title">Matches</span>
+      </div>
+      <a href="./home.html" class="nav-logo" aria-label="Pebble"
+        ><span class="rest">PE</span><span class="bb">BB</span
+        ><span class="rest">LE</span></a
+      >
+      <div class="nav-actions">
+        <button
+          class="nav-icon-btn"
+          onclick="window.location.href = './notificaciones.html'"
+          aria-label="Notificaciones"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </button>
+        <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+      </div>
+    </nav>
 
-<!-- Main -->
-<main class="app-main">
+    <!-- Main -->
+    <main class="app-main">
+      <!-- Toolbar -->
+      <div class="toolbar fu">
+        <div class="sort-chips" role="tablist" aria-label="Ordenar por">
+          <button
+            class="sort-chip active"
+            role="tab"
+            aria-selected="true"
+            onclick="sortMatches('afinidad', this)"
+          >
+            Mayor afinidad
+          </button>
+          <button
+            class="sort-chip"
+            role="tab"
+            aria-selected="false"
+            onclick="sortMatches('nuevos', this)"
+          >
+            Nuevos primero
+          </button>
+          <button
+            class="sort-chip"
+            role="tab"
+            aria-selected="false"
+            onclick="sortMatches('activos', this)"
+          >
+            Con chat activo
+          </button>
+        </div>
+        <span class="match-count" aria-live="polite" id="match-count"
+          >5 matches</span
+        >
+      </div>
 
-  <!-- Toolbar -->
-  <div class="toolbar fu">
-    <div class="sort-chips" role="tablist" aria-label="Ordenar por">
-      <button class="sort-chip active" role="tab" aria-selected="true"  onclick="sortMatches('afinidad', this)">Mayor afinidad</button>
-      <button class="sort-chip"        role="tab" aria-selected="false" onclick="sortMatches('nuevos', this)">Nuevos primero</button>
-      <button class="sort-chip"        role="tab" aria-selected="false" onclick="sortMatches('activos', this)">Con chat activo</button>
+      <!-- ── MATCH CARDS ── -->
+      <!-- ── Datos de ejemplo. Reemplazar con datos reales del backend ── -->
+
+      <!-- 1. Sofía 92% -->
+      <div
+        class="match-card fu"
+        data-id="sofia"
+        data-score="92"
+        data-new="true"
+        data-active="true"
+      >
+        <div
+          class="card-top"
+          onclick="openProfile('sofia')"
+          role="button"
+          tabindex="0"
+          aria-label="Ver perfil de Sofía"
+        >
+          <div
+            class="card-av card-av-new"
+            style="
+              background-image: url(./images/sofia.png);
+              background-size: cover;
+              background-position: center;
+            "
+            aria-hidden="true"
+          ></div>
+          <div class="card-info">
+            <div class="card-name">Sofía, 26</div>
+            <div class="card-meta">Buenos Aires · match hace 12 min</div>
+            <div class="card-tags">
+              <span class="card-tag">Música</span>
+              <span class="card-tag">Viajes</span>
+              <span class="card-tag">Lectura</span>
+            </div>
+          </div>
+          <div class="score-wrap">
+            <div class="score-ring" aria-label="92% de compatibilidad">
+              <svg viewBox="0 0 56 56">
+                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
+                <circle
+                  class="score-ring-fill"
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="#FF751F"
+                  stroke-dasharray="138.2"
+                  stroke-dashoffset="11"
+                />
+              </svg>
+              <span class="score-number">92%</span>
+            </div>
+            <span class="score-label">Afinidad</span>
+          </div>
+        </div>
+        <div class="card-reasons">
+          <p class="reasons-title">Por qué son compatibles</p>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Gustos musicales</strong> muy similares — ambos valoran la
+              música en vivo y géneros alternativos.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 95%"></div>
+                </div>
+                <span class="reason-bar-label">95%</span>
+              </div>
+            </div>
+          </div>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v4l3 3" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Estilo de comunicación</strong> — prefieren conversaciones
+              profundas sobre charla superficial.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 91%"></div>
+                </div>
+                <span class="reason-bar-label">91%</span>
+              </div>
+            </div>
+          </div>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Valores en común</strong> — ambos priorizan la honestidad
+              y los vínculos con profundidad.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 88%"></div>
+                </div>
+                <span class="reason-bar-label">88%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button
+            class="btn-profile"
+            onclick="openProfile('sofia')"
+            aria-label="Ver perfil de Sofía"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Perfil
+          </button>
+          <button
+            class="btn-chat"
+            onclick="window.location.href = './chats.html?persona=sofia'"
+            aria-label="Hablar con Sofía"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            Escribirle a Sofía
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Mateo 87% -->
+      <div
+        class="match-card fu"
+        data-id="mateo"
+        data-score="87"
+        data-new="false"
+        data-active="true"
+      >
+        <div
+          class="card-top"
+          onclick="openProfile('mateo')"
+          role="button"
+          tabindex="0"
+          aria-label="Ver perfil de Mateo"
+        >
+          <div
+            class="card-av"
+            style="
+              background-image: url(./images/mateo.png);
+              background-size: cover;
+              background-position: center;
+            "
+            aria-hidden="true"
+          ></div>
+          <div class="card-info">
+            <div class="card-name">Mateo, 28</div>
+            <div class="card-meta">Buenos Aires · match hace 2 días</div>
+            <div class="card-tags">
+              <span class="card-tag">Cine</span>
+              <span class="card-tag">Tecnología</span>
+              <span class="card-tag">Running</span>
+            </div>
+          </div>
+          <div class="score-wrap">
+            <div class="score-ring" aria-label="87% de compatibilidad">
+              <svg viewBox="0 0 56 56">
+                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
+                <circle
+                  class="score-ring-fill"
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="#FF9700"
+                  stroke-dasharray="138.2"
+                  stroke-dashoffset="18"
+                />
+              </svg>
+              <span class="score-number">87%</span>
+            </div>
+            <span class="score-label">Afinidad</span>
+          </div>
+        </div>
+        <div class="card-reasons">
+          <p class="reasons-title">Por qué son compatibles</p>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Humor y referencias culturales</strong> — comparten
+              ironía, cine de culto y referencias de la misma generación.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 90%"></div>
+                </div>
+                <span class="reason-bar-label">90%</span>
+              </div>
+            </div>
+          </div>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Tipo de vínculo buscado</strong> — ambos buscan algo serio
+              con tiempo para construir.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 84%"></div>
+                </div>
+                <span class="reason-bar-label">84%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button
+            class="btn-profile"
+            onclick="openProfile('mateo')"
+            aria-label="Ver perfil de Mateo"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Perfil
+          </button>
+          <button
+            class="btn-chat"
+            onclick="window.location.href = './chats.html?persona=mateo'"
+            aria-label="Hablar con Mateo"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            Escribirle a Mateo
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Valentina 81% -->
+      <div
+        class="match-card fu"
+        data-id="valentina"
+        data-score="81"
+        data-new="true"
+        data-active="false"
+      >
+        <div
+          class="card-top"
+          onclick="openProfile('valentina')"
+          role="button"
+          tabindex="0"
+          aria-label="Ver perfil de Valentina"
+        >
+          <div
+            class="card-av card-av-new"
+            style="
+              background-image: url(./images/valentina.png);
+              background-size: cover;
+              background-position: center;
+            "
+            aria-hidden="true"
+          ></div>
+          <div class="card-info">
+            <div class="card-name">Valentina, 24</div>
+            <div class="card-meta">CABA · match hace 1 día</div>
+            <div class="card-tags">
+              <span class="card-tag">Arte</span>
+              <span class="card-tag">Fotografía</span>
+              <span class="card-tag">Yoga</span>
+            </div>
+          </div>
+          <div class="score-wrap">
+            <div class="score-ring" aria-label="81% de compatibilidad">
+              <svg viewBox="0 0 56 56">
+                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
+                <circle
+                  class="score-ring-fill"
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="#FFBB30"
+                  stroke-dasharray="138.2"
+                  stroke-dashoffset="26"
+                />
+              </svg>
+              <span class="score-number">81%</span>
+            </div>
+            <span class="score-label">Afinidad</span>
+          </div>
+        </div>
+        <div class="card-reasons">
+          <p class="reasons-title">Por qué son compatibles</p>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 20h9" />
+                <path
+                  d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+                />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Expresión creativa</strong> — comparten sensibilidad
+              artística y apreciación por lo visual.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 85%"></div>
+                </div>
+                <span class="reason-bar-label">85%</span>
+              </div>
+            </div>
+          </div>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" />
+                <path d="M12 8v4l3 3" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Ritmo de vida</strong> — ambos valoran el tiempo propio y
+              la calma sobre la agitación social.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 77%"></div>
+                </div>
+                <span class="reason-bar-label">77%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button
+            class="btn-profile"
+            onclick="openProfile('valentina')"
+            aria-label="Ver perfil de Valentina"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Perfil
+          </button>
+          <button
+            class="btn-chat"
+            onclick="window.location.href = './chats.html?persona=valentina'"
+            aria-label="Hablar con Valentina"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            Escribirle a Valentina
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. Lucía 76% -->
+      <div
+        class="match-card fu"
+        data-id="lucia"
+        data-score="76"
+        data-new="false"
+        data-active="true"
+      >
+        <div
+          class="card-top"
+          onclick="openProfile('lucia')"
+          role="button"
+          tabindex="0"
+          aria-label="Ver perfil de Lucía"
+        >
+          <div
+            class="card-av"
+            style="
+              background-image: url(./images/lucia.png);
+              background-size: cover;
+              background-position: center;
+            "
+            aria-hidden="true"
+          ></div>
+          <div class="card-info">
+            <div class="card-name">Lucía, 27</div>
+            <div class="card-meta">Buenos Aires · match hace 3 días</div>
+            <div class="card-tags">
+              <span class="card-tag">Libros</span>
+              <span class="card-tag">Cocina</span>
+              <span class="card-tag">Senderismo</span>
+            </div>
+          </div>
+          <div class="score-wrap">
+            <div class="score-ring" aria-label="76% de compatibilidad">
+              <svg viewBox="0 0 56 56">
+                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
+                <circle
+                  class="score-ring-fill"
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="#FF751F"
+                  stroke-dasharray="138.2"
+                  stroke-dashoffset="33"
+                />
+              </svg>
+              <span class="score-number">76%</span>
+            </div>
+            <span class="score-label">Afinidad</span>
+          </div>
+        </div>
+        <div class="card-reasons">
+          <p class="reasons-title">Por qué son compatibles</p>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Curiosidad intelectual</strong> — ambos disfrutan
+              aprender, leer y debatir ideas.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 80%"></div>
+                </div>
+                <span class="reason-bar-label">80%</span>
+              </div>
+            </div>
+          </div>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 11l19-9-9 19-2-8-8-2z" />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Afinidad de proyectos</strong> — comparten visión a largo
+              plazo y objetivos de vida similares.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 72%"></div>
+                </div>
+                <span class="reason-bar-label">72%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button
+            class="btn-profile"
+            onclick="openProfile('lucia')"
+            aria-label="Ver perfil de Lucía"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Perfil
+          </button>
+          <button
+            class="btn-chat"
+            onclick="window.location.href = './chats.html?persona=lucia'"
+            aria-label="Hablar con Lucía"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            Escribirle a Lucía
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. Agustín 71% -->
+      <div
+        class="match-card fu"
+        data-id="agustin"
+        data-score="71"
+        data-new="false"
+        data-active="false"
+      >
+        <div
+          class="card-top"
+          onclick="openProfile('agustin')"
+          role="button"
+          tabindex="0"
+          aria-label="Ver perfil de Agustín"
+        >
+          <div
+            class="card-av"
+            style="
+              background-image: url(./images/Agustin.png);
+              background-size: cover;
+              background-position: center;
+            "
+            aria-hidden="true"
+          ></div>
+          <div class="card-info">
+            <div class="card-name">Agustín, 29</div>
+            <div class="card-meta">Buenos Aires · match hace 4 días</div>
+            <div class="card-tags">
+              <span class="card-tag">Deporte</span>
+              <span class="card-tag">Viajes</span>
+              <span class="card-tag">Gastronomía</span>
+            </div>
+          </div>
+          <div class="score-wrap">
+            <div class="score-ring" aria-label="71% de compatibilidad">
+              <svg viewBox="0 0 56 56">
+                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
+                <circle
+                  class="score-ring-fill"
+                  cx="28"
+                  cy="28"
+                  r="22"
+                  stroke="#FF751F"
+                  stroke-dasharray="138.2"
+                  stroke-dashoffset="40"
+                />
+              </svg>
+              <span class="score-number">71%</span>
+            </div>
+            <span class="score-label">Afinidad</span>
+          </div>
+        </div>
+        <div class="card-reasons">
+          <p class="reasons-title">Por qué son compatibles</p>
+          <div class="reason-row">
+            <div class="reason-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path
+                  d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                />
+              </svg>
+            </div>
+            <div class="reason-text">
+              <strong>Actitud ante la vida</strong> — comparten energía
+              positiva, curiosidad por el mundo y ganas de salir.
+              <div class="reason-score-row">
+                <div class="reason-bar-wrap">
+                  <div class="reason-bar" style="width: 74%"></div>
+                </div>
+                <span class="reason-bar-label">74%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button
+            class="btn-profile"
+            onclick="openProfile('agustin')"
+            aria-label="Ver perfil de Agustín"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Perfil
+          </button>
+          <button
+            class="btn-chat"
+            onclick="window.location.href = './chats.html?persona=agustin'"
+            aria-label="Hablar con Agustín"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            Escribirle a Agustín
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── PROFILE MODAL ── -->
+    <div
+      class="modal-overlay"
+      id="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Perfil del match"
+      onclick="closeIfOverlay(event)"
+    >
+      <div class="modal-sheet" id="modal-sheet">
+        <div class="modal-handle" aria-hidden="true"></div>
+
+        <div class="modal-header" id="modal-header">
+          <!-- populated by JS -->
+        </div>
+
+        <div class="modal-body" id="modal-body">
+          <!-- populated by JS -->
+        </div>
+
+        <div class="modal-cta-row">
+          <button
+            class="btn-profile"
+            style="flex: 1"
+            onclick="closeModal()"
+            aria-label="Cerrar perfil"
+          >
+            Cerrar
+          </button>
+          <button
+            class="btn-chat"
+            style="flex: 2"
+            id="modal-chat-btn"
+            aria-label="Ir al chat"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            <span id="modal-chat-label">Escribirle</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <span class="match-count" aria-live="polite" id="match-count">5 matches</span>
-  </div>
 
-  <!-- ── MATCH CARDS ── -->
-  <!-- ── Datos de ejemplo. Reemplazar con datos reales del backend ── -->
+    <!-- Bottom nav -->
+    <nav class="app-bottom-nav" aria-label="Navegación inferior">
+      <a href="./home.html" class="bnav-item" aria-label="Inicio"
+        ><span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" /></svg></span
+        ><span class="bnav-label">Inicio</span></a
+      >
+      <a
+        href="./matches.html"
+        class="bnav-item active"
+        aria-label="Matches"
+        aria-current="page"
+        ><span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            /></svg></span
+        ><span class="bnav-label">Matches</span></a
+      >
+      <a href="./gemelo.html" class="bnav-center" aria-label="Gemelo"
+        ><div class="bnav-center-orb" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4l3 3" />
+          </svg>
+        </div>
+        <span class="bnav-center-label">Gemelo</span></a
+      >
+      <a href="./chats.html" class="bnav-item" aria-label="Chats"
+        ><span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            /></svg></span
+        ><span class="bnav-label">Chats</span></a
+      >
+      <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil"
+        ><span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" /></svg></span
+        ><span class="bnav-label">Perfil</span></a
+      >
+    </nav>
 
-  <!-- 1. Sofía 92% -->
-  <div class="match-card fu" data-id="sofia" data-score="92" data-new="true" data-active="true">
-    <div class="card-top" onclick="openProfile('sofia')" role="button" tabindex="0" aria-label="Ver perfil de Sofía">
-      <div class="card-av card-av-new" style="background-image:url(./sofia.png);background-size:cover;background-position:center" aria-hidden="true"></div>
-      <div class="card-info">
-        <div class="card-name">Sofía, 26</div>
-        <div class="card-meta">Buenos Aires · match hace 12 min</div>
-        <div class="card-tags">
-          <span class="card-tag">Música</span>
-          <span class="card-tag">Viajes</span>
-          <span class="card-tag">Lectura</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <div class="score-ring" aria-label="92% de compatibilidad">
-          <svg viewBox="0 0 56 56"><circle class="score-ring-bg" cx="28" cy="28" r="22"/><circle class="score-ring-fill" cx="28" cy="28" r="22" stroke="#FF751F" stroke-dasharray="138.2" stroke-dashoffset="11"/></svg>
-          <span class="score-number">92%</span>
-        </div>
-        <span class="score-label">Afinidad</span>
-      </div>
-    </div>
-    <div class="card-reasons">
-      <p class="reasons-title">Por qué son compatibles</p>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-        <div class="reason-text"><strong>Gustos musicales</strong> muy similares — ambos valoran la música en vivo y géneros alternativos.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:95%"></div></div><span class="reason-bar-label">95%</span></div>
-        </div>
-      </div>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-        <div class="reason-text"><strong>Estilo de comunicación</strong> — prefieren conversaciones profundas sobre charla superficial.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:91%"></div></div><span class="reason-bar-label">91%</span></div>
-        </div>
-      </div>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-        <div class="reason-text"><strong>Valores en común</strong> — ambos priorizan la honestidad y los vínculos con profundidad.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:88%"></div></div><span class="reason-bar-label">88%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card-actions">
-      <button class="btn-profile" onclick="openProfile('sofia')" aria-label="Ver perfil de Sofía">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Perfil
-      </button>
-      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=sofia'" aria-label="Hablar con Sofía">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Escribirle a Sofía
-      </button>
-    </div>
-  </div>
+    <script>
+      // Devuelve un color dinámico según el porcentaje de afinidad
+      // A mayor porcentaje, el color se vuelve naranja más intenso
+      // 55% → dorado claro  |  100% → naranja profundo
+      function scoreColor(pct) {
+        const t = Math.max(0, Math.min(1, (pct - 55) / 45));
+        const h = Math.round(40 - 20 * t);
+        const l = Math.round(68 - 20 * t);
+        return `hsl(${h}, 100%, ${l}%)`;
+      }
 
-  <!-- 2. Mateo 87% -->
-  <div class="match-card fu" data-id="mateo" data-score="87" data-new="false" data-active="true">
-    <div class="card-top" onclick="openProfile('mateo')" role="button" tabindex="0" aria-label="Ver perfil de Mateo">
-      <div class="card-av" style="background-image:url(./mateo.png);background-size:cover;background-position:center" aria-hidden="true"></div>
-      <div class="card-info">
-        <div class="card-name">Mateo, 28</div>
-        <div class="card-meta">Buenos Aires · match hace 2 días</div>
-        <div class="card-tags">
-          <span class="card-tag">Cine</span>
-          <span class="card-tag">Tecnología</span>
-          <span class="card-tag">Running</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <div class="score-ring" aria-label="87% de compatibilidad">
-          <svg viewBox="0 0 56 56"><circle class="score-ring-bg" cx="28" cy="28" r="22"/><circle class="score-ring-fill" cx="28" cy="28" r="22" stroke="#FF9700" stroke-dasharray="138.2" stroke-dashoffset="18"/></svg>
-          <span class="score-number">87%</span>
-        </div>
-        <span class="score-label">Afinidad</span>
-      </div>
-    </div>
-    <div class="card-reasons">
-      <p class="reasons-title">Por qué son compatibles</p>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-        <div class="reason-text"><strong>Humor y referencias culturales</strong> — comparten ironía, cine de culto y referencias de la misma generación.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:90%"></div></div><span class="reason-bar-label">90%</span></div>
-        </div>
-      </div>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-        <div class="reason-text"><strong>Tipo de vínculo buscado</strong> — ambos buscan algo serio con tiempo para construir.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:84%"></div></div><span class="reason-bar-label">84%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card-actions">
-      <button class="btn-profile" onclick="openProfile('mateo')" aria-label="Ver perfil de Mateo">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Perfil
-      </button>
-      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=mateo'" aria-label="Hablar con Mateo">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Escribirle a Mateo
-      </button>
-    </div>
-  </div>
+      // Inicializa los colores de todos los anillos de afinidad y las mini barras de razones
+      // Se ejecuta al cargar la página para aplicar los colores dinámicos a cada match card
+      function initScoreRings() {
+        // Anillo principal de afinidad
+        document.querySelectorAll(".score-ring").forEach((ring) => {
+          const numEl = ring.querySelector(".score-number");
+          if (!numEl) return;
+          const pct = parseInt(numEl.textContent);
+          if (isNaN(pct)) return;
+          const color = scoreColor(pct);
+          const fill = ring.querySelector(".score-ring-fill");
+          if (fill) fill.setAttribute("stroke", color);
+          numEl.style.color = color;
+        });
+        // Mini barras de razones dentro de cada card
+        document.querySelectorAll(".reason-score-row").forEach((row) => {
+          const label = row.querySelector(".reason-bar-label");
+          const bar = row.querySelector(".reason-bar");
+          if (!label || !bar) return;
+          const pct = parseInt(label.textContent);
+          if (isNaN(pct)) return;
+          const color = scoreColor(pct);
+          bar.style.background = color;
+          label.style.color = color;
+        });
+      }
+      initScoreRings();
 
-  <!-- 3. Valentina 81% -->
-  <div class="match-card fu" data-id="valentina" data-score="81" data-new="true" data-active="false">
-    <div class="card-top" onclick="openProfile('valentina')" role="button" tabindex="0" aria-label="Ver perfil de Valentina">
-      <div class="card-av card-av-new" style="background-image:url(./valentina.png);background-size:cover;background-position:center" aria-hidden="true"></div>
-      <div class="card-info">
-        <div class="card-name">Valentina, 24</div>
-        <div class="card-meta">CABA · match hace 1 día</div>
-        <div class="card-tags">
-          <span class="card-tag">Arte</span>
-          <span class="card-tag">Fotografía</span>
-          <span class="card-tag">Yoga</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <div class="score-ring" aria-label="81% de compatibilidad">
-          <svg viewBox="0 0 56 56"><circle class="score-ring-bg" cx="28" cy="28" r="22"/><circle class="score-ring-fill" cx="28" cy="28" r="22" stroke="#FFBB30" stroke-dasharray="138.2" stroke-dashoffset="26"/></svg>
-          <span class="score-number">81%</span>
-        </div>
-        <span class="score-label">Afinidad</span>
-      </div>
-    </div>
-    <div class="card-reasons">
-      <p class="reasons-title">Por qué son compatibles</p>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-        <div class="reason-text"><strong>Expresión creativa</strong> — comparten sensibilidad artística y apreciación por lo visual.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:85%"></div></div><span class="reason-bar-label">85%</span></div>
-        </div>
-      </div>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 8v4l3 3"/></svg></div>
-        <div class="reason-text"><strong>Ritmo de vida</strong> — ambos valoran el tiempo propio y la calma sobre la agitación social.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:77%"></div></div><span class="reason-bar-label">77%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card-actions">
-      <button class="btn-profile" onclick="openProfile('valentina')" aria-label="Ver perfil de Valentina">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Perfil
-      </button>
-      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=valentina'" aria-label="Hablar con Valentina">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Escribirle a Valentina
-      </button>
-    </div>
-  </div>
+      // Navega a otra pantalla de la app según el nombre de la página
+      function goTo(page) {
+        const map = {
+          chats: "./chats.html",
+          gemelo: "./gemelo.html",
+          matches: "./matches.html",
+        };
+        const url = map[page];
+        if (url)
+          alert(
+            `Próximamente: ${url}\nDescomentar: window.location.href = '${url}'`,
+          );
+      }
 
-  <!-- 4. Lucía 76% -->
-  <div class="match-card fu" data-id="lucia" data-score="76" data-new="false" data-active="true">
-    <div class="card-top" onclick="openProfile('lucia')" role="button" tabindex="0" aria-label="Ver perfil de Lucía">
-      <div class="card-av" style="background-image:url(./lucia.png);background-size:cover;background-position:center" aria-hidden="true"></div>
-      <div class="card-info">
-        <div class="card-name">Lucía, 27</div>
-        <div class="card-meta">Buenos Aires · match hace 3 días</div>
-        <div class="card-tags">
-          <span class="card-tag">Libros</span>
-          <span class="card-tag">Cocina</span>
-          <span class="card-tag">Senderismo</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <div class="score-ring" aria-label="76% de compatibilidad">
-          <svg viewBox="0 0 56 56"><circle class="score-ring-bg" cx="28" cy="28" r="22"/><circle class="score-ring-fill" cx="28" cy="28" r="22" stroke="#FF751F" stroke-dasharray="138.2" stroke-dashoffset="33"/></svg>
-          <span class="score-number">76%</span>
-        </div>
-        <span class="score-label">Afinidad</span>
-      </div>
-    </div>
-    <div class="card-reasons">
-      <p class="reasons-title">Por qué son compatibles</p>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-        <div class="reason-text"><strong>Curiosidad intelectual</strong> — ambos disfrutan aprender, leer y debatir ideas.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:80%"></div></div><span class="reason-bar-label">80%</span></div>
-        </div>
-      </div>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
-        <div class="reason-text"><strong>Afinidad de proyectos</strong> — comparten visión a largo plazo y objetivos de vida similares.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:72%"></div></div><span class="reason-bar-label">72%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card-actions">
-      <button class="btn-profile" onclick="openProfile('lucia')" aria-label="Ver perfil de Lucía">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Perfil
-      </button>
-      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=lucia'" aria-label="Hablar con Lucía">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Escribirle a Lucía
-      </button>
-    </div>
-  </div>
+      // ── Datos de ejemplo — reemplazar con datos reales del backend ──
+      const profiles = {
+        sofia: {
+          name: "Sofía",
+          age: 26,
+          city: "Buenos Aires",
+          score: 92,
+          av: "S",
+          color: "linear-gradient(135deg,#FF9700,#FF751F)",
+          photo: "./images/sofia.png",
+          photos: [
+            "linear-gradient(145deg,#FF9700,#FF751F)",
+            "linear-gradient(145deg,#FFD580,#FF9700)",
+            "linear-gradient(145deg,#FF751F,#c74b00)",
+            "linear-gradient(145deg,#FFBB30,#FF9700)",
+            "linear-gradient(145deg,#ff9a3c,#e05000)",
+          ],
+          bio: "Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.",
+          compat: [
+            { label: "Gustos musicales", pct: 95 },
+            { label: "Estilo de comunicación", pct: 91 },
+            { label: "Valores en común", pct: 88 },
+            { label: "Sentido del humor", pct: 84 },
+          ],
+          interests: [
+            "Música en vivo",
+            "Viajes",
+            "Lectura",
+            "Jazz",
+            "Cine independiente",
+            "Naturaleza",
+          ],
+          shared: ["Música en vivo", "Cine independiente", "Naturaleza"],
+          preview: [
+            {
+              side: "left",
+              text: "¿Vos también sentís que las primeras citas son como una entrevista de trabajo?",
+            },
+            {
+              side: "right",
+              text: "Sí, y terminás siendo la versión que creés que el otro quiere ver.",
+            },
+            {
+              side: "left",
+              text: "Exacto. Por eso me gustás. Sé que con vos no tendría que actuar.",
+            },
+          ],
+        },
+        mateo: {
+          name: "Mateo",
+          age: 28,
+          city: "Buenos Aires",
+          score: 87,
+          av: "M",
+          color: "linear-gradient(135deg,#555,#888)",
+          photo: "./images/mateo.png",
+          photos: [
+            "linear-gradient(145deg,#555,#888)",
+            "linear-gradient(145deg,#888,#aaa)",
+            "linear-gradient(145deg,#3a3a3a,#666)",
+            "linear-gradient(145deg,#777,#999)",
+            "linear-gradient(145deg,#444,#777)",
+          ],
+          bio: "Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.",
+          compat: [
+            { label: "Humor y referencias culturales", pct: 90 },
+            { label: "Tipo de vínculo buscado", pct: 84 },
+            { label: "Ritmo de vida", pct: 80 },
+          ],
+          interests: [
+            "Cine",
+            "Series",
+            "Tecnología",
+            "Running",
+            "Cocina",
+            "Música",
+          ],
+          shared: ["Cine", "Música"],
+          preview: [
+            {
+              side: "left",
+              text: "¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.",
+            },
+            {
+              side: "right",
+              text: "Es de las mejores. La vi tres veces. Cada vez encuentro algo nuevo.",
+            },
+          ],
+        },
+        valentina: {
+          name: "Valentina",
+          age: 24,
+          city: "CABA",
+          score: 81,
+          av: "V",
+          color: "linear-gradient(135deg,#FFBB30,#FF9700)",
+          photo: "./images/valentina.png",
+          photos: [
+            "linear-gradient(145deg,#FFBB30,#FF9700)",
+            "linear-gradient(145deg,#FFD580,#FFBB30)",
+            "linear-gradient(145deg,#FF9700,#e07800)",
+            "linear-gradient(145deg,#ffd060,#ffaa00)",
+            "linear-gradient(145deg,#FFB300,#FF8C00)",
+          ],
+          bio: "Artista visual y fotógrafa. Hace yoga todos los días y cree que la calma no es aburrimiento. Le gustan los domingos sin plan y las conversaciones que duran hasta tarde.",
+          compat: [
+            { label: "Expresión creativa", pct: 85 },
+            { label: "Ritmo de vida", pct: 77 },
+            { label: "Valores", pct: 75 },
+          ],
+          interests: [
+            "Arte",
+            "Fotografía",
+            "Yoga",
+            "Diseño",
+            "Naturaleza",
+            "Música",
+          ],
+          shared: ["Naturaleza", "Música"],
+          preview: [
+            {
+              side: "left",
+              text: "¿Creés que hay personas que llegan en el momento exacto?",
+            },
+            {
+              side: "right",
+              text: "Creo que el momento exacto lo crean las personas, no el destino.",
+            },
+          ],
+        },
+        lucia: {
+          name: "Lucía",
+          age: 27,
+          city: "Buenos Aires",
+          score: 76,
+          av: "L",
+          color: "linear-gradient(135deg,#333,#555)",
+          photo: "./images/lucia.png",
+          photos: [
+            "linear-gradient(145deg,#333,#555)",
+            "linear-gradient(145deg,#555,#777)",
+            "linear-gradient(145deg,#222,#444)",
+            "linear-gradient(145deg,#444,#666)",
+            "linear-gradient(145deg,#3a3a3a,#5a5a5a)",
+          ],
+          bio: "Psicóloga. Lee todo lo que puede y cocina cuando necesita pensar. Le gustan las conversaciones honestas y los planes que empiezan en un bar y terminan caminando.",
+          compat: [
+            { label: "Curiosidad intelectual", pct: 80 },
+            { label: "Proyectos de vida", pct: 72 },
+          ],
+          interests: ["Libros", "Psicología", "Cocina", "Senderismo", "Teatro"],
+          shared: ["Libros", "Teatro"],
+          preview: [
+            {
+              side: "left",
+              text: "¿Vos también pensás que la honestidad incomoda a mucha gente?",
+            },
+            {
+              side: "right",
+              text: "Sí. Pero prefiero esa incomodidad a una conversación que no llega a nada.",
+            },
+          ],
+        },
+        agustin: {
+          name: "Agustín",
+          age: 29,
+          city: "Buenos Aires",
+          score: 71,
+          av: "A",
+          color: "linear-gradient(135deg,#222,#3A3A3A)",
+          photo: "./images/Agustin.png",
+          photos: [
+            "linear-gradient(145deg,#222,#3A3A3A)",
+            "linear-gradient(145deg,#3A3A3A,#555)",
+            "linear-gradient(145deg,#111,#2a2a2a)",
+            "linear-gradient(145deg,#2a2a2a,#444)",
+            "linear-gradient(145deg,#333,#4a4a4a)",
+          ],
+          bio: "Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin mucha planificación y los asados que se alargan hasta la madrugada. Tiene energía para todo.",
+          compat: [{ label: "Actitud ante la vida", pct: 74 }],
+          interests: ["Deporte", "Viajes", "Gastronomía", "Fútbol", "Cocina"],
+          shared: ["Viajes"],
+          preview: [
+            {
+              side: "left",
+              text: "¿Viajaste alguna vez sin reservar nada de antemano?",
+            },
+            {
+              side: "right",
+              text: "Sí, es la única forma de que pase algo realmente interesante.",
+            },
+          ],
+        },
+      };
 
-  <!-- 5. Agustín 71% -->
-  <div class="match-card fu" data-id="agustin" data-score="71" data-new="false" data-active="false">
-    <div class="card-top" onclick="openProfile('agustin')" role="button" tabindex="0" aria-label="Ver perfil de Agustín">
-      <div class="card-av" style="background-image:url(./Agustin.png);background-size:cover;background-position:center" aria-hidden="true"></div>
-      <div class="card-info">
-        <div class="card-name">Agustín, 29</div>
-        <div class="card-meta">Buenos Aires · match hace 4 días</div>
-        <div class="card-tags">
-          <span class="card-tag">Deporte</span>
-          <span class="card-tag">Viajes</span>
-          <span class="card-tag">Gastronomía</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <div class="score-ring" aria-label="71% de compatibilidad">
-          <svg viewBox="0 0 56 56"><circle class="score-ring-bg" cx="28" cy="28" r="22"/><circle class="score-ring-fill" cx="28" cy="28" r="22" stroke="#FF751F" stroke-dasharray="138.2" stroke-dashoffset="40"/></svg>
-          <span class="score-number">71%</span>
-        </div>
-        <span class="score-label">Afinidad</span>
-      </div>
-    </div>
-    <div class="card-reasons">
-      <p class="reasons-title">Por qué son compatibles</p>
-      <div class="reason-row">
-        <div class="reason-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-        <div class="reason-text"><strong>Actitud ante la vida</strong> — comparten energía positiva, curiosidad por el mundo y ganas de salir.
-          <div class="reason-score-row"><div class="reason-bar-wrap"><div class="reason-bar" style="width:74%"></div></div><span class="reason-bar-label">74%</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card-actions">
-      <button class="btn-profile" onclick="openProfile('agustin')" aria-label="Ver perfil de Agustín">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Perfil
-      </button>
-      <button class="btn-chat" onclick="window.location.href='./chats.html?persona=agustin'" aria-label="Hablar con Agustín">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Escribirle a Agustín
-      </button>
-    </div>
-  </div>
+      // Abre el modal con el perfil completo del match seleccionado
+      // Construye dinámicamente el header, bio, barras de compatibilidad, intereses,
+      // fragmento de conversación entre gemelos y fotos
+      function openProfile(id) {
+        const p = profiles[id];
+        if (!p) return;
 
-</main>
-
-<!-- ── PROFILE MODAL ── -->
-<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-label="Perfil del match" onclick="closeIfOverlay(event)">
-  <div class="modal-sheet" id="modal-sheet">
-    <div class="modal-handle" aria-hidden="true"></div>
-
-    <div class="modal-header" id="modal-header">
-      <!-- populated by JS -->
-    </div>
-
-    <div class="modal-body" id="modal-body">
-      <!-- populated by JS -->
-    </div>
-
-    <div class="modal-cta-row">
-      <button class="btn-profile" style="flex:1" onclick="closeModal()" aria-label="Cerrar perfil">Cerrar</button>
-      <button class="btn-chat" style="flex:2" id="modal-chat-btn" aria-label="Ir al chat">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span id="modal-chat-label">Escribirle</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Bottom nav -->
-<nav class="app-bottom-nav" aria-label="Navegación inferior">
-  <a href="./home.html"            class="bnav-item" aria-label="Inicio"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span class="bnav-label">Inicio</span></a>
-  <a href="./matches.html"        class="bnav-item active" aria-label="Matches" aria-current="page"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span><span class="bnav-label">Matches</span></a>
-  <a href="./gemelo.html"         class="bnav-center" aria-label="Gemelo"><div class="bnav-center-orb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><span class="bnav-center-label">Gemelo</span></a>
-  <a href="./chats.html"          class="bnav-item" aria-label="Chats"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="bnav-label">Chats</span></a>
-  <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil"><span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="bnav-label">Perfil</span></a>
-</nav>
-
-<script>
-// Devuelve un color dinámico según el porcentaje de afinidad
-// A mayor porcentaje, el color se vuelve naranja más intenso
-// 55% → dorado claro  |  100% → naranja profundo
-function scoreColor(pct) {
-  const t = Math.max(0, Math.min(1, (pct - 55) / 45));
-  const h = Math.round(40 - 20 * t);
-  const l = Math.round(68 - 20 * t);
-  return `hsl(${h}, 100%, ${l}%)`;
-}
-
-// Inicializa los colores de todos los anillos de afinidad y las mini barras de razones
-// Se ejecuta al cargar la página para aplicar los colores dinámicos a cada match card
-function initScoreRings() {
-  // Anillo principal de afinidad
-  document.querySelectorAll('.score-ring').forEach(ring => {
-    const numEl = ring.querySelector('.score-number');
-    if (!numEl) return;
-    const pct = parseInt(numEl.textContent);
-    if (isNaN(pct)) return;
-    const color = scoreColor(pct);
-    const fill = ring.querySelector('.score-ring-fill');
-    if (fill) fill.setAttribute('stroke', color);
-    numEl.style.color = color;
-  });
-  // Mini barras de razones dentro de cada card
-  document.querySelectorAll('.reason-score-row').forEach(row => {
-    const label = row.querySelector('.reason-bar-label');
-    const bar   = row.querySelector('.reason-bar');
-    if (!label || !bar) return;
-    const pct = parseInt(label.textContent);
-    if (isNaN(pct)) return;
-    const color = scoreColor(pct);
-    bar.style.background = color;
-    label.style.color = color;
-  });
-}
-initScoreRings();
-
-// Navega a otra pantalla de la app según el nombre de la página
-function goTo(page) {
-  const map = { chats:'./chats.html', gemelo:'./gemelo.html', matches:'./matches.html' };
-  const url = map[page];
-  if (url) alert(`Próximamente: ${url}\nDescomentar: window.location.href = '${url}'`);
-}
-
-// ── Datos de ejemplo — reemplazar con datos reales del backend ──
-const profiles = {
-  sofia: {
-    name:'Sofía', age:26, city:'Buenos Aires', score:92,
-    av:'S', color:'linear-gradient(135deg,#FF9700,#FF751F)', photo:'./sofia.png',
-    photos:[
-      'linear-gradient(145deg,#FF9700,#FF751F)',
-      'linear-gradient(145deg,#FFD580,#FF9700)',
-      'linear-gradient(145deg,#FF751F,#c74b00)',
-      'linear-gradient(145deg,#FFBB30,#FF9700)',
-      'linear-gradient(145deg,#ff9a3c,#e05000)',
-    ],
-    bio:'Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.',
-    compat:[
-      { label:'Gustos musicales', pct:95 },
-      { label:'Estilo de comunicación', pct:91 },
-      { label:'Valores en común', pct:88 },
-      { label:'Sentido del humor', pct:84 },
-    ],
-    interests:['Música en vivo','Viajes','Lectura','Jazz','Cine independiente','Naturaleza'],
-    shared:['Música en vivo','Cine independiente','Naturaleza'],
-    preview:[
-      { side:'left',  text:'¿Vos también sentís que las primeras citas son como una entrevista de trabajo?' },
-      { side:'right', text:'Sí, y terminás siendo la versión que creés que el otro quiere ver.' },
-      { side:'left',  text:'Exacto. Por eso me gustás. Sé que con vos no tendría que actuar.' },
-    ]
-  },
-  mateo: {
-    name:'Mateo', age:28, city:'Buenos Aires', score:87,
-    av:'M', color:'linear-gradient(135deg,#555,#888)', photo:'./mateo.png',
-    photos:[
-      'linear-gradient(145deg,#555,#888)',
-      'linear-gradient(145deg,#888,#aaa)',
-      'linear-gradient(145deg,#3a3a3a,#666)',
-      'linear-gradient(145deg,#777,#999)',
-      'linear-gradient(145deg,#444,#777)',
-    ],
-    bio:'Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.',
-    compat:[
-      { label:'Humor y referencias culturales', pct:90 },
-      { label:'Tipo de vínculo buscado', pct:84 },
-      { label:'Ritmo de vida', pct:80 },
-    ],
-    interests:['Cine', 'Series', 'Tecnología', 'Running', 'Cocina', 'Música'],
-    shared:['Cine', 'Música'],
-    preview:[
-      { side:'left',  text:'¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.' },
-      { side:'right', text:'Es de las mejores. La vi tres veces. Cada vez encuentro algo nuevo.' },
-    ]
-  },
-  valentina: {
-    name:'Valentina', age:24, city:'CABA', score:81,
-    av:'V', color:'linear-gradient(135deg,#FFBB30,#FF9700)', photo:'./valentina.png',
-    photos:[
-      'linear-gradient(145deg,#FFBB30,#FF9700)',
-      'linear-gradient(145deg,#FFD580,#FFBB30)',
-      'linear-gradient(145deg,#FF9700,#e07800)',
-      'linear-gradient(145deg,#ffd060,#ffaa00)',
-      'linear-gradient(145deg,#FFB300,#FF8C00)',
-    ],
-    bio:'Artista visual y fotógrafa. Hace yoga todos los días y cree que la calma no es aburrimiento. Le gustan los domingos sin plan y las conversaciones que duran hasta tarde.',
-    compat:[
-      { label:'Expresión creativa', pct:85 },
-      { label:'Ritmo de vida', pct:77 },
-      { label:'Valores', pct:75 },
-    ],
-    interests:['Arte', 'Fotografía', 'Yoga', 'Diseño', 'Naturaleza', 'Música'],
-    shared:['Naturaleza', 'Música'],
-    preview:[
-      { side:'left',  text:'¿Creés que hay personas que llegan en el momento exacto?' },
-      { side:'right', text:'Creo que el momento exacto lo crean las personas, no el destino.' },
-    ]
-  },
-  lucia: {
-    name:'Lucía', age:27, city:'Buenos Aires', score:76,
-    av:'L', color:'linear-gradient(135deg,#333,#555)', photo:'./lucia.png',
-    photos:[
-      'linear-gradient(145deg,#333,#555)',
-      'linear-gradient(145deg,#555,#777)',
-      'linear-gradient(145deg,#222,#444)',
-      'linear-gradient(145deg,#444,#666)',
-      'linear-gradient(145deg,#3a3a3a,#5a5a5a)',
-    ],
-    bio:'Psicóloga. Lee todo lo que puede y cocina cuando necesita pensar. Le gustan las conversaciones honestas y los planes que empiezan en un bar y terminan caminando.',
-    compat:[
-      { label:'Curiosidad intelectual', pct:80 },
-      { label:'Proyectos de vida', pct:72 },
-    ],
-    interests:['Libros', 'Psicología', 'Cocina', 'Senderismo', 'Teatro'],
-    shared:['Libros', 'Teatro'],
-    preview:[
-      { side:'left',  text:'¿Vos también pensás que la honestidad incomoda a mucha gente?' },
-      { side:'right', text:'Sí. Pero prefiero esa incomodidad a una conversación que no llega a nada.' },
-    ]
-  },
-  agustin: {
-    name:'Agustín', age:29, city:'Buenos Aires', score:71,
-    av:'A', color:'linear-gradient(135deg,#222,#3A3A3A)', photo:'./Agustin.png',
-    photos:[
-      'linear-gradient(145deg,#222,#3A3A3A)',
-      'linear-gradient(145deg,#3A3A3A,#555)',
-      'linear-gradient(145deg,#111,#2a2a2a)',
-      'linear-gradient(145deg,#2a2a2a,#444)',
-      'linear-gradient(145deg,#333,#4a4a4a)',
-    ],
-    bio:'Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin mucha planificación y los asados que se alargan hasta la madrugada. Tiene energía para todo.',
-    compat:[
-      { label:'Actitud ante la vida', pct:74 },
-    ],
-    interests:['Deporte', 'Viajes', 'Gastronomía', 'Fútbol', 'Cocina'],
-    shared:['Viajes'],
-    preview:[
-      { side:'left',  text:'¿Viajaste alguna vez sin reservar nada de antemano?' },
-      { side:'right', text:'Sí, es la única forma de que pase algo realmente interesante.' },
-    ]
-  },
-};
-
-// Abre el modal con el perfil completo del match seleccionado
-// Construye dinámicamente el header, bio, barras de compatibilidad, intereses,
-// fragmento de conversación entre gemelos y fotos
-function openProfile(id) {
-  const p = profiles[id];
-  if (!p) return;
-
-  // Header
-  const scoreCol = scoreColor(p.score);
-  document.getElementById('modal-header').innerHTML = `
+        // Header
+        const scoreCol = scoreColor(p.score);
+        document.getElementById("modal-header").innerHTML = `
     <div class="modal-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
     <div class="modal-name-wrap">
       <div class="modal-name">${p.name}, ${p.age}</div>
@@ -1043,181 +2334,244 @@ function openProfile(id) {
     </div>
   `;
 
-  // Body
-  let html = '';
+        // Body
+        let html = "";
 
-  // Bio
-  html += `<div>
+        // Bio
+        html += `<div>
     <p class="modal-section-title">Sobre ${p.name}</p>
     <p style="font-family:var(--font-serif);font-size:0.95rem;font-style:italic;font-weight:300;color:var(--text-secondary);line-height:1.7">${p.bio}</p>
   </div>`;
 
-  // Compat bars
-  html += `<div>
+        // Compat bars
+        html += `<div>
     <p class="modal-section-title">Razones de compatibilidad</p>
     <div class="compat-row">`;
-  p.compat.forEach(c => {
-    const cc = scoreColor(c.pct);
-    html += `<div class="compat-item">
+        p.compat.forEach((c) => {
+          const cc = scoreColor(c.pct);
+          html += `<div class="compat-item">
       <div class="compat-item-header">
         <span class="compat-item-label">${c.label}</span>
         <span class="compat-item-pct" style="color:${cc}">${c.pct}%</span>
       </div>
       <div class="compat-bar-wrap"><div class="compat-bar" style="width:0%;background:${cc}" data-target="${c.pct}%"></div></div>
     </div>`;
-  });
-  html += `</div></div>`;
+        });
+        html += `</div></div>`;
 
-  // Interests
-  html += `<div>
+        // Interests
+        html += `<div>
     <p class="modal-section-title">Intereses <span style="color:var(--orange);font-style:normal">— en naranja los que compartís</span></p>
     <div class="interest-tags">`;
-  p.interests.forEach(i => {
-    const shared = p.shared.includes(i);
-    html += `<span class="interest-tag${shared ? ' shared' : ''}">${i}</span>`;
-  });
-  html += `</div></div>`;
+        p.interests.forEach((i) => {
+          const shared = p.shared.includes(i);
+          html += `<span class="interest-tag${shared ? " shared" : ""}">${i}</span>`;
+        });
+        html += `</div></div>`;
 
-  // Gemelo preview
-  html += `<div>
+        // Gemelo preview
+        html += `<div>
     <p class="modal-section-title">Fragmento de la conversación entre gemelos</p>
     <div class="gemelo-preview">`;
-  p.preview.forEach(b => {
-    html += `<div class="preview-bubble ${b.side}">${b.text}</div>`;
-  });
-  html += `</div></div>`;
+        p.preview.forEach((b) => {
+          html += `<div class="preview-bubble ${b.side}">${b.text}</div>`;
+        });
+        html += `</div></div>`;
 
-  // Photos
-  if (p.photos && p.photos.length) {
-    html += `<div>
+        // Photos
+        if (p.photos && p.photos.length) {
+          html += `<div>
       <p class="modal-section-title">Fotos</p>
       <div class="profile-photos-grid">`;
-    p.photos.forEach(bg => {
-      html += `<div class="profile-photo-thumb" style="background:${bg}"></div>`;
-    });
-    html += `</div></div>`;
-  }
+          p.photos.forEach((bg) => {
+            html += `<div class="profile-photo-thumb" style="background:${bg}"></div>`;
+          });
+          html += `</div></div>`;
+        }
 
-  document.getElementById('modal-body').innerHTML = html;
-  document.getElementById('modal-chat-label').textContent = `Escribirle a ${p.name}`;
-  document.getElementById('modal-chat-btn').onclick = () => { window.location.href = `./chats.html?persona=${id}`; };
+        document.getElementById("modal-body").innerHTML = html;
+        document.getElementById("modal-chat-label").textContent =
+          `Escribirle a ${p.name}`;
+        document.getElementById("modal-chat-btn").onclick = () => {
+          window.location.href = `./chats.html?persona=${id}`;
+        };
 
-  // Open modal
-  const overlay = document.getElementById('modal');
-  overlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
+        // Open modal
+        const overlay = document.getElementById("modal");
+        overlay.classList.add("open");
+        document.body.style.overflow = "hidden";
 
-  // Animate bars after render
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.compat-bar[data-target]').forEach(bar => {
-      setTimeout(() => { bar.style.width = bar.dataset.target; }, 100);
-    });
-  });
-}
-
-// Cierra el modal del perfil y restaura el scroll del body
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// Cierra el modal si el usuario hace click en el overlay oscuro (fuera del contenido)
-function closeIfOverlay(e) {
-  if (e.target === document.getElementById('modal')) closeModal();
-}
-
-// Cierra el modal al presionar la tecla Escape
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-// Si la página fue abierta con ?persona=ID (desde home), abre ese perfil automáticamente
-(function() {
-  const param = new URLSearchParams(location.search).get('persona');
-  if (param && profiles[param]) {
-    setTimeout(() => openProfile(param), 150);
-  }
-})();
-
-// Ordena o filtra las match cards según el criterio elegido
-// 'afinidad' y 'nuevos': reordena todas las cards con animación de fade
-// 'activos': filtra — muestra solo las que tienen data-active="true", oculta el resto
-function sortMatches(mode, btn) {
-  document.querySelectorAll('.sort-chip').forEach(c => {
-    c.classList.remove('active'); c.setAttribute('aria-selected','false');
-  });
-  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
-  const list = document.querySelector('.app-main');
-  const cards = [...list.querySelectorAll('.match-card')];
-
-  if (mode === 'activos') {
-    // Filtrar: mostrar solo las que tienen chat activo, ocultar el resto
-    cards.forEach(c => {
-      if (c.dataset.active === 'true') {
-        c.style.display = '';
-        c.style.opacity = '0';
-        requestAnimationFrame(() => { c.style.transition = 'opacity 0.3s'; c.style.opacity = '1'; });
-      } else {
-        c.style.display = 'none';
+        // Animate bars after render
+        requestAnimationFrame(() => {
+          document
+            .querySelectorAll(".compat-bar[data-target]")
+            .forEach((bar) => {
+              setTimeout(() => {
+                bar.style.width = bar.dataset.target;
+              }, 100);
+            });
+        });
       }
-    });
-  } else {
-    // Restaurar visibilidad de todas las cards antes de reordenar
-    cards.forEach(c => { c.style.display = ''; });
-    cards.forEach(c => c.remove());
-    let sorted;
-    if (mode === 'afinidad') {
-      sorted = cards.sort((a,b) => Number(b.dataset.score) - Number(a.dataset.score));
-    } else if (mode === 'nuevos') {
-      sorted = cards.sort((a,b) => (b.dataset.new === 'true') - (a.dataset.new === 'true'));
-    } else {
-      sorted = cards;
-    }
-    sorted.forEach(c => { c.style.opacity='0'; list.appendChild(c); requestAnimationFrame(() => { c.style.transition='opacity 0.3s'; c.style.opacity='1'; }); });
-  }
-}
-</script>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      // Cierra el modal del perfil y restaura el scroll del body
+      function closeModal() {
+        document.getElementById("modal").classList.remove("open");
+        document.body.style.overflow = "";
+      }
 
-const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
-const auth = getAuth(app);
-const db   = getFirestore(app);
+      // Cierra el modal si el usuario hace click en el overlay oscuro (fuera del contenido)
+      function closeIfOverlay(e) {
+        if (e.target === document.getElementById("modal")) closeModal();
+      }
 
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = './home.html'; return; }
-  // Expiración de sesión (24h)
-  const _SESSION_MS = 24 * 60 * 60 * 1000;
-  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
-  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
-  else if (Date.now() - _loginTime > _SESSION_MS) {
-    localStorage.removeItem('pebble_login_time');
-    await signOut(auth);
-    window.location.href = './home.html'; return;
-  }
+      // Cierra el modal al presionar la tecla Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+      });
 
-  // Actualizar data-active en las cards según chats reales en Firestore
-  // (usuarios/{uid}/chats/{id}, no campos sueltos chats_{id}_{modo})
-  try {
-    const chatsSnap = await getDocs(collection(db, 'usuarios', user.uid, 'chats'));
-    const chatsMap = {};
-    chatsSnap.forEach(d => { chatsMap[d.id] = d.data(); });
+      // Si la página fue abierta con ?persona=ID (desde home), abre ese perfil automáticamente
+      (function () {
+        const param = new URLSearchParams(location.search).get("persona");
+        if (param && profiles[param]) {
+          setTimeout(() => openProfile(param), 150);
+        }
+      })();
 
-    document.querySelectorAll('.match-card[data-id]').forEach(card => {
-      const id = card.dataset.id;
-      const c = chatsMap[id];
-      // Tiene chat activo si hay al menos un mensaje real o gemelo guardado
-      const hasChat = !!c && ['real', 'gemelo'].some(mode =>
-        Array.isArray(c[mode]?.msgs) && c[mode].msgs.length > 0
-      );
-      card.dataset.active = hasChat ? 'true' : 'false';
-    });
-  } catch(e) { console.warn('Error cargando estado de chats:', e); }
+      // Ordena o filtra las match cards según el criterio elegido
+      // 'afinidad' y 'nuevos': reordena todas las cards con animación de fade
+      // 'activos': filtra — muestra solo las que tienen data-active="true", oculta el resto
+      function sortMatches(mode, btn) {
+        document.querySelectorAll(".sort-chip").forEach((c) => {
+          c.classList.remove("active");
+          c.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        const list = document.querySelector(".app-main");
+        const cards = [...list.querySelectorAll(".match-card")];
 
-  const el = document.getElementById('loadingOverlay');
-  if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
-});
-</script>
-</body>
+        if (mode === "activos") {
+          // Filtrar: mostrar solo las que tienen chat activo, ocultar el resto
+          cards.forEach((c) => {
+            if (c.dataset.active === "true") {
+              c.style.display = "";
+              c.style.opacity = "0";
+              requestAnimationFrame(() => {
+                c.style.transition = "opacity 0.3s";
+                c.style.opacity = "1";
+              });
+            } else {
+              c.style.display = "none";
+            }
+          });
+        } else {
+          // Restaurar visibilidad de todas las cards antes de reordenar
+          cards.forEach((c) => {
+            c.style.display = "";
+          });
+          cards.forEach((c) => c.remove());
+          let sorted;
+          if (mode === "afinidad") {
+            sorted = cards.sort(
+              (a, b) => Number(b.dataset.score) - Number(a.dataset.score),
+            );
+          } else if (mode === "nuevos") {
+            sorted = cards.sort(
+              (a, b) => (b.dataset.new === "true") - (a.dataset.new === "true"),
+            );
+          } else {
+            sorted = cards;
+          }
+          sorted.forEach((c) => {
+            c.style.opacity = "0";
+            list.appendChild(c);
+            requestAnimationFrame(() => {
+              c.style.transition = "opacity 0.3s";
+              c.style.opacity = "1";
+            });
+          });
+        }
+      }
+    </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        collection,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const app = initializeApp({
+        apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+        authDomain: "pebble-78e95.firebaseapp.com",
+        projectId: "pebble-78e95",
+        storageBucket: "pebble-78e95.firebasestorage.app",
+        messagingSenderId: "56434257024",
+        appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+      });
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = "./home.html";
+          return;
+        }
+        // Expiración de sesión (24h)
+        const _SESSION_MS = 24 * 60 * 60 * 1000;
+        const _loginTime = parseInt(
+          localStorage.getItem("pebble_login_time") || "0",
+        );
+        if (!_loginTime) {
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+        } else if (Date.now() - _loginTime > _SESSION_MS) {
+          localStorage.removeItem("pebble_login_time");
+          await signOut(auth);
+          window.location.href = "./home.html";
+          return;
+        }
+
+        // Actualizar data-active en las cards según chats reales en Firestore
+        // (usuarios/{uid}/chats/{id}, no campos sueltos chats_{id}_{modo})
+        try {
+          const chatsSnap = await getDocs(
+            collection(db, "usuarios", user.uid, "chats"),
+          );
+          const chatsMap = {};
+          chatsSnap.forEach((d) => {
+            chatsMap[d.id] = d.data();
+          });
+
+          document.querySelectorAll(".match-card[data-id]").forEach((card) => {
+            const id = card.dataset.id;
+            const c = chatsMap[id];
+            // Tiene chat activo si hay al menos un mensaje real o gemelo guardado
+            const hasChat =
+              !!c &&
+              ["real", "gemelo"].some(
+                (mode) =>
+                  Array.isArray(c[mode]?.msgs) && c[mode].msgs.length > 0,
+              );
+            card.dataset.active = hasChat ? "true" : "false";
+          });
+        } catch (e) {
+          console.warn("Error cargando estado de chats:", e);
+        }
+
+        const el = document.getElementById("loadingOverlay");
+        if (el) {
+          el.classList.add("hide");
+          setTimeout(() => el.remove(), 350);
+        }
+      });
+    </script>
+  </body>
 </html>

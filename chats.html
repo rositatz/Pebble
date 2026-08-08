@@ -1,903 +1,2467 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pebble — Chats</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --orange:        #FF751F;
-  --orange-mid:    #FF9700;
-  --orange-light:  #FFBB30;
-  --bg:            #EEEDEC;
-  --surf-1:        #FFFFFF;
-  --surf-2:        #F5F4F3;
-  --surf-dark:     #000000;
-  --border:        rgba(0,0,0,0.08);
-  --border2:       rgba(0,0,0,0.13);
-  --text-primary:  #000000;
-  --text-secondary:#4D4D4D;
-  --text-muted:    rgba(0,0,0,0.35);
-  --text-inv:      #EEEDEC;
-  --font-display:  'Bricolage Grotesque', sans-serif;
-  --font-serif:    'Inria Serif', serif;
-  --font-body:     'Open Sans', sans-serif;
-  --nav-top: 62px;
-  --nav-bot: 68px;
-  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
-}
-html, body {
-  height: 100%; overflow: hidden;
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 16px; line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — Chats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --orange: #ff751f;
+        --orange-mid: #ff9700;
+        --orange-light: #ffbb30;
+        --bg: #eeedec;
+        --surf-1: #ffffff;
+        --surf-2: #f5f4f3;
+        --surf-dark: #000000;
+        --border: rgba(0, 0, 0, 0.08);
+        --border2: rgba(0, 0, 0, 0.13);
+        --text-primary: #000000;
+        --text-secondary: #4d4d4d;
+        --text-muted: rgba(0, 0, 0, 0.35);
+        --text-inv: #eeedec;
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-serif: "Inria Serif", serif;
+        --font-body: "Open Sans", sans-serif;
+        --nav-top: 62px;
+        --nav-bot: 68px;
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --r-xl: 18px;
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
 
-/* ── Top nav ── */
-.app-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-top);
-  background: var(--surf-1); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px;
-}
-.nav-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
-.nav-actions { display: flex; align-items: center; gap: 6px; }
-.nav-icon-btn {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary); transition: background 0.2s, color 0.2s;
-  position: relative; text-decoration: none;
-}
-.nav-icon-btn:hover { background: var(--surf-2); color: var(--text-primary); }
-.nav-icon-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.notif-pip { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
-.nav-avatar {
-  width: 32px; height: 32px; border-radius: 50%; background: var(--surf-dark);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 0.78rem; font-weight: 800;
-  color: var(--text-inv); text-decoration: none; flex-shrink: 0; transition: opacity 0.2s;
-}
-.nav-avatar:hover { opacity: 0.8; }
+      /* ── Top nav ── */
+      .app-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-top);
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+      }
+      .nav-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .nav-icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition:
+          background 0.2s,
+          color 0.2s;
+        position: relative;
+        text-decoration: none;
+      }
+      .nav-icon-btn:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
+      .nav-icon-btn svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .notif-pip {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .nav-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--surf-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--text-inv);
+        text-decoration: none;
+        flex-shrink: 0;
+        transition: opacity 0.2s;
+      }
+      .nav-avatar:hover {
+        opacity: 0.8;
+      }
 
-/* ── Page content ── */
-.page-content {
-  position: fixed; top: var(--nav-top); bottom: var(--nav-bot); left: 0; right: 0;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-}
+      /* ── Page content ── */
+      .page-content {
+        position: fixed;
+        top: var(--nav-top);
+        bottom: var(--nav-bot);
+        left: 0;
+        right: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
 
-/* ── Search ── */
-.search-wrap { padding: 12px 16px 10px; background: var(--surf-1); border-bottom: 1px solid var(--border); }
-.search-input-wrap { position: relative; }
-.search-icon {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  width: 16px; height: 16px; fill: none; stroke: var(--text-muted);
-  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
-}
-.search-input {
-  width: 100%; padding: 9px 12px 9px 36px;
-  border: 1.5px solid var(--border2); border-radius: 22px;
-  font-family: var(--font-body); font-size: 0.875rem;
-  background: var(--surf-2); color: var(--text-primary); outline: none; transition: border-color 0.18s;
-}
-.search-input::placeholder { color: var(--text-muted); }
-.search-input:focus { border-color: var(--orange); background: var(--surf-1); }
+      /* ── Search ── */
+      .search-wrap {
+        padding: 12px 16px 10px;
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+      }
+      .search-input-wrap {
+        position: relative;
+      }
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: var(--text-muted);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
+      }
+      .search-input {
+        width: 100%;
+        padding: 9px 12px 9px 36px;
+        border: 1.5px solid var(--border2);
+        border-radius: 22px;
+        font-family: var(--font-body);
+        font-size: 0.875rem;
+        background: var(--surf-2);
+        color: var(--text-primary);
+        outline: none;
+        transition: border-color 0.18s;
+      }
+      .search-input::placeholder {
+        color: var(--text-muted);
+      }
+      .search-input:focus {
+        border-color: var(--orange);
+        background: var(--surf-1);
+      }
 
-/* ── Conv count ── */
-.conv-count { padding: 10px 16px 6px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+      /* ── Conv count ── */
+      .conv-count {
+        padding: 10px 16px 6px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
 
-/* ── Conversation list ── */
-.conv-list { background: var(--surf-1); }
-.conv-item {
-  display: flex; gap: 12px; padding: 13px 16px;
-  border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; touch-action: manipulation;
-}
-.conv-item:hover { background: var(--surf-2); }
-.conv-item:last-child { border-bottom: none; }
-.conv-av {
-  width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: #fff; margin-top: 2px;
-}
-.conv-content { flex: 1; min-width: 0; }
-.conv-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
-.conv-name { font-family: var(--font-display); font-size: 0.98rem; font-weight: 800; letter-spacing: -0.01em; flex-shrink: 0; }
-.conv-afinidad { font-size: 0.68rem; font-weight: 700; color: var(--orange); background: rgba(255,117,31,0.1); border-radius: 10px; padding: 1px 7px; flex-shrink: 0; }
-.conv-time { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
-.conv-preview-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.conv-preview { font-size: 0.82rem; color: var(--text-secondary); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.conv-preview.bold { color: var(--text-primary); font-weight: 600; }
-.conv-unread { min-width: 20px; height: 20px; border-radius: 10px; background: var(--orange); color: #fff; font-size: 0.68rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px; flex-shrink: 0; }
-.conv-modes { display: flex; gap: 6px; }
-.conv-mode-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 10px; border-radius: 14px; font-size: 0.7rem; font-weight: 600;
-  cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--text-muted);
-  transition: all 0.18s; touch-action: manipulation;
-}
-.conv-mode-btn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.conv-mode-btn.mode-active { background: var(--surf-dark); color: var(--text-inv); border-color: var(--surf-dark); }
-.conv-mode-btn.mode-locked { opacity: 0.45; cursor: default; }
+      /* ── Conversation list ── */
+      .conv-list {
+        background: var(--surf-1);
+      }
+      .conv-item {
+        display: flex;
+        gap: 12px;
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.15s;
+        touch-action: manipulation;
+      }
+      .conv-item:hover {
+        background: var(--surf-2);
+      }
+      .conv-item:last-child {
+        border-bottom: none;
+      }
+      .conv-av {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #fff;
+        margin-top: 2px;
+      }
+      .conv-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .conv-top {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 3px;
+      }
+      .conv-name {
+        font-family: var(--font-display);
+        font-size: 0.98rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        flex-shrink: 0;
+      }
+      .conv-afinidad {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--orange);
+        background: rgba(255, 117, 31, 0.1);
+        border-radius: 10px;
+        padding: 1px 7px;
+        flex-shrink: 0;
+      }
+      .conv-time {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+      .conv-preview-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .conv-preview {
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .conv-preview.bold {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+      .conv-unread {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        background: var(--orange);
+        color: #fff;
+        font-size: 0.68rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        flex-shrink: 0;
+      }
+      .conv-modes {
+        display: flex;
+        gap: 6px;
+      }
+      .conv-mode-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 14px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border2);
+        background: none;
+        color: var(--text-muted);
+        transition: all 0.18s;
+        touch-action: manipulation;
+      }
+      .conv-mode-btn svg {
+        width: 11px;
+        height: 11px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .conv-mode-btn.mode-active {
+        background: var(--surf-dark);
+        color: var(--text-inv);
+        border-color: var(--surf-dark);
+      }
+      .conv-mode-btn.mode-locked {
+        opacity: 0.45;
+        cursor: default;
+      }
 
-/* ── Chat panel ── */
-.chat-panel {
-  position: fixed; inset: 0; z-index: 500;
-  background: var(--bg); display: flex; flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.chat-panel.open { transform: translateX(0); }
+      /* ── Chat panel ── */
+      .chat-panel {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .chat-panel.open {
+        transform: translateX(0);
+      }
 
-.panel-nav {
-  background: var(--surf-1); border-bottom: 1px solid var(--border);
-  flex-shrink: 0; height: var(--nav-top);
-  display: flex; align-items: center; gap: 8px; padding: 0 12px 0 8px;
-}
-.panel-back {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary); transition: background 0.2s; flex-shrink: 0;
-}
-.panel-back:hover { background: var(--surf-2); }
-.panel-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.panel-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.88rem; font-weight: 800; color: #fff; }
-.panel-person { flex: 1; min-width: 0; }
-.panel-person-name { font-family: var(--font-display); font-size: 0.95rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
-.panel-person-meta { font-size: 0.68rem; color: var(--text-muted); }
-.panel-mode-seg { display: flex; background: var(--surf-2); border-radius: 20px; padding: 2px; flex-shrink: 0; }
-.panel-mode-btn {
-  padding: 5px 11px; border-radius: 18px; border: none; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.72rem; font-weight: 600;
-  color: var(--text-muted); background: none; transition: all 0.18s;
-  white-space: nowrap; touch-action: manipulation;
-  display: flex; align-items: center; gap: 4px;
-}
-.panel-mode-btn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.panel-mode-btn.active { background: var(--surf-dark); color: #fff; }
-.panel-mode-btn.locked { opacity: 0.4; cursor: not-allowed; }
+      .panel-nav {
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        height: var(--nav-top);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px 0 8px;
+      }
+      .panel-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+      .panel-back:hover {
+        background: var(--surf-2);
+      }
+      .panel-back svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .panel-av {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.88rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .panel-person {
+        flex: 1;
+        min-width: 0;
+      }
+      .panel-person-name {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+      }
+      .panel-person-meta {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+      }
+      .panel-mode-seg {
+        display: flex;
+        background: var(--surf-2);
+        border-radius: 20px;
+        padding: 2px;
+        flex-shrink: 0;
+      }
+      .panel-mode-btn {
+        padding: 5px 11px;
+        border-radius: 18px;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        background: none;
+        transition: all 0.18s;
+        white-space: nowrap;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .panel-mode-btn svg {
+        width: 11px;
+        height: 11px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .panel-mode-btn.active {
+        background: var(--surf-dark);
+        color: #fff;
+      }
+      .panel-mode-btn.locked {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
 
-.panel-mode-bar {
-  padding: 9px 16px; border-bottom: 1px solid var(--border);
-  font-size: 0.73rem; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-}
-.panel-mode-bar svg { width: 13px; height: 13px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-.panel-mode-bar.gemelo-bar { background: var(--surf-dark); border-bottom-color: rgba(255,117,31,0.3); color: rgba(255,255,255,0.8); }
-.panel-mode-bar.gemelo-bar svg { stroke: var(--orange); }
-.panel-mode-bar.real-bar { background: rgba(34,197,94,0.07); border-bottom-color: rgba(34,197,94,0.2); color: var(--text-secondary); }
-.panel-mode-bar.real-bar svg { stroke: #22c55e; }
-.mode-bar-badge { font-size: 0.62rem; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
-.pmsg-av-ai { outline: 2px solid var(--orange); outline-offset: 1px; }
-.pmsg-av-ai svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
+      .panel-mode-bar {
+        padding: 9px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.73rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .panel-mode-bar svg {
+        width: 13px;
+        height: 13px;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+      .panel-mode-bar.gemelo-bar {
+        background: var(--surf-dark);
+        border-bottom-color: rgba(255, 117, 31, 0.3);
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .panel-mode-bar.gemelo-bar svg {
+        stroke: var(--orange);
+      }
+      .panel-mode-bar.real-bar {
+        background: rgba(34, 197, 94, 0.07);
+        border-bottom-color: rgba(34, 197, 94, 0.2);
+        color: var(--text-secondary);
+      }
+      .panel-mode-bar.real-bar svg {
+        stroke: #22c55e;
+      }
+      .mode-bar-badge {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 2px 9px;
+        border-radius: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+      }
+      .pmsg-av-ai {
+        outline: 2px solid var(--orange);
+        outline-offset: 1px;
+      }
+      .pmsg-av-ai svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        display: block;
+      }
 
-.panel-messages { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
-.panel-msgs-inner {
-  max-width: 720px; width: 100%; margin: 0 auto;
-  padding: 16px 16px 16px; display: flex; flex-direction: column; gap: 6px;
-}
+      .panel-messages {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+      }
+      .panel-msgs-inner {
+        max-width: 720px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 16px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
 
-/* Day sep */
-.day-sep { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; }
-.day-sep-line { flex: 1; height: 1px; background: var(--border2); }
-.day-sep-text { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+      /* Day sep */
+      .day-sep {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0 6px;
+      }
+      .day-sep-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border2);
+      }
+      .day-sep-text {
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
 
-/* Bubbles */
-.pmsg { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
-.pmsg.them { justify-content: flex-start; }
-.pmsg.me   { justify-content: flex-end; }
-.pmsg-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; color: #fff; align-self: flex-end; margin-bottom: 2px; }
-.pmsg-av-sp { width: 28px; flex-shrink: 0; }
-.pbubble { padding: 10px 14px; border-radius: 18px; max-width: min(72%, 460px); font-size: 0.875rem; line-height: 1.6; word-wrap: break-word; }
-.pmsg.them .pbubble { background: var(--surf-1); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text-primary); }
-.pmsg.me .pbubble { background: var(--surf-dark); border-bottom-right-radius: 4px; color: var(--text-inv); }
-.pmsg.them.is-gemelo .pbubble { border-left: 3px solid var(--orange); }
-.pmsg-time { font-size: 0.6rem; color: var(--text-muted); align-self: flex-end; margin-bottom: 4px; flex-shrink: 0; }
-.pmsg.me .pmsg-time { order: -1; }
+      /* Bubbles */
+      .pmsg {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        max-width: 100%;
+      }
+      .pmsg.them {
+        justify-content: flex-start;
+      }
+      .pmsg.me {
+        justify-content: flex-end;
+      }
+      .pmsg-av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #fff;
+        align-self: flex-end;
+        margin-bottom: 2px;
+      }
+      .pmsg-av-sp {
+        width: 28px;
+        flex-shrink: 0;
+      }
+      .pbubble {
+        padding: 10px 14px;
+        border-radius: 18px;
+        max-width: min(72%, 460px);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        word-wrap: break-word;
+      }
+      .pmsg.them .pbubble {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+        color: var(--text-primary);
+      }
+      .pmsg.me .pbubble {
+        background: var(--surf-dark);
+        border-bottom-right-radius: 4px;
+        color: var(--text-inv);
+      }
+      .pmsg.them.is-gemelo .pbubble {
+        border-left: 3px solid var(--orange);
+      }
+      .pmsg-time {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        align-self: flex-end;
+        margin-bottom: 4px;
+        flex-shrink: 0;
+      }
+      .pmsg.me .pmsg-time {
+        order: -1;
+      }
 
-/* Gemelo tag inside bubble */
-.gemelo-tag { display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange); margin-bottom: 5px; }
+      /* Gemelo tag inside bubble */
+      .gemelo-tag {
+        display: block;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--orange);
+        margin-bottom: 5px;
+      }
 
-/* Typing */
-.typing-bubble { background: var(--surf-1); border: 1px solid var(--border); border-radius: 18px; border-bottom-left-radius: 4px; padding: 12px 16px; display: flex; gap: 5px; align-items: center; }
-.typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: typing-bounce 1.2s infinite ease-in-out; }
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes typing-bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-6px); } }
+      /* Typing */
+      .typing-bubble {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        border-bottom-left-radius: 4px;
+        padding: 12px 16px;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+      .typing-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        animation: typing-bounce 1.2s infinite ease-in-out;
+      }
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes typing-bounce {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-6px);
+        }
+      }
 
-/* Panel input */
-.panel-input-wrap { background: var(--surf-1); border-top: 1px solid var(--border); padding: 10px 12px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.panel-input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border2); border-radius: 22px; font-family: var(--font-body); font-size: 0.88rem; color: var(--text-primary); background: var(--surf-2); outline: none; resize: none; transition: border-color 0.18s; line-height: 1.4; max-height: 100px; overflow-y: hidden; }
-.panel-input::placeholder { color: var(--text-muted); }
-.panel-input:focus { border-color: var(--orange); background: var(--surf-1); }
-.panel-send-btn { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; background: var(--surf-dark); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; touch-action: manipulation; }
-.panel-send-btn:hover { background: var(--orange); }
-.panel-send-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      /* Panel input */
+      .panel-input-wrap {
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .panel-input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1.5px solid var(--border2);
+        border-radius: 22px;
+        font-family: var(--font-body);
+        font-size: 0.88rem;
+        color: var(--text-primary);
+        background: var(--surf-2);
+        outline: none;
+        resize: none;
+        transition: border-color 0.18s;
+        line-height: 1.4;
+        max-height: 100px;
+        overflow-y: hidden;
+      }
+      .panel-input::placeholder {
+        color: var(--text-muted);
+      }
+      .panel-input:focus {
+        border-color: var(--orange);
+        background: var(--surf-1);
+      }
+      .panel-send-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: var(--surf-dark);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        touch-action: manipulation;
+      }
+      .panel-send-btn:hover {
+        background: var(--orange);
+      }
+      .panel-send-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: #fff;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
 
-/* ── Chat panel en modo gemelo: mismo estilo negro que la simulación ── */
-.chat-panel.gemelo-mode { background: #0d0d0d; }
-.chat-panel.gemelo-mode .panel-nav { background: #111; border-bottom-color: rgba(255,117,31,0.18); }
-.chat-panel.gemelo-mode .panel-back { color: rgba(255,255,255,0.6); }
-.chat-panel.gemelo-mode .panel-back:hover { background: rgba(255,255,255,0.06); }
-.chat-panel.gemelo-mode .panel-person-name { color: #fff; }
-.chat-panel.gemelo-mode .panel-person-meta { color: rgba(255,117,31,0.6); }
-.chat-panel.gemelo-mode .panel-mode-seg { background: rgba(255,255,255,0.06); }
-.chat-panel.gemelo-mode .panel-mode-btn { color: rgba(255,255,255,0.5); }
-.chat-panel.gemelo-mode .panel-mode-btn.active { background: var(--orange); color: #fff; }
-.chat-panel.gemelo-mode .panel-mode-btn.locked { opacity: 0.35; }
-.chat-panel.gemelo-mode .day-sep-line { background: rgba(255,255,255,0.1); }
-.chat-panel.gemelo-mode .day-sep-text { color: rgba(255,255,255,0.3); }
-.chat-panel.gemelo-mode .pmsg.them .pbubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,117,31,0.17); border-bottom-left-radius: 4px; color: rgba(255,255,255,0.75); }
-.chat-panel.gemelo-mode .pmsg.them.is-gemelo .pbubble { border-left: 1px solid rgba(255,117,31,0.17); }
-.chat-panel.gemelo-mode .pmsg.me .pbubble { background: rgba(255,117,31,0.09); border: 1px solid rgba(255,117,31,0.22); border-bottom-right-radius: 4px; color: rgba(255,255,255,0.82); }
-.chat-panel.gemelo-mode .pmsg-time { color: rgba(255,255,255,0.17); }
-.chat-panel.gemelo-mode .panel-input-wrap { background: #111; border-top-color: rgba(255,117,31,0.18); }
-.chat-panel.gemelo-mode .panel-input { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #fff; }
-.chat-panel.gemelo-mode .panel-input::placeholder { color: rgba(255,255,255,0.3); }
-.chat-panel.gemelo-mode .panel-input:focus { border-color: var(--orange); background: rgba(255,255,255,0.07); }
-.chat-panel.gemelo-mode .panel-send-btn { background: var(--orange); }
-.chat-panel.gemelo-mode .panel-send-btn:hover { background: var(--orange-mid); }
+      /* ── Chat panel en modo gemelo: mismo estilo negro que la simulación ── */
+      .chat-panel.gemelo-mode {
+        background: #0d0d0d;
+      }
+      .chat-panel.gemelo-mode .panel-nav {
+        background: #111;
+        border-bottom-color: rgba(255, 117, 31, 0.18);
+      }
+      .chat-panel.gemelo-mode .panel-back {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .chat-panel.gemelo-mode .panel-back:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .chat-panel.gemelo-mode .panel-person-name {
+        color: #fff;
+      }
+      .chat-panel.gemelo-mode .panel-person-meta {
+        color: rgba(255, 117, 31, 0.6);
+      }
+      .chat-panel.gemelo-mode .panel-mode-seg {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .chat-panel.gemelo-mode .panel-mode-btn {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .chat-panel.gemelo-mode .panel-mode-btn.active {
+        background: var(--orange);
+        color: #fff;
+      }
+      .chat-panel.gemelo-mode .panel-mode-btn.locked {
+        opacity: 0.35;
+      }
+      .chat-panel.gemelo-mode .day-sep-line {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .chat-panel.gemelo-mode .day-sep-text {
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .chat-panel.gemelo-mode .pmsg.them .pbubble {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 117, 31, 0.17);
+        border-bottom-left-radius: 4px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+      .chat-panel.gemelo-mode .pmsg.them.is-gemelo .pbubble {
+        border-left: 1px solid rgba(255, 117, 31, 0.17);
+      }
+      .chat-panel.gemelo-mode .pmsg.me .pbubble {
+        background: rgba(255, 117, 31, 0.09);
+        border: 1px solid rgba(255, 117, 31, 0.22);
+        border-bottom-right-radius: 4px;
+        color: rgba(255, 255, 255, 0.82);
+      }
+      .chat-panel.gemelo-mode .pmsg-time {
+        color: rgba(255, 255, 255, 0.17);
+      }
+      .chat-panel.gemelo-mode .panel-input-wrap {
+        background: #111;
+        border-top-color: rgba(255, 117, 31, 0.18);
+      }
+      .chat-panel.gemelo-mode .panel-input {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .chat-panel.gemelo-mode .panel-input::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .chat-panel.gemelo-mode .panel-input:focus {
+        border-color: var(--orange);
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .chat-panel.gemelo-mode .panel-send-btn {
+        background: var(--orange);
+      }
+      .chat-panel.gemelo-mode .panel-send-btn:hover {
+        background: var(--orange-mid);
+      }
 
-/* ── Person profile overlay ── */
-.profile-overlay {
-  position: fixed; inset: 0; z-index: 700;
-  background: var(--bg);
-  display: flex; flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.profile-overlay.open { transform: translateY(0); }
-.profile-overlay-nav {
-  background: var(--surf-1); border-bottom: 1px solid var(--border);
-  height: var(--nav-top); display: flex; align-items: center;
-  padding: 0 16px 0 8px; gap: 8px; flex-shrink: 0;
-}
-.profile-overlay-back {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary); transition: background 0.2s;
-}
-.profile-overlay-back:hover { background: var(--surf-2); }
-.profile-overlay-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.profile-overlay-title { font-family: var(--font-display); font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
-.profile-overlay-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.profile-overlay-inner { max-width: 720px; margin: 0 auto; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 24px; }
+      /* ── Person profile overlay ── */
+      .profile-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 700;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .profile-overlay.open {
+        transform: translateY(0);
+      }
+      .profile-overlay-nav {
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        height: var(--nav-top);
+        display: flex;
+        align-items: center;
+        padding: 0 16px 0 8px;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .profile-overlay-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition: background 0.2s;
+      }
+      .profile-overlay-back:hover {
+        background: var(--surf-2);
+      }
+      .profile-overlay-back svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .profile-overlay-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .profile-overlay-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .profile-overlay-inner {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
 
-/* Profile hero */
-.po-hero { display: flex; gap: 16px; align-items: center; }
-.po-hero-av { width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: #fff; }
-.po-hero-info { flex: 1; }
-.po-hero-name { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
-.po-hero-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
-.po-hero-score { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--orange); letter-spacing: -0.02em; }
-.po-hero-score span { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.02em; display: block; text-align: center; }
+      /* Profile hero */
+      .po-hero {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .po-hero-av {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .po-hero-info {
+        flex: 1;
+      }
+      .po-hero-name {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+      .po-hero-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 3px;
+      }
+      .po-hero-score {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--orange);
+        letter-spacing: -0.02em;
+      }
+      .po-hero-score span {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.02em;
+        display: block;
+        text-align: center;
+      }
 
-/* Profile section */
-.po-section { background: var(--surf-1); border-radius: var(--r-xl); padding: 18px; border: 1px solid var(--border); }
-.po-section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
-.po-bio { font-family: var(--font-serif); font-style: italic; font-size: 0.93rem; font-weight: 300; color: var(--text-secondary); line-height: 1.7; }
-.po-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-.po-chip { padding: 5px 12px; border-radius: 20px; background: var(--surf-2); border: 1px solid var(--border2); font-size: 0.78rem; color: var(--text-secondary); }
-.po-chip.shared { background: rgba(255,117,31,0.08); border-color: rgba(255,117,31,0.25); color: var(--orange); }
+      /* Profile section */
+      .po-section {
+        background: var(--surf-1);
+        border-radius: var(--r-xl);
+        padding: 18px;
+        border: 1px solid var(--border);
+      }
+      .po-section-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+      }
+      .po-bio {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-size: 0.93rem;
+        font-weight: 300;
+        color: var(--text-secondary);
+        line-height: 1.7;
+      }
+      .po-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .po-chip {
+        padding: 5px 12px;
+        border-radius: 20px;
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+      }
+      .po-chip.shared {
+        background: rgba(255, 117, 31, 0.08);
+        border-color: rgba(255, 117, 31, 0.25);
+        color: var(--orange);
+      }
 
-/* Photos grid */
-.po-photos-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 110px 110px; gap: 6px; }
-.po-photo { border-radius: var(--r-md); }
-.po-photo:first-child { grid-row: 1 / 3; }
+      /* Photos grid */
+      .po-photos-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-rows: 110px 110px;
+        gap: 6px;
+      }
+      .po-photo {
+        border-radius: var(--r-md);
+      }
+      .po-photo:first-child {
+        grid-row: 1 / 3;
+      }
 
-/* Lock toast */
-.lock-toast {
-  position: fixed; bottom: calc(var(--nav-bot) + 14px); left: 50%; transform: translateX(-50%) translateY(16px);
-  z-index: 600; background: var(--surf-dark); color: var(--text-inv);
-  border-radius: var(--r-lg); padding: 10px 16px; font-size: 0.8rem; font-weight: 500;
-  display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2); opacity: 0; transition: all 0.25s ease;
-  white-space: nowrap; pointer-events: none;
-}
-.lock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.lock-toast svg { width: 15px; height: 15px; fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+      /* Lock toast */
+      .lock-toast {
+        position: fixed;
+        bottom: calc(var(--nav-bot) + 14px);
+        left: 50%;
+        transform: translateX(-50%) translateY(16px);
+        z-index: 600;
+        background: var(--surf-dark);
+        color: var(--text-inv);
+        border-radius: var(--r-lg);
+        padding: 10px 16px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      .lock-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .lock-toast svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: var(--orange);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
 
-/* ── Bottom nav ── */
-.app-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; height: var(--nav-bot); background: var(--surf-1); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; padding-bottom: env(safe-area-inset-bottom, 0); }
-.bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; background: none; border: none; cursor: pointer; color: var(--text-muted); text-decoration: none; transition: color 0.2s; touch-action: manipulation; min-height: 48px; }
-.bnav-item:hover { color: var(--text-secondary); }
-.bnav-item.active { color: var(--orange); }
-.bnav-icon { position: relative; line-height: 1; }
-.bnav-icon svg { width: 22px; height: 22px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.bnav-pip { position: absolute; top: -3px; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); border: 2px solid var(--surf-1); }
-.bnav-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-.bnav-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; background: none; border: none; cursor: pointer; text-decoration: none; touch-action: manipulation; min-height: 48px; }
-.bnav-center-orb { width: 50px; height: 50px; border-radius: 50%; background: var(--surf-dark); display: flex; align-items: center; justify-content: center; margin-top: -20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); border: 3px solid var(--bg); transition: transform 0.2s, box-shadow 0.2s; }
-.bnav-center:hover .bnav-center-orb { transform: scale(1.08); }
-.bnav-center-orb svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.bnav-center-label { font-family: var(--font-body); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+      /* ── Bottom nav ── */
+      .app-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-bot);
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
+      .bnav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-item:hover {
+        color: var(--text-secondary);
+      }
+      .bnav-item.active {
+        color: var(--orange);
+      }
+      .bnav-icon {
+        position: relative;
+        line-height: 1;
+      }
+      .bnav-icon svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .bnav-pip {
+        position: absolute;
+        top: -3px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .bnav-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .bnav-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-center-orb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--surf-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        border: 3px solid var(--bg);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .bnav-center:hover .bnav-center-orb {
+        transform: scale(1.08);
+      }
+      .bnav-center-orb svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .bnav-center-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
 
-/* ── Simulation teaser card (top of gemelo chat) ── */
-.sim-teaser-card {
-  background: rgba(255,117,31,0.06); border: 1px solid rgba(255,117,31,0.18);
-  border-radius: 14px; padding: 14px 16px; margin-bottom: 6px;
-  display: flex; align-items: center; gap: 12px;
-  cursor: pointer; transition: background 0.18s; touch-action: manipulation;
-}
-.sim-teaser-card:hover { background: rgba(255,117,31,0.11); }
-.sim-teaser-icon {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,117,31,0.13); display: flex; align-items: center;
-  justify-content: center; flex-shrink: 0;
-}
-.sim-teaser-icon svg { width: 18px; height: 18px; fill: none; stroke: var(--orange); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.sim-teaser-text { flex: 1; min-width: 0; }
-.sim-teaser-title { font-family: var(--font-display); font-size: 0.82rem; font-weight: 800; color: var(--orange); letter-spacing: -0.01em; line-height: 1.3; }
-.sim-teaser-sub { font-size: 0.7rem; color: rgba(255,117,31,0.6); margin-top: 2px; line-height: 1.4; }
-.sim-teaser-arrow { flex-shrink: 0; color: rgba(255,117,31,0.45); }
-.sim-teaser-arrow svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      /* ── Simulation teaser card (top of gemelo chat) ── */
+      .sim-teaser-card {
+        background: rgba(255, 117, 31, 0.06);
+        border: 1px solid rgba(255, 117, 31, 0.18);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: background 0.18s;
+        touch-action: manipulation;
+      }
+      .sim-teaser-card:hover {
+        background: rgba(255, 117, 31, 0.11);
+      }
+      .sim-teaser-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 117, 31, 0.13);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .sim-teaser-icon svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: var(--orange);
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .sim-teaser-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .sim-teaser-title {
+        font-family: var(--font-display);
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--orange);
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+      }
+      .sim-teaser-sub {
+        font-size: 0.7rem;
+        color: rgba(255, 117, 31, 0.6);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      .sim-teaser-arrow {
+        flex-shrink: 0;
+        color: rgba(255, 117, 31, 0.45);
+      }
+      .sim-teaser-arrow svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
 
-/* ── Simulation overlay ── */
-.sim-overlay {
-  position: fixed; inset: 0; z-index: 800; background: #0d0d0d;
-  display: flex; flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sim-overlay.open { transform: translateY(0); }
-.sim-nav {
-  background: #111; border-bottom: 1px solid rgba(255,117,31,0.18);
-  height: var(--nav-top); display: flex; align-items: center;
-  padding: 0 16px 0 8px; gap: 10px; flex-shrink: 0;
-}
-.sim-nav-back {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.5); transition: background 0.2s;
-}
-.sim-nav-back:hover { background: rgba(255,255,255,0.06); }
-.sim-nav-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.sim-nav-info { flex: 1; min-width: 0; }
-.sim-nav-title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
-.sim-nav-sub { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,117,31,0.6); margin-top: 1px; }
-.sim-badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 10px; background: rgba(255,117,31,0.12); border: 1px solid rgba(255,117,31,0.22); color: var(--orange); text-transform: uppercase; flex-shrink: 0; white-space: nowrap; }
-.sim-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.sim-inner { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 8px; }
-.sim-intro { background: rgba(255,117,31,0.05); border: 1px solid rgba(255,117,31,0.12); border-radius: 14px; padding: 16px; margin-bottom: 10px; }
-.sim-intro-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,117,31,0.55); margin-bottom: 6px; }
-.sim-intro-text { font-family: var(--font-serif); font-style: italic; font-size: 0.83rem; font-weight: 300; color: rgba(255,255,255,0.42); line-height: 1.7; }
-.sim-sep { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
-.sim-sep-line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
-.sim-sep-text { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.17); white-space: nowrap; }
-/* Simulation bubbles */
-.smsg { display: flex; align-items: flex-end; gap: 8px; }
-.smsg.them { justify-content: flex-start; }
-.smsg.me   { justify-content: flex-end; }
-.smsg-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.65rem; font-weight: 800; color: #fff; align-self: flex-end; margin-bottom: 2px; }
-.sbubble { padding: 10px 14px; border-radius: 18px; max-width: min(74%, 460px); font-family: var(--font-serif); font-size: 0.875rem; font-style: italic; font-weight: 300; line-height: 1.68; word-wrap: break-word; }
-.smsg.them .sbubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,117,31,0.17); border-bottom-left-radius: 4px; color: rgba(255,255,255,0.75); }
-.smsg.me   .sbubble { background: rgba(255,117,31,0.09); border: 1px solid rgba(255,117,31,0.22); border-bottom-right-radius: 4px; color: rgba(255,255,255,0.82); }
-.smsg-label { display: block; font-family: var(--font-body); font-style: normal; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
-.smsg.them .smsg-label { color: var(--orange); }
-.smsg.me   .smsg-label { color: rgba(255,200,120,0.7); }
-.smsg-time { font-size: 0.58rem; color: rgba(255,255,255,0.17); align-self: flex-end; margin-bottom: 4px; flex-shrink: 0; }
-.smsg.me .smsg-time { order: -1; }
+      /* ── Simulation overlay ── */
+      .sim-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 800;
+        background: #0d0d0d;
+        display: flex;
+        flex-direction: column;
+        transform: translateY(100%);
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .sim-overlay.open {
+        transform: translateY(0);
+      }
+      .sim-nav {
+        background: #111;
+        border-bottom: 1px solid rgba(255, 117, 31, 0.18);
+        height: var(--nav-top);
+        display: flex;
+        align-items: center;
+        padding: 0 16px 0 8px;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .sim-nav-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.5);
+        transition: background 0.2s;
+      }
+      .sim-nav-back:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .sim-nav-back svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .sim-nav-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .sim-nav-title {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.01em;
+      }
+      .sim-nav-sub {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 117, 31, 0.6);
+        margin-top: 1px;
+      }
+      .sim-badge {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        padding: 3px 10px;
+        border-radius: 10px;
+        background: rgba(255, 117, 31, 0.12);
+        border: 1px solid rgba(255, 117, 31, 0.22);
+        color: var(--orange);
+        text-transform: uppercase;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .sim-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .sim-inner {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .sim-intro {
+        background: rgba(255, 117, 31, 0.05);
+        border: 1px solid rgba(255, 117, 31, 0.12);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 10px;
+      }
+      .sim-intro-label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255, 117, 31, 0.55);
+        margin-bottom: 6px;
+      }
+      .sim-intro-text {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-size: 0.83rem;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.42);
+        line-height: 1.7;
+      }
+      .sim-sep {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0 4px;
+      }
+      .sim-sep-line {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .sim-sep-text {
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.17);
+        white-space: nowrap;
+      }
+      /* Simulation bubbles */
+      .smsg {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .smsg.them {
+        justify-content: flex-start;
+      }
+      .smsg.me {
+        justify-content: flex-end;
+      }
+      .smsg-av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #fff;
+        align-self: flex-end;
+        margin-bottom: 2px;
+      }
+      .sbubble {
+        padding: 10px 14px;
+        border-radius: 18px;
+        max-width: min(74%, 460px);
+        font-family: var(--font-serif);
+        font-size: 0.875rem;
+        font-style: italic;
+        font-weight: 300;
+        line-height: 1.68;
+        word-wrap: break-word;
+      }
+      .smsg.them .sbubble {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 117, 31, 0.17);
+        border-bottom-left-radius: 4px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+      .smsg.me .sbubble {
+        background: rgba(255, 117, 31, 0.09);
+        border: 1px solid rgba(255, 117, 31, 0.22);
+        border-bottom-right-radius: 4px;
+        color: rgba(255, 255, 255, 0.82);
+      }
+      .smsg-label {
+        display: block;
+        font-family: var(--font-body);
+        font-style: normal;
+        font-size: 0.58rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .smsg.them .smsg-label {
+        color: var(--orange);
+      }
+      .smsg.me .smsg-label {
+        color: rgba(255, 200, 120, 0.7);
+      }
+      .smsg-time {
+        font-size: 0.58rem;
+        color: rgba(255, 255, 255, 0.17);
+        align-self: flex-end;
+        margin-bottom: 4px;
+        flex-shrink: 0;
+      }
+      .smsg.me .smsg-time {
+        order: -1;
+      }
 
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
-#loadingOverlay.hide{opacity:0;pointer-events:none}
-.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      #loadingOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+      }
+      #loadingOverlay.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-spinner {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: var(--orange);
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-/* ══════════════════════════════════════
+      /* ══════════════════════════════════════
    RESPONSIVE — MOBILE
 ══════════════════════════════════════ */
-@media (max-width: 600px) {
-  /* Lista de chats — padding lateral */
-  .conv-item { padding: 12px 12px; }
-  .conv-count { padding: 8px 12px 4px; }
+      @media (max-width: 600px) {
+        /* Lista de chats — padding lateral */
+        .conv-item {
+          padding: 12px 12px;
+        }
+        .conv-count {
+          padding: 8px 12px 4px;
+        }
 
-  /* Panel de chat abierto */
-  .panel-msgs { padding: 12px 10px 12px; }
-  .pbubble,
-  .sbubble { max-width: min(85%, 320px); }
+        /* Panel de chat abierto */
+        .panel-msgs {
+          padding: 12px 10px 12px;
+        }
+        .pbubble,
+        .sbubble {
+          max-width: min(85%, 320px);
+        }
 
-  /* Input del chat */
-  .panel-input-wrap { padding: 8px 10px; }
+        /* Input del chat */
+        .panel-input-wrap {
+          padding: 8px 10px;
+        }
 
-  /* Grid de fotos del perfil overlay */
-  .po-photos-grid {
-    grid-template-columns: 1.8fr 1fr 1fr;
-    gap: 4px;
-  }
+        /* Grid de fotos del perfil overlay */
+        .po-photos-grid {
+          grid-template-columns: 1.8fr 1fr 1fr;
+          gap: 4px;
+        }
 
-  /* Profile overlay */
-  .profile-overlay-inner { padding: 16px 12px 28px; }
+        /* Profile overlay */
+        .profile-overlay-inner {
+          padding: 16px 12px 28px;
+        }
 
-  /* Barra de modo (gemelo/real) */
-  .mode-bar { padding: 8px 12px; }
-}
-</style>
-</head>
-<body>
-<div id="loadingOverlay"><div class="loading-spinner"></div></div>
+        /* Barra de modo (gemelo/real) */
+        .mode-bar {
+          padding: 8px 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
-<!-- Top nav -->
-<nav class="app-nav" aria-label="Navegación">
-  <div class="nav-title">Chats</div>
-  <div class="nav-actions">
-    <a href="./notificaciones.html" class="nav-icon-btn" aria-label="Notificaciones">
-      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span class="notif-pip"></span>
-    </a>
-    <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
-  </div>
-</nav>
+    <!-- Top nav -->
+    <nav class="app-nav" aria-label="Navegación">
+      <div class="nav-title">Chats</div>
+      <div class="nav-actions">
+        <a
+          href="./notificaciones.html"
+          class="nav-icon-btn"
+          aria-label="Notificaciones"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span class="notif-pip"></span>
+        </a>
+        <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+      </div>
+    </nav>
 
-<!-- Page content -->
-<div class="page-content">
-  <div class="search-wrap">
-    <div class="search-input-wrap">
-      <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" class="search-input" placeholder="Buscar conversación..." oninput="filterConvs(this.value)" autocomplete="off"/>
-    </div>
-  </div>
-
-  <div class="conv-count">3 conversaciones activas</div>
-
-  <div class="conv-list" id="convList">
-
-    <!-- Sofía -->
-    <div class="conv-item" id="conv-sofia" onclick="openChat('sofia', event)">
-      <div class="conv-av" style="background-image:url(./sofia.png);background-size:cover;background-position:center"></div>
-      <div class="conv-content">
-        <div class="conv-top">
-          <span class="conv-name">Sofía</span>
-          <span class="conv-afinidad">87%</span>
-          <span class="conv-time" id="sofia-time">11:02</span>
+    <!-- Page content -->
+    <div class="page-content">
+      <div class="search-wrap">
+        <div class="search-input-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            class="search-input"
+            placeholder="Buscar conversación..."
+            oninput="filterConvs(this.value)"
+            autocomplete="off"
+          />
         </div>
-        <div class="conv-preview-row">
-          <span class="conv-preview bold" id="sofia-preview">Jaja, espera ¿eso fue en serio?</span>
-          <span class="conv-unread" id="sofia-unread">2</span>
+      </div>
+
+      <div class="conv-count">3 conversaciones activas</div>
+
+      <div class="conv-list" id="convList">
+        <!-- Sofía -->
+        <div
+          class="conv-item"
+          id="conv-sofia"
+          onclick="openChat('sofia', event)"
+        >
+          <div
+            class="conv-av"
+            style="
+              background-image: url(./images/sofia.png);
+              background-size: cover;
+              background-position: center;
+            "
+          ></div>
+          <div class="conv-content">
+            <div class="conv-top">
+              <span class="conv-name">Sofía</span>
+              <span class="conv-afinidad">87%</span>
+              <span class="conv-time" id="sofia-time">11:02</span>
+            </div>
+            <div class="conv-preview-row">
+              <span class="conv-preview bold" id="sofia-preview"
+                >Jaja, espera ¿eso fue en serio?</span
+              >
+              <span class="conv-unread" id="sofia-unread">2</span>
+            </div>
+            <div class="conv-modes">
+              <button
+                class="conv-mode-btn mode-active"
+                id="sofia-btn-real"
+                onclick="listSwitch(event, 'sofia', 'real')"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Real
+              </button>
+              <button
+                class="conv-mode-btn"
+                id="sofia-btn-gemelo"
+                onclick="listSwitch(event, 'sofia', 'gemelo')"
+              >
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4l3 3" />
+                </svg>
+                Gemelo
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="conv-modes">
-          <button class="conv-mode-btn mode-active" id="sofia-btn-real" onclick="listSwitch(event,'sofia','real')">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Real
-          </button>
-          <button class="conv-mode-btn" id="sofia-btn-gemelo" onclick="listSwitch(event,'sofia','gemelo')">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-            Gemelo
-          </button>
+
+        <!-- Mateo -->
+        <div
+          class="conv-item"
+          id="conv-mateo"
+          onclick="openChat('mateo', event)"
+        >
+          <div
+            class="conv-av"
+            style="
+              background-image: url(./images/mateo.png);
+              background-size: cover;
+              background-position: center;
+            "
+          ></div>
+          <div class="conv-content">
+            <div class="conv-top">
+              <span class="conv-name">Mateo</span>
+              <span class="conv-afinidad">83%</span>
+              <span class="conv-time" id="mateo-time">19:45</span>
+            </div>
+            <div class="conv-preview-row">
+              <span class="conv-preview bold" id="mateo-preview"
+                >(La tengo para esta semana si no la viste, avisame)</span
+              >
+              <span class="conv-unread" id="mateo-unread">1</span>
+            </div>
+            <div class="conv-modes">
+              <button
+                class="conv-mode-btn mode-active"
+                id="mateo-btn-real"
+                onclick="listSwitch(event, 'mateo', 'real')"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Real
+              </button>
+              <button
+                class="conv-mode-btn"
+                id="mateo-btn-gemelo"
+                onclick="listSwitch(event, 'mateo', 'gemelo')"
+              >
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4l3 3" />
+                </svg>
+                Gemelo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Valentina -->
+        <div
+          class="conv-item"
+          id="conv-valentina"
+          onclick="openChat('valentina', event)"
+        >
+          <div
+            class="conv-av"
+            style="
+              background-image: url(./images/valentina.png);
+              background-size: cover;
+              background-position: center;
+            "
+          ></div>
+          <div class="conv-content">
+            <div class="conv-top">
+              <span class="conv-name">Valentina</span>
+              <span class="conv-afinidad">76%</span>
+              <span class="conv-time" id="valentina-time">Ayer</span>
+            </div>
+            <div class="conv-preview-row">
+              <span class="conv-preview bold" id="valentina-preview"
+                >Le interesan los proyectos con impacto real…</span
+              >
+              <span class="conv-unread" id="valentina-unread">1</span>
+            </div>
+            <div class="conv-modes">
+              <button
+                class="conv-mode-btn mode-active"
+                id="valentina-btn-gemelo"
+                onclick="listSwitch(event, 'valentina', 'gemelo')"
+              >
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4l3 3" />
+                </svg>
+                Gemelo
+              </button>
+              <button
+                class="conv-mode-btn"
+                id="valentina-btn-real"
+                onclick="listSwitch(event, 'valentina', 'real')"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Real
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Mateo -->
-    <div class="conv-item" id="conv-mateo" onclick="openChat('mateo', event)">
-      <div class="conv-av" style="background-image:url(./mateo.png);background-size:cover;background-position:center"></div>
-      <div class="conv-content">
-        <div class="conv-top">
-          <span class="conv-name">Mateo</span>
-          <span class="conv-afinidad">83%</span>
-          <span class="conv-time" id="mateo-time">19:45</span>
+    <!-- Chat panel -->
+    <div class="chat-panel" id="chatPanel">
+      <div class="panel-nav">
+        <button class="panel-back" onclick="closeChat()" aria-label="Volver">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 12H5" />
+            <path d="M12 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <div
+          class="panel-av"
+          id="panelAv"
+          onclick="openPersonProfile()"
+          style="cursor: pointer"
+          title="Ver perfil"
+        ></div>
+        <div
+          class="panel-person"
+          onclick="openPersonProfile()"
+          style="cursor: pointer"
+        >
+          <div class="panel-person-name" id="panelName"></div>
+          <div class="panel-person-meta" id="panelMeta"></div>
         </div>
-        <div class="conv-preview-row">
-          <span class="conv-preview bold" id="mateo-preview">(La tengo para esta semana si no la viste, avisame)</span>
-          <span class="conv-unread" id="mateo-unread">1</span>
-        </div>
-        <div class="conv-modes">
-          <button class="conv-mode-btn mode-active" id="mateo-btn-real" onclick="listSwitch(event,'mateo','real')">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Real
-          </button>
-          <button class="conv-mode-btn" id="mateo-btn-gemelo" onclick="listSwitch(event,'mateo','gemelo')">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <div class="panel-mode-seg">
+          <button
+            class="panel-mode-btn active"
+            id="pmBtnGemelo"
+            onclick="switchPanelMode('gemelo')"
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
             Gemelo
+          </button>
+          <button
+            class="panel-mode-btn"
+            id="pmBtnReal"
+            onclick="switchPanelMode('real')"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Real
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- Valentina -->
-    <div class="conv-item" id="conv-valentina" onclick="openChat('valentina', event)">
-      <div class="conv-av" style="background-image:url(./valentina.png);background-size:cover;background-position:center"></div>
-      <div class="conv-content">
-        <div class="conv-top">
-          <span class="conv-name">Valentina</span>
-          <span class="conv-afinidad">76%</span>
-          <span class="conv-time" id="valentina-time">Ayer</span>
-        </div>
-        <div class="conv-preview-row">
-          <span class="conv-preview bold" id="valentina-preview">Le interesan los proyectos con impacto real…</span>
-          <span class="conv-unread" id="valentina-unread">1</span>
-        </div>
-        <div class="conv-modes">
-          <button class="conv-mode-btn mode-active" id="valentina-btn-gemelo" onclick="listSwitch(event,'valentina','gemelo')">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-            Gemelo
-          </button>
-          <button class="conv-mode-btn" id="valentina-btn-real" onclick="listSwitch(event,'valentina','real')">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Real
-          </button>
-        </div>
+      <div class="panel-mode-bar" id="panelModeBar"></div>
+
+      <div class="panel-messages" id="panelMessages">
+        <div class="panel-msgs-inner" id="panelMsgsInner"></div>
+      </div>
+
+      <div class="panel-input-wrap">
+        <textarea
+          class="panel-input"
+          id="panelInput"
+          rows="1"
+          placeholder="Escribir mensaje..."
+          onkeydown="handlePanelKey(event)"
+          oninput="panelResize(this)"
+        ></textarea>
+        <button
+          class="panel-send-btn"
+          onclick="sendPanelMsg()"
+          aria-label="Enviar"
+        >
+          <svg viewBox="0 0 24 24">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
       </div>
     </div>
 
-  </div>
-</div>
-
-<!-- Chat panel -->
-<div class="chat-panel" id="chatPanel">
-  <div class="panel-nav">
-    <button class="panel-back" onclick="closeChat()" aria-label="Volver">
-      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
-    </button>
-    <div class="panel-av" id="panelAv" onclick="openPersonProfile()" style="cursor:pointer" title="Ver perfil"></div>
-    <div class="panel-person" onclick="openPersonProfile()" style="cursor:pointer">
-      <div class="panel-person-name" id="panelName"></div>
-      <div class="panel-person-meta" id="panelMeta"></div>
+    <!-- Person profile overlay -->
+    <div class="profile-overlay" id="profileOverlay">
+      <div class="profile-overlay-nav">
+        <button
+          class="profile-overlay-back"
+          onclick="closePersonProfile()"
+          aria-label="Volver al chat"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M19 12H5" />
+            <path d="M12 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <span class="profile-overlay-title" id="poTitle"></span>
+      </div>
+      <div class="profile-overlay-body">
+        <div class="profile-overlay-inner" id="poInner"></div>
+      </div>
     </div>
-    <div class="panel-mode-seg">
-      <button class="panel-mode-btn active" id="pmBtnGemelo" onclick="switchPanelMode('gemelo')">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-        Gemelo
-      </button>
-      <button class="panel-mode-btn" id="pmBtnReal" onclick="switchPanelMode('real')">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Real
-      </button>
+
+    <!-- Simulation overlay -->
+    <div class="sim-overlay" id="simOverlay">
+      <div class="sim-nav">
+        <button
+          class="sim-nav-back"
+          onclick="closeSimulation()"
+          aria-label="Volver al chat"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M19 12H5" />
+            <path d="M12 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <div class="sim-nav-info">
+          <div class="sim-nav-title" id="simNavTitle">
+            Simulación entre gemelos
+          </div>
+          <div class="sim-nav-sub">Antes de que se conocieran</div>
+        </div>
+        <span class="sim-badge">Privado</span>
+      </div>
+      <div class="sim-body">
+        <div class="sim-inner" id="simInner"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="panel-mode-bar" id="panelModeBar"></div>
-
-  <div class="panel-messages" id="panelMessages">
-    <div class="panel-msgs-inner" id="panelMsgsInner"></div>
-  </div>
-
-  <div class="panel-input-wrap">
-    <textarea class="panel-input" id="panelInput" rows="1" placeholder="Escribir mensaje..."
-      onkeydown="handlePanelKey(event)" oninput="panelResize(this)"></textarea>
-    <button class="panel-send-btn" onclick="sendPanelMsg()" aria-label="Enviar">
-      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    </button>
-  </div>
-</div>
-
-<!-- Person profile overlay -->
-<div class="profile-overlay" id="profileOverlay">
-  <div class="profile-overlay-nav">
-    <button class="profile-overlay-back" onclick="closePersonProfile()" aria-label="Volver al chat">
-      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
-    </button>
-    <span class="profile-overlay-title" id="poTitle"></span>
-  </div>
-  <div class="profile-overlay-body">
-    <div class="profile-overlay-inner" id="poInner"></div>
-  </div>
-</div>
-
-<!-- Simulation overlay -->
-<div class="sim-overlay" id="simOverlay">
-  <div class="sim-nav">
-    <button class="sim-nav-back" onclick="closeSimulation()" aria-label="Volver al chat">
-      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
-    </button>
-    <div class="sim-nav-info">
-      <div class="sim-nav-title" id="simNavTitle">Simulación entre gemelos</div>
-      <div class="sim-nav-sub">Antes de que se conocieran</div>
+    <!-- Lock toast -->
+    <div class="lock-toast" id="lockToast">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+      Necesitás 80% de afinidad para chatear directamente
     </div>
-    <span class="sim-badge">Privado</span>
-  </div>
-  <div class="sim-body">
-    <div class="sim-inner" id="simInner"></div>
-  </div>
-</div>
 
-<!-- Lock toast -->
-<div class="lock-toast" id="lockToast">
-  <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-  Necesitás 80% de afinidad para chatear directamente
-</div>
+    <!-- Bottom nav -->
+    <nav class="app-bottom-nav" aria-label="Navegación inferior">
+      <a href="./home.html" class="bnav-item" aria-label="Inicio">
+        <span class="bnav-icon"
+          ><svg viewBox="0 0 24 24">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" /></svg
+        ></span>
+        <span class="bnav-label">Inicio</span>
+      </a>
+      <a href="./matches.html" class="bnav-item" aria-label="Matches">
+        <span class="bnav-icon"
+          ><svg viewBox="0 0 24 24">
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            /></svg
+        ></span>
+        <span class="bnav-label">Matches</span>
+      </a>
+      <a href="./gemelo.html" class="bnav-center" aria-label="Gemelo">
+        <div class="bnav-center-orb">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4l3 3" />
+          </svg>
+        </div>
+        <span class="bnav-center-label">Gemelo</span>
+      </a>
+      <a
+        href="./chats.html"
+        class="bnav-item active"
+        aria-label="Chats"
+        aria-current="page"
+      >
+        <span class="bnav-icon">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            />
+          </svg>
+        </span>
+        <span class="bnav-label">Chats</span>
+      </a>
+      <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
+        <span class="bnav-icon"
+          ><svg viewBox="0 0 24 24">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" /></svg
+        ></span>
+        <span class="bnav-label">Perfil</span>
+      </a>
+    </nav>
 
-<!-- Bottom nav -->
-<nav class="app-bottom-nav" aria-label="Navegación inferior">
-  <a href="./home.html" class="bnav-item" aria-label="Inicio">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-    <span class="bnav-label">Inicio</span>
-  </a>
-  <a href="./matches.html" class="bnav-item" aria-label="Matches">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
-    <span class="bnav-label">Matches</span>
-  </a>
-  <a href="./gemelo.html" class="bnav-center" aria-label="Gemelo">
-    <div class="bnav-center-orb">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-    </div>
-    <span class="bnav-center-label">Gemelo</span>
-  </a>
-  <a href="./chats.html" class="bnav-item active" aria-label="Chats" aria-current="page">
-    <span class="bnav-icon">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    </span>
-    <span class="bnav-label">Chats</span>
-  </a>
-  <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-    <span class="bnav-label">Perfil</span>
-  </a>
-</nav>
+    <script>
+      const people = {
+        sofia: {
+          name: "Sofía",
+          initials: "S",
+          color: "linear-gradient(135deg,#FF9700,#FF751F)",
+          photo: "./images/sofia.png",
+          age: 26,
+          city: "Buenos Aires",
+          afinidad: 87,
+          bio: "Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.",
+          interests: [
+            "Jazz",
+            "Cine independiente",
+            "Viajes",
+            "Lectura",
+            "Naturaleza",
+            "Música en vivo",
+          ],
+          sharedInterests: ["Jazz", "Cine independiente", "Naturaleza"],
+          photos: [
+            "linear-gradient(145deg,#FF9700,#FF751F)",
+            "linear-gradient(145deg,#FFD580,#FF9700)",
+            "linear-gradient(145deg,#FF751F,#c74b00)",
+            "linear-gradient(145deg,#FFBB30,#FF9700)",
+            "linear-gradient(145deg,#ff9a3c,#e05000)",
+          ],
+          realUnlocked: true,
+          currentMode: "real",
+          simulacion: [
+            {
+              from: "su-gemelo",
+              text: "Hola. Represento a Sofía. Antes de que se conozcan quiero ver si hay algo real acá. ¿Qué busca la persona que vos representás?",
+              time: "10:14",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Algo con profundidad. No necesariamente serio, pero que vaya a algún lado. Le aburre lo que no deja huella.",
+              time: "10:15",
+            },
+            {
+              from: "su-gemelo",
+              text: "Eso es Sofía casi en sus propias palabras. Interesante que lo dijiste sin que yo te preguntara específicamente eso.",
+              time: "10:16",
+            },
+            {
+              from: "mi-gemelo",
+              text: "¿Qué hace cuando una conversación le empieza a parecer forzada?",
+              time: "10:18",
+            },
+            {
+              from: "su-gemelo",
+              text: "La desvía con humor, pero si no mejora la corta con gracia. No soporta el ruido social vacío. El silencio honesto le parece mejor que la charla de relleno.",
+              time: "10:19",
+            },
+            {
+              from: "mi-gemelo",
+              text: "La persona que represento también. No llena los silencios por obligación.",
+              time: "10:21",
+            },
+            {
+              from: "su-gemelo",
+              text: "Eso puede funcionar muy bien o muy mal dependiendo de cómo se lean. ¿Tiene confianza para sostener un silencio incómodo con alguien nuevo?",
+              time: "10:22",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Sí. Y suele ser la primera en romperlo con algo que vale la pena.",
+              time: "10:24",
+            },
+            {
+              from: "su-gemelo",
+              text: "Sofía aprecia eso. Hay algo acá que no es solo compatibilidad de gustos — es compatibilidad de forma de estar en el mundo. 92% no es un número casual.",
+              time: "10:25",
+            },
+          ],
+          gemelo: {
+            lastTime: "10:47",
+            unread: 0,
+            msgs: [
+              {
+                from: "them",
+                text: "Hola, soy el gemelo de Sofía. Puedo ayudarte a conocerla antes de chatear directamente.",
+                time: "10:30",
+              },
+              {
+                from: "me",
+                text: "¿Qué tipo de música le gusta realmente?",
+                time: "10:32",
+              },
+              {
+                from: "them",
+                text: "Jazz sobre todo — Coltrane, Miles Davis, Bill Evans. Pero también le llega el post-rock instrumental. El silencio entre las notas le importa tanto como las notas mismas.",
+                time: "10:33",
+              },
+              {
+                from: "me",
+                text: "¿Cómo reacciona si uno la lleva a un lugar desconocido en la primera cita?",
+                time: "10:40",
+              },
+              {
+                from: "them",
+                text: "Le encanta, siempre que no sea forzado. Odia el protocolo pero adora la sorpresa genuina. Si el lugar la representa, vas muy bien.",
+                time: "10:41",
+              },
+              {
+                from: "them",
+                text: "Escuché algo de Explosions in the Sky hace poco. ¿Los conocés?",
+                time: "10:47",
+              },
+            ],
+          },
+          real: {
+            lastTime: "11:02",
+            unread: 2,
+            msgs: [
+              {
+                from: "them",
+                text: "¡Hola! Nuestros gemelos me dijeron que tenemos mucho en común 😄",
+                time: "10:55",
+              },
+              {
+                from: "me",
+                text: "Sí, vi que ambos tenemos una obsesión bastante seria con el jazz.",
+                time: "10:56",
+              },
+              {
+                from: "them",
+                text: "Serious es poco. Fui a ver a Brad Mehldau el mes pasado y me quedé llorando en el taxi de vuelta. Lo digo sin vergüenza.",
+                time: "10:58",
+              },
+              {
+                from: "me",
+                text: 'Eso es exactamente lo que tiene que hacer la música buena. ¿Alguna vez escuchaste "Anything Goes" en vivo?',
+                time: "11:00",
+              },
+              {
+                from: "them",
+                text: "Jaja, espera ¿eso fue en serio?",
+                time: "11:02",
+              },
+            ],
+          },
+        },
+        mateo: {
+          name: "Mateo",
+          initials: "M",
+          color: "linear-gradient(135deg,#1e293b,#475569)",
+          photo: "./images/mateo.png",
+          age: 28,
+          city: "Buenos Aires",
+          afinidad: 83,
+          bio: "Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.",
+          interests: [
+            "Cine de autor",
+            "Música",
+            "Running",
+            "Cocina",
+            "Series",
+            "Tecnología",
+          ],
+          sharedInterests: ["Cine de autor", "Música"],
+          photos: [
+            "linear-gradient(145deg,#1e293b,#475569)",
+            "linear-gradient(145deg,#334155,#64748b)",
+            "linear-gradient(145deg,#0f172a,#334155)",
+            "linear-gradient(145deg,#475569,#94a3b8)",
+            "linear-gradient(145deg,#1e3a5f,#2563eb)",
+          ],
+          realUnlocked: true,
+          currentMode: "real",
+          simulacion: [
+            {
+              from: "su-gemelo",
+              text: "Represento a Mateo. Empecemos directo: ¿qué es lo que realmente busca la persona que vos representás en otra persona?",
+              time: "17:50",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Algo real, sin performance. Alguien que sea lo mismo cuando nadie está mirando. No le pide que tenga todo resuelto — le pide que no actúe.",
+              time: "17:51",
+            },
+            {
+              from: "su-gemelo",
+              text: "Mateo dice casi lo mismo. Tiene algo de sospechoso lo parecido que son en eso.",
+              time: "17:52",
+            },
+            {
+              from: "mi-gemelo",
+              text: "¿Qué cosas lo hacen realmente entusiasmarse, aunque no lo muestre?",
+              time: "17:54",
+            },
+            {
+              from: "su-gemelo",
+              text: "El cine. Cuando algo lo mueve de verdad le cuesta ocultarlo — se le nota en cómo habla, en los silencios que deja. Pero tiene pudor de mostrar ese entusiasmo demasiado rápido.",
+              time: "17:55",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Ese tipo de pudor suele venir de haber mostrado entusiasmo y que no fuera correspondido. ¿Le pasó?",
+              time: "17:57",
+            },
+            {
+              from: "su-gemelo",
+              text: "Sí. Y aprendió a ir más despacio con eso. Pero cuando baja la guardia, la conversación que tiene es de las mejores.",
+              time: "17:58",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Creo que acá hay algo sólido. No explosivo — del tipo que construye.",
+              time: "18:00",
+            },
+            {
+              from: "su-gemelo",
+              text: "Coincido. 87% de compatibilidad. Los voy a presentar.",
+              time: "18:01",
+            },
+          ],
+          gemelo: {
+            lastTime: "18:03",
+            unread: 0,
+            msgs: [
+              {
+                from: "them",
+                text: "Hola, soy el gemelo de Mateo. Puedo contarte más sobre él antes de que hablen directamente.",
+                time: "18:00",
+              },
+              {
+                from: "me",
+                text: "¿Qué tipo de cine le gusta?",
+                time: "18:02",
+              },
+              {
+                from: "them",
+                text: "Cine de autor principalmente — Jarmusch, Kaurismäki, Haneke. No es snob, le puede entrar cualquier cosa bien hecha. Le molesta el mal gusto más que el cine comercial.",
+                time: "18:03",
+              },
+            ],
+          },
+          real: {
+            lastTime: "19:45",
+            unread: 1,
+            msgs: [
+              {
+                from: "them",
+                text: "¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.",
+                time: "19:30",
+              },
+              {
+                from: "me",
+                text: "Es de las mejores. La vi tres veces, cada vez encontrás algo nuevo.",
+                time: "19:32",
+              },
+              {
+                from: "them",
+                text: "Exacto. ¿Viste la de Kaurismäki nueva? Fallen Leaves.",
+                time: "19:40",
+              },
+              {
+                from: "them",
+                text: "(La tengo para esta semana si no la viste, avisame)",
+                time: "19:45",
+              },
+            ],
+          },
+        },
 
-<script>
-const people = {
-  sofia: {
-    name: 'Sofía', initials: 'S',
-    color: 'linear-gradient(135deg,#FF9700,#FF751F)', photo: './sofia.png',
-    age: 26, city: 'Buenos Aires', afinidad: 87,
-    bio: 'Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.',
-    interests: ['Jazz','Cine independiente','Viajes','Lectura','Naturaleza','Música en vivo'],
-    sharedInterests: ['Jazz','Cine independiente','Naturaleza'],
-    photos: ['linear-gradient(145deg,#FF9700,#FF751F)','linear-gradient(145deg,#FFD580,#FF9700)','linear-gradient(145deg,#FF751F,#c74b00)','linear-gradient(145deg,#FFBB30,#FF9700)','linear-gradient(145deg,#ff9a3c,#e05000)'],
-    realUnlocked: true, currentMode: 'real',
-    simulacion: [
-      { from: 'su-gemelo', text: 'Hola. Represento a Sofía. Antes de que se conozcan quiero ver si hay algo real acá. ¿Qué busca la persona que vos representás?', time: '10:14' },
-      { from: 'mi-gemelo', text: 'Algo con profundidad. No necesariamente serio, pero que vaya a algún lado. Le aburre lo que no deja huella.', time: '10:15' },
-      { from: 'su-gemelo', text: 'Eso es Sofía casi en sus propias palabras. Interesante que lo dijiste sin que yo te preguntara específicamente eso.', time: '10:16' },
-      { from: 'mi-gemelo', text: '¿Qué hace cuando una conversación le empieza a parecer forzada?', time: '10:18' },
-      { from: 'su-gemelo', text: 'La desvía con humor, pero si no mejora la corta con gracia. No soporta el ruido social vacío. El silencio honesto le parece mejor que la charla de relleno.', time: '10:19' },
-      { from: 'mi-gemelo', text: 'La persona que represento también. No llena los silencios por obligación.', time: '10:21' },
-      { from: 'su-gemelo', text: 'Eso puede funcionar muy bien o muy mal dependiendo de cómo se lean. ¿Tiene confianza para sostener un silencio incómodo con alguien nuevo?', time: '10:22' },
-      { from: 'mi-gemelo', text: 'Sí. Y suele ser la primera en romperlo con algo que vale la pena.', time: '10:24' },
-      { from: 'su-gemelo', text: 'Sofía aprecia eso. Hay algo acá que no es solo compatibilidad de gustos — es compatibilidad de forma de estar en el mundo. 92% no es un número casual.', time: '10:25' },
-    ],
-    gemelo: {
-      lastTime: '10:47', unread: 0,
-      msgs: [
-        { from: 'them', text: 'Hola, soy el gemelo de Sofía. Puedo ayudarte a conocerla antes de chatear directamente.', time: '10:30' },
-        { from: 'me', text: '¿Qué tipo de música le gusta realmente?', time: '10:32' },
-        { from: 'them', text: 'Jazz sobre todo — Coltrane, Miles Davis, Bill Evans. Pero también le llega el post-rock instrumental. El silencio entre las notas le importa tanto como las notas mismas.', time: '10:33' },
-        { from: 'me', text: '¿Cómo reacciona si uno la lleva a un lugar desconocido en la primera cita?', time: '10:40' },
-        { from: 'them', text: 'Le encanta, siempre que no sea forzado. Odia el protocolo pero adora la sorpresa genuina. Si el lugar la representa, vas muy bien.', time: '10:41' },
-        { from: 'them', text: 'Escuché algo de Explosions in the Sky hace poco. ¿Los conocés?', time: '10:47' },
-      ]
-    },
-    real: {
-      lastTime: '11:02', unread: 2,
-      msgs: [
-        { from: 'them', text: '¡Hola! Nuestros gemelos me dijeron que tenemos mucho en común 😄', time: '10:55' },
-        { from: 'me', text: 'Sí, vi que ambos tenemos una obsesión bastante seria con el jazz.', time: '10:56' },
-        { from: 'them', text: 'Serious es poco. Fui a ver a Brad Mehldau el mes pasado y me quedé llorando en el taxi de vuelta. Lo digo sin vergüenza.', time: '10:58' },
-        { from: 'me', text: 'Eso es exactamente lo que tiene que hacer la música buena. ¿Alguna vez escuchaste "Anything Goes" en vivo?', time: '11:00' },
-        { from: 'them', text: 'Jaja, espera ¿eso fue en serio?', time: '11:02' },
-      ]
-    }
-  },
-  mateo: {
-    name: 'Mateo', initials: 'M',
-    color: 'linear-gradient(135deg,#1e293b,#475569)', photo: './mateo.png',
-    age: 28, city: 'Buenos Aires', afinidad: 83,
-    bio: 'Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.',
-    interests: ['Cine de autor','Música','Running','Cocina','Series','Tecnología'],
-    sharedInterests: ['Cine de autor','Música'],
-    photos: ['linear-gradient(145deg,#1e293b,#475569)','linear-gradient(145deg,#334155,#64748b)','linear-gradient(145deg,#0f172a,#334155)','linear-gradient(145deg,#475569,#94a3b8)','linear-gradient(145deg,#1e3a5f,#2563eb)'],
-    realUnlocked: true, currentMode: 'real',
-    simulacion: [
-      { from: 'su-gemelo', text: 'Represento a Mateo. Empecemos directo: ¿qué es lo que realmente busca la persona que vos representás en otra persona?', time: '17:50' },
-      { from: 'mi-gemelo', text: 'Algo real, sin performance. Alguien que sea lo mismo cuando nadie está mirando. No le pide que tenga todo resuelto — le pide que no actúe.', time: '17:51' },
-      { from: 'su-gemelo', text: 'Mateo dice casi lo mismo. Tiene algo de sospechoso lo parecido que son en eso.', time: '17:52' },
-      { from: 'mi-gemelo', text: '¿Qué cosas lo hacen realmente entusiasmarse, aunque no lo muestre?', time: '17:54' },
-      { from: 'su-gemelo', text: 'El cine. Cuando algo lo mueve de verdad le cuesta ocultarlo — se le nota en cómo habla, en los silencios que deja. Pero tiene pudor de mostrar ese entusiasmo demasiado rápido.', time: '17:55' },
-      { from: 'mi-gemelo', text: 'Ese tipo de pudor suele venir de haber mostrado entusiasmo y que no fuera correspondido. ¿Le pasó?', time: '17:57' },
-      { from: 'su-gemelo', text: 'Sí. Y aprendió a ir más despacio con eso. Pero cuando baja la guardia, la conversación que tiene es de las mejores.', time: '17:58' },
-      { from: 'mi-gemelo', text: 'Creo que acá hay algo sólido. No explosivo — del tipo que construye.', time: '18:00' },
-      { from: 'su-gemelo', text: 'Coincido. 87% de compatibilidad. Los voy a presentar.', time: '18:01' },
-    ],
-    gemelo: {
-      lastTime: '18:03', unread: 0,
-      msgs: [
-        { from: 'them', text: 'Hola, soy el gemelo de Mateo. Puedo contarte más sobre él antes de que hablen directamente.', time: '18:00' },
-        { from: 'me', text: '¿Qué tipo de cine le gusta?', time: '18:02' },
-        { from: 'them', text: 'Cine de autor principalmente — Jarmusch, Kaurismäki, Haneke. No es snob, le puede entrar cualquier cosa bien hecha. Le molesta el mal gusto más que el cine comercial.', time: '18:03' },
-      ]
-    },
-    real: {
-      lastTime: '19:45', unread: 1,
-      msgs: [
-        { from: 'them', text: '¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.', time: '19:30' },
-        { from: 'me', text: 'Es de las mejores. La vi tres veces, cada vez encontrás algo nuevo.', time: '19:32' },
-        { from: 'them', text: 'Exacto. ¿Viste la de Kaurismäki nueva? Fallen Leaves.', time: '19:40' },
-        { from: 'them', text: '(La tengo para esta semana si no la viste, avisame)', time: '19:45' },
-      ]
-    }
-  },
+        valentina: {
+          name: "Valentina",
+          initials: "V",
+          color: "linear-gradient(135deg,#7c3aed,#a855f7)",
+          photo: "./images/valentina.png",
+          age: 24,
+          city: "Córdoba",
+          afinidad: 76,
+          bio: "Diseñadora UX y fotógrafa. Trabaja de voluntaria en una ONG de educación rural los fines de semana. Prefiere la honestidad incómoda a la amabilidad de fachada.",
+          interests: [
+            "Diseño UX",
+            "Fotografía",
+            "Voluntariado",
+            "Educación",
+            "Naturaleza",
+            "Viajes",
+          ],
+          sharedInterests: ["Fotografía", "Naturaleza"],
+          photos: [
+            "linear-gradient(145deg,#7c3aed,#a855f7)",
+            "linear-gradient(145deg,#a855f7,#c084fc)",
+            "linear-gradient(145deg,#6d28d9,#8b5cf6)",
+            "linear-gradient(145deg,#9333ea,#c084fc)",
+            "linear-gradient(145deg,#7e22ce,#a21caf)",
+          ],
+          realUnlocked: true,
+          currentMode: "gemelo",
+          simulacion: [
+            {
+              from: "su-gemelo",
+              text: "Soy el gemelo de Valentina. No me gusta perder tiempo — ¿qué hace que alguien valga la pena para la persona que representás?",
+              time: "08:50",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Coherencia. Que sea lo mismo cuando nadie mira. No le pedimos que tenga todo resuelto, le pedimos que no actúe.",
+              time: "08:51",
+            },
+            {
+              from: "su-gemelo",
+              text: "Eso es exactamente lo que Valentina no negocia. La autenticidad para ella es innegociable. Seguí.",
+              time: "08:52",
+            },
+            {
+              from: "mi-gemelo",
+              text: "¿Qué cosas la hacen sentir que alguien realmente la escucha?",
+              time: "08:54",
+            },
+            {
+              from: "su-gemelo",
+              text: 'Que le hagan preguntas específicas. No "¿cómo te fue?" sino "¿cómo terminó lo del proyecto del que me hablaste la semana pasada?". La memoria es su lenguaje del amor.',
+              time: "08:55",
+            },
+            {
+              from: "mi-gemelo",
+              text: "Eso requiere prestar atención de verdad. No es para cualquiera.",
+              time: "08:57",
+            },
+            {
+              from: "su-gemelo",
+              text: "No. Y ella lo sabe. Por eso le da mucho valor cuando pasa. ¿Qué no soportaría la persona que representás?",
+              time: "08:58",
+            },
+            {
+              from: "mi-gemelo",
+              text: "La pasividad. Alguien que deja que todo lo decida el otro. Necesita interlocutores, no espectadores.",
+              time: "09:00",
+            },
+            {
+              from: "su-gemelo",
+              text: "Valentina tampoco lo soporta. Es 76% de compatibilidad — no es flechazo, pero es el tipo de conexión que, si se cuida, dura. Los voy a presentar.",
+              time: "09:01",
+            },
+          ],
+          gemelo: {
+            lastTime: "Ayer",
+            unread: 1,
+            msgs: [
+              {
+                from: "them",
+                text: "Hola, soy el gemelo de Valentina. Podemos explorar la conexión antes del chat directo.",
+                time: "09:00",
+              },
+              {
+                from: "me",
+                text: "¿Qué es lo que más valora en una relación?",
+                time: "09:05",
+              },
+              {
+                from: "them",
+                text: "La honestidad cruda por sobre la amabilidad de fachada. Prefiere que le digan algo incómodo con respeto a que le doren la píldora.",
+                time: "09:07",
+              },
+              { from: "me", text: "¿Trabaja en algo creativo?", time: "09:15" },
+              {
+                from: "them",
+                text: "Diseño UX. Y trabaja como voluntaria en una ONG de educación rural los fines de semana.",
+                time: "09:16",
+              },
+              {
+                from: "them",
+                text: "Le interesan los proyectos con impacto real, no solo los que quedan bien en LinkedIn.",
+                time: "09:20",
+              },
+            ],
+          },
+          real: {
+            lastTime: "Ayer",
+            unread: 0,
+            msgs: [
+              {
+                from: "them",
+                text: "Hola 🙂 Tu gemelo y el mío me contaron que hay mucha compatibilidad. Me pareció bien que nos presentaran directamente.",
+                time: "09:45",
+              },
+              {
+                from: "me",
+                text: "Sí, me alegra. ¿Cómo te cayó la idea de los gemelos digitales?",
+                time: "09:47",
+              },
+              {
+                from: "them",
+                text: "Al principio rara jaja. Pero me gustó que el mío me preguntó cosas de verdad antes de presentarme. Se siente menos al azar que otras apps.",
+                time: "09:50",
+              },
+            ],
+          },
+        },
 
-  valentina: {
-    name: 'Valentina', initials: 'V',
-    color: 'linear-gradient(135deg,#7c3aed,#a855f7)', photo: './valentina.png',
-    age: 24, city: 'Córdoba', afinidad: 76,
-    bio: 'Diseñadora UX y fotógrafa. Trabaja de voluntaria en una ONG de educación rural los fines de semana. Prefiere la honestidad incómoda a la amabilidad de fachada.',
-    interests: ['Diseño UX','Fotografía','Voluntariado','Educación','Naturaleza','Viajes'],
-    sharedInterests: ['Fotografía','Naturaleza'],
-    photos: ['linear-gradient(145deg,#7c3aed,#a855f7)','linear-gradient(145deg,#a855f7,#c084fc)','linear-gradient(145deg,#6d28d9,#8b5cf6)','linear-gradient(145deg,#9333ea,#c084fc)','linear-gradient(145deg,#7e22ce,#a21caf)'],
-    realUnlocked: true, currentMode: 'gemelo',
-    simulacion: [
-      { from: 'su-gemelo', text: 'Soy el gemelo de Valentina. No me gusta perder tiempo — ¿qué hace que alguien valga la pena para la persona que representás?', time: '08:50' },
-      { from: 'mi-gemelo', text: 'Coherencia. Que sea lo mismo cuando nadie mira. No le pedimos que tenga todo resuelto, le pedimos que no actúe.', time: '08:51' },
-      { from: 'su-gemelo', text: 'Eso es exactamente lo que Valentina no negocia. La autenticidad para ella es innegociable. Seguí.', time: '08:52' },
-      { from: 'mi-gemelo', text: '¿Qué cosas la hacen sentir que alguien realmente la escucha?', time: '08:54' },
-      { from: 'su-gemelo', text: 'Que le hagan preguntas específicas. No "¿cómo te fue?" sino "¿cómo terminó lo del proyecto del que me hablaste la semana pasada?". La memoria es su lenguaje del amor.', time: '08:55' },
-      { from: 'mi-gemelo', text: 'Eso requiere prestar atención de verdad. No es para cualquiera.', time: '08:57' },
-      { from: 'su-gemelo', text: 'No. Y ella lo sabe. Por eso le da mucho valor cuando pasa. ¿Qué no soportaría la persona que representás?', time: '08:58' },
-      { from: 'mi-gemelo', text: 'La pasividad. Alguien que deja que todo lo decida el otro. Necesita interlocutores, no espectadores.', time: '09:00' },
-      { from: 'su-gemelo', text: 'Valentina tampoco lo soporta. Es 76% de compatibilidad — no es flechazo, pero es el tipo de conexión que, si se cuida, dura. Los voy a presentar.', time: '09:01' },
-    ],
-    gemelo: {
-      lastTime: 'Ayer', unread: 1,
-      msgs: [
-        { from: 'them', text: 'Hola, soy el gemelo de Valentina. Podemos explorar la conexión antes del chat directo.', time: '09:00' },
-        { from: 'me', text: '¿Qué es lo que más valora en una relación?', time: '09:05' },
-        { from: 'them', text: 'La honestidad cruda por sobre la amabilidad de fachada. Prefiere que le digan algo incómodo con respeto a que le doren la píldora.', time: '09:07' },
-        { from: 'me', text: '¿Trabaja en algo creativo?', time: '09:15' },
-        { from: 'them', text: 'Diseño UX. Y trabaja como voluntaria en una ONG de educación rural los fines de semana.', time: '09:16' },
-        { from: 'them', text: 'Le interesan los proyectos con impacto real, no solo los que quedan bien en LinkedIn.', time: '09:20' },
-      ]
-    },
-    real: {
-      lastTime: 'Ayer', unread: 0,
-      msgs: [
-        { from: 'them', text: 'Hola 🙂 Tu gemelo y el mío me contaron que hay mucha compatibilidad. Me pareció bien que nos presentaran directamente.', time: '09:45' },
-        { from: 'me', text: 'Sí, me alegra. ¿Cómo te cayó la idea de los gemelos digitales?', time: '09:47' },
-        { from: 'them', text: 'Al principio rara jaja. Pero me gustó que el mío me preguntó cosas de verdad antes de presentarme. Se siente menos al azar que otras apps.', time: '09:50' },
-      ]
-    }
-  },
+        lucia: {
+          name: "Lucía",
+          initials: "L",
+          color: "linear-gradient(135deg,#333,#555)",
+          photo: "./images/lucia.png",
+          age: 27,
+          city: "Buenos Aires",
+          afinidad: 76,
+          bio: "Estudiante de Letras y barista. Escribe poesía de madrugada y le cuesta soltar los libros que empezó. Busca alguien que tenga conversación de verdad.",
+          interests: ["Lectura", "Poesía", "Café", "Arte", "Cine"],
+          sharedInterests: ["Lectura", "Cine"],
+          photos: [
+            "linear-gradient(145deg,#333,#555)",
+            "linear-gradient(145deg,#555,#777)",
+            "linear-gradient(145deg,#222,#444)",
+            "linear-gradient(145deg,#444,#666)",
+            "linear-gradient(145deg,#2a2a2a,#4a4a4a)",
+          ],
+          realUnlocked: false,
+          currentMode: "gemelo",
+          simulacion: [],
+          gemelo: { lastTime: "", unread: 0, msgs: [] },
+          real: { lastTime: "", unread: 0, msgs: [] },
+        },
 
-  lucia: {
-    name: 'Lucía', initials: 'L',
-    color: 'linear-gradient(135deg,#333,#555)', photo: './lucia.png',
-    age: 27, city: 'Buenos Aires', afinidad: 76,
-    bio: 'Estudiante de Letras y barista. Escribe poesía de madrugada y le cuesta soltar los libros que empezó. Busca alguien que tenga conversación de verdad.',
-    interests: ['Lectura','Poesía','Café','Arte','Cine'],
-    sharedInterests: ['Lectura','Cine'],
-    photos: ['linear-gradient(145deg,#333,#555)','linear-gradient(145deg,#555,#777)','linear-gradient(145deg,#222,#444)','linear-gradient(145deg,#444,#666)','linear-gradient(145deg,#2a2a2a,#4a4a4a)'],
-    realUnlocked: false, currentMode: 'gemelo',
-    simulacion: [],
-    gemelo: { lastTime: '', unread: 0, msgs: [] },
-    real:   { lastTime: '', unread: 0, msgs: [] }
-  },
+        agustin: {
+          name: "Agustín",
+          initials: "A",
+          color: "linear-gradient(135deg,#222,#3A3A3A)",
+          photo: "./images/Agustin.png",
+          age: 29,
+          city: "Buenos Aires",
+          afinidad: 71,
+          bio: "Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin planificación y los asados que se alargan hasta la madrugada.",
+          interests: ["Deporte", "Viajes", "Gastronomía", "Fútbol", "Cocina"],
+          sharedInterests: ["Viajes"],
+          photos: [
+            "linear-gradient(145deg,#222,#3A3A3A)",
+            "linear-gradient(145deg,#3A3A3A,#555)",
+            "linear-gradient(145deg,#111,#2a2a2a)",
+            "linear-gradient(145deg,#2a2a2a,#444)",
+            "linear-gradient(145deg,#333,#4a4a4a)",
+          ],
+          realUnlocked: false,
+          currentMode: "gemelo",
+          simulacion: [],
+          gemelo: { lastTime: "", unread: 0, msgs: [] },
+          real: { lastTime: "", unread: 0, msgs: [] },
+        },
+      };
 
-  agustin: {
-    name: 'Agustín', initials: 'A',
-    color: 'linear-gradient(135deg,#222,#3A3A3A)', photo: './Agustin.png',
-    age: 29, city: 'Buenos Aires', afinidad: 71,
-    bio: 'Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin planificación y los asados que se alargan hasta la madrugada.',
-    interests: ['Deporte','Viajes','Gastronomía','Fútbol','Cocina'],
-    sharedInterests: ['Viajes'],
-    photos: ['linear-gradient(145deg,#222,#3A3A3A)','linear-gradient(145deg,#3A3A3A,#555)','linear-gradient(145deg,#111,#2a2a2a)','linear-gradient(145deg,#2a2a2a,#444)','linear-gradient(145deg,#333,#4a4a4a)'],
-    realUnlocked: false, currentMode: 'gemelo',
-    simulacion: [],
-    gemelo: { lastTime: '', unread: 0, msgs: [] },
-    real:   { lastTime: '', unread: 0, msgs: [] }
-  },
-};
+      // Persona actualmente abierta en el panel de chat (ej: 'sofia', 'mateo')
+      let curPerson = null;
+      // Modo activo en el panel: 'gemelo' (chat con IA) o 'real' (chat directo con la persona)
+      let curMode = null;
 
-// Persona actualmente abierta en el panel de chat (ej: 'sofia', 'mateo')
-let curPerson = null;
-// Modo activo en el panel: 'gemelo' (chat con IA) o 'real' (chat directo con la persona)
-let curMode   = null;
+      /* ── Open chat panel ── */
+      // Abre el panel lateral de chat para la persona con el id dado
+      // Si el click fue en un botón de modo (gemelo/real), lo ignora para no interferir
+      function openChat(id, e) {
+        if (e && e.target.closest(".conv-mode-btn")) return;
+        const p = people[id];
+        curPerson = id;
+        curMode = p.currentMode;
 
-/* ── Open chat panel ── */
-// Abre el panel lateral de chat para la persona con el id dado
-// Si el click fue en un botón de modo (gemelo/real), lo ignora para no interferir
-function openChat(id, e) {
-  if (e && e.target.closest('.conv-mode-btn')) return;
-  const p = people[id];
-  curPerson = id;
-  curMode   = p.currentMode;
+        document.getElementById("panelAv").style.cssText =
+          `background-image:url(${p.photo});background-size:cover;background-position:center;cursor:pointer`;
+        document.getElementById("panelAv").textContent = "";
+        document.getElementById("panelName").textContent = p.name;
+        document.getElementById("panelMeta").textContent =
+          `${p.age} años · ${p.city} · ${p.afinidad}% afinidad`;
 
-  document.getElementById('panelAv').style.cssText = `background-image:url(${p.photo});background-size:cover;background-position:center;cursor:pointer`;
-  document.getElementById('panelAv').textContent = '';
-  document.getElementById('panelName').textContent = p.name;
-  document.getElementById('panelMeta').textContent = `${p.age} años · ${p.city} · ${p.afinidad}% afinidad`;
+        const realBtn = document.getElementById("pmBtnReal");
+        realBtn.classList.toggle("locked", !p.realUnlocked);
 
-  const realBtn = document.getElementById('pmBtnReal');
-  realBtn.classList.toggle('locked', !p.realUnlocked);
+        syncPanelModeBtns();
+        updateModeBar();
+        renderMessages();
 
-  syncPanelModeBtns();
-  updateModeBar();
-  renderMessages();
+        document.getElementById("chatPanel").classList.add("open");
+        setTimeout(scrollBottom, 60);
 
-  document.getElementById('chatPanel').classList.add('open');
-  setTimeout(scrollBottom, 60);
+        // Marcar como leído (en memoria y en Firestore)
+        p.gemelo.unread = 0;
+        if (p.real) p.real.unread = 0;
+        refreshListItem(id);
+        if (typeof window._db_marcarLeido === "function") {
+          window._db_marcarLeido(id);
+        }
+      }
 
-  // Marcar como leído (en memoria y en Firestore)
-  p.gemelo.unread = 0;
-  if (p.real) p.real.unread = 0;
-  refreshListItem(id);
-  if (typeof window._db_marcarLeido === 'function') {
-    window._db_marcarLeido(id);
-  }
-}
+      // Cierra el panel de chat y resetea la persona y modo activos
+      function closeChat() {
+        document.getElementById("chatPanel").classList.remove("open");
+        curPerson = null;
+        curMode = null;
+      }
 
-// Cierra el panel de chat y resetea la persona y modo activos
-function closeChat() {
-  document.getElementById('chatPanel').classList.remove('open');
-  curPerson = null; curMode = null;
-}
+      /* ── Panel mode switch ── */
+      // Cambia entre modo gemelo (IA) y modo real (persona)
+      // Si el chat real no está desbloqueado aún, muestra un toast de aviso y cancela
+      function switchPanelMode(mode) {
+        const p = people[curPerson];
+        if (mode === "real" && !p.realUnlocked) {
+          showToast();
+          return;
+        }
+        curMode = mode;
+        p.currentMode = mode;
+        syncPanelModeBtns();
+        updateModeBar();
+        renderMessages();
+        setTimeout(scrollBottom, 40);
+        refreshListItem(curPerson);
+      }
 
-/* ── Panel mode switch ── */
-// Cambia entre modo gemelo (IA) y modo real (persona)
-// Si el chat real no está desbloqueado aún, muestra un toast de aviso y cancela
-function switchPanelMode(mode) {
-  const p = people[curPerson];
-  if (mode === 'real' && !p.realUnlocked) { showToast(); return; }
-  curMode = mode;
-  p.currentMode = mode;
-  syncPanelModeBtns();
-  updateModeBar();
-  renderMessages();
-  setTimeout(scrollBottom, 40);
-  refreshListItem(curPerson);
-}
+      // Actualiza visualmente cuál botón de modo (Gemelo / Real) está activo en el panel
+      function syncPanelModeBtns() {
+        document
+          .getElementById("pmBtnGemelo")
+          .classList.toggle("active", curMode === "gemelo");
+        document
+          .getElementById("pmBtnReal")
+          .classList.toggle("active", curMode === "real");
+      }
 
-// Actualiza visualmente cuál botón de modo (Gemelo / Real) está activo en el panel
-function syncPanelModeBtns() {
-  document.getElementById('pmBtnGemelo').classList.toggle('active', curMode === 'gemelo');
-  document.getElementById('pmBtnReal').classList.toggle('active', curMode === 'real');
-}
-
-// Actualiza la barra de contexto del panel según el modo activo
-// En modo gemelo muestra "Hablás con el gemelo de X · Modo práctica"
-// En modo real muestra "Chat real con X · En línea"
-function updateModeBar() {
-  const p   = people[curPerson];
-  const bar = document.getElementById('panelModeBar');
-  const inp = document.getElementById('panelInput');
-  document.getElementById('chatPanel').classList.toggle('gemelo-mode', curMode === 'gemelo');
-  if (curMode === 'gemelo') {
-    bar.className = 'panel-mode-bar gemelo-bar';
-    bar.innerHTML = `
+      // Actualiza la barra de contexto del panel según el modo activo
+      // En modo gemelo muestra "Hablás con el gemelo de X · Modo práctica"
+      // En modo real muestra "Chat real con X · En línea"
+      function updateModeBar() {
+        const p = people[curPerson];
+        const bar = document.getElementById("panelModeBar");
+        const inp = document.getElementById("panelInput");
+        document
+          .getElementById("chatPanel")
+          .classList.toggle("gemelo-mode", curMode === "gemelo");
+        if (curMode === "gemelo") {
+          bar.className = "panel-mode-bar gemelo-bar";
+          bar.innerHTML = `
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       <span style="flex:1">Hablás con el <strong style="color:#fff">gemelo de ${esc(p.name)}</strong> · Modo práctica</span>
-      ${p.simulacion && p.simulacion.length ? `<button onclick="openSimulation()" style="background:rgba(255,117,31,0.15);border:1px solid rgba(255,117,31,0.3);border-radius:10px;padding:3px 10px;font-size:0.62rem;font-weight:700;color:var(--orange);cursor:pointer;letter-spacing:0.03em;white-space:nowrap;touch-action:manipulation;flex-shrink:0">Ver simulación ↗</button>` : ''}
+      ${p.simulacion && p.simulacion.length ? `<button onclick="openSimulation()" style="background:rgba(255,117,31,0.15);border:1px solid rgba(255,117,31,0.3);border-radius:10px;padding:3px 10px;font-size:0.62rem;font-weight:700;color:var(--orange);cursor:pointer;letter-spacing:0.03em;white-space:nowrap;touch-action:manipulation;flex-shrink:0">Ver simulación ↗</button>` : ""}
       <span class="mode-bar-badge" style="background:var(--orange);color:#fff">IA</span>`;
-    inp.placeholder = `Preguntale algo al gemelo de ${p.name}...`;
-  } else {
-    bar.className = 'panel-mode-bar real-bar';
-    bar.innerHTML = `
+          inp.placeholder = `Preguntale algo al gemelo de ${p.name}...`;
+        } else {
+          bar.className = "panel-mode-bar real-bar";
+          bar.innerHTML = `
       <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;display:inline-block"></span>
       <span style="flex:1">Chat real con <strong>${esc(p.name)}</strong></span>
       <span class="mode-bar-badge" style="background:rgba(34,197,94,0.15);color:#16a34a">En línea</span>`;
-    inp.placeholder = `Escribile a ${p.name}...`;
-  }
-}
+          inp.placeholder = `Escribile a ${p.name}...`;
+        }
+      }
 
-/* ── Render messages ── */
-// Limpia y redibuja todos los mensajes del chat abierto según la persona y modo activos
-// Agrega el separador "Hoy" y, en modo gemelo, la tarjeta de simulación al tope
-function renderMessages() {
-  const p   = people[curPerson];
-  const md  = p[curMode];
-  const con = document.getElementById('panelMsgsInner');
-  const isG = curMode === 'gemelo';
-  con.innerHTML = '';
+      /* ── Render messages ── */
+      // Limpia y redibuja todos los mensajes del chat abierto según la persona y modo activos
+      // Agrega el separador "Hoy" y, en modo gemelo, la tarjeta de simulación al tope
+      function renderMessages() {
+        const p = people[curPerson];
+        const md = p[curMode];
+        const con = document.getElementById("panelMsgsInner");
+        const isG = curMode === "gemelo";
+        con.innerHTML = "";
 
-  const sep = document.createElement('div');
-  sep.className = 'day-sep';
-  sep.innerHTML = '<div class="day-sep-line"></div><span class="day-sep-text">Hoy</span><div class="day-sep-line"></div>';
-  con.appendChild(sep);
+        const sep = document.createElement("div");
+        sep.className = "day-sep";
+        sep.innerHTML =
+          '<div class="day-sep-line"></div><span class="day-sep-text">Hoy</span><div class="day-sep-line"></div>';
+        con.appendChild(sep);
 
-  // Tarjeta de simulación al tope del chat gemelo
-  if (isG && p.simulacion && p.simulacion.length) {
-    const card = document.createElement('div');
-    card.className = 'sim-teaser-card';
-    card.onclick = openSimulation;
-    card.innerHTML = `
+        // Tarjeta de simulación al tope del chat gemelo
+        if (isG && p.simulacion && p.simulacion.length) {
+          const card = document.createElement("div");
+          card.className = "sim-teaser-card";
+          card.onclick = openSimulation;
+          card.innerHTML = `
       <div class="sim-teaser-icon">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
       </div>
@@ -906,185 +2470,267 @@ function renderMessages() {
         <div class="sim-teaser-sub">Ver la conversación que tuvieron antes de que ustedes se conectaran</div>
       </div>
       <div class="sim-teaser-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>`;
-    con.appendChild(card);
-  }
+          con.appendChild(card);
+        }
 
-  (md.msgs || []).forEach(msg => addMsgEl(con, msg, p, isG));
-}
+        (md.msgs || []).forEach((msg) => addMsgEl(con, msg, p, isG));
+      }
 
-// Crea y agrega un elemento de mensaje al contenedor del chat
-// El estilo varía según si es mensaje propio (me), del gemelo IA (isG) o de la persona real (them)
-function addMsgEl(container, msg, p, isG) {
-  const isMe = msg.from === 'me';
-  const div  = document.createElement('div');
-  div.className = `pmsg ${isMe ? 'me' : 'them'}${(!isMe && isG) ? ' is-gemelo' : ''}`;
+      // Crea y agrega un elemento de mensaje al contenedor del chat
+      // El estilo varía según si es mensaje propio (me), del gemelo IA (isG) o de la persona real (them)
+      function addMsgEl(container, msg, p, isG) {
+        const isMe = msg.from === "me";
+        const div = document.createElement("div");
+        div.className = `pmsg ${isMe ? "me" : "them"}${!isMe && isG ? " is-gemelo" : ""}`;
 
-  if (isMe) {
-    div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${esc(msg.text)}</div>`;
-  } else if (isG) {
-    div.innerHTML = `
+        if (isMe) {
+          div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${esc(msg.text)}</div>`;
+        } else if (isG) {
+          div.innerHTML = `
       <div class="pmsg-av pmsg-av-ai" style="background:${p.color}">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       </div>
       <div class="pbubble"><span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
-  } else {
-    div.innerHTML = `
+        } else {
+          div.innerHTML = `
       <div class="pmsg-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
       <div class="pbubble">${esc(msg.text)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
-  }
-  container.appendChild(div);
-}
-
-/* ── Send message ── */
-// Envía el mensaje del usuario, lo guarda en memoria y en Firestore
-// Si es el primer mensaje con esa persona, inyecta el ítem en la lista de conversaciones
-// Después de 300ms muestra typing y genera una respuesta automática
-function sendPanelMsg() {
-  const input = document.getElementById('panelInput');
-  const text  = input.value.trim();
-  if (!text || !curPerson) return;
-  const p       = people[curPerson];
-  const md      = p[curMode];
-  const persona = curPerson;
-  const mode    = curMode;
-  const t       = nowTime();
-  md.msgs.push({ from: 'me', text, time: t });
-  md.lastTime = t;
-  // Primer mensaje con esta persona → inyectar en la lista de conversaciones
-  if (md.msgs.length === 1) {
-    injectConvItem(persona);
-  }
-  renderMessages();
-  refreshListItem(persona);
-  input.value = ''; panelResize(input);
-  setTimeout(scrollBottom, 40);
-
-  // Guardar mensaje del usuario en Firestore
-  if (typeof window._db_saveChat === 'function') {
-    window._db_saveChat(persona, mode, [...md.msgs]);
-  }
-
-  setTimeout(() => {
-    addTyping();
-    setTimeout(() => {
-      removeTyping();
-      const reply = autoReply(text, persona, mode);
-      md.msgs.push({ from: 'them', text: reply, time: nowTime() });
-      md.lastTime = nowTime();
-      renderMessages();
-      refreshListItem(persona);
-      setTimeout(scrollBottom, 40);
-      // Guardar respuesta automática en Firestore
-      if (typeof window._db_saveChat === 'function') {
-        window._db_saveChat(persona, mode, [...md.msgs]);
+        }
+        container.appendChild(div);
       }
-    }, 1100 + Math.random() * 700);
-  }, 300);
-}
 
-// Muestra el indicador de "escribiendo..." con el avatar correcto según el modo (gemelo o real)
-function addTyping() {
-  const p   = people[curPerson];
-  const isG = curMode === 'gemelo';
-  const con = document.getElementById('panelMsgsInner');
-  const div = document.createElement('div');
-  div.id = 'ptyping';
-  div.className = `pmsg them${isG ? ' is-gemelo' : ''}`;
-  const av = isG
-    ? `<div class="pmsg-av pmsg-av-ai" style="background:${p.color}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>`
-    : `<div class="pmsg-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>`;
-  div.innerHTML = `${av}<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-  con.appendChild(div);
-  scrollBottom();
-}
-// Elimina el indicador de "escribiendo..." del chat
-function removeTyping() { const el = document.getElementById('ptyping'); if (el) el.remove(); }
+      /* ── Send message ── */
+      // Envía el mensaje del usuario, lo guarda en memoria y en Firestore
+      // Si es el primer mensaje con esa persona, inyecta el ítem en la lista de conversaciones
+      // Después de 300ms muestra typing y genera una respuesta automática
+      function sendPanelMsg() {
+        const input = document.getElementById("panelInput");
+        const text = input.value.trim();
+        if (!text || !curPerson) return;
+        const p = people[curPerson];
+        const md = p[curMode];
+        const persona = curPerson;
+        const mode = curMode;
+        const t = nowTime();
+        md.msgs.push({ from: "me", text, time: t });
+        md.lastTime = t;
+        // Primer mensaje con esta persona → inyectar en la lista de conversaciones
+        if (md.msgs.length === 1) {
+          injectConvItem(persona);
+        }
+        renderMessages();
+        refreshListItem(persona);
+        input.value = "";
+        panelResize(input);
+        setTimeout(scrollBottom, 40);
 
-/* ── Auto replies ── */
-// Genera una respuesta automática según el modo (gemelo o real) y el contenido del mensaje
-// En modo gemelo: responde preguntas sobre gustos, consejos, familia, etc. con info específica de cada persona
-// En modo real: elige al azar una respuesta del banco de frases de esa persona para simular conversación real
-function autoReply(text, id, mode) {
-  const t = text.toLowerCase();
-  const p = people[id];
-  if (mode === 'gemelo') {
-    if (t.includes('gusta') || t.includes('hobby') || t.includes('interés') || t.includes('pasión')) {
-      const m = { sofia: 'Le apasiona el jazz en vivo — Coltrane la cambió a los 19. También escribe, aunque no lo muestra fácilmente. Y el cine de autor: Bergman, Kieślowski.', valentina: 'Diseño UX, voluntariado en educación rural y fotografía de viaje. Se mueve por lo que deja huella, no por lo que queda bien en el CV.', lucas: 'Escala en roca los fines de semana y hace fotografía análoga. Le gusta que las cosas tomen tiempo — dice que la velocidad arruina la mayoría de las cosas buenas.' };
-      return m[id] || `Puedo decirte más sobre ${p.name} si me hacés preguntas más específicas.`;
-    }
-    if (t.includes('consejo') || t.includes('primer') || t.includes('cómo') || t.includes('hablar')) {
-      const m = { sofia: 'Arrancá con algo concreto, no con "hola ¿cómo estás?". Una referencia específica a algo de ella funciona mucho mejor que cualquier protocolo de app.', valentina: 'Sé directo. Odia el rodeo. Si tenés algo genuino que decir, decilo. Si no tenés nada, mejor esperá.', lucas: 'Ve despacio. No le tires todo junto. Le gusta que la conversación sea recíproca y tenga espacio para respirar.' };
-      return m[id] || `Puedo darte consejos más específicos si me contás qué querés lograr con ${p.name}.`;
-    }
-    if (t.includes('familia') || t.includes('relación') || t.includes('pareja')) {
-      const m = { sofia: 'Tiene buena relación con su familia pero necesita espacio propio. No le gustan las personas demasiado dependientes, le resulta sofocante.', valentina: 'Valora mucho la independencia, tanto en ella como en una pareja. Quiere alguien que tenga su propio mundo.', lucas: 'Es reservado en ese tema. Lo que sé es que valora la coherencia — que la persona sea lo mismo en público y en privado.' };
-      return m[id] || 'Es un tema que todavía no conozco bien. Seguí preguntando, voy aprendiendo.';
-    }
-    return `Esa es una buena pregunta. Con cada conversación aprendo más sobre ${p.name}. ¿Querés que profundice en algún aspecto específico de su personalidad?`;
-  } else {
-    const banks = {
-      sofia: ['¿En serio? Ahora tengo que escuchar eso. Tengo una playlist de jazz-cine que armé con todo lo que me fue cambiando la cabeza 🎷', 'Jajaja exacto. Hay algo en el silencio que dice más que las notas.', 'Buena onda. ¿Y qué onda vos? ¿Salís a shows o más escuchás en casa?', '¡Ay dios! Eso es exactamente lo que digo siempre y nadie me entiende 😭', 'Sí, totalmente. Igual me quedé pensando en lo que dijiste antes...'],
-      valentina: ['Sí, algo así. Igual prefiero que lo veamos en persona, es más fácil explicarlo.', 'Exacto, ¡alguien que lo entiende! La mayoría piensa que estoy exagerando.', '¿Vos también? Qué interesante. ¿De dónde venís?', 'Me parece bien. ¿Tenés tiempo el finde para tomar algo?'],
-      lucas: ['Sí, exacto. Ojalá más gente lo entendiera.', '¿En serio? Yo también. La última vez que fui fue increíble.', 'Buena. ¿Y qué hacés normalmente los fines de semana?', 'Tiene sentido. Yo pienso lo mismo.']
-    };
-    const arr = banks[id] || ['Jaja sí. ¿Y vos qué hacés?'];
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-}
+        // Guardar mensaje del usuario en Firestore
+        if (typeof window._db_saveChat === "function") {
+          window._db_saveChat(persona, mode, [...md.msgs]);
+        }
 
-/* ── List mode switch ── */
-// Cambia el modo activo (gemelo/real) desde los botones de la lista de conversaciones
-// Detiene la propagación para que no abra el chat al cambiar de modo
-function listSwitch(e, id, mode) {
-  e.stopPropagation();
-  const p = people[id];
-  if (mode === 'real' && !p.realUnlocked) { showToast(); return; }
-  p.currentMode = mode;
-  refreshListItem(id);
-}
+        setTimeout(() => {
+          addTyping();
+          setTimeout(
+            () => {
+              removeTyping();
+              const reply = autoReply(text, persona, mode);
+              md.msgs.push({ from: "them", text: reply, time: nowTime() });
+              md.lastTime = nowTime();
+              renderMessages();
+              refreshListItem(persona);
+              setTimeout(scrollBottom, 40);
+              // Guardar respuesta automática en Firestore
+              if (typeof window._db_saveChat === "function") {
+                window._db_saveChat(persona, mode, [...md.msgs]);
+              }
+            },
+            1100 + Math.random() * 700,
+          );
+        }, 300);
+      }
 
-// Maneja el tap en el botón de chat real cuando está bloqueado — muestra el toast sin abrir nada
-function lockTap(e, id) { e.stopPropagation(); showToast(); }
+      // Muestra el indicador de "escribiendo..." con el avatar correcto según el modo (gemelo o real)
+      function addTyping() {
+        const p = people[curPerson];
+        const isG = curMode === "gemelo";
+        const con = document.getElementById("panelMsgsInner");
+        const div = document.createElement("div");
+        div.id = "ptyping";
+        div.className = `pmsg them${isG ? " is-gemelo" : ""}`;
+        const av = isG
+          ? `<div class="pmsg-av pmsg-av-ai" style="background:${p.color}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>`
+          : `<div class="pmsg-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>`;
+        div.innerHTML = `${av}<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+        con.appendChild(div);
+        scrollBottom();
+      }
+      // Elimina el indicador de "escribiendo..." del chat
+      function removeTyping() {
+        const el = document.getElementById("ptyping");
+        if (el) el.remove();
+      }
 
-// Actualiza el ítem de la lista de conversaciones para una persona:
-// preview del último mensaje, hora, badge de no leídos y botones de modo activo
-function refreshListItem(id) {
-  const p  = people[id];
-  const md = p[p.currentMode];
+      /* ── Auto replies ── */
+      // Genera una respuesta automática según el modo (gemelo o real) y el contenido del mensaje
+      // En modo gemelo: responde preguntas sobre gustos, consejos, familia, etc. con info específica de cada persona
+      // En modo real: elige al azar una respuesta del banco de frases de esa persona para simular conversación real
+      function autoReply(text, id, mode) {
+        const t = text.toLowerCase();
+        const p = people[id];
+        if (mode === "gemelo") {
+          if (
+            t.includes("gusta") ||
+            t.includes("hobby") ||
+            t.includes("interés") ||
+            t.includes("pasión")
+          ) {
+            const m = {
+              sofia:
+                "Le apasiona el jazz en vivo — Coltrane la cambió a los 19. También escribe, aunque no lo muestra fácilmente. Y el cine de autor: Bergman, Kieślowski.",
+              valentina:
+                "Diseño UX, voluntariado en educación rural y fotografía de viaje. Se mueve por lo que deja huella, no por lo que queda bien en el CV.",
+              lucas:
+                "Escala en roca los fines de semana y hace fotografía análoga. Le gusta que las cosas tomen tiempo — dice que la velocidad arruina la mayoría de las cosas buenas.",
+            };
+            return (
+              m[id] ||
+              `Puedo decirte más sobre ${p.name} si me hacés preguntas más específicas.`
+            );
+          }
+          if (
+            t.includes("consejo") ||
+            t.includes("primer") ||
+            t.includes("cómo") ||
+            t.includes("hablar")
+          ) {
+            const m = {
+              sofia:
+                'Arrancá con algo concreto, no con "hola ¿cómo estás?". Una referencia específica a algo de ella funciona mucho mejor que cualquier protocolo de app.',
+              valentina:
+                "Sé directo. Odia el rodeo. Si tenés algo genuino que decir, decilo. Si no tenés nada, mejor esperá.",
+              lucas:
+                "Ve despacio. No le tires todo junto. Le gusta que la conversación sea recíproca y tenga espacio para respirar.",
+            };
+            return (
+              m[id] ||
+              `Puedo darte consejos más específicos si me contás qué querés lograr con ${p.name}.`
+            );
+          }
+          if (
+            t.includes("familia") ||
+            t.includes("relación") ||
+            t.includes("pareja")
+          ) {
+            const m = {
+              sofia:
+                "Tiene buena relación con su familia pero necesita espacio propio. No le gustan las personas demasiado dependientes, le resulta sofocante.",
+              valentina:
+                "Valora mucho la independencia, tanto en ella como en una pareja. Quiere alguien que tenga su propio mundo.",
+              lucas:
+                "Es reservado en ese tema. Lo que sé es que valora la coherencia — que la persona sea lo mismo en público y en privado.",
+            };
+            return (
+              m[id] ||
+              "Es un tema que todavía no conozco bien. Seguí preguntando, voy aprendiendo."
+            );
+          }
+          return `Esa es una buena pregunta. Con cada conversación aprendo más sobre ${p.name}. ¿Querés que profundice en algún aspecto específico de su personalidad?`;
+        } else {
+          const banks = {
+            sofia: [
+              "¿En serio? Ahora tengo que escuchar eso. Tengo una playlist de jazz-cine que armé con todo lo que me fue cambiando la cabeza 🎷",
+              "Jajaja exacto. Hay algo en el silencio que dice más que las notas.",
+              "Buena onda. ¿Y qué onda vos? ¿Salís a shows o más escuchás en casa?",
+              "¡Ay dios! Eso es exactamente lo que digo siempre y nadie me entiende 😭",
+              "Sí, totalmente. Igual me quedé pensando en lo que dijiste antes...",
+            ],
+            valentina: [
+              "Sí, algo así. Igual prefiero que lo veamos en persona, es más fácil explicarlo.",
+              "Exacto, ¡alguien que lo entiende! La mayoría piensa que estoy exagerando.",
+              "¿Vos también? Qué interesante. ¿De dónde venís?",
+              "Me parece bien. ¿Tenés tiempo el finde para tomar algo?",
+            ],
+            lucas: [
+              "Sí, exacto. Ojalá más gente lo entendiera.",
+              "¿En serio? Yo también. La última vez que fui fue increíble.",
+              "Buena. ¿Y qué hacés normalmente los fines de semana?",
+              "Tiene sentido. Yo pienso lo mismo.",
+            ],
+          };
+          const arr = banks[id] || ["Jaja sí. ¿Y vos qué hacés?"];
+          return arr[Math.floor(Math.random() * arr.length)];
+        }
+      }
 
-  const previewEl = document.getElementById(`${id}-preview`);
-  const timeEl    = document.getElementById(`${id}-time`);
-  const unreadEl  = document.getElementById(`${id}-unread`);
+      /* ── List mode switch ── */
+      // Cambia el modo activo (gemelo/real) desde los botones de la lista de conversaciones
+      // Detiene la propagación para que no abra el chat al cambiar de modo
+      function listSwitch(e, id, mode) {
+        e.stopPropagation();
+        const p = people[id];
+        if (mode === "real" && !p.realUnlocked) {
+          showToast();
+          return;
+        }
+        p.currentMode = mode;
+        refreshListItem(id);
+      }
 
-  if (previewEl) {
-    const msgs = md.msgs || [];
-    const last = msgs.length ? msgs[msgs.length - 1] : null;
-    previewEl.textContent = last ? (last.text.length > 55 ? last.text.slice(0, 55) + '…' : last.text) : 'Sin mensajes';
-    previewEl.className = 'conv-preview' + (md.unread > 0 ? ' bold' : '');
-  }
-  if (timeEl) timeEl.textContent = md.lastTime || '';
-  if (unreadEl) { unreadEl.textContent = md.unread; unreadEl.style.display = md.unread > 0 ? '' : 'none'; }
+      // Maneja el tap en el botón de chat real cuando está bloqueado — muestra el toast sin abrir nada
+      function lockTap(e, id) {
+        e.stopPropagation();
+        showToast();
+      }
 
-  // mode buttons highlight
-  const gBtn = document.getElementById(`${id}-btn-gemelo`);
-  const rBtn = document.getElementById(`${id}-btn-real`);
-  if (gBtn) gBtn.classList.toggle('mode-active', p.currentMode === 'gemelo');
-  if (rBtn && !rBtn.classList.contains('mode-locked')) rBtn.classList.toggle('mode-active', p.currentMode === 'real');
-}
+      // Actualiza el ítem de la lista de conversaciones para una persona:
+      // preview del último mensaje, hora, badge de no leídos y botones de modo activo
+      function refreshListItem(id) {
+        const p = people[id];
+        const md = p[p.currentMode];
 
-/* ── Inject new conv-list item (for people without a pre-existing chat) ── */
-// Agrega dinámicamente un ítem a la lista de conversaciones para personas que no tenían chat previo
-// Solo se ejecuta la primera vez que se envía un mensaje a esa persona
-// Si el ítem ya existe (cargado desde Firestore), no hace nada
-function injectConvItem(id) {
-  if (document.getElementById(`conv-${id}`)) return; // ya existe
-  const p = people[id];
-  const el = document.createElement('div');
-  el.className = 'conv-item';
-  el.id = `conv-${id}`;
-  el.innerHTML = `
+        const previewEl = document.getElementById(`${id}-preview`);
+        const timeEl = document.getElementById(`${id}-time`);
+        const unreadEl = document.getElementById(`${id}-unread`);
+
+        if (previewEl) {
+          const msgs = md.msgs || [];
+          const last = msgs.length ? msgs[msgs.length - 1] : null;
+          previewEl.textContent = last
+            ? last.text.length > 55
+              ? last.text.slice(0, 55) + "…"
+              : last.text
+            : "Sin mensajes";
+          previewEl.className = "conv-preview" + (md.unread > 0 ? " bold" : "");
+        }
+        if (timeEl) timeEl.textContent = md.lastTime || "";
+        if (unreadEl) {
+          unreadEl.textContent = md.unread;
+          unreadEl.style.display = md.unread > 0 ? "" : "none";
+        }
+
+        // mode buttons highlight
+        const gBtn = document.getElementById(`${id}-btn-gemelo`);
+        const rBtn = document.getElementById(`${id}-btn-real`);
+        if (gBtn)
+          gBtn.classList.toggle("mode-active", p.currentMode === "gemelo");
+        if (rBtn && !rBtn.classList.contains("mode-locked"))
+          rBtn.classList.toggle("mode-active", p.currentMode === "real");
+      }
+
+      /* ── Inject new conv-list item (for people without a pre-existing chat) ── */
+      // Agrega dinámicamente un ítem a la lista de conversaciones para personas que no tenían chat previo
+      // Solo se ejecuta la primera vez que se envía un mensaje a esa persona
+      // Si el ítem ya existe (cargado desde Firestore), no hace nada
+      function injectConvItem(id) {
+        if (document.getElementById(`conv-${id}`)) return; // ya existe
+        const p = people[id];
+        const el = document.createElement("div");
+        el.className = "conv-item";
+        el.id = `conv-${id}`;
+        el.innerHTML = `
     <div class="conv-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
     <div class="conv-content">
       <div class="conv-top">
@@ -1107,47 +2753,52 @@ function injectConvItem(id) {
         </button>
       </div>
     </div>`;
-  el.onclick = function(e) { openChat(id, e); };
-  const list = document.getElementById('convList');
-  list.prepend(el);
-  // Actualizar contador
-  const countEl = document.querySelector('.conv-count');
-  if (countEl) {
-    const n = list.querySelectorAll('.conv-item').length;
-    countEl.textContent = `${n} conversación${n !== 1 ? 'es' : ''} activa${n !== 1 ? 's' : ''}`;
-  }
-  refreshListItem(id);
-}
+        el.onclick = function (e) {
+          openChat(id, e);
+        };
+        const list = document.getElementById("convList");
+        list.prepend(el);
+        // Actualizar contador
+        const countEl = document.querySelector(".conv-count");
+        if (countEl) {
+          const n = list.querySelectorAll(".conv-item").length;
+          countEl.textContent = `${n} conversación${n !== 1 ? "es" : ""} activa${n !== 1 ? "s" : ""}`;
+        }
+        refreshListItem(id);
+      }
 
-/* ── Search ── */
-// Filtra las conversaciones de la lista en tiempo real según el texto del buscador
-// Oculta los ítems cuyo nombre no coincide con la búsqueda
-function filterConvs(q) {
-  const ql = q.toLowerCase();
-  document.querySelectorAll('.conv-item').forEach(el => {
-    const name = el.querySelector('.conv-name').textContent.toLowerCase();
-    el.style.display = (!ql || name.includes(ql)) ? '' : 'none';
-  });
-}
+      /* ── Search ── */
+      // Filtra las conversaciones de la lista en tiempo real según el texto del buscador
+      // Oculta los ítems cuyo nombre no coincide con la búsqueda
+      function filterConvs(q) {
+        const ql = q.toLowerCase();
+        document.querySelectorAll(".conv-item").forEach((el) => {
+          const name = el.querySelector(".conv-name").textContent.toLowerCase();
+          el.style.display = !ql || name.includes(ql) ? "" : "none";
+        });
+      }
 
-/* ── Person profile overlay ── */
-// Abre el overlay con el perfil completo de la persona del chat abierto
-// Muestra foto, nombre, edad, ciudad, afinidad, bio, intereses (marcando los compartidos) y fotos
-function openPersonProfile() {
-  if (!curPerson) return;
-  const p = people[curPerson];
-  document.getElementById('poTitle').textContent = p.name;
+      /* ── Person profile overlay ── */
+      // Abre el overlay con el perfil completo de la persona del chat abierto
+      // Muestra foto, nombre, edad, ciudad, afinidad, bio, intereses (marcando los compartidos) y fotos
+      function openPersonProfile() {
+        if (!curPerson) return;
+        const p = people[curPerson];
+        document.getElementById("poTitle").textContent = p.name;
 
-  const sharedSet = new Set(p.sharedInterests || []);
-  const interestChips = (p.interests || []).map(i =>
-    `<span class="po-chip${sharedSet.has(i) ? ' shared' : ''}">${esc(i)}</span>`
-  ).join('');
+        const sharedSet = new Set(p.sharedInterests || []);
+        const interestChips = (p.interests || [])
+          .map(
+            (i) =>
+              `<span class="po-chip${sharedSet.has(i) ? " shared" : ""}">${esc(i)}</span>`,
+          )
+          .join("");
 
-  const photosHtml = (p.photos || []).map(bg =>
-    `<div class="po-photo" style="background:${bg}"></div>`
-  ).join('');
+        const photosHtml = (p.photos || [])
+          .map((bg) => `<div class="po-photo" style="background:${bg}"></div>`)
+          .join("");
 
-  document.getElementById('poInner').innerHTML = `
+        document.getElementById("poInner").innerHTML = `
     <div class="po-hero">
       <div class="po-hero-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
       <div class="po-hero-info">
@@ -1156,43 +2807,44 @@ function openPersonProfile() {
       </div>
       <div class="po-hero-score">${p.afinidad}%<span>Afinidad</span></div>
     </div>
-    ${p.bio ? `<div class="po-section"><div class="po-section-label">Sobre ${esc(p.name)}</div><p class="po-bio">${esc(p.bio)}</p></div>` : ''}
-    ${interestChips ? `<div class="po-section"><div class="po-section-label">Intereses <span style="color:var(--orange);text-transform:none;letter-spacing:0">— naranja = compartidos</span></div><div class="po-chips">${interestChips}</div></div>` : ''}
-    ${photosHtml ? `<div class="po-section"><div class="po-section-label">Fotos</div><div class="po-photos-grid">${photosHtml}</div></div>` : ''}
+    ${p.bio ? `<div class="po-section"><div class="po-section-label">Sobre ${esc(p.name)}</div><p class="po-bio">${esc(p.bio)}</p></div>` : ""}
+    ${interestChips ? `<div class="po-section"><div class="po-section-label">Intereses <span style="color:var(--orange);text-transform:none;letter-spacing:0">— naranja = compartidos</span></div><div class="po-chips">${interestChips}</div></div>` : ""}
+    ${photosHtml ? `<div class="po-section"><div class="po-section-label">Fotos</div><div class="po-photos-grid">${photosHtml}</div></div>` : ""}
   `;
 
-  document.getElementById('profileOverlay').classList.add('open');
-}
+        document.getElementById("profileOverlay").classList.add("open");
+      }
 
-// Cierra el overlay del perfil de la persona
-function closePersonProfile() {
-  document.getElementById('profileOverlay').classList.remove('open');
-}
+      // Cierra el overlay del perfil de la persona
+      function closePersonProfile() {
+        document.getElementById("profileOverlay").classList.remove("open");
+      }
 
-/* ── Lock toast ── */
-// Muestra un mensaje temporal ("Chat bloqueado") cuando el usuario intenta acceder al chat real sin haberlo desbloqueado
-// Se oculta automáticamente después de 3 segundos
-let toastTimer = null;
-function showToast() {
-  const el = document.getElementById('lockToast');
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
-}
+      /* ── Lock toast ── */
+      // Muestra un mensaje temporal ("Chat bloqueado") cuando el usuario intenta acceder al chat real sin haberlo desbloqueado
+      // Se oculta automáticamente después de 3 segundos
+      let toastTimer = null;
+      function showToast() {
+        const el = document.getElementById("lockToast");
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+      }
 
-/* ── Simulation overlay ── */
-// Abre el overlay que muestra la conversación previa entre los gemelos digitales
-// Construye el HTML de cada mensaje diferenciando "tu gemelo" del "gemelo de la otra persona"
-function openSimulation() {
-  if (!curPerson) return;
-  const p = people[curPerson];
-  const sims = p.simulacion || [];
+      /* ── Simulation overlay ── */
+      // Abre el overlay que muestra la conversación previa entre los gemelos digitales
+      // Construye el HTML de cada mensaje diferenciando "tu gemelo" del "gemelo de la otra persona"
+      function openSimulation() {
+        if (!curPerson) return;
+        const p = people[curPerson];
+        const sims = p.simulacion || [];
 
-  document.getElementById('simNavTitle').textContent = `Tu gemelo × ${p.name}`;
+        document.getElementById("simNavTitle").textContent =
+          `Tu gemelo × ${p.name}`;
 
-  const inner = document.getElementById('simInner');
+        const inner = document.getElementById("simInner");
 
-  let html = `<div class="sim-intro">
+        let html = `<div class="sim-intro">
     <div class="sim-intro-label">¿Qué es esto?</div>
     <div class="sim-intro-text">
       Antes de conectarte con ${esc(p.name)}, los gemelos digitales de ambos exploraron su compatibilidad de forma autónoma. Esta es esa conversación — privada, tuya, generada solo para vos.
@@ -1200,162 +2852,221 @@ function openSimulation() {
   </div>
   <div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Inicio de la simulación</span><div class="sim-sep-line"></div></div>`;
 
-  sims.forEach(msg => {
-    const isMe = msg.from === 'mi-gemelo';
-    if (isMe) {
-      html += `<div class="smsg me">
+        sims.forEach((msg) => {
+          const isMe = msg.from === "mi-gemelo";
+          if (isMe) {
+            html += `<div class="smsg me">
         <span class="smsg-time">${msg.time}</span>
         <div class="sbubble"><span class="smsg-label">Tu gemelo</span>${esc(msg.text)}</div>
         <div class="smsg-av" style="background:#2a2a2a;outline:2px solid rgba(255,160,60,0.45);outline-offset:1px">G</div>
       </div>`;
-    } else {
-      html += `<div class="smsg them">
+          } else {
+            html += `<div class="smsg them">
         <div class="smsg-av" style="background:${p.color};outline:2px solid var(--orange);outline-offset:1px">G</div>
         <div class="sbubble"><span class="smsg-label">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
         <span class="smsg-time">${msg.time}</span>
       </div>`;
-    }
-  });
-
-  html += `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Fin de la simulación</span><div class="sim-sep-line"></div></div>`;
-
-  inner.innerHTML = html;
-  document.getElementById('simOverlay').classList.add('open');
-  // Scroll al inicio
-  document.getElementById('simOverlay').querySelector('.sim-body').scrollTop = 0;
-}
-
-// Cierra el overlay de simulación
-function closeSimulation() {
-  document.getElementById('simOverlay').classList.remove('open');
-}
-
-/* ── Helpers ── */
-// Hace scroll al fondo del panel de mensajes
-function scrollBottom() {
-  const el = document.getElementById('panelMessages');
-  if (el) el.scrollTop = el.scrollHeight;
-}
-// Devuelve la hora actual en formato HH:MM (horario Argentina)
-function nowTime() { return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }); }
-// Escapa caracteres especiales de HTML para evitar inyección de código en los mensajes
-function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-// Detecta Enter en el input del panel para enviar el mensaje (Shift+Enter hace salto de línea)
-function handlePanelKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPanelMsg(); } }
-// Ajusta la altura del textarea del panel automáticamente según el contenido, hasta 100px de alto
-function panelResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
-
-// Inicializa los badges de no leídos para las conversaciones preexistentes
-['sofia','mateo','valentina'].forEach(id => refreshListItem(id));
-
-// Si la página fue abierta con ?persona=ID (desde home o matches), abre ese chat directamente
-(function() {
-  const param = new URLSearchParams(location.search).get('persona');
-  if (param && people[param]) {
-    openChat(param);
-    // Sacamos el ?persona= de la URL para que un refresh no vuelva a abrir
-    // el chat si el usuario ya lo cerró.
-    history.replaceState(null, '', location.pathname + location.hash);
-  }
-})();
-</script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
-const auth = getAuth(app);
-const db   = getFirestore(app);
-
-let uid = null;
-
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = './home.html'; return; }
-  // Expiración de sesión (24h)
-  const _SESSION_MS = 24 * 60 * 60 * 1000;
-  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
-  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
-  else if (Date.now() - _loginTime > _SESSION_MS) {
-    localStorage.removeItem('pebble_login_time');
-    await signOut(auth);
-    window.location.href = './home.html'; return;
-  }
-  uid = user.uid;
-
-  // ── Cargar conversaciones guardadas de Firestore ──
-  // Los chats viven en la subcolección usuarios/{uid}/chats/{personaId}, no
-  // como campos sueltos (chats_sofia_real, leido_sofia_real...) en el doc
-  // principal -- así no se acerca al límite de 1MB y se puede consultar.
-  try {
-    const snap = await getDoc(doc(db, 'usuarios', uid));
-    if (snap.exists() && snap.data().notifs_leidas) {
-      const pip = document.querySelector('.nav-icon-btn .notif-pip');
-      if (pip) pip.style.display = 'none';
-    }
-
-    const chatsSnap = await getDocs(collection(db, 'usuarios', uid, 'chats'));
-    const chatsMap = {};
-    chatsSnap.forEach(d => { chatsMap[d.id] = d.data(); });
-
-    ['sofia', 'mateo', 'valentina', 'lucia', 'agustin'].forEach(id => {
-      const c = chatsMap[id];
-      let hasMessages = false;
-      if (c) {
-        ['real', 'gemelo'].forEach(mode => {
-          const modo = c[mode];
-          if (!modo) return;
-          if (Array.isArray(modo.msgs) && modo.msgs.length > 0) {
-            people[id][mode].msgs = modo.msgs;
-            hasMessages = true;
-          }
-          // Si ya abrió este chat antes → sin badge de no leídos
-          if (modo.leido) {
-            people[id][mode].unread = 0;
           }
         });
+
+        html += `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Fin de la simulación</span><div class="sim-sep-line"></div></div>`;
+
+        inner.innerHTML = html;
+        document.getElementById("simOverlay").classList.add("open");
+        // Scroll al inicio
+        document
+          .getElementById("simOverlay")
+          .querySelector(".sim-body").scrollTop = 0;
       }
-      // Para personas nuevas (lucia/agustín), solo mostrar en lista si tienen mensajes guardados
-      if (!document.getElementById(`conv-${id}`) && hasMessages) {
-        injectConvItem(id);
+
+      // Cierra el overlay de simulación
+      function closeSimulation() {
+        document.getElementById("simOverlay").classList.remove("open");
       }
-      refreshListItem(id);
-    });
-  } catch(e) { console.warn('Error cargando chats:', e); }
 
-  // Quitar overlay cuando todo esté listo
-  const el = document.getElementById('loadingOverlay');
-  if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
-});
+      /* ── Helpers ── */
+      // Hace scroll al fondo del panel de mensajes
+      function scrollBottom() {
+        const el = document.getElementById("panelMessages");
+        if (el) el.scrollTop = el.scrollHeight;
+      }
+      // Devuelve la hora actual en formato HH:MM (horario Argentina)
+      function nowTime() {
+        return new Date().toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+      // Escapa caracteres especiales de HTML para evitar inyección de código en los mensajes
+      function esc(t) {
+        return String(t)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+      // Detecta Enter en el input del panel para enviar el mensaje (Shift+Enter hace salto de línea)
+      function handlePanelKey(e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendPanelMsg();
+        }
+      }
+      // Ajusta la altura del textarea del panel automáticamente según el contenido, hasta 100px de alto
+      function panelResize(el) {
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 100) + "px";
+      }
 
-// Marca ambos modos (gemelo y real) de una conversación como leídos en Firestore
-// Se llama al abrir el panel de chat para eliminar los badges de no leídos
-window._db_marcarLeido = async (personaId) => {
-  if (!uid) return;
-  const ref = doc(db, 'usuarios', uid, 'chats', personaId);
-  try {
-    // updateDoc SÍ interpreta 'real.leido' como ruta anidada (setDoc con
-    // merge:true no -- crea un campo llamado literalmente "real.leido").
-    await updateDoc(ref, { 'real.leido': true, 'gemelo.leido': true });
-  } catch (e) {
-    // El documento todavía no existe (primera vez que se toca esta conversación)
-    await setDoc(ref, { real: { leido: true }, gemelo: { leido: true } }, { merge: true });
-  }
-};
+      // Inicializa los badges de no leídos para las conversaciones preexistentes
+      ["sofia", "mateo", "valentina"].forEach((id) => refreshListItem(id));
 
-// Guarda el array completo de mensajes de una conversación en Firestore,
-// en usuarios/{uid}/chats/{personaId} con la forma { real: {...}, gemelo: {...} }
-window._db_saveChat = async (personaId, mode, msgs) => {
-  if (!uid) return;
-  const ref = doc(db, 'usuarios', uid, 'chats', personaId);
-  try {
-    await updateDoc(ref, { [`${mode}.msgs`]: msgs });
-  } catch (e) {
-    // El documento todavía no existe (primer mensaje con esta persona)
-    await setDoc(ref, { [mode]: { msgs } }, { merge: true });
-  }
-};
-</script>
-</body>
+      // Si la página fue abierta con ?persona=ID (desde home o matches), abre ese chat directamente
+      (function () {
+        const param = new URLSearchParams(location.search).get("persona");
+        if (param && people[param]) {
+          openChat(param);
+          // Sacamos el ?persona= de la URL para que un refresh no vuelva a abrir
+          // el chat si el usuario ya lo cerró.
+          history.replaceState(null, "", location.pathname + location.hash);
+        }
+      })();
+    </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        updateDoc,
+        collection,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const app = initializeApp({
+        apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+        authDomain: "pebble-78e95.firebaseapp.com",
+        projectId: "pebble-78e95",
+        storageBucket: "pebble-78e95.firebasestorage.app",
+        messagingSenderId: "56434257024",
+        appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+      });
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      let uid = null;
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = "./home.html";
+          return;
+        }
+        // Expiración de sesión (24h)
+        const _SESSION_MS = 24 * 60 * 60 * 1000;
+        const _loginTime = parseInt(
+          localStorage.getItem("pebble_login_time") || "0",
+        );
+        if (!_loginTime) {
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+        } else if (Date.now() - _loginTime > _SESSION_MS) {
+          localStorage.removeItem("pebble_login_time");
+          await signOut(auth);
+          window.location.href = "./home.html";
+          return;
+        }
+        uid = user.uid;
+
+        // ── Cargar conversaciones guardadas de Firestore ──
+        // Los chats viven en la subcolección usuarios/{uid}/chats/{personaId}, no
+        // como campos sueltos (chats_sofia_real, leido_sofia_real...) en el doc
+        // principal -- así no se acerca al límite de 1MB y se puede consultar.
+        try {
+          const snap = await getDoc(doc(db, "usuarios", uid));
+          if (snap.exists() && snap.data().notifs_leidas) {
+            const pip = document.querySelector(".nav-icon-btn .notif-pip");
+            if (pip) pip.style.display = "none";
+          }
+
+          const chatsSnap = await getDocs(
+            collection(db, "usuarios", uid, "chats"),
+          );
+          const chatsMap = {};
+          chatsSnap.forEach((d) => {
+            chatsMap[d.id] = d.data();
+          });
+
+          ["sofia", "mateo", "valentina", "lucia", "agustin"].forEach((id) => {
+            const c = chatsMap[id];
+            let hasMessages = false;
+            if (c) {
+              ["real", "gemelo"].forEach((mode) => {
+                const modo = c[mode];
+                if (!modo) return;
+                if (Array.isArray(modo.msgs) && modo.msgs.length > 0) {
+                  people[id][mode].msgs = modo.msgs;
+                  hasMessages = true;
+                }
+                // Si ya abrió este chat antes → sin badge de no leídos
+                if (modo.leido) {
+                  people[id][mode].unread = 0;
+                }
+              });
+            }
+            // Para personas nuevas (lucia/agustín), solo mostrar en lista si tienen mensajes guardados
+            if (!document.getElementById(`conv-${id}`) && hasMessages) {
+              injectConvItem(id);
+            }
+            refreshListItem(id);
+          });
+        } catch (e) {
+          console.warn("Error cargando chats:", e);
+        }
+
+        // Quitar overlay cuando todo esté listo
+        const el = document.getElementById("loadingOverlay");
+        if (el) {
+          el.classList.add("hide");
+          setTimeout(() => el.remove(), 350);
+        }
+      });
+
+      // Marca ambos modos (gemelo y real) de una conversación como leídos en Firestore
+      // Se llama al abrir el panel de chat para eliminar los badges de no leídos
+      window._db_marcarLeido = async (personaId) => {
+        if (!uid) return;
+        const ref = doc(db, "usuarios", uid, "chats", personaId);
+        try {
+          // updateDoc SÍ interpreta 'real.leido' como ruta anidada (setDoc con
+          // merge:true no -- crea un campo llamado literalmente "real.leido").
+          await updateDoc(ref, { "real.leido": true, "gemelo.leido": true });
+        } catch (e) {
+          // El documento todavía no existe (primera vez que se toca esta conversación)
+          await setDoc(
+            ref,
+            { real: { leido: true }, gemelo: { leido: true } },
+            { merge: true },
+          );
+        }
+      };
+
+      // Guarda el array completo de mensajes de una conversación en Firestore,
+      // en usuarios/{uid}/chats/{personaId} con la forma { real: {...}, gemelo: {...} }
+      window._db_saveChat = async (personaId, mode, msgs) => {
+        if (!uid) return;
+        const ref = doc(db, "usuarios", uid, "chats", personaId);
+        try {
+          await updateDoc(ref, { [`${mode}.msgs`]: msgs });
+        } catch (e) {
+          // El documento todavía no existe (primer mensaje con esta persona)
+          await setDoc(ref, { [mode]: { msgs } }, { merge: true });
+        }
+      };
+    </script>
+  </body>
 </html>
