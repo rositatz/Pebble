@@ -137,6 +137,16 @@ body {
   transform: translateY(-2px);
 }
 
+/* Match nuevo: mismo fondo y colores que siempre, solo con el borde
+   resaltado en naranja para que se note que es nuevo. */
+.match-card[data-new="true"] {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(255,117,31,.3), 0 8px 28px rgba(255,117,31,.12);
+}
+.match-card[data-new="true"]:hover {
+  box-shadow: 0 0 0 1px rgba(255,117,31,.45), 0 10px 34px rgba(255,117,31,.18);
+}
+
 /* Card top row */
 .card-top {
   display: flex; align-items: center; gap: 16px;

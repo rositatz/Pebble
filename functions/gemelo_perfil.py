@@ -275,6 +275,11 @@ def _construir_identidad(e1):
         "profesion": e1.get("ocupacion", ""),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),
+        "orientacion": e1.get("orientacion", ""),
+        # Qué tipo de relación busca ("Algo serio"/"Algo casual"/"Nuevas
+        # amistades"/"Sin definir") -- lo usa escenarios_para_tipo() para
+        # decidir qué escenarios correr con simular_relacion_completa().
+        "busco": e1.get("busco", ""),
     }
 
 

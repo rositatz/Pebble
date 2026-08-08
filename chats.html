@@ -220,6 +220,30 @@ html, body {
 .panel-send-btn:hover { background: var(--orange); }
 .panel-send-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
+/* ── Chat panel en modo gemelo: mismo estilo negro que la simulación ── */
+.chat-panel.gemelo-mode { background: #0d0d0d; }
+.chat-panel.gemelo-mode .panel-nav { background: #111; border-bottom-color: rgba(255,117,31,0.18); }
+.chat-panel.gemelo-mode .panel-back { color: rgba(255,255,255,0.6); }
+.chat-panel.gemelo-mode .panel-back:hover { background: rgba(255,255,255,0.06); }
+.chat-panel.gemelo-mode .panel-person-name { color: #fff; }
+.chat-panel.gemelo-mode .panel-person-meta { color: rgba(255,117,31,0.6); }
+.chat-panel.gemelo-mode .panel-mode-seg { background: rgba(255,255,255,0.06); }
+.chat-panel.gemelo-mode .panel-mode-btn { color: rgba(255,255,255,0.5); }
+.chat-panel.gemelo-mode .panel-mode-btn.active { background: var(--orange); color: #fff; }
+.chat-panel.gemelo-mode .panel-mode-btn.locked { opacity: 0.35; }
+.chat-panel.gemelo-mode .day-sep-line { background: rgba(255,255,255,0.1); }
+.chat-panel.gemelo-mode .day-sep-text { color: rgba(255,255,255,0.3); }
+.chat-panel.gemelo-mode .pmsg.them .pbubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,117,31,0.17); border-bottom-left-radius: 4px; color: rgba(255,255,255,0.75); }
+.chat-panel.gemelo-mode .pmsg.them.is-gemelo .pbubble { border-left: 1px solid rgba(255,117,31,0.17); }
+.chat-panel.gemelo-mode .pmsg.me .pbubble { background: rgba(255,117,31,0.09); border: 1px solid rgba(255,117,31,0.22); border-bottom-right-radius: 4px; color: rgba(255,255,255,0.82); }
+.chat-panel.gemelo-mode .pmsg-time { color: rgba(255,255,255,0.17); }
+.chat-panel.gemelo-mode .panel-input-wrap { background: #111; border-top-color: rgba(255,117,31,0.18); }
+.chat-panel.gemelo-mode .panel-input { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #fff; }
+.chat-panel.gemelo-mode .panel-input::placeholder { color: rgba(255,255,255,0.3); }
+.chat-panel.gemelo-mode .panel-input:focus { border-color: var(--orange); background: rgba(255,255,255,0.07); }
+.chat-panel.gemelo-mode .panel-send-btn { background: var(--orange); }
+.chat-panel.gemelo-mode .panel-send-btn:hover { background: var(--orange-mid); }
+
 /* ── Person profile overlay ── */
 .profile-overlay {
   position: fixed; inset: 0; z-index: 700;
@@ -834,6 +858,7 @@ function updateModeBar() {
   const p   = people[curPerson];
   const bar = document.getElementById('panelModeBar');
   const inp = document.getElementById('panelInput');
+  document.getElementById('chatPanel').classList.toggle('gemelo-mode', curMode === 'gemelo');
   if (curMode === 'gemelo') {
     bar.className = 'panel-mode-bar gemelo-bar';
     bar.innerHTML = `

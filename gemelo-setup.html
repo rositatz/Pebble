@@ -205,6 +205,27 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">👤 Identidad básica</div>
+    <div class="q">
+      <div class="ql">¿Qué estás buscando?</div>
+      <div class="pills" data-field="busco">
+        <button class="pill" onclick="selPill(this)">Algo serio</button>
+        <button class="pill" onclick="selPill(this)">Algo casual</button>
+        <button class="pill" onclick="selPill(this)">Nuevas amistades</button>
+        <button class="pill" onclick="selPill(this)">Sin definir</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Cuál es tu orientación sexual?</div>
+      <div class="pills" data-field="orientacion">
+        <button class="pill" onclick="selPill(this)">Heterosexual</button>
+        <button class="pill" onclick="selPill(this)">Bisexual</button>
+        <button class="pill" onclick="selPill(this)">Gay / Lesbiana</button>
+        <button class="pill" onclick="selPill(this)">Pansexual</button>
+        <button class="pill" onclick="selPill(this)">Asexual</button>
+        <button class="pill" onclick="selPill(this)">Prefiero no decir</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
     <div class="q"><div class="ql">¿Cómo te llamás?</div><textarea class="inp" id="nombre" placeholder="Tu nombre" rows="1"></textarea></div>
     <div class="q"><div class="ql">¿Cómo te gusta que te digan?</div><textarea class="inp" id="apodo" placeholder="Apodo o preferencia" rows="1"></textarea></div>
     <div class="q"><div class="ql">¿Qué edad tenés?</div><input class="inp" id="edad" type="number" min="16" max="99" placeholder="Ej: 23" style="-moz-appearance:textfield"/></div>
@@ -889,22 +910,79 @@ window.flagVote = function(val) {
       done.style.display = 'block';
       done.textContent = '¡Listo! Marcaste ' + greens + ' green flags y ' + (FLAGS.length - greens) + ' red flags.';
     }
+    actualizarBarraProgreso();
   }, 320);
 };
+
+/* ─── PROGRESO (por preguntas contestadas, no por etapa) ───
+   Antes la barra era currentStage/TOTAL -- saltaba en escalones fijos aunque
+   no hubieras tocado nada de la etapa. Ahora cuenta cuántos campos tienen
+   respuesta sobre el total de campos visibles (las prem-only no cuentan para
+   quien no es premium, porque ni siquiera las puede ver/responder). */
+function preguntaVisible(el) {
+  const premEl = el.closest('.prem-only');
+  if (premEl && !document.body.classList.contains('is-premium')) return false;
+  return true;
+}
+
+function calcularProgreso() {
+  let total = 0, respondidas = 0;
+
+  for (let n = 1; n <= 6; n++) {
+    const stage = document.getElementById('stage-' + n);
+    if (!stage) continue;
+
+    stage.querySelectorAll('input[id],textarea[id]').forEach(el => {
+      if (!preguntaVisible(el)) return;
+      total++;
+      if (el.value.trim() !== '') respondidas++;
+    });
+    stage.querySelectorAll('.pills[data-field]').forEach(p => {
+      if (!preguntaVisible(p)) return;
+      total++;
+      if (p.querySelector('.pill.sel')) respondidas++;
+    });
+    stage.querySelectorAll('.rlist[data-field]').forEach(r => {
+      if (!preguntaVisible(r)) return;
+      total++;
+      if (r.querySelector('.ritem.sel')) respondidas++;
+    });
+    stage.querySelectorAll('.binary[data-field]').forEach(b => {
+      if (!preguntaVisible(b)) return;
+      total++;
+      if (b.querySelector('.bbin.sel')) respondidas++;
+    });
+  }
+
+  // Las 16 tarjetas de green/red flag cuentan como una sola pregunta grande,
+  // para no desbalancear el total con 16 ítems sueltos de una sola vez.
+  total += 1;
+  if (flagIdx >= FLAGS.length) respondidas += 1;
+
+  return total > 0 ? Math.round((respondidas / total) * 100) : 0;
+}
+
+function actualizarBarraProgreso() {
+  const fill = document.getElementById('prog-fill');
+  if (fill) fill.style.width = calcularProgreso() + '%';
+}
 
 /* ─── SELECTORS ─── */
 window.selPill = function(btn) {
   btn.closest('.pills').querySelectorAll('.pill').forEach(p => p.classList.remove('sel'));
   btn.classList.add('sel');
+  actualizarBarraProgreso();
 };
-window.selMulti = function(btn) { btn.classList.toggle('sel'); };
+window.selMulti = function(btn) { btn.classList.toggle('sel'); actualizarBarraProgreso(); };
 window.selRadio = function(item) {
   item.closest('.rlist').querySelectorAll('.ritem').forEach(r => r.classList.remove('sel'));
   item.classList.add('sel');
+  actualizarBarraProgreso();
 };
 window.selBin = function(btn) {
   btn.closest('.binary').querySelectorAll('.bbin').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
+  actualizarBarraProgreso();
 };
 
 /* ─── AUTO-GROW TEXTAREAS ───
@@ -917,7 +995,7 @@ function autoGrowTextarea(el) {
   el.style.height = el.scrollHeight + 'px';
 }
 document.querySelectorAll('.txa, .gedit, textarea.inp').forEach(el => {
-  el.addEventListener('input', () => autoGrowTextarea(el));
+  el.addEventListener('input', () => { autoGrowTextarea(el); actualizarBarraProgreso(); });
 });
 
 /* ─── COLLECT ─── */
@@ -1003,6 +1081,8 @@ function repoblarFormulario() {
   if (stageData.etapa5 && stageData.etapa5.flags) {
     flagVotes = { ...stageData.etapa5.flags };
   }
+
+  actualizarBarraProgreso();
 }
 
 /* ─── SAVE ─── */
@@ -1026,7 +1106,7 @@ function showStage(n, dir) {
   // scrollHeight da un valor real -- por eso el auto-grow de sus textareas se
   // recalcula acá y no en repoblarFormulario(), que corre con casi todo oculto.
   incoming.querySelectorAll('.txa, .gedit, textarea.inp').forEach(autoGrowTextarea);
-  document.getElementById('prog-fill').style.width = (n / TOTAL * 100) + '%';
+  actualizarBarraProgreso();
   document.getElementById('step-lbl').textContent = n + ' / ' + TOTAL;
   const back = document.getElementById('btn-back');
   back.disabled = n === 1;
@@ -1060,7 +1140,7 @@ window.guardarYSalir = async function() {
     try {
       await updateDoc(doc(db,'usuarios',uid), {
         gemelo_completado: false,
-        gemelo_progreso: Math.round((currentStage / TOTAL) * 100),
+        gemelo_progreso: calcularProgreso(),
         gemelo_etapa_actual: currentStage
       });
     } catch(e) { console.error(e); }
