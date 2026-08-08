@@ -157,6 +157,27 @@ REGLAS_NUMERICAS = [
     # ── Etapa 6: psicología ──
     ("etapa6", "perdonar", "Perdonar a otros", {"personalidad.empatia": 0.05}),
     ("etapa6", "perdonar", "Perdonarme a mí", {"personalidad.sensibilidad_emocional": 0.05}),
+
+    # ── Etapa 3: familia y futuro ──
+    ("etapa3", "hijosFuturo", "Sí", {"valores.familia": 0.15}),
+    ("etapa3", "hijosFuturo", "Ya tengo", {"valores.familia": 0.15}),
+    ("etapa3", "hijosFuturo", "No", {"valores.familia": -0.15}),
+    ("etapa3", "hijosAjenos", "No, para nada", {"valores.familia": 0.05}),
+    ("etapa3", "hijosAjenos", "Sí, prefiero que no", {"valores.familia": -0.05}),
+    ("etapa3", "relacionPadres", "Muy cercana", {"valores.familia": 0.15}),
+    ("etapa3", "relacionPadres", "Buena pero con distancia", {"valores.familia": 0.05}),
+    ("etapa3", "relacionPadres", "Complicada", {"valores.familia": -0.10, "personalidad.independencia": 0.05}),
+    ("etapa3", "relacionPadres", "Prefiero no hablar de eso", {"personalidad.introversion": 0.05}),
+    ("etapa3", "familiaEnPareja", "Muy presente", {"valores.familia": 0.15}),
+    ("etapa3", "familiaEnPareja", "Presente pero con límites propios", {"personalidad.independencia": 0.05}),
+    ("etapa3", "familiaEnPareja", "Prefiero mantenerla aparte", {"personalidad.independencia": 0.15, "valores.familia": -0.10}),
+    ("etapa3", "futuro5anios", "Instalado/a y estable", {"valores.estabilidad": 0.15}),
+    ("etapa3", "futuro5anios", "Todavía explorando opciones", {"personalidad.apertura_mental": 0.10, "valores.estabilidad": -0.05}),
+    ("etapa3", "futuro5anios", "Formando una familia", {"valores.familia": 0.15, "valores.estabilidad": 0.05}),
+    ("etapa3", "futuro5anios", "Enfocado/a en mi carrera", {"valores.ambicion": 0.15}),
+    ("etapa3", "futuro5anios", "Viajando, sin planes fijos", {"valores.aventura": 0.15}),
+    ("etapa3", "estabilidadEconomica", "Muy importante", {"valores.ambicion": 0.10, "valores.estabilidad": 0.10}),
+    ("etapa3", "estabilidadEconomica", "No es prioridad ahora", {"valores.ambicion": -0.05, "valores.aventura": 0.05}),
 ]
 
 # Campos que describen preferencias sobre LA OTRA PERSONA, no rasgos propios.
@@ -167,6 +188,15 @@ CAMPOS_PREFERENCIA_PAREJA = [
     ("etapa6", "vibeAtrae"), ("etapa6", "conexionPrimero"), ("etapa6", "gustaMueven"),
     ("etapa6", "atraeMas"), ("etapa6", "colorPelo"), ("etapa6", "estiloPelo"),
     ("etapa6", "alturaAtrae"), ("etapa6", "contextura"), ("etapa6", "outfitCrush"),
+]
+
+# Política y religión: no hay una correlación defendible con ningún rasgo de
+# BASE_PERSONALIDAD/BASE_VALORES, así que en vez de inventar una regla numérica
+# se guardan tal cual -- listas para un futuro eje de compatibilidad por
+# creencias en vez de forzarlas en el modelo psicológico actual.
+CAMPOS_CREENCIAS = [
+    ("etapa6", "politicaImportancia"), ("etapa6", "politicaHablar"),
+    ("etapa6", "religionImportancia"), ("etapa6", "religionCompartir"),
 ]
 
 # Preguntas de texto libre -> se citan tal cual en el prompt, con una etiqueta corta.
@@ -317,6 +347,15 @@ def _construir_preferencias_pareja(respuestas_raw):
     return prefs
 
 
+def _construir_creencias(respuestas_raw):
+    creencias = {}
+    for etapa, campo in CAMPOS_CREENCIAS:
+        valor = (respuestas_raw.get(etapa) or {}).get(campo)
+        if valor:
+            creencias[campo] = valor
+    return creencias
+
+
 def _resumir_flags(e5):
     flags = e5.get("flags")
     if not isinstance(flags, dict) or not flags:
@@ -360,6 +399,7 @@ def construir_perfil_gemelo(respuestas_raw):
         "conflictos": _construir_conflictos(e4),
         "notas_personales": _construir_notas(respuestas_raw),
         "preferencias_pareja": _construir_preferencias_pareja(respuestas_raw),
+        "creencias": _construir_creencias(respuestas_raw),
         "pesos_compatibilidad": _construir_pesos_compatibilidad(respuestas_raw),
         "flags_resumen": _resumir_flags(e5),
         "bio": (respuestas_raw.get("gemelo_final") or e7.get("gedit") or "").strip(),
