@@ -6,7 +6,7 @@ from firebase_functions import firestore_fn, https_fn
 from firebase_functions.options import set_global_options, MemoryOption
 
 from gemelo_perfil import construir_perfil_gemelo
-import gemelo_engine as motor
+import simulador as motor
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
