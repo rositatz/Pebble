@@ -1036,11 +1036,21 @@ window.usarMiUbicacion = function() {
   }
   status.textContent = 'Buscando tu ubicación...';
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      document.getElementById('lat').value = pos.coords.latitude;
-      document.getElementById('lng').value = pos.coords.longitude;
+    async pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      document.getElementById('lat').value = lat;
+      document.getElementById('lng').value = lng;
       status.textContent = '✓ Ubicación guardada';
       btn.classList.add('sel');
+      // Además de quedar en el onboarding (etapa1.lat/lng -> perfil del
+      // gemelo), se guarda directo en usuarios/{uid} para poder usarla desde
+      // otras pantallas sin depender de que el gemelo ya esté generado.
+      if (uid) {
+        try {
+          await setDoc(doc(db, 'usuarios', uid), { ubicacion: { lat, lng } }, { merge: true });
+        } catch (e) { console.error(e); }
+      }
     },
     err => {
       status.textContent = 'No pudimos acceder a tu ubicación (' + err.message + ').';
