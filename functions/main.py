@@ -112,3 +112,85 @@ def simular_situacion(request: https_fn.CallableRequest):
         "superaUmbral": registro["supera_umbral"],
         "escenario": registro["escenario"]["titulo"],
     }
+
+
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=540, memory=MemoryOption.MB_512)
+def buscar_matches_cercanos(request: https_fn.CallableRequest):
+    """Corre simulaciones contra otros usuarios que ya generaron su gemelo,
+    priorizando por cercanía geográfica (ver geolocalizacion.py y
+    simulador.simular_matches_por_cercania): primero se evalúan los
+    escenarios con la gente más cerca. Es una corrida cara (llama a OpenAI
+    varias veces por candidato), así que por default se limita a los 5
+    candidatos más cercanos -- se puede subir con `limite` en request.data.
+
+    Datos esperados en request.data:
+      - tipoRelacion (opcional): fuerza el tipo de relación a simular en vez
+        de usar el "busco" del propio perfil.
+      - limite (opcional, default 5): cantidad máxima de candidatos a evaluar,
+        ya ordenados de más cerca a más lejos.
+    """
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado para buscar matches."
+        )
+
+    uid = request.auth.uid
+    data = request.data or {}
+    tipo_relacion = (data.get("tipoRelacion") or "").strip() or None
+    limite = data.get("limite")
+    limite = int(limite) if limite else 5
+
+    db = firestore.client()
+
+    doc_propio = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
+    if not doc_propio.exists:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Todavía no generaste tu gemelo (completá el onboarding primero)."
+        )
+    perfil_propio = doc_propio.to_dict()
+
+    candidatos = []
+    for doc in db.collection_group("gemelo").stream():
+        if doc.id != "perfil":
+            continue
+        uid_candidato = doc.reference.parent.parent.id
+        if uid_candidato == uid:
+            continue
+        candidatos.append((uid_candidato, doc.to_dict()))
+
+    candidatos_por_uid = dict(candidatos)
+
+    resultados = motor.simular_matches_por_cercania(
+        uid, perfil_propio, candidatos,
+        tipo_relacion=tipo_relacion, turnos=2, limite_candidatos=limite,
+    )
+
+    resumen = []
+    for resultado in resultados:
+        uid_candidato = resultado["uid_candidato"]
+        par_ref = db.collection("matches").document(motor._par_id(uid, uid_candidato))
+
+        for registro in resultado["simulaciones"]:
+            par_ref.collection("simulaciones").add(registro)
+
+        par_ref.set({
+            "usuario_1": {"uid": uid, "nombre": perfil_propio.get("nombre", "")},
+            "usuario_2": {"uid": uid_candidato, "nombre": candidatos_por_uid.get(uid_candidato, {}).get("nombre", "")},
+            "ultimo_score": resultado["compatibilidad_promedio"],
+            "supera_umbral": resultado["supera_umbral"],
+            "distancia_km": resultado["distancia_km"],
+            "actualizado": resultado["simulaciones"][-1]["fecha"],
+        }, merge=True)
+
+        resumen.append({
+            "uid": uid_candidato,
+            "distanciaKm": resultado["distancia_km"],
+            "compatibilidadPromedio": resultado["compatibilidad_promedio"],
+            "superaUmbral": resultado["supera_umbral"],
+            "escenariosCorridos": resultado["escenarios_corridos"],
+        })
+
+    return {"matches": resumen}

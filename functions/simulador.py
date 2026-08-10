@@ -8,6 +8,8 @@ import json
 import datetime 
 
 from gemelo_perfil import construir_perfil_gemelo
+from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad
+from geolocalizacion import ordenar_por_cercania
 
 # El cliente de OpenAI se crea recién al usarlo (ver _client()), no al importar
 # el módulo: así se puede armar/comparar perfiles y correr los tests sin tener
@@ -21,6 +23,351 @@ def client():
         from openai import OpenAI
         _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
+
+
+# Cada escenario tiene "tipos_relacion": para qué opciones del campo "busco"
+# (perfil.html: Algo serio / Algo casual / Nuevas amistades / Sin definir) es
+# relevante correrlo. Ver escenarios_para_tipo() más abajo, que filtra por esto.
+escenarios_db = [
+
+    {
+        "titulo": "Arte y tecnología",
+
+        "contexto": """
+        Ambos coinciden en una cafetería virtual moderna.
+        La conversación comienza hablando sobre inteligencia artificial,
+        creatividad y herramientas digitales utilizadas en arte,
+        música o diseño.
+        """,
+
+        "objetivo": [
+            "Evaluar creatividad",
+            "Detectar curiosidad intelectual",
+            "Medir apertura a nuevas ideas",
+            "Analizar capacidad de debate"
+        ],
+
+        "tension": """
+        El tema puede derivar en opiniones distintas sobre tecnología,
+        autenticidad creativa y cambios culturales.
+        """,
+
+        "tono": "Intelectual, relajado y curioso.",
+        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Finanzas y estilo de vida",
+
+        "contexto": """
+        La conversación deriva hacia hábitos financieros,
+        prioridades personales y formas de organizar la vida adulta.
+        Hablan sobre trabajo, gastos, metas y estabilidad.
+        """,
+
+        "objetivo": [
+            "Evaluar responsabilidad",
+            "Detectar prioridades personales",
+            "Analizar compatibilidad de estilo de vida",
+            "Medir madurez emocional"
+        ],
+
+        "tension": """
+        Pueden aparecer diferencias sobre dinero,
+        planificación, consumo o visión del futuro.
+        """,
+
+        "tono": "Maduro, honesto y relajado.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Relación con la familia",
+
+        "contexto": """
+        La conversación evoluciona hacia vínculos familiares,
+        costumbres, límites personales y relaciones importantes
+        dentro de sus vidas.
+        """,
+
+        "objetivo": [
+            "Entender valores personales",
+            "Detectar madurez emocional",
+            "Evaluar independencia emocional",
+            "Analizar empatía"
+        ],
+
+        "tension": """
+        Pueden surgir diferencias en la forma de ver la familia,
+        privacidad, apoyo emocional o independencia.
+        """,
+
+        "tono": "Personal, emocional y reflexivo.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Resolución de conflictos",
+
+        "contexto": """
+        Ambos comienzan a hablar sobre discusiones,
+        malos entendidos y cómo suelen reaccionar
+        frente a situaciones incómodas o tensas.
+        """,
+
+        "objetivo": [
+            "Evaluar inteligencia emocional",
+            "Detectar impulsividad",
+            "Analizar comunicación emocional",
+            "Medir empatía"
+        ],
+
+        "tension": """
+        La conversación puede revelar diferencias
+        en la manera de afrontar conflictos,
+        pedir disculpas o expresar emociones.
+        """,
+
+        "tono": "Honesto, introspectivo y respetuoso.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Tareas del hogar y convivencia",
+
+        "contexto": """
+        La charla deriva hacia hábitos cotidianos,
+        organización personal y experiencias viviendo solos,
+        con amigos o con familia.
+        """,
+
+        "objetivo": [
+            "Evaluar hábitos de convivencia",
+            "Detectar nivel de responsabilidad",
+            "Analizar compatibilidad cotidiana",
+            "Medir flexibilidad"
+        ],
+
+        "tension": """
+        Pueden aparecer diferencias sobre orden,
+        limpieza, rutina o formas de compartir responsabilidades.
+        """,
+
+        "tono": "Liviano, cotidiano y natural.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Carrera profesional y ambiciones",
+
+        "contexto": """
+        La conversación gira hacia estudios,
+        objetivos laborales, motivaciones personales
+        y expectativas de crecimiento profesional.
+        """,
+
+        "objetivo": [
+            "Evaluar ambición",
+            "Detectar motivaciones personales",
+            "Analizar visión de futuro",
+            "Medir compatibilidad de objetivos"
+        ],
+
+        "tension": """
+        Pueden surgir diferencias en prioridades,
+        ritmo de vida, éxito profesional o balance personal.
+        """,
+
+        "tono": "Motivador, reflexivo y maduro.",
+        "tipos_relacion": ["Algo serio", "Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Expectativas en una relación",
+
+        "contexto": """
+        Ambos comienzan a hablar sobre qué buscan
+        emocionalmente en una pareja y qué consideran importante
+        en una relación sana y duradera.
+        """,
+
+        "objetivo": [
+            "Evaluar compatibilidad emocional",
+            "Detectar necesidades afectivas",
+            "Analizar expectativas románticas",
+            "Medir madurez relacional"
+        ],
+
+        "tension": """
+        Pueden aparecer diferencias sobre compromiso,
+        comunicación, independencia o demostraciones afectivas.
+        """,
+
+        "tono": "Emocional, abierto y sincero.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Música y emociones",
+
+        "contexto": """
+        La conversación comienza hablando sobre música,
+        artistas favoritos y canciones asociadas
+        a momentos importantes de sus vidas.
+        """,
+
+        "objetivo": [
+            "Detectar sensibilidad emocional",
+            "Evaluar gustos culturales",
+            "Analizar conexión emocional",
+            "Medir espontaneidad"
+        ],
+
+        "tension": """
+        Las diferencias de gustos o significado emocional
+        pueden generar debates interesantes o conexión profunda.
+        """,
+
+        "tono": "Relajado, emocional y espontáneo.",
+        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Películas y experiencias personales",
+
+        "contexto": """
+        Ambos empiezan hablando sobre películas,
+        series o historias que los hayan marcado emocionalmente
+        o cambiado su forma de pensar.
+        """,
+
+        "objetivo": [
+            "Evaluar profundidad emocional",
+            "Detectar intereses culturales",
+            "Analizar empatía",
+            "Medir capacidad reflexiva"
+        ],
+
+        "tension": """
+        Pueden surgir diferencias en sensibilidad,
+        humor o interpretación emocional de las historias.
+        """,
+
+        "tono": "Reflexivo, relajado y cercano.",
+        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Planes de finde y salidas",
+
+        "contexto": """
+        La conversación gira en torno a qué hacen un sábado a la noche,
+        salidas espontáneas, previas, recitales o planes de último momento.
+        Es una charla liviana, sin hablar de futuro ni de compromiso.
+        """,
+
+        "objetivo": [
+            "Evaluar compatibilidad de planes y ritmo social",
+            "Medir espontaneidad",
+            "Detectar química inmediata",
+            "Evaluar sentido del humor"
+        ],
+
+        "tension": """
+        Pueden chocar los ritmos: alguien más de planificar
+        contra alguien más de improvisar sobre la marcha.
+        """,
+
+        "tono": "Divertido, liviano y espontáneo.",
+        "tipos_relacion": ["Algo casual"]
+    },
+
+    {
+        "titulo": "Códigos de humor y coqueteo",
+
+        "contexto": """
+        Ambos empiezan a tirar chistes y ver si hay buena onda y química.
+        La charla se mueve con soltura entre bromas, indirectas
+        y algo de coqueteo, sin ninguna presión de que "vaya a algún lado".
+        """,
+
+        "objetivo": [
+            "Medir compatibilidad de humor",
+            "Evaluar química y coqueteo",
+            "Detectar soltura conversacional",
+            "Medir capacidad de seguir el juego sin incomodarse"
+        ],
+
+        "tension": """
+        El humor de uno puede no aterrizar en el otro,
+        o el nivel de coqueteo puede no estar parejo.
+        """,
+
+        "tono": "Juguetón, picante y relajado.",
+        "tipos_relacion": ["Algo casual"]
+    },
+
+    {
+        "titulo": "Hobbies y planes para compartir",
+
+        "contexto": """
+        Hablan de hobbies, deportes, juegos o series que les gustan,
+        pensando en cosas que podrían hacer juntos como amigos.
+        No hay ninguna carga romántica en la charla.
+        """,
+
+        "objetivo": [
+            "Detectar intereses en común",
+            "Evaluar compatibilidad de planes de amistad",
+            "Medir iniciativa social",
+            "Analizar afinidad de sentido del humor"
+        ],
+
+        "tension": """
+        Pueden no compartir casi ningún hobby,
+        o tener ritmos de vida social muy distintos.
+        """,
+
+        "tono": "Natural, cómodo y sin presión.",
+        "tipos_relacion": ["Nuevas amistades"]
+    },
+
+    {
+        "titulo": "Buena onda en grupo",
+
+        "contexto": """
+        Charlan sobre cómo son en una juntada con amigos, si son de sumar
+        gente nueva al grupo o prefieren círculos chicos, y qué tipo de
+        energía aportan cuando están con otras personas.
+        """,
+
+        "objetivo": [
+            "Evaluar compatibilidad social",
+            "Medir apertura a integrarse a nuevos grupos",
+            "Detectar estilo de vínculo entre amigos",
+            "Analizar empatía grupal"
+        ],
+
+        "tension": """
+        Uno puede ser mucho más sociable/expansivo que el otro,
+        o tener expectativas distintas de qué tan seguido verse.
+        """,
+
+        "tono": "Cálido, sociable y genuino.",
+        "tipos_relacion": ["Nuevas amistades"]
+    }
+]
+
+
+def escenarios_para_tipo(tipo_relacion):
+    """Devuelve los índices de escenarios_db relevantes para el tipo de
+    relación buscado (perfil.get('busco'): "Algo serio" / "Algo casual" /
+    "Nuevas amistades" / "Sin definir"). Si no matchea nada corre todos."""
+
+    tipo = (tipo_relacion or "").strip()
+    indices = [i for i, e in enumerate(escenarios_db) if tipo in e.get("tipos_relacion", [])]
+    return indices if indices else list(range(len(escenarios_db)))
+
 
 def armar_escenario_personalizado(texto):
     """El usuario pidió simular algo puntual (ej: "simulá que discutimos por
@@ -229,16 +576,21 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     return prompt
 
-def simular_cita(perfil1, perfil2, turnos=3, escenario=0):
-    """escenario puede ser un índice de escenarios_db (los 9 fijos) o un dict
+def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
+    """escenario puede ser un índice de escenarios_db o un dict
     {"titulo","contexto","tension","tono"} armado al vuelo para una simulación
-    a pedido del usuario (ej: "simulá que discutimos por plata")."""
+    a pedido del usuario (ej: "simulá que discutimos por plata").
+
+    memoria1/memoria2 son lo que cada gemelo recuerda de interacciones previas
+    con el otro (ver compatibilidad.actualizar_memoria) -- se usan en
+    simular_relacion_completa para que, al correr varios escenarios seguidos,
+    la charla se sienta continuada en vez de arrancar de cero cada vez."""
 
     print("Iniciando simulación...\n")
 
     historial_chat = []
 
-    escenario_actual = escenario 
+    escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
     contexto_escenario = f"""
     ESCENARIO:
@@ -256,8 +608,8 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0):
     nombre1 = perfil1.get("nombre", "ALPHA")
     nombre2 = perfil2.get("nombre", "BETA")
 
-    prompt_1 = generar_prompt_gemelo(perfil1)
-    prompt_2 = generar_prompt_gemelo(perfil2)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2)
 
     ultimo_mensaje = """
     Hola, me llamó la atención este tema.
@@ -339,8 +691,10 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0):
             "content": msg_1
         })
 
+    analisis = analizar_conversacion(historial_chat)
+    score = calcular_compatibilidad(perfil1, perfil2, analisis)
 
-    return historial_chat
+    return historial_chat, analisis, score
 
 
 # =====================================================
@@ -365,9 +719,8 @@ def _par_id(uid1, uid2):
 
 
 def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral=0.75):
-  
 
-    escenario_actual = escenario
+    escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
     return {
         "par_id": _par_id(uid1, uid2),
@@ -401,7 +754,7 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
     registro y decide dónde persistirlo -- local por default, pero se le puede
     pasar cualquier función que escriba a Firestore u otro lado."""
 
-    historial_chat = simular_cita(perfil1, perfil2, turnos=turnos, escenario=escenario)
+    historial_chat, analisis, score = simular_cita(perfil1, perfil2, turnos=turnos, escenario=escenario)
 
     registro = registro_simulacion(
         uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral
@@ -411,6 +764,8 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
         guardar(registro)
 
     return registro
+
+
 def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, turnos=2, umbral=0.75):
     """Corre TODOS los escenarios que correspondan al tipo de relación que se
     busca -- no solo uno. tipo_relacion: "Algo serio" / "Algo casual" /
@@ -448,3 +803,38 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, 
         "supera_umbral": promedio >= umbral,
         "simulaciones": registros,
     }
+
+
+def simular_matches_por_cercania(uid, perfil, candidatos, tipo_relacion=None, turnos=2, umbral=0.75, limite_candidatos=None):
+    """Corre simular_relacion_completa contra una lista de candidatos, pero no
+    en cualquier orden: primero contra los que están geográficamente más
+    cerca (ver geolocalizacion.ordenar_por_cercania). Las simulaciones llaman
+    a OpenAI turno a turno y salen caras, así que si hay muchos candidatos
+    conviene evaluar primero a la gente cercana -- de ahí `limite_candidatos`,
+    que si se pasa corta la corrida después de esa cantidad (ya ordenada por
+    cercanía, o sea que lo que se corta son los más lejanos).
+
+    uid/perfil: el usuario para el que se buscan matches.
+    candidatos: lista de (uid_candidato, perfil_candidato).
+
+    Devuelve una lista de resultados (uno por candidato), en el mismo orden
+    en que se evaluaron (de más cerca a más lejos), cada uno con su
+    "distancia_km" agregada (None si a ese candidato le falta ubicación)."""
+
+    ordenados = ordenar_por_cercania(perfil, candidatos)
+
+    if limite_candidatos is not None:
+        ordenados = ordenados[:limite_candidatos]
+
+    resultados = []
+
+    for uid_candidato, perfil_candidato, distancia in ordenados:
+        resultado = simular_relacion_completa(
+            uid, perfil, uid_candidato, perfil_candidato,
+            tipo_relacion=tipo_relacion, turnos=turnos, umbral=umbral,
+        )
+        resultado["uid_candidato"] = uid_candidato
+        resultado["distancia_km"] = round(distancia, 1) if distancia is not None else None
+        resultados.append(resultado)
+
+    return resultados

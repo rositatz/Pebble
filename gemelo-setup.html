@@ -231,6 +231,13 @@ body.is-upgrade .upgrade-banner{display:block}
     <div class="q"><div class="ql">¿Qué edad tenés?</div><input class="inp" id="edad" type="number" min="16" max="99" placeholder="Ej: 23" style="-moz-appearance:textfield"/></div>
     <div class="q"><div class="ql">¿Dónde vivís?</div><textarea class="inp" id="ciudad" placeholder="Ciudad o barrio" rows="1"></textarea></div>
     <div class="q">
+      <div class="ql">Ubicación exacta <span style="font-weight:400;opacity:.6">(opcional — nos ayuda a priorizar matches cerca tuyo)</span></div>
+      <input type="hidden" id="lat"/>
+      <input type="hidden" id="lng"/>
+      <button type="button" class="pill" id="btnUsarUbicacion" onclick="usarMiUbicacion()">📍 Usar mi ubicación</button>
+      <span id="ubicacionStatus" style="display:block;margin-top:6px;font-size:0.8rem;opacity:.7"></span>
+    </div>
+    <div class="q">
       <div class="ql">¿Con quién vivís actualmente?</div>
       <div class="pills" data-field="convivo">
         <button class="pill" onclick="selPill(this)">Solo/a</button>
@@ -920,6 +927,10 @@ window.flagVote = function(val) {
    respuesta sobre el total de campos visibles (las prem-only no cuentan para
    quien no es premium, porque ni siquiera las puede ver/responder). */
 function preguntaVisible(el) {
+  // Los campos ocultos (ej: #lat/#lng de "Usar mi ubicación") son metadata
+  // opcional, no una pregunta más -- si contaran en el total, nadie que no
+  // comparta su ubicación podría llegar al 100% de progreso.
+  if (el.type === 'hidden') return false;
   const premEl = el.closest('.prem-only');
   if (premEl && !document.body.classList.contains('is-premium')) return false;
   return true;
@@ -983,6 +994,34 @@ window.selBin = function(btn) {
   btn.closest('.binary').querySelectorAll('.bbin').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   actualizarBarraProgreso();
+};
+
+/* ─── UBICACIÓN ───
+   Coordenadas opcionales, vía Geolocation API del navegador -- el backend las
+   usa para priorizar con quién se corren las simulaciones primero (gente más
+   cerca primero, ver simulador.simular_matches_por_cercania). Si el usuario
+   no da permiso o el navegador no soporta geolocalización, el gemelo se arma
+   igual sin ubicación -- es un dato opcional, no bloquea el onboarding. */
+window.usarMiUbicacion = function() {
+  const status = document.getElementById('ubicacionStatus');
+  const btn = document.getElementById('btnUsarUbicacion');
+  if (!navigator.geolocation) {
+    status.textContent = 'Tu navegador no soporta geolocalización.';
+    return;
+  }
+  status.textContent = 'Buscando tu ubicación...';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('lat').value = pos.coords.latitude;
+      document.getElementById('lng').value = pos.coords.longitude;
+      status.textContent = '✓ Ubicación guardada';
+      btn.classList.add('sel');
+    },
+    err => {
+      status.textContent = 'No pudimos acceder a tu ubicación (' + err.message + ').';
+    },
+    { enableHighAccuracy: false, timeout: 10000 }
+  );
 };
 
 /* ─── AUTO-GROW TEXTAREAS ───

@@ -265,6 +265,19 @@ def _construir_pesos_compatibilidad(respuestas_raw):
     return {eje: round(v / total, 3) for eje, v in pesos.items()}
 
 
+def _construir_ubicacion(e1):
+    """lat/lng vienen del botón "Usar mi ubicación" del onboarding (geolocalización
+    del navegador) -- es opcional, así que si no están no se arma nada acá.
+    Lo usa geolocalizacion.ordenar_por_cercania() para priorizar con quién se
+    corren las simulaciones primero (ver simulador.simular_matches_por_cercania)."""
+    try:
+        lat = float(e1.get("lat"))
+        lng = float(e1.get("lng"))
+    except (TypeError, ValueError):
+        return None
+    return {"lat": lat, "lng": lng}
+
+
 def _construir_identidad(e1):
     edad_raw = str(e1.get("edad", "")).strip()
     return {
@@ -272,6 +285,7 @@ def _construir_identidad(e1):
         "apodo": e1.get("apodo", ""),
         "edad": int(edad_raw) if edad_raw.isdigit() else None,
         "ciudad": e1.get("ciudad", ""),
+        "ubicacion": _construir_ubicacion(e1),
         "profesion": e1.get("ocupacion", ""),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),
