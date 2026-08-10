@@ -2432,9 +2432,28 @@ onAuthStateChanged(auth, async user => {
     // Intereses — se aplica aunque el array esté vacío (el usuario puede haber sacado todos)
     if (Array.isArray(d.intereses)) {
       document.querySelectorAll('.interest-chip.selected').forEach(c => c.classList.remove('selected'));
+      // Saco los chips personalizados de una carga anterior antes de repoblar,
+      // para no duplicarlos si esto corre más de una vez.
+      document.querySelectorAll('#customChipsList .interest-chip:not(.add-chip)').forEach(c => c.remove());
+
+      const predefinidos = new Set();
       document.querySelectorAll('.interest-chip:not(.add-chip)').forEach(chip => {
-        if (d.intereses.includes(chip.textContent.trim())) chip.classList.add('selected');
+        const texto = chip.textContent.trim();
+        predefinidos.add(texto);
+        if (d.intereses.includes(texto)) chip.classList.add('selected');
       });
+
+      // Los que no matchean ningún chip predefinido son los agregados a mano
+      // con "Agregar otro" -- sin esto se perdían al recargar la página.
+      const addBtn = document.getElementById('addChipBtn');
+      d.intereses.filter(i => !predefinidos.has(i)).forEach(val => {
+        const chip = document.createElement('div');
+        chip.className = 'interest-chip selected';
+        chip.textContent = val;
+        chip.onclick = function() { toggleInterest(this); };
+        addBtn.parentNode.insertBefore(chip, addBtn);
+      });
+
       document.getElementById('interestCount').textContent =
         document.querySelectorAll('.interest-chip.selected').length;
     }

@@ -1716,6 +1716,44 @@
       const inputEl = document.getElementById("chatInput"); // campo de texto donde el usuario escribe
       const plusMenu = document.getElementById("plusMenu"); // menú desplegable del botón +
 
+      /* ── Persistencia del chat con el propio gemelo ──
+         El mensaje de bienvenida es fijo (está en el HTML), pero todo lo que
+         se agrega después (mensajes, tarjetas, quick replies) se va anotando
+         acá para poder reconstruirlo si se recarga la página -- antes se
+         perdía todo apenas se refrescaba. */
+      let chatLog = [];
+      let replayingChat = false;
+      let _saveChatTimer = null;
+
+      function logChatEntry(entry) {
+        if (replayingChat) return;
+        chatLog.push(entry);
+        if (typeof window._db_saveGemeloChat !== "function") return;
+        clearTimeout(_saveChatTimer);
+        _saveChatTimer = setTimeout(
+          () => window._db_saveGemeloChat(chatLog),
+          400,
+        );
+      }
+
+      // Reproduce un log guardado usando las mismas funciones de render de
+      // siempre (addUserMsg, addTwinMsg, etc.) -- replayingChat=true evita
+      // que se vuelvan a loguear mientras se están reconstruyendo.
+      function replayChatLog(log) {
+        replayingChat = true;
+        (log || []).forEach((e) => {
+          if (e.tipo === "user") addUserMsg(e.text);
+          else if (e.tipo === "twin") addTwinMsg(e.text);
+          else if (e.tipo === "recom") addRecomCard(e.title, e.context, e.tips);
+          else if (e.tipo === "feedback") addFeedbackCard(e.question, e.options);
+          else if (e.tipo === "progress")
+            addProgressCard(e.name, e.initials, e.color, e.event, e.pct, e.unlockText);
+          else if (e.tipo === "quickReplies") setQuickReplies(e.opts);
+        });
+        replayingChat = false;
+        scrollBottom(false);
+      }
+
       // Hace scroll hasta el último mensaje del chat
       // Si smooth=true lo hace con animación, si es false va directo (útil al cargar la página)
       function scrollBottom(smooth = true) {
@@ -1760,6 +1798,7 @@
         div.innerHTML = `<span class="msg-time">${t}</span><div class="bubble">${escHtml(text)}</div>`;
         messagesEl.appendChild(div);
         scrollBottom();
+        logChatEntry({ tipo: "user", text });
       }
 
       // Agrega un mensaje del gemelo al chat (burbuja alineada a la izquierda con ícono)
@@ -1774,6 +1813,7 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
+        logChatEntry({ tipo: "twin", text });
         return div;
       }
 
@@ -1821,6 +1861,7 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
+        logChatEntry({ tipo: "recom", title, context, tips });
       }
 
       // Agrega una tarjeta de feedback con botones clicables
@@ -1848,6 +1889,7 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
+        logChatEntry({ tipo: "feedback", question, options });
       }
 
       // Agrega una tarjeta de progreso de afinidad con un match
@@ -1883,6 +1925,7 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
+        logChatEntry({ tipo: "progress", name, initials, color, event, pct, unlockText });
       }
 
       // Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
@@ -2141,6 +2184,7 @@
               `<button class="qr-chip" onclick="sendQuick('${o}')">${o}</button>`,
           )
           .join("");
+        logChatEntry({ tipo: "quickReplies", opts });
       }
 
       // Actualiza los chips de respuesta rápida según el último mensaje enviado por el usuario
@@ -2254,16 +2298,34 @@
         onAuthStateChanged,
         signOut,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      const auth = getAuth(
-        initializeApp({
-          apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
-          authDomain: "pebble-78e95.firebaseapp.com",
-          projectId: "pebble-78e95",
-          storageBucket: "pebble-78e95.firebasestorage.app",
-          messagingSenderId: "56434257024",
-          appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
-        }),
-      );
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      const app = initializeApp({
+        apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+        authDomain: "pebble-78e95.firebaseapp.com",
+        projectId: "pebble-78e95",
+        storageBucket: "pebble-78e95.firebasestorage.app",
+        messagingSenderId: "56434257024",
+        appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+      });
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // El chat con el propio gemelo (mensajes, tarjetas, quick replies) se
+      // guarda como un log ordenado en un solo doc -- se pisa entero en cada
+      // guardado (nunca crece tanto como para que eso sea un problema acá).
+      window._db_saveGemeloChat = function (log) {
+        const user = auth.currentUser;
+        if (!user) return;
+        setDoc(doc(db, "usuarios", user.uid, "gemelo_chat", "data"), {
+          log,
+        }).catch((err) => console.error("Error guardando chat del gemelo:", err));
+      };
+
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
           window.location.href = "./home.html";
@@ -2288,6 +2350,18 @@
         const primerNombre = nombre.trim().split(/\s+/)[0];
         const navName = document.getElementById("navTwinName");
         if (navName) navName.textContent = `Tu gemelo · ${primerNombre}`;
+
+        // Si ya había conversación guardada, se reconstruye encima del
+        // mensaje de bienvenida fijo (que sigue siendo el mismo de siempre).
+        try {
+          const snap = await getDoc(doc(db, "usuarios", user.uid, "gemelo_chat", "data"));
+          if (snap.exists() && Array.isArray(snap.data().log)) {
+            chatLog = snap.data().log;
+            replayChatLog(chatLog);
+          }
+        } catch (err) {
+          console.error("Error cargando chat del gemelo:", err);
+        }
 
         const el = document.getElementById("loadingOverlay");
         if (el) {

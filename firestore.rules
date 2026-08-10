@@ -20,6 +20,12 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
 
+      // Log del chat con el propio gemelo (gemelo.html) -- mensajes, tarjetas
+      // y quick replies, para reconstruirlo si se refresca la página.
+      match /gemelo_chat/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
       // Perfil normalizado del gemelo: lo genera SOLO la Cloud Function
       // (generar_perfil_gemelo, vía Admin SDK) a partir del onboarding.
       // El cliente lo puede leer para mostrarlo, pero nunca escribirlo --
