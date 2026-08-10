@@ -53,6 +53,14 @@ service cloud.firestore {
       }
     }
 
+    // Cola de parejas por evaluar (buscar_parejas_pendientes /
+    // procesar_parejas_pendientes, ambas scheduled functions). Nadie del
+    // cliente necesita leerla ni escribirla todavía -- es un detalle interno
+    // del batch nocturno.
+    match /parejas_pendientes/{parId} {
+      allow read, write: if false;
+    }
+
     // Waitlist pre-registro de index.html (todavía sin cuenta creada).
     match /beta_waitlist/{emailId} {
       allow get: if true;

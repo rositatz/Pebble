@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "parejas_pendientes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "distancia_km", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

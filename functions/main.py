@@ -2,11 +2,12 @@ import random
 
 import firebase_admin
 from firebase_admin import firestore
-from firebase_functions import firestore_fn, https_fn
+from firebase_functions import firestore_fn, https_fn, scheduler_fn
 from firebase_functions.options import set_global_options, MemoryOption
 
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
+from geolocalizacion import distancia_entre_perfiles
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -194,3 +195,135 @@ def buscar_matches_cercanos(request: https_fn.CallableRequest):
         })
 
     return {"matches": resumen}
+
+
+# Firestore no incluye en un orderBy() los docs a los que les falta ese campo
+# -- por eso, cuando no hay distancia (a alguno de los dos le falta ubicación),
+# guardamos este número gigante en vez de None: así ese par igual entra en la
+# cola, pero al ordenar por cercanía en procesar_parejas_pendientes() queda
+# último en vez de desaparecer de la consulta.
+_SIN_UBICACION = 999999
+
+# Cuántas parejas pendientes se simulan por corrida nocturna -- cada una llama
+# a OpenAI varias veces (una por escenario), así que esto es lo que controla
+# cuánto tarda y cuánto cuesta cada corrida. Lo que no entra queda para la
+# corrida siguiente (no se pierde, sigue en estado PENDIENTE).
+LOTE_NOCTURNO = 20
+
+
+@scheduler_fn.on_schedule(schedule="every 60 minutes", timezone="America/Argentina/Buenos_Aires")
+def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
+    """Fase 1 (rápida, sin llamar a OpenAI): recorre todos los usuarios con
+    gemelo generado, arma las parejas que todavía no se evaluaron ni están
+    en cola, y las deja en 'parejas_pendientes' con estado PENDIENTE. La
+    fase 2 (procesar_parejas_pendientes) es la que corre las simulaciones
+    de verdad, de a lotes, para no pasarse del timeout de la función.
+
+    Filtro acá es superficial (mismo "busco") a propósito -- es solo para no
+    generar simulaciones inútiles entre gente que busca cosas incompatibles;
+    el filtro real de compatibilidad lo hace la simulación en sí."""
+
+    db = firestore.client()
+
+    usuarios = []
+    for doc in db.collection_group("gemelo").stream():
+        if doc.id != "perfil":
+            continue
+        uid = doc.reference.parent.parent.id
+        usuarios.append((uid, doc.to_dict()))
+
+    nuevas = 0
+
+    for i in range(len(usuarios)):
+        uid1, perfil1 = usuarios[i]
+        for j in range(i + 1, len(usuarios)):
+            uid2, perfil2 = usuarios[j]
+
+            if (perfil1.get("busco") or "") != (perfil2.get("busco") or ""):
+                continue
+
+            par_id = motor._par_id(uid1, uid2)
+
+            if db.collection("parejas_pendientes").document(par_id).get().exists:
+                continue
+            if db.collection("matches").document(par_id).get().exists:
+                continue
+
+            distancia = distancia_entre_perfiles(perfil1, perfil2)
+
+            db.collection("parejas_pendientes").document(par_id).set({
+                "par_id": par_id,
+                "usuario_1": {"uid": uid1, "nombre": perfil1.get("nombre", "")},
+                "usuario_2": {"uid": uid2, "nombre": perfil2.get("nombre", "")},
+                "distancia_km": round(distancia, 1) if distancia is not None else _SIN_UBICACION,
+                "estado": "PENDIENTE",
+                "creado": firestore.SERVER_TIMESTAMP,
+            })
+            nuevas += 1
+
+    print(f"buscar_parejas_pendientes: {nuevas} parejas nuevas encoladas.")
+
+
+@scheduler_fn.on_schedule(
+    schedule="0 3 * * *",
+    timezone="America/Argentina/Buenos_Aires",
+    secrets=["OPENAI_API_KEY"],
+    timeout_sec=3600,
+    memory=MemoryOption.MB_512,
+)
+def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
+    """Fase 2: toma un lote de 'parejas_pendientes' (las más cercanas
+    geográficamente primero) y corre la simulación real para cada una --
+    esto es lo que realmente llama a OpenAI, por eso corre de noche y en
+    lotes chicos en vez de todas juntas.
+
+    LOTE_NOCTURNO pares por corrida -- si queda cola, la siguiente corrida
+    (mañana) sigue con las que falten. Cada par se procesa en su propio
+    try/except para que un error puntual (ej: un timeout de OpenAI) no tire
+    abajo el resto del lote."""
+
+    db = firestore.client()
+
+    pendientes = (
+        db.collection("parejas_pendientes")
+        .where("estado", "==", "PENDIENTE")
+        .order_by("distancia_km")
+        .limit(LOTE_NOCTURNO)
+        .stream()
+    )
+
+    procesadas, con_error = 0, 0
+
+    for doc in pendientes:
+        data = doc.to_dict()
+        uid1 = data["usuario_1"]["uid"]
+        uid2 = data["usuario_2"]["uid"]
+
+        try:
+            doc1 = db.collection("usuarios").document(uid1).collection("gemelo").document("perfil").get()
+            doc2 = db.collection("usuarios").document(uid2).collection("gemelo").document("perfil").get()
+            if not doc1.exists or not doc2.exists:
+                raise ValueError("A alguno de los dos ya no le existe el perfil de gemelo.")
+
+            resultado = motor.simular_relacion_completa(uid1, doc1.to_dict(), uid2, doc2.to_dict())
+
+            par_ref = db.collection("matches").document(data["par_id"])
+            for registro in resultado["simulaciones"]:
+                par_ref.collection("simulaciones").add(registro)
+            par_ref.set({
+                "usuario_1": data["usuario_1"],
+                "usuario_2": data["usuario_2"],
+                "ultimo_score": resultado["compatibilidad_promedio"],
+                "supera_umbral": resultado["supera_umbral"],
+                "distancia_km": data.get("distancia_km"),
+                "actualizado": resultado["simulaciones"][-1]["fecha"],
+            }, merge=True)
+
+            doc.reference.update({"estado": "COMPLETADO"})
+            procesadas += 1
+
+        except Exception as e:
+            doc.reference.update({"estado": "ERROR", "error": str(e)})
+            con_error += 1
+
+    print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error.")
