@@ -2507,6 +2507,8 @@
         getDoc,
         collection,
         getDocs,
+        query,
+        where,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const app = initializeApp({
@@ -2540,15 +2542,15 @@
         }
 
         // Actualizar data-active en las cards según chats reales en Firestore
-        // (usuarios/{uid}/chats/{id}, no campos sueltos chats_{id}_{modo})
+        // (conexiones/{parId}, doc compartido con la otra persona)
         try {
-          const chatsSnap = await getDocs(
-            collection(db, "usuarios", user.uid, "chats"),
-          );
+          const [comoUno, comoDos] = await Promise.all([
+            getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", user.uid))),
+            getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", user.uid))),
+          ]);
           const chatsMap = {};
-          chatsSnap.forEach((d) => {
-            chatsMap[d.id] = d.data();
-          });
+          comoUno.forEach((d) => { chatsMap[d.data().usuario_2.uid] = d.data(); });
+          comoDos.forEach((d) => { chatsMap[d.data().usuario_1.uid] = d.data(); });
 
           document.querySelectorAll(".match-card[data-id]").forEach((card) => {
             const id = card.dataset.id;

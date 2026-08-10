@@ -1957,9 +1957,18 @@
         doc,
         getDoc,
         setDoc,
+        updateDoc,
         collection,
         getDocs,
+        query,
+        where,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      // Mismo esquema de id que usa el backend (motor._par_id en Python) y
+      // chats.html: un solo id por pareja, sin importar quién lo calcula.
+      function parId(a, b) {
+        return String(a) < String(b) ? `${a}_${b}` : `${b}_${a}`;
+      }
 
       const firebaseConfig = {
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -2092,13 +2101,16 @@
               else mostrarPip(id);
             });
 
-            const chatsSnap = await getDocs(
-              collection(db, "usuarios", uid, "chats"),
-            );
+            // Los chats viven en conexiones/{parId} (un doc compartido por
+            // pareja) -- se arma chatsMap keyed por el id de la OTRA persona,
+            // igual que antes, para no tocar actualizarBadgesSecciones.
+            const [comoUno, comoDos] = await Promise.all([
+              getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", uid))),
+              getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", uid))),
+            ]);
             const chatsMap = {};
-            chatsSnap.forEach((d) => {
-              chatsMap[d.id] = d.data();
-            });
+            comoUno.forEach((d) => { chatsMap[d.data().usuario_2.uid] = d.data(); });
+            comoDos.forEach((d) => { chatsMap[d.data().usuario_1.uid] = d.data(); });
 
             actualizarBadgesSecciones(data, chatsMap);
           } catch (e) {
@@ -2134,10 +2146,10 @@
           }
 
           // Verificar si ya existe un chat real con esta persona
-          // (usuarios/{uid}/chats/{matchId}, no el campo suelto chats_{matchId}_real)
+          // (conexiones/{parId}, doc compartido con la otra persona)
           try {
             const chatSnap = await getDoc(
-              doc(db, "usuarios", uid, "chats", matchId),
+              doc(db, "conexiones", parId(uid, matchId)),
             );
             const c = chatSnap.exists() ? chatSnap.data() : {};
             const hasChat =

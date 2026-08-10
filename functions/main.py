@@ -97,7 +97,7 @@ def simular_situacion(request: https_fn.CallableRequest):
 
     registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=2, escenario=escenario)
 
-    par_ref = db.collection("matches").document(registro["par_id"])
+    par_ref = db.collection("conexiones").document(registro["par_id"])
     par_ref.collection("simulaciones").add(registro)
     par_ref.set({
         "usuario_1": registro["usuario_1"],
@@ -172,7 +172,7 @@ def buscar_matches_cercanos(request: https_fn.CallableRequest):
     resumen = []
     for resultado in resultados:
         uid_candidato = resultado["uid_candidato"]
-        par_ref = db.collection("matches").document(motor._par_id(uid, uid_candidato))
+        par_ref = db.collection("conexiones").document(motor._par_id(uid, uid_candidato))
 
         for registro in resultado["simulaciones"]:
             par_ref.collection("simulaciones").add(registro)
@@ -246,7 +246,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
             if db.collection("parejas_pendientes").document(par_id).get().exists:
                 continue
-            if db.collection("matches").document(par_id).get().exists:
+            if db.collection("conexiones").document(par_id).get().exists:
                 continue
 
             distancia = distancia_entre_perfiles(perfil1, perfil2)
@@ -307,7 +307,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
             resultado = motor.simular_relacion_completa(uid1, doc1.to_dict(), uid2, doc2.to_dict())
 
-            par_ref = db.collection("matches").document(data["par_id"])
+            par_ref = db.collection("conexiones").document(data["par_id"])
             for registro in resultado["simulaciones"]:
                 par_ref.collection("simulaciones").add(registro)
             par_ref.set({

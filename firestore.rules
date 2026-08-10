@@ -15,14 +15,11 @@ service cloud.firestore {
 
       // Chats guardados por persona (chats.html, matches.html, home.html).
       // Antes eran campos sueltos chats_{id}_{modo} / leido_{id}_{modo} en
-      // este mismo doc; ahora cada conversación es un doc propio acá.
+      // este mismo doc; ahora cada conversación es un doc propio acá. El chat
+      // con el propio gemelo (gemelo.html) vive acá también, en el doc de id
+      // fijo "gemelo_propio" -- no es una conversación con otra persona, así
+      // que no tiene modos real/gemelo, solo un log.
       match /chats/{personaId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
-      }
-
-      // Log del chat con el propio gemelo (gemelo.html) -- mensajes, tarjetas
-      // y quick replies, para reconstruirlo si se refresca la página.
-      match /gemelo_chat/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
 
@@ -36,14 +33,37 @@ service cloud.firestore {
       }
     }
 
-    // Resultado de las simulaciones entre gemelos (simular_situacion). Las
-    // escribe solo la Cloud Function; las pueden leer los dos usuarios
-    // involucrados en esa pareja.
-    match /matches/{parId} {
+    // Conexión entre dos usuarios: identidad de la pareja + resultado de las
+    // simulaciones (usuario_1/usuario_2/ultimo_score/supera_umbral/distancia_km,
+    // que solo escribe la Cloud Function vía Admin SDK) + el chat entre ellos
+    // (real/gemelo, que sí escriben los propios usuarios desde chats.html).
+    //
+    // Antes cada usuario tenía su propia copia de cada chat en
+    // usuarios/{uid}/chats/{personaId} -- ahora es un solo doc compartido acá,
+    // con id = par_id (mismo esquema que ya usaba motor._par_id en el backend).
+    match /conexiones/{parId} {
       allow read: if request.auth != null &&
         (request.auth.uid == resource.data.usuario_1.uid ||
          request.auth.uid == resource.data.usuario_2.uid);
-      allow write: if false;
+
+      // Un usuario puede crear la conexión si todavía no existe (ej: le
+      // escribe a alguien antes de que corriera ninguna simulación) -- pero
+      // solo puede setear su identidad y el chat, nunca los campos de score
+      // (esos SIEMPRE los pone la Cloud Function, create o merge posterior).
+      allow create: if request.auth != null &&
+        (request.auth.uid == request.resource.data.usuario_1.uid ||
+         request.auth.uid == request.resource.data.usuario_2.uid) &&
+        request.resource.data.keys().hasOnly(['usuario_1', 'usuario_2', 'real', 'gemelo']);
+
+      // Para actualizar una conexión ya existente, un usuario de la pareja
+      // solo puede tocar los campos de chat -- nunca el score ni de quién es
+      // la pareja.
+      allow update: if request.auth != null &&
+        (request.auth.uid == resource.data.usuario_1.uid ||
+         request.auth.uid == resource.data.usuario_2.uid) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['real', 'gemelo']);
+
+      allow delete: if false;
 
       match /simulaciones/{simId} {
         allow read: if request.auth != null &&

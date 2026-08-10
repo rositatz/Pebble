@@ -2318,10 +2318,13 @@
       // El chat con el propio gemelo (mensajes, tarjetas, quick replies) se
       // guarda como un log ordenado en un solo doc -- se pisa entero en cada
       // guardado (nunca crece tanto como para que eso sea un problema acá).
+      // Vive en la misma subcolección "chats" que usa chats.html para las
+      // conversaciones con otras personas, con un id fijo reservado ("gemelo_propio")
+      // que nunca va a chocar con un uid real de otra persona.
       window._db_saveGemeloChat = function (log) {
         const user = auth.currentUser;
         if (!user) return;
-        setDoc(doc(db, "usuarios", user.uid, "gemelo_chat", "data"), {
+        setDoc(doc(db, "usuarios", user.uid, "chats", "gemelo_propio"), {
           log,
         }).catch((err) => console.error("Error guardando chat del gemelo:", err));
       };
@@ -2354,7 +2357,7 @@
         // Si ya había conversación guardada, se reconstruye encima del
         // mensaje de bienvenida fijo (que sigue siendo el mismo de siempre).
         try {
-          const snap = await getDoc(doc(db, "usuarios", user.uid, "gemelo_chat", "data"));
+          const snap = await getDoc(doc(db, "usuarios", user.uid, "chats", "gemelo_propio"));
           if (snap.exists() && Array.isArray(snap.data().log)) {
             chatLog = snap.data().log;
             replayChatLog(chatLog);

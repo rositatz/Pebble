@@ -2947,7 +2947,15 @@
         updateDoc,
         collection,
         getDocs,
+        query,
+        where,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      // Mismo esquema de id que usa el backend (motor._par_id en Python):
+      // un solo id por pareja, sin importar quién de los dos lo calcula.
+      function parId(a, b) {
+        return String(a) < String(b) ? `${a}_${b}` : `${b}_${a}`;
+      }
 
       const app = initializeApp({
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -2983,9 +2991,11 @@
         uid = user.uid;
 
         // ── Cargar conversaciones guardadas de Firestore ──
-        // Los chats viven en la subcolección usuarios/{uid}/chats/{personaId}, no
-        // como campos sueltos (chats_sofia_real, leido_sofia_real...) en el doc
-        // principal -- así no se acerca al límite de 1MB y se puede consultar.
+        // Los chats viven en conexiones/{parId}, un solo doc compartido por
+        // pareja (antes cada usuario tenía su propia copia en
+        // usuarios/{uid}/chats/{personaId}) -- se arma chatsMap con la misma
+        // forma de antes (keyed por el id de la OTRA persona) para no tener
+        // que tocar el resto del código que la consume.
         try {
           const snap = await getDoc(doc(db, "usuarios", uid));
           if (snap.exists() && snap.data().notifs_leidas) {
@@ -2993,12 +3003,16 @@
             if (pip) pip.style.display = "none";
           }
 
-          const chatsSnap = await getDocs(
-            collection(db, "usuarios", uid, "chats"),
-          );
+          const [comoUno, comoDos] = await Promise.all([
+            getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", uid))),
+            getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", uid))),
+          ]);
           const chatsMap = {};
-          chatsSnap.forEach((d) => {
-            chatsMap[d.id] = d.data();
+          comoUno.forEach((d) => {
+            chatsMap[d.data().usuario_2.uid] = d.data();
+          });
+          comoDos.forEach((d) => {
+            chatsMap[d.data().usuario_1.uid] = d.data();
           });
 
           ["sofia", "mateo", "valentina", "lucia", "agustin"].forEach((id) => {
@@ -3036,11 +3050,20 @@
         }
       });
 
+      // Arma el par usuario_1/usuario_2 en orden estable (el más chico de los
+      // dos uid primero) -- así siempre queda igual sin importar cuál de los
+      // dos usuarios está escribiendo, que es lo que espera el backend.
+      function parUsuarios(personaId) {
+        return String(uid) < String(personaId)
+          ? { usuario_1: { uid }, usuario_2: { uid: personaId } }
+          : { usuario_1: { uid: personaId }, usuario_2: { uid } };
+      }
+
       // Marca ambos modos (gemelo y real) de una conversación como leídos en Firestore
       // Se llama al abrir el panel de chat para eliminar los badges de no leídos
       window._db_marcarLeido = async (personaId) => {
         if (!uid) return;
-        const ref = doc(db, "usuarios", uid, "chats", personaId);
+        const ref = doc(db, "conexiones", parId(uid, personaId));
         try {
           // updateDoc SÍ interpreta 'real.leido' como ruta anidada (setDoc con
           // merge:true no -- crea un campo llamado literalmente "real.leido").
@@ -3049,22 +3072,22 @@
           // El documento todavía no existe (primera vez que se toca esta conversación)
           await setDoc(
             ref,
-            { real: { leido: true }, gemelo: { leido: true } },
+            { ...parUsuarios(personaId), real: { leido: true }, gemelo: { leido: true } },
             { merge: true },
           );
         }
       };
 
       // Guarda el array completo de mensajes de una conversación en Firestore,
-      // en usuarios/{uid}/chats/{personaId} con la forma { real: {...}, gemelo: {...} }
+      // en conexiones/{parId} con la forma { usuario_1, usuario_2, real: {...}, gemelo: {...} }
       window._db_saveChat = async (personaId, mode, msgs) => {
         if (!uid) return;
-        const ref = doc(db, "usuarios", uid, "chats", personaId);
+        const ref = doc(db, "conexiones", parId(uid, personaId));
         try {
           await updateDoc(ref, { [`${mode}.msgs`]: msgs });
         } catch (e) {
           // El documento todavía no existe (primer mensaje con esta persona)
-          await setDoc(ref, { [mode]: { msgs } }, { merge: true });
+          await setDoc(ref, { ...parUsuarios(personaId), [mode]: { msgs } }, { merge: true });
         }
       };
     </script>
