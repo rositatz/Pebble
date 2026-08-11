@@ -212,8 +212,10 @@ _SIN_UBICACION = 999999
 # Cuántas parejas pendientes se simulan por corrida nocturna -- cada una llama
 # a OpenAI varias veces (una por escenario), así que esto es lo que controla
 # cuánto tarda y cuánto cuesta cada corrida. Lo que no entra queda para la
-# corrida siguiente (no se pierde, sigue en estado PENDIENTE).
-LOTE_NOCTURNO = 20
+# corrida siguiente (no se pierde, sigue en estado PENDIENTE). 10 deja margen
+# cómodo contra el límite de 1800s (30 min) de las funciones programadas,
+# incluso en el caso más caro (pareja "Algo serio", ~9 escenarios).
+LOTE_NOCTURNO = 10
 
 
 @scheduler_fn.on_schedule(schedule="every 60 minutes", timezone="America/Argentina/Buenos_Aires")
@@ -273,7 +275,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     schedule="0 3 * * *",
     timezone="America/Argentina/Buenos_Aires",
     secrets=["OPENAI_API_KEY"],
-    timeout_sec=3600,
+    timeout_sec=1800,  # 30 min -- el máximo permitido para funciones programadas
     memory=MemoryOption.MB_512,
 )
 def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
