@@ -1518,7 +1518,7 @@
           </svg>
           <span class="notif-pip"></span>
         </a>
-        <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">M</a>
       </div>
     </nav>
 
@@ -2957,6 +2957,21 @@
         return String(a) < String(b) ? `${a}_${b}` : `${b}_${a}`;
       }
 
+      // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
+      // ícono de arriba a la derecha en vez de la letra fija.
+      function renderNavAvatar(avatarFoto) {
+        const el = document.getElementById("nav-avatar");
+        if (!el) return;
+        if (avatarFoto) {
+          el.style.backgroundImage = `url(${avatarFoto})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+          el.textContent = "";
+        } else {
+          el.style.backgroundImage = "";
+        }
+      }
+
       const app = initializeApp({
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
         authDomain: "pebble-78e95.firebaseapp.com",
@@ -2998,21 +3013,26 @@
         // que tocar el resto del código que la consume.
         try {
           const snap = await getDoc(doc(db, "usuarios", uid));
-          if (snap.exists() && snap.data().notifs_leidas) {
+          const datosUsuario = snap.exists() ? snap.data() : {};
+          renderNavAvatar(datosUsuario.avatarFoto);
+          if (datosUsuario.notifs_leidas) {
             const pip = document.querySelector(".nav-icon-btn .notif-pip");
             if (pip) pip.style.display = "none";
           }
 
-          const [comoUno, comoDos] = await Promise.all([
-            getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", uid))),
-            getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", uid))),
-          ]);
+          // Una sola query con array-contains -- probado con el emulador que
+          // dos queries separadas por usuario_1.uid/usuario_2.uid (con una
+          // regla que compara ambos con OR) fallan con PERMISSION_DENIED,
+          // aunque los datos estén bien. array-contains + "participantes"
+          // evita el problema de raíz.
+          const conexionesSnap = await getDocs(
+            query(collection(db, "conexiones"), where("participantes", "array-contains", uid)),
+          );
           const chatsMap = {};
-          comoUno.forEach((d) => {
-            chatsMap[d.data().usuario_2.uid] = d.data();
-          });
-          comoDos.forEach((d) => {
-            chatsMap[d.data().usuario_1.uid] = d.data();
+          conexionesSnap.forEach((d) => {
+            const data = d.data();
+            const otroId = data.usuario_1.uid === uid ? data.usuario_2.uid : data.usuario_1.uid;
+            chatsMap[otroId] = data;
           });
 
           ["sofia", "mateo", "valentina", "lucia", "agustin"].forEach((id) => {
@@ -3053,10 +3073,12 @@
       // Arma el par usuario_1/usuario_2 en orden estable (el más chico de los
       // dos uid primero) -- así siempre queda igual sin importar cuál de los
       // dos usuarios está escribiendo, que es lo que espera el backend.
+      // "participantes" es lo que usan las reglas y la query de carga.
       function parUsuarios(personaId) {
-        return String(uid) < String(personaId)
+        const base = String(uid) < String(personaId)
           ? { usuario_1: { uid }, usuario_2: { uid: personaId } }
           : { usuario_1: { uid: personaId }, usuario_2: { uid } };
+        return { ...base, participantes: [uid, personaId] };
       }
 
       // Marca ambos modos (gemelo y real) de una conversación como leídos en Firestore

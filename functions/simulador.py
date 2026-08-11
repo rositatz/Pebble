@@ -25,9 +25,13 @@ def client():
     return _client
 
 
-# Cada escenario tiene "tipos_relacion": para qué opciones del campo "busco"
-# (perfil.html: Algo serio / Algo casual / Nuevas amistades / Sin definir) es
-# relevante correrlo. Ver escenarios_para_tipo() más abajo, que filtra por esto.
+# Por ahora solo se prueba con "Algo serio" -- se sacaron los escenarios que
+# eran exclusivos de "Algo casual"/"Nuevas amistades" (planes de finde, humor
+# y coqueteo, hobbies para compartir, buena onda en grupo) y se dejó
+# "tipos_relacion" en ["Algo serio"] en todos. El mecanismo de filtrado
+# (escenarios_para_tipo, más abajo) queda igual -- cuando se vuelva a testear
+# con otros tipos de relación, alcanza con agregar escenarios nuevos con su
+# tipo correspondiente, no hace falta tocar la lógica.
 escenarios_db = [
 
     {
@@ -53,7 +57,7 @@ escenarios_db = [
         """,
 
         "tono": "Intelectual, relajado y curioso.",
-        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -179,7 +183,7 @@ escenarios_db = [
         """,
 
         "tono": "Motivador, reflexivo y maduro.",
-        "tipos_relacion": ["Algo serio", "Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -229,7 +233,7 @@ escenarios_db = [
         """,
 
         "tono": "Relajado, emocional y espontáneo.",
-        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -254,107 +258,7 @@ escenarios_db = [
         """,
 
         "tono": "Reflexivo, relajado y cercano.",
-        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
-    },
-
-    {
-        "titulo": "Planes de finde y salidas",
-
-        "contexto": """
-        La conversación gira en torno a qué hacen un sábado a la noche,
-        salidas espontáneas, previas, recitales o planes de último momento.
-        Es una charla liviana, sin hablar de futuro ni de compromiso.
-        """,
-
-        "objetivo": [
-            "Evaluar compatibilidad de planes y ritmo social",
-            "Medir espontaneidad",
-            "Detectar química inmediata",
-            "Evaluar sentido del humor"
-        ],
-
-        "tension": """
-        Pueden chocar los ritmos: alguien más de planificar
-        contra alguien más de improvisar sobre la marcha.
-        """,
-
-        "tono": "Divertido, liviano y espontáneo.",
-        "tipos_relacion": ["Algo casual"]
-    },
-
-    {
-        "titulo": "Códigos de humor y coqueteo",
-
-        "contexto": """
-        Ambos empiezan a tirar chistes y ver si hay buena onda y química.
-        La charla se mueve con soltura entre bromas, indirectas
-        y algo de coqueteo, sin ninguna presión de que "vaya a algún lado".
-        """,
-
-        "objetivo": [
-            "Medir compatibilidad de humor",
-            "Evaluar química y coqueteo",
-            "Detectar soltura conversacional",
-            "Medir capacidad de seguir el juego sin incomodarse"
-        ],
-
-        "tension": """
-        El humor de uno puede no aterrizar en el otro,
-        o el nivel de coqueteo puede no estar parejo.
-        """,
-
-        "tono": "Juguetón, picante y relajado.",
-        "tipos_relacion": ["Algo casual"]
-    },
-
-    {
-        "titulo": "Hobbies y planes para compartir",
-
-        "contexto": """
-        Hablan de hobbies, deportes, juegos o series que les gustan,
-        pensando en cosas que podrían hacer juntos como amigos.
-        No hay ninguna carga romántica en la charla.
-        """,
-
-        "objetivo": [
-            "Detectar intereses en común",
-            "Evaluar compatibilidad de planes de amistad",
-            "Medir iniciativa social",
-            "Analizar afinidad de sentido del humor"
-        ],
-
-        "tension": """
-        Pueden no compartir casi ningún hobby,
-        o tener ritmos de vida social muy distintos.
-        """,
-
-        "tono": "Natural, cómodo y sin presión.",
-        "tipos_relacion": ["Nuevas amistades"]
-    },
-
-    {
-        "titulo": "Buena onda en grupo",
-
-        "contexto": """
-        Charlan sobre cómo son en una juntada con amigos, si son de sumar
-        gente nueva al grupo o prefieren círculos chicos, y qué tipo de
-        energía aportan cuando están con otras personas.
-        """,
-
-        "objetivo": [
-            "Evaluar compatibilidad social",
-            "Medir apertura a integrarse a nuevos grupos",
-            "Detectar estilo de vínculo entre amigos",
-            "Analizar empatía grupal"
-        ],
-
-        "tension": """
-        Uno puede ser mucho más sociable/expansivo que el otro,
-        o tener expectativas distintas de qué tan seguido verse.
-        """,
-
-        "tono": "Cálido, sociable y genuino.",
-        "tipos_relacion": ["Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     }
 ]
 

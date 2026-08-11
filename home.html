@@ -1884,6 +1884,23 @@
         document.getElementById("nav-avatar").textContent =
           nombre[0].toUpperCase();
       }
+
+      // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
+      // ícono de arriba a la derecha en vez de la inicial del nombre.
+      function renderNavAvatar(avatarFoto) {
+        const el = document.getElementById("nav-avatar");
+        if (avatarFoto) {
+          el.style.backgroundImage = `url(${avatarFoto})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+          el.textContent = "";
+        } else {
+          el.style.backgroundImage = "";
+          el.textContent = (
+            document.getElementById("user-name").textContent || "U"
+          )[0].toUpperCase();
+        }
+      }
       function switchTab(tab) {
         const isSignin = tab === "signin";
         document
@@ -2096,6 +2113,7 @@
           try {
             const snap = await getDoc(doc(db, "usuarios", uid));
             const data = snap.exists() ? snap.data() : {};
+            renderNavAvatar(data.avatarFoto);
             MATCH_IDS.forEach((id) => {
               if (data[`match_visto_${id}`]) ocultarPip(id);
               else mostrarPip(id);
@@ -2104,13 +2122,19 @@
             // Los chats viven en conexiones/{parId} (un doc compartido por
             // pareja) -- se arma chatsMap keyed por el id de la OTRA persona,
             // igual que antes, para no tocar actualizarBadgesSecciones.
-            const [comoUno, comoDos] = await Promise.all([
-              getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", uid))),
-              getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", uid))),
-            ]);
+            // Una sola query con array-contains: dos queries separadas por
+            // usuario_1.uid/usuario_2.uid con una regla OR entre ambos campos
+            // fallan con PERMISSION_DENIED en Firestore (probado con el
+            // emulador), aunque los datos estén bien.
+            const conexionesSnap = await getDocs(
+              query(collection(db, "conexiones"), where("participantes", "array-contains", uid)),
+            );
             const chatsMap = {};
-            comoUno.forEach((d) => { chatsMap[d.data().usuario_2.uid] = d.data(); });
-            comoDos.forEach((d) => { chatsMap[d.data().usuario_1.uid] = d.data(); });
+            conexionesSnap.forEach((d) => {
+              const data = d.data();
+              const otroId = data.usuario_1.uid === uid ? data.usuario_2.uid : data.usuario_1.uid;
+              chatsMap[otroId] = data;
+            });
 
             actualizarBadgesSecciones(data, chatsMap);
           } catch (e) {

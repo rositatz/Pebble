@@ -41,34 +41,40 @@ service cloud.firestore {
     // Antes cada usuario tenía su propia copia de cada chat en
     // usuarios/{uid}/chats/{personaId} -- ahora es un solo doc compartido acá,
     // con id = par_id (mismo esquema que ya usaba motor._par_id en el backend).
+    //
+    // "participantes" (array [uid1, uid2]) existe SOLO para que las reglas y
+    // las queries de lista puedan comprobar "soy parte de esta conexión" con
+    // una condición sola (array-contains / in), no un OR entre usuario_1.uid
+    // y usuario_2.uid -- probado con el emulador: ese OR (comparando dos
+    // campos distintos) hace que Firestore rechace con PERMISSION_DENIED
+    // cualquier query que solo filtre por uno de los dos, aunque los datos
+    // estén bien. Es una limitación real y documentada de Firestore con
+    // queries de lista + reglas con OR entre campos, no algo que se pueda
+    // evitar reescribiendo la regla de otra forma.
     match /conexiones/{parId} {
       allow read: if request.auth != null &&
-        (request.auth.uid == resource.data.usuario_1.uid ||
-         request.auth.uid == resource.data.usuario_2.uid);
+        request.auth.uid in resource.data.participantes;
 
       // Un usuario puede crear la conexión si todavía no existe (ej: le
       // escribe a alguien antes de que corriera ninguna simulación) -- pero
       // solo puede setear su identidad y el chat, nunca los campos de score
       // (esos SIEMPRE los pone la Cloud Function, create o merge posterior).
       allow create: if request.auth != null &&
-        (request.auth.uid == request.resource.data.usuario_1.uid ||
-         request.auth.uid == request.resource.data.usuario_2.uid) &&
-        request.resource.data.keys().hasOnly(['usuario_1', 'usuario_2', 'real', 'gemelo']);
+        request.auth.uid in request.resource.data.participantes &&
+        request.resource.data.keys().hasOnly(['usuario_1', 'usuario_2', 'participantes', 'real', 'gemelo']);
 
       // Para actualizar una conexión ya existente, un usuario de la pareja
-      // solo puede tocar los campos de chat -- nunca el score ni de quién es
-      // la pareja.
+      // solo puede tocar los campos de chat -- nunca el score, la pareja, ni
+      // la lista de participantes.
       allow update: if request.auth != null &&
-        (request.auth.uid == resource.data.usuario_1.uid ||
-         request.auth.uid == resource.data.usuario_2.uid) &&
+        request.auth.uid in resource.data.participantes &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['real', 'gemelo']);
 
       allow delete: if false;
 
       match /simulaciones/{simId} {
         allow read: if request.auth != null &&
-          (request.auth.uid == resource.data.usuario_1.uid ||
-           request.auth.uid == resource.data.usuario_2.uid);
+          request.auth.uid in get(/databases/$(database)/documents/conexiones/$(parId)).data.participantes;
         allow write: if false;
       }
     }

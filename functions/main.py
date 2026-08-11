@@ -107,6 +107,7 @@ def simular_situacion(request: https_fn.CallableRequest):
     par_ref.set({
         "usuario_1": registro["usuario_1"],
         "usuario_2": registro["usuario_2"],
+        "participantes": [uid1, uid2],
         "ultimo_score": registro["score"]["compatibilidad_total"],
         "supera_umbral": registro["supera_umbral"],
         "actualizado": registro["fecha"],
@@ -185,6 +186,7 @@ def buscar_matches_cercanos(request: https_fn.CallableRequest):
         par_ref.set({
             "usuario_1": {"uid": uid, "nombre": perfil_propio.get("nombre", "")},
             "usuario_2": {"uid": uid_candidato, "nombre": candidatos_por_uid.get(uid_candidato, {}).get("nombre", "")},
+            "participantes": [uid, uid_candidato],
             "ultimo_score": resultado["compatibilidad_promedio"],
             "supera_umbral": resultado["supera_umbral"],
             "distancia_km": resultado["distancia_km"],
@@ -320,6 +322,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             par_ref.set({
                 "usuario_1": data["usuario_1"],
                 "usuario_2": data["usuario_2"],
+                "participantes": [uid1, uid2],
                 "ultimo_score": resultado["compatibilidad_promedio"],
                 "supera_umbral": resultado["supera_umbral"],
                 "distancia_km": data.get("distancia_km"),

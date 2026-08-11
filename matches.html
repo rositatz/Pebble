@@ -1123,7 +1123,7 @@
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </button>
-        <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">M</a>
       </div>
     </nav>
 
@@ -2511,6 +2511,21 @@
         where,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+      // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
+      // ícono de arriba a la derecha en vez de la letra fija.
+      function renderNavAvatar(avatarFoto) {
+        const el = document.getElementById("nav-avatar");
+        if (!el) return;
+        if (avatarFoto) {
+          el.style.backgroundImage = `url(${avatarFoto})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+          el.textContent = "";
+        } else {
+          el.style.backgroundImage = "";
+        }
+      }
+
       const app = initializeApp({
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
         authDomain: "pebble-78e95.firebaseapp.com",
@@ -2541,16 +2556,30 @@
           return;
         }
 
-        // Actualizar data-active en las cards según chats reales en Firestore
-        // (conexiones/{parId}, doc compartido con la otra persona)
+        // Foto de perfil en el ícono de arriba a la derecha
         try {
-          const [comoUno, comoDos] = await Promise.all([
-            getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", user.uid))),
-            getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", user.uid))),
-          ]);
+          const userSnap = await getDoc(doc(db, "usuarios", user.uid));
+          renderNavAvatar(userSnap.exists() ? userSnap.data().avatarFoto : null);
+        } catch (e) {
+          console.warn("Error cargando avatar:", e);
+        }
+
+        // Actualizar data-active en las cards según chats reales en Firestore
+        // (conexiones/{parId}, doc compartido con la otra persona). Una sola
+        // query con array-contains: dos queries separadas por
+        // usuario_1.uid/usuario_2.uid con una regla OR entre ambos campos
+        // fallan con PERMISSION_DENIED en Firestore (probado con el
+        // emulador), aunque los datos estén bien.
+        try {
+          const conexionesSnap = await getDocs(
+            query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+          );
           const chatsMap = {};
-          comoUno.forEach((d) => { chatsMap[d.data().usuario_2.uid] = d.data(); });
-          comoDos.forEach((d) => { chatsMap[d.data().usuario_1.uid] = d.data(); });
+          conexionesSnap.forEach((d) => {
+            const data = d.data();
+            const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
+            chatsMap[otroId] = data;
+          });
 
           document.querySelectorAll(".match-card[data-id]").forEach((card) => {
             const id = card.dataset.id;
