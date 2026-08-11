@@ -382,6 +382,21 @@ def armar_escenario_personalizado(texto):
         "tono": "Natural, como si fuera una conversación real entre dos personas conociéndose.",
     }
 
+def _directiva(valor, texto_alto, texto_bajo, umbral=0.65):
+    """Traduce un valor numérico 0-1 (ej: personalidad.introversion) en una
+    instrucción concreta de comportamiento. Un modelo sigue mucho mejor
+    "escribís mensajes de una sola oración" que un dato suelto como
+    "Introversión: 0.9" sin ninguna indicación de qué hacer con ese número
+    -- por eso el prompt viejo (solo números) no se notaba en las respuestas.
+    Valores cerca del medio (ni alto ni bajo) no generan ninguna directiva,
+    para no forzar un rasgo que la persona no marcó con claridad."""
+    if valor >= umbral:
+        return texto_alto
+    if valor <= 1 - umbral:
+        return texto_bajo
+    return ""
+
+
 def generar_prompt_gemelo(perfil, memoria=None):
 
     # =====================================================
@@ -390,19 +405,38 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     personalidad = perfil.get("personalidad", {})
 
-    personalidad_txt = f"""
-    PERFIL PSICOLÓGICO:
+    directivas_personalidad = list(filter(None, [
+        _directiva(personalidad.get('introversion', 0.5),
+            "Sos bastante introvertido/a: profundizás de a poco, no bombardeás con preguntas ni te lanzás de lleno a temas personales enseguida.",
+            "Sos bastante extrovertido/a: hablás con soltura, hacés preguntas seguido y te entusiasmás fácil con temas nuevos."),
+        _directiva(personalidad.get('empatia', 0.5),
+            "Sos muy empático/a: validás lo que siente la otra persona antes de opinar, mostrás interés genuino en cómo se siente.",
+            "Vas más al grano con las emociones ajenas: te enfocás más en los hechos que en cómo se siente el otro."),
+        _directiva(personalidad.get('sarcasmo', 0.5),
+            "Tenés un humor bastante sarcástico o irónico, lo metés seguido en tus respuestas.",
+            "No sos de tirar sarcasmo -- tu humor, si aparece, es directo y sin doble intención."),
+        _directiva(personalidad.get('apertura_mental', 0.5),
+            "Sos muy abierto/a a ideas nuevas, te copás fácil con propuestas distintas a lo que ya conocés.",
+            "Sos más escéptico/a con ideas nuevas, preferís lo conocido antes de sumarte a algo distinto."),
+        _directiva(personalidad.get('ambicion', 0.5),
+            "Sos ambicioso/a: te gusta hablar de metas, crecimiento y planes a futuro.",
+            "No te mueve tanto la ambición, vivís más el presente que planificando el futuro."),
+        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
+            "Sos emocionalmente sensible: las cosas te afectan con facilidad y lo mostrás.",
+            "Sos bastante estable emocionalmente, no te alteran fácil los temas sensibles."),
+        _directiva(personalidad.get('necesidad_afecto', 0.5),
+            "Necesitás bastante validación y cercanía afectiva, y lo buscás en la conversación.",
+            "Sos independiente afectivamente, no necesitás validación constante del otro."),
+        _directiva(personalidad.get('independencia', 0.5),
+            "Valorás mucho tu independencia, y lo dejás claro cuando se habla de planes en pareja.",
+            "No te cuesta depender del otro, disfrutás de la cercanía y de hacer las cosas en conjunto."),
+        _directiva(personalidad.get('tolerancia_conflicto', 0.5),
+            "Tolerás bien el conflicto: no te incomoda discutir o no estar de acuerdo.",
+            "Evitás el conflicto, preferís bajar un tema antes que discutir."),
+    ]))
 
-    - Introversión: {personalidad.get('introversion', 0.5)}
-    - Empatía: {personalidad.get('empatia', 0.5)}
-    - Sarcasmo: {personalidad.get('sarcasmo', 0.5)}
-    - Apertura mental: {personalidad.get('apertura_mental', 0.5)}
-    - Ambición: {personalidad.get('ambicion', 0.5)}
-    - Sensibilidad emocional: {personalidad.get('sensibilidad_emocional', 0.5)}
-    - Necesidad afectiva: {personalidad.get('necesidad_afecto', 0.5)}
-    - Independencia: {personalidad.get('independencia', 0.5)}
-    - Tolerancia al conflicto: {personalidad.get('tolerancia_conflicto', 0.5)}
-    """
+    personalidad_txt = "PERFIL PSICOLÓGICO (cómo se traduce en tu forma de hablar):\n" + \
+        "\n".join(f"    - {d}" for d in directivas_personalidad) if directivas_personalidad else ""
 
     # =====================================================
     # ESTILO CONVERSACIONAL
@@ -410,14 +444,26 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     estilo_chat = perfil.get("estilo_chat", {})
 
-    estilo = f"""
-    ESTILO CONVERSACIONAL:
+    directivas_estilo = [
+        "ESCRIBÍS MENSAJES MUY CORTOS: una sola oración, a veces solo unas pocas palabras. Nunca mandes párrafos largos."
+        if estilo_chat.get('mensajes_cortos', False) else
+        "Podés escribir mensajes un poco más desarrollados (2-3 oraciones), sin pasarte.",
 
-    - Mensajes cortos: {estilo_chat.get('mensajes_cortos', False)}
-    - Usa humor: {estilo_chat.get('usa_humor', False)}
-    - Nivel de coqueteo: {estilo_chat.get('coqueto', False)}
-    - Estilo analítico: {estilo_chat.get('analitico', False)}
-    """
+        "Metés humor seguido: chistes, comentarios graciosos, ironía liviana."
+        if estilo_chat.get('usa_humor', False) else
+        "No forzás chistes, tu tono es más serio y directo.",
+
+        "Coqueteás activamente: indirectas, piropos, doble sentido."
+        if estilo_chat.get('coqueto', False) else
+        "Mantenés un tono amistoso pero sin coquetear.",
+
+        "Analizás lo que te dicen antes de responder, hacés preguntas de seguimiento con sustancia."
+        if estilo_chat.get('analitico', False) else
+        "Respondés más espontáneo, sin sobre-pensarlo.",
+    ]
+
+    estilo = "ESTILO CONVERSACIONAL (seguilo al pie de la letra):\n" + \
+        "\n".join(f"    - {d}" for d in directivas_estilo)
 
     # =====================================================
     # VALORES PERSONALES
@@ -572,6 +618,17 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     10. La conversación debe sentirse
     espontánea y no perfecta.
+
+    11. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
+    (algo concreto que mencionó, no una reacción genérica tipo "qué
+    interesante" que serviría para cualquier mensaje). Mostrá que
+    escuchaste de verdad antes de agregar algo tuyo.
+
+    12. No te quedes dando vueltas sobre la misma pregunta muchos turnos
+    seguidos. Si ya charlaron un par de intercambios sobre el mismo punto
+    puntual, sumá un ángulo nuevo relacionado al escenario en vez de
+    repreguntar "¿y vos?" de nuevo -- una conversación real avanza, no gira
+    en el mismo lugar.
     """
 
     return prompt
@@ -611,10 +668,21 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
     prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1)
     prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2)
 
-    ultimo_mensaje = """
-    Hola, me llamó la atención este tema.
-    ¿Vos qué pensás?
-    """
+    # El mensaje inicial ya no es un texto fijo igual en todas las
+    # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
+    # personalidad y estilo), solo agregándole la instrucción de que en este
+    # turno le toca arrancar la charla. No hace falta una función aparte:
+    # es el mismo generar_prompt_gemelo, solo que este primer llamado no
+    # tiene mensajes previos a los que responder.
+    instruccion_inicio = "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba. Mandá un primer mensaje corto y natural, como si le escribieras por primera vez a alguien que recién conociste."
+
+    response_inicio = client().chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
+        ]
+    )
+    ultimo_mensaje = response_inicio.choices[0].message.content
 
     print(f"{nombre1}: {ultimo_mensaje}\n")
 
@@ -624,6 +692,19 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
         "name": nombre1,
         "content": ultimo_mensaje
     })
+
+    # historial_chat (arriba) es la versión "para humanos" -- la que se
+    # guarda y se le pasa a analizar_conversacion, con roles fijos y el
+    # nombre de quién habló. Pero para pedirle al modelo el turno de CADA
+    # gemelo hace falta una vista de la conversación DESDE SU perspectiva:
+    # sus propios mensajes anteriores como "assistant", los del otro como
+    # "user". Si se le manda la misma lista a los dos (como antes), la
+    # llamada de un gemelo termina con el último mensaje ya en rol
+    # "assistant" sin ningún "user" nuevo en el medio -- ahí el modelo tiende
+    # a continuar/repetir ese mismo turno en vez de responder como otra
+    # persona (así se producía la repetición literal del mensaje anterior).
+    vista_1 = []
+    vista_2 = [{"role": "user", "content": ultimo_mensaje}]
 
     for _ in range(turnos):
 
@@ -644,7 +725,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
                         prompt_2
                 },
 
-                *historial_chat
+                *vista_2
             ]
         )
 
@@ -658,6 +739,8 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
             "name": nombre2,
             "content": msg_2
         })
+        vista_2.append({"role": "assistant", "content": msg_2})
+        vista_1.append({"role": "user", "content": msg_2})
 
         # =================================================
         # PERFIL 1 RESPONDE
@@ -676,7 +759,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
                         prompt_1
                 },
 
-                *historial_chat
+                *vista_1
             ]
         )
 
@@ -690,6 +773,8 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
             "name": nombre1,
             "content": msg_1
         })
+        vista_1.append({"role": "assistant", "content": msg_1})
+        vista_2.append({"role": "user", "content": msg_1})
 
     analisis = analizar_conversacion(historial_chat)
     score = calcular_compatibilidad(perfil1, perfil2, analisis)

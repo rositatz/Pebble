@@ -21,11 +21,16 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     lo guarda en usuarios/{uid}/gemelo/perfil."""
 
     despues = event.data.after
-    if not despues.exists or not despues.get("completed"):
+    # despues es None si este evento es un borrado del doc (on_document_written
+    # dispara en create/update/delete) -- no hay nada que generar en ese caso.
+    if despues is None or not despues.exists or not despues.get("completed"):
         return
 
     antes = event.data.before
-    if antes.exists and antes.get("completed"):
+    # antes es None (no un snapshot con exists=False) cuando este es el
+    # primer write de todos sobre este doc -- pasa siempre en el onboarding
+    # de un usuario nuevo, así que hay que contemplarlo.
+    if antes is not None and antes.exists and antes.get("completed"):
         return  # ya se había generado, no lo repetimos en cada merge posterior
 
     uid = event.params["uid"]
