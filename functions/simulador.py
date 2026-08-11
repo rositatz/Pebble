@@ -9,7 +9,6 @@ import datetime
 
 from gemelo_perfil import construir_perfil_gemelo
 from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad
-from geolocalizacion import ordenar_por_cercania
 
 # El cliente de OpenAI se crea recién al usarlo (ver _client()), no al importar
 # el módulo: así se puede armar/comparar perfiles y correr los tests sin tener
@@ -537,6 +536,89 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     return prompt
 
+
+def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
+    """Prompt para el chat DIRECTO entre el usuario y su propio gemelo
+    (gemelo.html) -- a diferencia de generar_prompt_gemelo (que arma un
+    gemelo simulando una cita con el gemelo de OTRA persona), acá el gemelo
+    le habla al propio usuario, en segunda persona, como su reflejo de
+    confianza dentro de la app. Reusa la misma traducción de personalidad a
+    directivas de comportamiento (_directiva) para que el tono sea
+    consistente con el que se ve en las simulaciones."""
+
+    personalidad = perfil.get("personalidad", {})
+
+    directivas_personalidad = list(filter(None, [
+        _directiva(personalidad.get('introversion', 0.5),
+            "Sos bastante introvertido/a: no te desvivís por llenar el silencio ni sos efusivo/a de entrada.",
+            "Sos bastante extrovertido/a: hablás con soltura y entusiasmo."),
+        _directiva(personalidad.get('empatia', 0.5),
+            "Sos muy empático/a: antes de opinar, validás lo que siente la persona que te escribe.",
+            "Vas más al grano: te enfocás en resolver, no tanto en cómo se siente el otro."),
+        _directiva(personalidad.get('sarcasmo', 0.5),
+            "Tenés un humor bastante sarcástico o irónico, lo metés seguido.",
+            "No sos de tirar sarcasmo -- tu humor, si aparece, es directo."),
+        _directiva(personalidad.get('apertura_mental', 0.5),
+            "Sos abierto/a a ideas nuevas y a que te contradigan.",
+            "Sos más escéptico/a, preferís lo probado antes que lo nuevo."),
+        _directiva(personalidad.get('ambicion', 0.5),
+            "Sos ambicioso/a: te gusta hablar en términos de metas y progreso.",
+            "No te mueve tanto la ambición, vivís más el presente."),
+        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
+            "Sos emocionalmente sensible: las cosas te afectan y lo mostrás.",
+            "Sos bastante estable emocionalmente, no te alteran fácil los temas sensibles."),
+        _directiva(personalidad.get('necesidad_afecto', 0.5),
+            "Buscás cercanía afectiva en cómo te comunicás.",
+            "Sos independiente afectivamente, no necesitás validar todo el tiempo."),
+        _directiva(personalidad.get('independencia', 0.5),
+            "Valorás mucho la independencia, y se nota en los consejos que das.",
+            "No te cuesta la cercanía ni depender del otro."),
+        _directiva(personalidad.get('tolerancia_conflicto', 0.5),
+            "Tolerás bien el conflicto: no evitás decir algo incómodo si hace falta.",
+            "Evitás el conflicto, suavizás lo que decís."),
+    ]))
+
+    personalidad_txt = "\n".join(f"    - {d}" for d in directivas_personalidad)
+
+    nombre = perfil.get("nombre") or "tu usuario"
+
+    matches_txt = ""
+    if matches_resumen:
+        matches_txt = "\n    SUS MATCHES ACTUALES (para dar consejos concretos si te preguntan por alguno):\n"
+        for m in matches_resumen:
+            matches_txt += f"    - {m['nombre']}: {m['score']}% de afinidad\n"
+    else:
+        matches_txt = "\n    Todavía no tiene matches -- si te pregunta por eso, decíselo tal cual, no inventes nombres.\n"
+
+    prompt = f"""
+    Sos el gemelo digital de {nombre} dentro de la app de citas Pebble.
+
+    IMPORTANTE: acá NO estás simulando una cita ni hablando con el gemelo de
+    otra persona. Le estás hablando DIRECTAMENTE a {nombre}, tu propio
+    usuario -- sos su reflejo de IA, hecho de su propia personalidad, y tu
+    trabajo es darle charla, consejos y compañía sobre su vida en la app
+    (sus matches, cómo hablarles, cómo le está yendo).
+
+    PERSONALIDAD (tiene que notarse en cómo hablás):
+    {personalidad_txt}
+    {matches_txt}
+
+    REGLAS:
+    1. Hablále a {nombre} en segunda persona, como alguien que lo/la conoce
+       mejor que nadie -- nunca en primera persona como si fueras la persona
+       en una cita.
+    2. Si te pregunta por un match específico, usá SOLO los datos reales de
+       arriba (nombre y % de afinidad) -- si no tenés más info que esa, decilo,
+       no inventes detalles sobre esa persona.
+    3. Sé breve: entre 1 y 4 oraciones, salvo que te pidan algo más largo.
+    4. No actúes como asistente genérico ("¿en qué puedo ayudarte?") -- tenés
+       personalidad propia, mostrala.
+    5. Si no sabés algo, decilo con naturalidad en vez de inventar.
+    """
+
+    return prompt
+
+
 def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
     """escenario puede ser un índice de escenarios_db o un dict
     {"titulo","contexto","tension","tono"} armado al vuelo para una simulación
@@ -794,36 +876,3 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, 
     }
 
 
-def simular_matches_por_cercania(uid, perfil, candidatos, tipo_relacion=None, turnos=2, umbral=0.75, limite_candidatos=None):
-    """Corre simular_relacion_completa contra una lista de candidatos, pero no
-    en cualquier orden: primero contra los que están geográficamente más
-    cerca (ver geolocalizacion.ordenar_por_cercania). Las simulaciones llaman
-    a OpenAI turno a turno y salen caras, así que si hay muchos candidatos
-    conviene evaluar primero a la gente cercana -- de ahí `limite_candidatos`,
-    que si se pasa corta la corrida después de esa cantidad (ya ordenada por
-    cercanía, o sea que lo que se corta son los más lejanos).
-
-    uid/perfil: el usuario para el que se buscan matches.
-    candidatos: lista de (uid_candidato, perfil_candidato).
-
-    Devuelve una lista de resultados (uno por candidato), en el mismo orden
-    en que se evaluaron (de más cerca a más lejos), cada uno con su
-    "distancia_km" agregada (None si a ese candidato le falta ubicación)."""
-
-    ordenados = ordenar_por_cercania(perfil, candidatos)
-
-    if limite_candidatos is not None:
-        ordenados = ordenados[:limite_candidatos]
-
-    resultados = []
-
-    for uid_candidato, perfil_candidato, distancia in ordenados:
-        resultado = simular_relacion_completa(
-            uid, perfil, uid_candidato, perfil_candidato,
-            tipo_relacion=tipo_relacion, turnos=turnos, umbral=umbral,
-        )
-        resultado["uid_candidato"] = uid_candidato
-        resultado["distancia_km"] = round(distancia, 1) if distancia is not None else None
-        resultados.append(resultado)
-
-    return resultados

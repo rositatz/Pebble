@@ -268,8 +268,9 @@ def _construir_pesos_compatibilidad(respuestas_raw):
 def _construir_ubicacion(e1):
     """lat/lng vienen del botón "Usar mi ubicación" del onboarding (geolocalización
     del navegador) -- es opcional, así que si no están no se arma nada acá.
-    Lo usa geolocalizacion.ordenar_por_cercania() para priorizar con quién se
-    corren las simulaciones primero (ver simulador.simular_matches_por_cercania)."""
+    Se usa para calcular distancia_km entre perfiles (ver
+    geolocalizacion.distancia_entre_perfiles), que es lo que ordena la cola
+    de parejas pendientes en main.buscar_parejas_pendientes."""
     try:
         lat = float(e1.get("lat"))
         lng = float(e1.get("lng"))

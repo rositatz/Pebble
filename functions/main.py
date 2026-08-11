@@ -133,90 +133,83 @@ def simular_situacion(request: https_fn.CallableRequest):
     }
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=540, memory=MemoryOption.MB_512)
-def buscar_matches_cercanos(request: https_fn.CallableRequest):
-    """Corre simulaciones contra otros usuarios que ya generaron su gemelo,
-    priorizando por cercanía geográfica (ver geolocalizacion.py y
-    simulador.simular_matches_por_cercania): primero se evalúan los
-    escenarios con la gente más cerca. Es una corrida cara (llama a OpenAI
-    varias veces por candidato), así que por default se limita a los 5
-    candidatos más cercanos -- se puede subir con `limite` en request.data.
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+def chatear_con_gemelo(request: https_fn.CallableRequest):
+    """Chat DIRECTO entre el usuario y su propio gemelo (gemelo.html) -- a
+    diferencia de simular_situacion (que simula una charla con el gemelo de
+    OTRA persona), acá el usuario le habla a su propia representación de IA
+    y la respuesta es una llamada real a OpenAI, no texto armado a mano.
 
     Datos esperados en request.data:
-      - tipoRelacion (opcional): fuerza el tipo de relación a simular en vez
-        de usar el "busco" del propio perfil.
-      - limite (opcional, default 5): cantidad máxima de candidatos a evaluar,
-        ya ordenados de más cerca a más lejos.
+      - mensaje (obligatorio): lo que escribió el usuario.
+      - historial (opcional): los últimos mensajes de la conversación, en
+        formato [{"role": "user"|"assistant", "content": str}, ...], para
+        que el gemelo tenga contexto de lo que ya se habló. Se recortan a
+        los últimos 8 acá mismo por las dudas.
     """
 
     if request.auth is None:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.UNAUTHENTICATED,
-            "Hay que estar logueado para buscar matches."
+            "Hay que estar logueado para hablar con tu gemelo."
         )
 
     uid = request.auth.uid
     data = request.data or {}
-    tipo_relacion = (data.get("tipoRelacion") or "").strip() or None
-    limite = data.get("limite")
-    limite = int(limite) if limite else 5
+    mensaje = (data.get("mensaje") or "").strip()
+    historial = data.get("historial") or []
+
+    if not mensaje:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "Falta el mensaje."
+        )
 
     db = firestore.client()
 
-    doc_propio = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
-    if not doc_propio.exists:
+    doc_perfil = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
+    if not doc_perfil.exists:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no generaste tu gemelo (completá el onboarding primero)."
         )
-    perfil_propio = doc_propio.to_dict()
+    perfil = doc_perfil.to_dict()
 
-    candidatos = []
-    for doc in db.collection_group("gemelo").stream():
-        if doc.id != "perfil":
-            continue
-        uid_candidato = doc.reference.parent.parent.id
-        if uid_candidato == uid:
-            continue
-        candidatos.append((uid_candidato, doc.to_dict()))
+    # Resumen liviano de los matches reales (solo nombre + score) para que
+    # el gemelo pueda dar consejos concretos si le preguntan por alguno --
+    # no hace falta el perfil completo de cada uno acá.
+    matches_resumen = []
+    try:
+        for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
+            cd = doc.to_dict()
+            if not cd.get("supera_umbral"):
+                continue
+            u1 = cd.get("usuario_1", {})
+            u2 = cd.get("usuario_2", {})
+            otro = u2 if u1.get("uid") == uid else u1
+            matches_resumen.append({
+                "nombre": otro.get("nombre", "Usuario"),
+                "score": round((cd.get("ultimo_score") or 0) * 100),
+            })
+    except Exception as e:
+        print(f"chatear_con_gemelo: error trayendo matches para el resumen: {e}")
 
-    candidatos_por_uid = dict(candidatos)
+    system_prompt = motor.generar_prompt_gemelo_personal(perfil, matches_resumen)
 
-    resultados = motor.simular_matches_por_cercania(
-        uid, perfil_propio, candidatos,
-        tipo_relacion=tipo_relacion, turnos=2, limite_candidatos=limite,
+    mensajes = [{"role": "system", "content": system_prompt}]
+    for h in historial[-8:]:
+        role = h.get("role")
+        content = (h.get("content") or "").strip()
+        if role in ("user", "assistant") and content:
+            mensajes.append({"role": role, "content": content})
+    mensajes.append({"role": "user", "content": mensaje})
+
+    response = motor.client().chat.completions.create(
+        model="gpt-4o-mini",
+        messages=mensajes,
     )
 
-    resumen = []
-    for resultado in resultados:
-        uid_candidato = resultado["uid_candidato"]
-        par_ref = db.collection("conexiones").document(motor._par_id(uid, uid_candidato))
-
-        payload = {
-            "usuario_1": {"uid": uid, "nombre": perfil_propio.get("nombre", "")},
-            "usuario_2": {"uid": uid_candidato, "nombre": candidatos_por_uid.get(uid_candidato, {}).get("nombre", "")},
-            "participantes": [uid, uid_candidato],
-            "ultimo_score": resultado["compatibilidad_promedio"],
-            "supera_umbral": resultado["supera_umbral"],
-            "distancia_km": resultado["distancia_km"],
-            "actualizado": resultado["simulaciones"][-1]["fecha"],
-        }
-        payload = _con_creado(par_ref, payload)
-
-        for registro in resultado["simulaciones"]:
-            par_ref.collection("simulaciones").add(registro)
-
-        par_ref.set(payload, merge=True)
-
-        resumen.append({
-            "uid": uid_candidato,
-            "distanciaKm": resultado["distancia_km"],
-            "compatibilidadPromedio": resultado["compatibilidad_promedio"],
-            "superaUmbral": resultado["supera_umbral"],
-            "escenariosCorridos": resultado["escenarios_corridos"],
-        })
-
-    return {"matches": resumen}
+    return {"respuesta": response.choices[0].message.content}
 
 
 # Firestore no incluye en un orderBy() los docs a los que les falta ese campo
