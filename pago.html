@@ -527,11 +527,22 @@ const db = getFirestore(app);
 let _uid = null;
 onAuthStateChanged(getAuth(app), u => { if (u) _uid = u.uid; });
 
-// Expuesto para que processPayment() lo llame antes de redirigir
+// Expuesto para que processPayment() lo llame antes de redirigir. El pago es
+// mensual -- guardamos hasta cuándo vale (premiumHasta), así perfil.html
+// puede chequear si sigue vigente o si ya venció y hay que volver a mostrar
+// el plan gratuito. Cada pago nuevo reinicia el mes desde ese momento (no
+// hay billing recurrente real acá, es un pago simulado).
 window._savePremiumPlan = async function() {
   if (!_uid) return;
   try {
-    await setDoc(doc(db,'usuarios',_uid), { plan:'premium', planActivadoAt: new Date().toISOString() }, { merge:true });
+    const ahora = new Date();
+    const vence = new Date(ahora);
+    vence.setDate(vence.getDate() + 30);
+    await setDoc(doc(db,'usuarios',_uid), {
+      plan: 'premium',
+      planActivadoAt: ahora.toISOString(),
+      premiumHasta: vence.toISOString(),
+    }, { merge:true });
   } catch(e) { console.error(e); }
 };
 </script>

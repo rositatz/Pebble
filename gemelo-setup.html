@@ -205,15 +205,13 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">👤 Identidad básica</div>
-    <div class="q">
-      <div class="ql">¿Qué estás buscando?</div>
-      <div class="pills" data-field="busco">
-        <button class="pill" onclick="selPill(this)">Algo serio</button>
-        <button class="pill" onclick="selPill(this)">Algo casual</button>
-        <button class="pill" onclick="selPill(this)">Nuevas amistades</button>
-        <button class="pill" onclick="selPill(this)">Sin definir</button>
-      </div>
-    </div>
+    <!-- La pregunta "¿Qué estás buscando?" (busco) se sacó por ahora: solo se
+         está testeando con "Algo serio", así que preguntarla no aporta nada
+         todavía. escenarios_para_tipo() ya cae de vuelta a correr todos los
+         escenarios cuando busco viene vacío -- que son los de "Algo serio",
+         los únicos que quedan en escenarios_db por ahora -- así que sacar
+         esto no rompe nada del backend. Si más adelante se vuelve a testear
+         con otros tipos de relación, se puede volver a agregar acá. -->
     <div class="q">
       <div class="ql">¿Cuál es tu orientación sexual?</div>
       <div class="pills" data-field="orientacion">
