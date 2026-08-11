@@ -1355,6 +1355,19 @@
     </nav>
 
     <script>
+      // Escapa texto para insertarlo tanto en contenido de texto como dentro
+      // de atributos HTML entre comillas (aria-label, etc.) -- nombre/bio/
+      // ciudad vienen de Firestore y los escribe libremente cada usuario
+      // desde perfil.html, así que hay que tratarlos como no confiables.
+      function esc(t) {
+        return String(t)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
       // Devuelve un color dinámico según el porcentaje de afinidad
       // A mayor porcentaje, el color se vuelve naranja más intenso
       // 55% → dorado claro  |  100% → naranja profundo
@@ -1423,8 +1436,8 @@
         document.getElementById("modal-header").innerHTML = `
     <div class="modal-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
     <div class="modal-name-wrap">
-      <div class="modal-name">${p.name}${p.age ? ", " + p.age : ""}</div>
-      <div class="modal-meta">${p.city}</div>
+      <div class="modal-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
+      <div class="modal-meta">${esc(p.city)}</div>
     </div>
     <div style="text-align:center">
       <div class="modal-score-big" style="color:${scoreCol}">${p.score}%</div>
@@ -1438,8 +1451,8 @@
         // Bio (solo si escribió una)
         if (p.bio) {
           html += `<div>
-    <p class="modal-section-title">Sobre ${p.name}</p>
-    <p style="font-family:var(--font-serif);font-size:0.95rem;font-style:italic;font-weight:300;color:var(--text-secondary);line-height:1.7">${p.bio}</p>
+    <p class="modal-section-title">Sobre ${esc(p.name)}</p>
+    <p style="font-family:var(--font-serif);font-size:0.95rem;font-style:italic;font-weight:300;color:var(--text-secondary);line-height:1.7">${esc(p.bio)}</p>
   </div>`;
         }
 
@@ -1468,7 +1481,7 @@
     <div class="interest-tags">`;
           p.interests.forEach((i) => {
             const shared = p.shared.includes(i);
-            html += `<span class="interest-tag${shared ? " shared" : ""}">${i}</span>`;
+            html += `<span class="interest-tag${shared ? " shared" : ""}">${esc(i)}</span>`;
           });
           html += `</div></div>`;
         }
@@ -1479,7 +1492,7 @@
     <p class="modal-section-title">Fragmento de la conversación entre gemelos</p>
     <div class="gemelo-preview">`;
           p.preview.forEach((b) => {
-            html += `<div class="preview-bubble ${b.side}">${b.text}</div>`;
+            html += `<div class="preview-bubble ${b.side}">${esc(b.text)}</div>`;
           });
           html += `</div></div>`;
         }
@@ -1733,7 +1746,7 @@
           : `background:linear-gradient(135deg,#888,#555)`;
         const tagsHtml = (m.tags || [])
           .slice(0, 3)
-          .map((t) => `<span class="card-tag">${t}</span>`)
+          .map((t) => `<span class="card-tag">${esc(t)}</span>`)
           .join("");
         const reasonsHtml = m.ejes.length
           ? m.ejes
@@ -1755,11 +1768,11 @@
 
         return `
           <div class="match-card fu" data-id="${m.id}" data-score="${m.score}" data-new="${m.isNew}" data-active="${m.hasChat}">
-            <div class="card-top" onclick="openProfile('${m.id}')" role="button" tabindex="0" aria-label="Ver perfil de ${m.nombre}">
+            <div class="card-top" onclick="openProfile('${m.id}')" role="button" tabindex="0" aria-label="Ver perfil de ${esc(m.nombre)}">
               <div class="card-av${m.isNew ? " card-av-new" : ""}" style="${avatarStyle}" aria-hidden="true"></div>
               <div class="card-info">
-                <div class="card-name">${m.nombre}${m.edad ? ", " + m.edad : ""}</div>
-                <div class="card-meta">${[m.ciudad, m.metaTexto].filter(Boolean).join(" · ")}</div>
+                <div class="card-name">${esc(m.nombre)}${m.edad ? ", " + m.edad : ""}</div>
+                <div class="card-meta">${esc([m.ciudad, m.metaTexto].filter(Boolean).join(" · "))}</div>
                 ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ""}
               </div>
               <div class="score-wrap">
@@ -1778,13 +1791,13 @@
               ${reasonsHtml}
             </div>
             <div class="card-actions">
-              <button class="btn-profile" onclick="openProfile('${m.id}')" aria-label="Ver perfil de ${m.nombre}">
+              <button class="btn-profile" onclick="openProfile('${m.id}')" aria-label="Ver perfil de ${esc(m.nombre)}">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Perfil
               </button>
-              <button class="btn-chat" onclick="marcarMatchVisto('${m.id}');window.location.href='./chats.html?persona=${m.id}'" aria-label="Hablar con ${m.nombre}">
+              <button class="btn-chat" onclick="marcarMatchVisto('${m.id}');window.location.href='./chats.html?persona=${m.id}'" aria-label="Hablar con ${esc(m.nombre)}">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Escribirle a ${m.nombre}
+                Escribirle a ${esc(m.nombre)}
               </button>
             </div>
           </div>`;
