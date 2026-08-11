@@ -87,19 +87,6 @@ html, body {
 }
 .summary-price-note { font-size: 0.68rem; color: rgba(255,255,255,0.35); margin-top: 1px; }
 
-/* Period toggle inside card */
-.period-seg {
-  display: flex; background: rgba(255,255,255,0.06); border-radius: 22px; padding: 3px;
-}
-.period-seg-btn {
-  flex: 1; padding: 7px 12px; border-radius: 20px; border: none; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.75rem; font-weight: 600;
-  color: rgba(255,255,255,0.45); background: none; transition: all 0.2s;
-  text-align: center; touch-action: manipulation;
-}
-.period-seg-btn.active { background: var(--orange); color: #fff; }
-.period-seg-btn .save { font-size: 0.62rem; opacity: 0.85; }
-
 /* Summary features */
 .summary-features { display: flex; flex-direction: column; gap: 7px; }
 .summary-feat {
@@ -266,16 +253,6 @@ html, body {
       </div>
     </div>
 
-    <!-- Period toggle -->
-    <div class="period-seg">
-      <button class="period-seg-btn active" id="segMensual" onclick="setPeriod('mensual')">
-        Mensual · $5/mes
-      </button>
-      <button class="period-seg-btn" id="segAnual" onclick="setPeriod('anual')">
-        Anual · $50/año <span class="save">(-17%)</span>
-      </button>
-    </div>
-
     <!-- Features recap -->
     <div class="summary-features">
       <div class="summary-feat">
@@ -412,21 +389,6 @@ html, body {
 </div>
 
 <script>
-// ── Read ?periodo=anual from URL ──
-const params = new URLSearchParams(location.search);
-if (params.get('periodo') === 'anual') setPeriod('anual');
-
-function setPeriod(p) {
-  const isAnual = p === 'anual';
-  document.getElementById('segMensual').classList.toggle('active', !isAnual);
-  document.getElementById('segAnual').classList.toggle('active', isAnual);
-  document.getElementById('summaryPrice').textContent     = isAnual ? '$50' : '$5';
-  document.getElementById('summaryPriceNote').textContent = isAnual ? '/año' : '/mes';
-  document.getElementById('payBtnText').innerHTML =
-    isAnual ? 'Pagar <span id="payBtnAmount">$50</span>/año'
-            : 'Pagar <span id="payBtnAmount">$5</span>/mes';
-}
-
 // ── Card number formatting ──
 function onlyDigits(e) {
   if (['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) return true;
