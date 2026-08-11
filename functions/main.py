@@ -13,6 +13,16 @@ set_global_options(max_instances=10)
 firebase_admin.initialize_app()
 
 
+def _con_creado(par_ref, payload):
+    """Agrega 'creado' al payload SOLO si el doc de la conexión todavía no
+    existe -- si no, cada simulación nueva sobre la misma pareja resetearía
+    el timestamp de creación. matches.html lo usa para la regla de "match
+    nuevo sin empezar a hablar en una semana, desaparece de la lista"."""
+    if not par_ref.get().exists:
+        payload["creado"] = firestore.SERVER_TIMESTAMP
+    return payload
+
+
 @firestore_fn.on_document_written(document="usuarios/{uid}/gemelo_setup/data")
 def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     """Se dispara solo cada vez que se escribe usuarios/{uid}/gemelo_setup/data
@@ -103,15 +113,17 @@ def simular_situacion(request: https_fn.CallableRequest):
     registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=2, escenario=escenario)
 
     par_ref = db.collection("conexiones").document(registro["par_id"])
-    par_ref.collection("simulaciones").add(registro)
-    par_ref.set({
+    payload = {
         "usuario_1": registro["usuario_1"],
         "usuario_2": registro["usuario_2"],
         "participantes": [uid1, uid2],
         "ultimo_score": registro["score"]["compatibilidad_total"],
         "supera_umbral": registro["supera_umbral"],
         "actualizado": registro["fecha"],
-    }, merge=True)
+    }
+    payload = _con_creado(par_ref, payload)
+    par_ref.collection("simulaciones").add(registro)
+    par_ref.set(payload, merge=True)
 
     return {
         "resumen": registro["analisis"].get("resumen_interaccion", ""),
@@ -180,10 +192,7 @@ def buscar_matches_cercanos(request: https_fn.CallableRequest):
         uid_candidato = resultado["uid_candidato"]
         par_ref = db.collection("conexiones").document(motor._par_id(uid, uid_candidato))
 
-        for registro in resultado["simulaciones"]:
-            par_ref.collection("simulaciones").add(registro)
-
-        par_ref.set({
+        payload = {
             "usuario_1": {"uid": uid, "nombre": perfil_propio.get("nombre", "")},
             "usuario_2": {"uid": uid_candidato, "nombre": candidatos_por_uid.get(uid_candidato, {}).get("nombre", "")},
             "participantes": [uid, uid_candidato],
@@ -191,7 +200,13 @@ def buscar_matches_cercanos(request: https_fn.CallableRequest):
             "supera_umbral": resultado["supera_umbral"],
             "distancia_km": resultado["distancia_km"],
             "actualizado": resultado["simulaciones"][-1]["fecha"],
-        }, merge=True)
+        }
+        payload = _con_creado(par_ref, payload)
+
+        for registro in resultado["simulaciones"]:
+            par_ref.collection("simulaciones").add(registro)
+
+        par_ref.set(payload, merge=True)
 
         resumen.append({
             "uid": uid_candidato,
@@ -317,9 +332,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             resultado = motor.simular_relacion_completa(uid1, doc1.to_dict(), uid2, doc2.to_dict())
 
             par_ref = db.collection("conexiones").document(data["par_id"])
-            for registro in resultado["simulaciones"]:
-                par_ref.collection("simulaciones").add(registro)
-            par_ref.set({
+            payload = {
                 "usuario_1": data["usuario_1"],
                 "usuario_2": data["usuario_2"],
                 "participantes": [uid1, uid2],
@@ -327,7 +340,12 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 "supera_umbral": resultado["supera_umbral"],
                 "distancia_km": data.get("distancia_km"),
                 "actualizado": resultado["simulaciones"][-1]["fecha"],
-            }, merge=True)
+            }
+            payload = _con_creado(par_ref, payload)
+
+            for registro in resultado["simulaciones"]:
+                par_ref.collection("simulaciones").add(registro)
+            par_ref.set(payload, merge=True)
 
             doc.reference.update({"estado": "COMPLETADO"})
             procesadas += 1

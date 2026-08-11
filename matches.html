@@ -236,6 +236,32 @@
         flex-shrink: 0;
       }
 
+      /* ── Estado vacío (sin matches reales todavía) ── */
+      .matches-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 64px 24px;
+        color: var(--text-muted);
+      }
+      .matches-empty svg {
+        stroke: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .matches-empty-title {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: var(--text-primary);
+      }
+      .matches-empty-sub {
+        font-size: 0.85rem;
+        max-width: 320px;
+        line-height: 1.5;
+      }
+
       /* ── Match card ── */
       .match-card {
         background: var(--surf-1);
@@ -1163,764 +1189,27 @@
       </div>
 
       <!-- ── MATCH CARDS ── -->
-      <!-- ── Datos de ejemplo. Reemplazar con datos reales del backend ── -->
-
-      <!-- 1. Sofía 92% -->
-      <div
-        class="match-card fu"
-        data-id="sofia"
-        data-score="92"
-        data-new="true"
-        data-active="true"
-      >
-        <div
-          class="card-top"
-          onclick="openProfile('sofia')"
-          role="button"
-          tabindex="0"
-          aria-label="Ver perfil de Sofía"
+      <!-- Se arman dinámicamente desde Firestore (conexiones reales) -- ver
+           cargarMatchesReales() en el script de más abajo. -->
+      <div id="matchesEmpty" class="matches-empty" style="display: none">
+        <svg
+          viewBox="0 0 24 24"
+          width="40"
+          height="40"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <div
-            class="card-av card-av-new"
-            style="
-              background-image: url(./images/sofia.png);
-              background-size: cover;
-              background-position: center;
-            "
-            aria-hidden="true"
-          ></div>
-          <div class="card-info">
-            <div class="card-name">Sofía, 26</div>
-            <div class="card-meta">Buenos Aires · match hace 12 min</div>
-            <div class="card-tags">
-              <span class="card-tag">Música</span>
-              <span class="card-tag">Viajes</span>
-              <span class="card-tag">Lectura</span>
-            </div>
-          </div>
-          <div class="score-wrap">
-            <div class="score-ring" aria-label="92% de compatibilidad">
-              <svg viewBox="0 0 56 56">
-                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
-                <circle
-                  class="score-ring-fill"
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="#FF751F"
-                  stroke-dasharray="138.2"
-                  stroke-dashoffset="11"
-                />
-              </svg>
-              <span class="score-number">92%</span>
-            </div>
-            <span class="score-label">Afinidad</span>
-          </div>
-        </div>
-        <div class="card-reasons">
-          <p class="reasons-title">Por qué son compatibles</p>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Gustos musicales</strong> muy similares — ambos valoran la
-              música en vivo y géneros alternativos.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 95%"></div>
-                </div>
-                <span class="reason-bar-label">95%</span>
-              </div>
-            </div>
-          </div>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v4l3 3" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Estilo de comunicación</strong> — prefieren conversaciones
-              profundas sobre charla superficial.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 91%"></div>
-                </div>
-                <span class="reason-bar-label">91%</span>
-              </div>
-            </div>
-          </div>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Valores en común</strong> — ambos priorizan la honestidad
-              y los vínculos con profundidad.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 88%"></div>
-                </div>
-                <span class="reason-bar-label">88%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button
-            class="btn-profile"
-            onclick="openProfile('sofia')"
-            aria-label="Ver perfil de Sofía"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Perfil
-          </button>
-          <button
-            class="btn-chat"
-            onclick="window.location.href = './chats.html?persona=sofia'"
-            aria-label="Hablar con Sofía"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              />
-            </svg>
-            Escribirle a Sofía
-          </button>
-        </div>
-      </div>
-
-      <!-- 2. Mateo 87% -->
-      <div
-        class="match-card fu"
-        data-id="mateo"
-        data-score="87"
-        data-new="false"
-        data-active="true"
-      >
-        <div
-          class="card-top"
-          onclick="openProfile('mateo')"
-          role="button"
-          tabindex="0"
-          aria-label="Ver perfil de Mateo"
-        >
-          <div
-            class="card-av"
-            style="
-              background-image: url(./images/mateo.png);
-              background-size: cover;
-              background-position: center;
-            "
-            aria-hidden="true"
-          ></div>
-          <div class="card-info">
-            <div class="card-name">Mateo, 28</div>
-            <div class="card-meta">Buenos Aires · match hace 2 días</div>
-            <div class="card-tags">
-              <span class="card-tag">Cine</span>
-              <span class="card-tag">Tecnología</span>
-              <span class="card-tag">Running</span>
-            </div>
-          </div>
-          <div class="score-wrap">
-            <div class="score-ring" aria-label="87% de compatibilidad">
-              <svg viewBox="0 0 56 56">
-                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
-                <circle
-                  class="score-ring-fill"
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="#FF9700"
-                  stroke-dasharray="138.2"
-                  stroke-dashoffset="18"
-                />
-              </svg>
-              <span class="score-number">87%</span>
-            </div>
-            <span class="score-label">Afinidad</span>
-          </div>
-        </div>
-        <div class="card-reasons">
-          <p class="reasons-title">Por qué son compatibles</p>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <path d="M8 21h8M12 17v4" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Humor y referencias culturales</strong> — comparten
-              ironía, cine de culto y referencias de la misma generación.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 90%"></div>
-                </div>
-                <span class="reason-bar-label">90%</span>
-              </div>
-            </div>
-          </div>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Tipo de vínculo buscado</strong> — ambos buscan algo serio
-              con tiempo para construir.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 84%"></div>
-                </div>
-                <span class="reason-bar-label">84%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button
-            class="btn-profile"
-            onclick="openProfile('mateo')"
-            aria-label="Ver perfil de Mateo"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Perfil
-          </button>
-          <button
-            class="btn-chat"
-            onclick="window.location.href = './chats.html?persona=mateo'"
-            aria-label="Hablar con Mateo"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              />
-            </svg>
-            Escribirle a Mateo
-          </button>
-        </div>
-      </div>
-
-      <!-- 3. Valentina 81% -->
-      <div
-        class="match-card fu"
-        data-id="valentina"
-        data-score="81"
-        data-new="true"
-        data-active="false"
-      >
-        <div
-          class="card-top"
-          onclick="openProfile('valentina')"
-          role="button"
-          tabindex="0"
-          aria-label="Ver perfil de Valentina"
-        >
-          <div
-            class="card-av card-av-new"
-            style="
-              background-image: url(./images/valentina.png);
-              background-size: cover;
-              background-position: center;
-            "
-            aria-hidden="true"
-          ></div>
-          <div class="card-info">
-            <div class="card-name">Valentina, 24</div>
-            <div class="card-meta">CABA · match hace 1 día</div>
-            <div class="card-tags">
-              <span class="card-tag">Arte</span>
-              <span class="card-tag">Fotografía</span>
-              <span class="card-tag">Yoga</span>
-            </div>
-          </div>
-          <div class="score-wrap">
-            <div class="score-ring" aria-label="81% de compatibilidad">
-              <svg viewBox="0 0 56 56">
-                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
-                <circle
-                  class="score-ring-fill"
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="#FFBB30"
-                  stroke-dasharray="138.2"
-                  stroke-dashoffset="26"
-                />
-              </svg>
-              <span class="score-number">81%</span>
-            </div>
-            <span class="score-label">Afinidad</span>
-          </div>
-        </div>
-        <div class="card-reasons">
-          <p class="reasons-title">Por qué son compatibles</p>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M12 20h9" />
-                <path
-                  d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
-                />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Expresión creativa</strong> — comparten sensibilidad
-              artística y apreciación por lo visual.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 85%"></div>
-                </div>
-                <span class="reason-bar-label">85%</span>
-              </div>
-            </div>
-          </div>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" />
-                <path d="M12 8v4l3 3" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Ritmo de vida</strong> — ambos valoran el tiempo propio y
-              la calma sobre la agitación social.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 77%"></div>
-                </div>
-                <span class="reason-bar-label">77%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button
-            class="btn-profile"
-            onclick="openProfile('valentina')"
-            aria-label="Ver perfil de Valentina"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Perfil
-          </button>
-          <button
-            class="btn-chat"
-            onclick="window.location.href = './chats.html?persona=valentina'"
-            aria-label="Hablar con Valentina"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              />
-            </svg>
-            Escribirle a Valentina
-          </button>
-        </div>
-      </div>
-
-      <!-- 4. Lucía 76% -->
-      <div
-        class="match-card fu"
-        data-id="lucia"
-        data-score="76"
-        data-new="false"
-        data-active="true"
-      >
-        <div
-          class="card-top"
-          onclick="openProfile('lucia')"
-          role="button"
-          tabindex="0"
-          aria-label="Ver perfil de Lucía"
-        >
-          <div
-            class="card-av"
-            style="
-              background-image: url(./images/lucia.png);
-              background-size: cover;
-              background-position: center;
-            "
-            aria-hidden="true"
-          ></div>
-          <div class="card-info">
-            <div class="card-name">Lucía, 27</div>
-            <div class="card-meta">Buenos Aires · match hace 3 días</div>
-            <div class="card-tags">
-              <span class="card-tag">Libros</span>
-              <span class="card-tag">Cocina</span>
-              <span class="card-tag">Senderismo</span>
-            </div>
-          </div>
-          <div class="score-wrap">
-            <div class="score-ring" aria-label="76% de compatibilidad">
-              <svg viewBox="0 0 56 56">
-                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
-                <circle
-                  class="score-ring-fill"
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="#FF751F"
-                  stroke-dasharray="138.2"
-                  stroke-dashoffset="33"
-                />
-              </svg>
-              <span class="score-number">76%</span>
-            </div>
-            <span class="score-label">Afinidad</span>
-          </div>
-        </div>
-        <div class="card-reasons">
-          <p class="reasons-title">Por qué son compatibles</p>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Curiosidad intelectual</strong> — ambos disfrutan
-              aprender, leer y debatir ideas.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 80%"></div>
-                </div>
-                <span class="reason-bar-label">80%</span>
-              </div>
-            </div>
-          </div>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 11l19-9-9 19-2-8-8-2z" />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Afinidad de proyectos</strong> — comparten visión a largo
-              plazo y objetivos de vida similares.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 72%"></div>
-                </div>
-                <span class="reason-bar-label">72%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button
-            class="btn-profile"
-            onclick="openProfile('lucia')"
-            aria-label="Ver perfil de Lucía"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Perfil
-          </button>
-          <button
-            class="btn-chat"
-            onclick="window.location.href = './chats.html?persona=lucia'"
-            aria-label="Hablar con Lucía"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              />
-            </svg>
-            Escribirle a Lucía
-          </button>
-        </div>
-      </div>
-
-      <!-- 5. Agustín 71% -->
-      <div
-        class="match-card fu"
-        data-id="agustin"
-        data-score="71"
-        data-new="false"
-        data-active="false"
-      >
-        <div
-          class="card-top"
-          onclick="openProfile('agustin')"
-          role="button"
-          tabindex="0"
-          aria-label="Ver perfil de Agustín"
-        >
-          <div
-            class="card-av"
-            style="
-              background-image: url(./images/Agustin.png);
-              background-size: cover;
-              background-position: center;
-            "
-            aria-hidden="true"
-          ></div>
-          <div class="card-info">
-            <div class="card-name">Agustín, 29</div>
-            <div class="card-meta">Buenos Aires · match hace 4 días</div>
-            <div class="card-tags">
-              <span class="card-tag">Deporte</span>
-              <span class="card-tag">Viajes</span>
-              <span class="card-tag">Gastronomía</span>
-            </div>
-          </div>
-          <div class="score-wrap">
-            <div class="score-ring" aria-label="71% de compatibilidad">
-              <svg viewBox="0 0 56 56">
-                <circle class="score-ring-bg" cx="28" cy="28" r="22" />
-                <circle
-                  class="score-ring-fill"
-                  cx="28"
-                  cy="28"
-                  r="22"
-                  stroke="#FF751F"
-                  stroke-dasharray="138.2"
-                  stroke-dashoffset="40"
-                />
-              </svg>
-              <span class="score-number">71%</span>
-            </div>
-            <span class="score-label">Afinidad</span>
-          </div>
-        </div>
-        <div class="card-reasons">
-          <p class="reasons-title">Por qué son compatibles</p>
-          <div class="reason-row">
-            <div class="reason-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M2 12h20" />
-                <path
-                  d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-                />
-              </svg>
-            </div>
-            <div class="reason-text">
-              <strong>Actitud ante la vida</strong> — comparten energía
-              positiva, curiosidad por el mundo y ganas de salir.
-              <div class="reason-score-row">
-                <div class="reason-bar-wrap">
-                  <div class="reason-bar" style="width: 74%"></div>
-                </div>
-                <span class="reason-bar-label">74%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button
-            class="btn-profile"
-            onclick="openProfile('agustin')"
-            aria-label="Ver perfil de Agustín"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Perfil
-          </button>
-          <button
-            class="btn-chat"
-            onclick="window.location.href = './chats.html?persona=agustin'"
-            aria-label="Hablar con Agustín"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              />
-            </svg>
-            Escribirle a Agustín
-          </button>
-        </div>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+        <p class="matches-empty-title">Todavía no tenés matches</p>
+        <p class="matches-empty-sub">
+          Completá tu gemelo y volvé más tarde — en cuanto conecte con el de
+          alguien más, va a aparecer acá.
+        </p>
       </div>
     </main>
 
@@ -2118,200 +1407,9 @@
           );
       }
 
-      // ── Datos de ejemplo — reemplazar con datos reales del backend ──
-      const profiles = {
-        sofia: {
-          name: "Sofía",
-          age: 26,
-          city: "Buenos Aires",
-          score: 92,
-          av: "S",
-          color: "linear-gradient(135deg,#FF9700,#FF751F)",
-          photo: "./images/sofia.png",
-          photos: [
-            "linear-gradient(145deg,#FF9700,#FF751F)",
-            "linear-gradient(145deg,#FFD580,#FF9700)",
-            "linear-gradient(145deg,#FF751F,#c74b00)",
-            "linear-gradient(145deg,#FFBB30,#FF9700)",
-            "linear-gradient(145deg,#ff9a3c,#e05000)",
-          ],
-          bio: "Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.",
-          compat: [
-            { label: "Gustos musicales", pct: 95 },
-            { label: "Estilo de comunicación", pct: 91 },
-            { label: "Valores en común", pct: 88 },
-            { label: "Sentido del humor", pct: 84 },
-          ],
-          interests: [
-            "Música en vivo",
-            "Viajes",
-            "Lectura",
-            "Jazz",
-            "Cine independiente",
-            "Naturaleza",
-          ],
-          shared: ["Música en vivo", "Cine independiente", "Naturaleza"],
-          preview: [
-            {
-              side: "left",
-              text: "¿Vos también sentís que las primeras citas son como una entrevista de trabajo?",
-            },
-            {
-              side: "right",
-              text: "Sí, y terminás siendo la versión que creés que el otro quiere ver.",
-            },
-            {
-              side: "left",
-              text: "Exacto. Por eso me gustás. Sé que con vos no tendría que actuar.",
-            },
-          ],
-        },
-        mateo: {
-          name: "Mateo",
-          age: 28,
-          city: "Buenos Aires",
-          score: 87,
-          av: "M",
-          color: "linear-gradient(135deg,#555,#888)",
-          photo: "./images/mateo.png",
-          photos: [
-            "linear-gradient(145deg,#555,#888)",
-            "linear-gradient(145deg,#888,#aaa)",
-            "linear-gradient(145deg,#3a3a3a,#666)",
-            "linear-gradient(145deg,#777,#999)",
-            "linear-gradient(145deg,#444,#777)",
-          ],
-          bio: "Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.",
-          compat: [
-            { label: "Humor y referencias culturales", pct: 90 },
-            { label: "Tipo de vínculo buscado", pct: 84 },
-            { label: "Ritmo de vida", pct: 80 },
-          ],
-          interests: [
-            "Cine",
-            "Series",
-            "Tecnología",
-            "Running",
-            "Cocina",
-            "Música",
-          ],
-          shared: ["Cine", "Música"],
-          preview: [
-            {
-              side: "left",
-              text: "¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.",
-            },
-            {
-              side: "right",
-              text: "Es de las mejores. La vi tres veces. Cada vez encuentro algo nuevo.",
-            },
-          ],
-        },
-        valentina: {
-          name: "Valentina",
-          age: 24,
-          city: "CABA",
-          score: 81,
-          av: "V",
-          color: "linear-gradient(135deg,#FFBB30,#FF9700)",
-          photo: "./images/valentina.png",
-          photos: [
-            "linear-gradient(145deg,#FFBB30,#FF9700)",
-            "linear-gradient(145deg,#FFD580,#FFBB30)",
-            "linear-gradient(145deg,#FF9700,#e07800)",
-            "linear-gradient(145deg,#ffd060,#ffaa00)",
-            "linear-gradient(145deg,#FFB300,#FF8C00)",
-          ],
-          bio: "Artista visual y fotógrafa. Hace yoga todos los días y cree que la calma no es aburrimiento. Le gustan los domingos sin plan y las conversaciones que duran hasta tarde.",
-          compat: [
-            { label: "Expresión creativa", pct: 85 },
-            { label: "Ritmo de vida", pct: 77 },
-            { label: "Valores", pct: 75 },
-          ],
-          interests: [
-            "Arte",
-            "Fotografía",
-            "Yoga",
-            "Diseño",
-            "Naturaleza",
-            "Música",
-          ],
-          shared: ["Naturaleza", "Música"],
-          preview: [
-            {
-              side: "left",
-              text: "¿Creés que hay personas que llegan en el momento exacto?",
-            },
-            {
-              side: "right",
-              text: "Creo que el momento exacto lo crean las personas, no el destino.",
-            },
-          ],
-        },
-        lucia: {
-          name: "Lucía",
-          age: 27,
-          city: "Buenos Aires",
-          score: 76,
-          av: "L",
-          color: "linear-gradient(135deg,#333,#555)",
-          photo: "./images/lucia.png",
-          photos: [
-            "linear-gradient(145deg,#333,#555)",
-            "linear-gradient(145deg,#555,#777)",
-            "linear-gradient(145deg,#222,#444)",
-            "linear-gradient(145deg,#444,#666)",
-            "linear-gradient(145deg,#3a3a3a,#5a5a5a)",
-          ],
-          bio: "Psicóloga. Lee todo lo que puede y cocina cuando necesita pensar. Le gustan las conversaciones honestas y los planes que empiezan en un bar y terminan caminando.",
-          compat: [
-            { label: "Curiosidad intelectual", pct: 80 },
-            { label: "Proyectos de vida", pct: 72 },
-          ],
-          interests: ["Libros", "Psicología", "Cocina", "Senderismo", "Teatro"],
-          shared: ["Libros", "Teatro"],
-          preview: [
-            {
-              side: "left",
-              text: "¿Vos también pensás que la honestidad incomoda a mucha gente?",
-            },
-            {
-              side: "right",
-              text: "Sí. Pero prefiero esa incomodidad a una conversación que no llega a nada.",
-            },
-          ],
-        },
-        agustin: {
-          name: "Agustín",
-          age: 29,
-          city: "Buenos Aires",
-          score: 71,
-          av: "A",
-          color: "linear-gradient(135deg,#222,#3A3A3A)",
-          photo: "./images/Agustin.png",
-          photos: [
-            "linear-gradient(145deg,#222,#3A3A3A)",
-            "linear-gradient(145deg,#3A3A3A,#555)",
-            "linear-gradient(145deg,#111,#2a2a2a)",
-            "linear-gradient(145deg,#2a2a2a,#444)",
-            "linear-gradient(145deg,#333,#4a4a4a)",
-          ],
-          bio: "Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin mucha planificación y los asados que se alargan hasta la madrugada. Tiene energía para todo.",
-          compat: [{ label: "Actitud ante la vida", pct: 74 }],
-          interests: ["Deporte", "Viajes", "Gastronomía", "Fútbol", "Cocina"],
-          shared: ["Viajes"],
-          preview: [
-            {
-              side: "left",
-              text: "¿Viajaste alguna vez sin reservar nada de antemano?",
-            },
-            {
-              side: "right",
-              text: "Sí, es la única forma de que pase algo realmente interesante.",
-            },
-          ],
-        },
-      };
+      // Se llena con datos reales de Firestore -- ver cargarMatchesReales()
+      // más abajo. openProfile() lee de acá igual que antes.
+      let profiles = {};
 
       // Abre el modal con el perfil completo del match seleccionado
       // Construye dinámicamente el header, bio, barras de compatibilidad, intereses,
@@ -2325,7 +1423,7 @@
         document.getElementById("modal-header").innerHTML = `
     <div class="modal-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
     <div class="modal-name-wrap">
-      <div class="modal-name">${p.name}, ${p.age}</div>
+      <div class="modal-name">${p.name}${p.age ? ", " + p.age : ""}</div>
       <div class="modal-meta">${p.city}</div>
     </div>
     <div style="text-align:center">
@@ -2337,46 +1435,54 @@
         // Body
         let html = "";
 
-        // Bio
-        html += `<div>
+        // Bio (solo si escribió una)
+        if (p.bio) {
+          html += `<div>
     <p class="modal-section-title">Sobre ${p.name}</p>
     <p style="font-family:var(--font-serif);font-size:0.95rem;font-style:italic;font-weight:300;color:var(--text-secondary);line-height:1.7">${p.bio}</p>
   </div>`;
+        }
 
-        // Compat bars
-        html += `<div>
+        // Compat bars (los 3 ejes reales que calcula calcular_compatibilidad)
+        if (p.compat && p.compat.length) {
+          html += `<div>
     <p class="modal-section-title">Razones de compatibilidad</p>
     <div class="compat-row">`;
-        p.compat.forEach((c) => {
-          const cc = scoreColor(c.pct);
-          html += `<div class="compat-item">
+          p.compat.forEach((c) => {
+            const cc = scoreColor(c.pct);
+            html += `<div class="compat-item">
       <div class="compat-item-header">
         <span class="compat-item-label">${c.label}</span>
         <span class="compat-item-pct" style="color:${cc}">${c.pct}%</span>
       </div>
       <div class="compat-bar-wrap"><div class="compat-bar" style="width:0%;background:${cc}" data-target="${c.pct}%"></div></div>
     </div>`;
-        });
-        html += `</div></div>`;
+          });
+          html += `</div></div>`;
+        }
 
-        // Interests
-        html += `<div>
+        // Interests (intereses reales del usuario, en naranja los compartidos)
+        if (p.interests && p.interests.length) {
+          html += `<div>
     <p class="modal-section-title">Intereses <span style="color:var(--orange);font-style:normal">— en naranja los que compartís</span></p>
     <div class="interest-tags">`;
-        p.interests.forEach((i) => {
-          const shared = p.shared.includes(i);
-          html += `<span class="interest-tag${shared ? " shared" : ""}">${i}</span>`;
-        });
-        html += `</div></div>`;
+          p.interests.forEach((i) => {
+            const shared = p.shared.includes(i);
+            html += `<span class="interest-tag${shared ? " shared" : ""}">${i}</span>`;
+          });
+          html += `</div></div>`;
+        }
 
-        // Gemelo preview
-        html += `<div>
+        // Gemelo preview (solo si hay una simulación real de la que sacarlo)
+        if (p.preview && p.preview.length) {
+          html += `<div>
     <p class="modal-section-title">Fragmento de la conversación entre gemelos</p>
     <div class="gemelo-preview">`;
-        p.preview.forEach((b) => {
-          html += `<div class="preview-bubble ${b.side}">${b.text}</div>`;
-        });
-        html += `</div></div>`;
+          p.preview.forEach((b) => {
+            html += `<div class="preview-bubble ${b.side}">${b.text}</div>`;
+          });
+          html += `</div></div>`;
+        }
 
         // Photos
         if (p.photos && p.photos.length) {
@@ -2395,6 +1501,11 @@
         document.getElementById("modal-chat-btn").onclick = () => {
           window.location.href = `./chats.html?persona=${id}`;
         };
+
+        // Ver el perfil también saca el resaltado naranja de "match nuevo"
+        if (typeof window._db_marcarMatchVisto === "function") {
+          window._db_marcarMatchVisto(id);
+        }
 
         // Open modal
         const overlay = document.getElementById("modal");
@@ -2505,10 +1616,13 @@
         getFirestore,
         doc,
         getDoc,
+        setDoc,
         collection,
         getDocs,
         query,
         where,
+        orderBy,
+        limit,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
@@ -2526,6 +1640,16 @@
         }
       }
 
+      function calcAge(fechaNac) {
+        if (!fechaNac) return null;
+        const b = new Date(fechaNac),
+          hoy = new Date();
+        let a = hoy.getFullYear() - b.getFullYear();
+        const m = hoy.getMonth() - b.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < b.getDate())) a--;
+        return a;
+      }
+
       const app = initializeApp({
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
         authDomain: "pebble-78e95.firebaseapp.com",
@@ -2536,6 +1660,252 @@
       });
       const auth = getAuth(app);
       const db = getFirestore(app);
+
+      const EJES_COMPAT = [
+        { key: "score_psicologico", label: "Compatibilidad de personalidades" },
+        { key: "score_conversacional", label: "Química en la conversación" },
+        { key: "score_valores", label: "Valores compartidos" },
+      ];
+      const SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+
+      function haceTiempo(ms) {
+        if (!ms) return "";
+        const diff = Date.now() - ms;
+        const min = Math.floor(diff / 60000);
+        if (min < 1) return "match recién";
+        if (min < 60) return `match hace ${min} min`;
+        const hs = Math.floor(min / 60);
+        if (hs < 24) return `match hace ${hs}h`;
+        const dias = Math.floor(hs / 24);
+        return `match hace ${dias} día${dias === 1 ? "" : "s"}`;
+      }
+
+      function iconoCheck() {
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      }
+
+      function construirEjes(sim) {
+        if (!sim || !sim.score) return [];
+        return EJES_COMPAT.filter((e) => typeof sim.score[e.key] === "number").map((e) => ({
+          label: e.label,
+          pct: Math.round(sim.score[e.key] * 100),
+        }));
+      }
+
+      function interesesCompartidos(mios, suyos) {
+        const set = new Set(suyos || []);
+        return (mios || []).filter((i) => set.has(i));
+      }
+
+      // Marca un match como visto: saca el resaltado naranja y lo guarda en
+      // Firestore (usuarios/{uid}.match_visto_{otroId}) para que no vuelva a
+      // aparecer resaltado en una próxima visita. Se llama tanto desde las
+      // cards nuevas (botones armados acá abajo) como desde openProfile()
+      // (definida en el otro script, por eso el bridge por window).
+      async function marcarMatchVisto(otroId) {
+        const user = auth.currentUser;
+        if (user) {
+          try {
+            await setDoc(
+              doc(db, "usuarios", user.uid),
+              { [`match_visto_${otroId}`]: true },
+              { merge: true },
+            );
+          } catch (e) {
+            console.warn("Error marcando match visto:", e);
+          }
+        }
+        const card = document.querySelector(`.match-card[data-id="${otroId}"]`);
+        if (card) {
+          card.dataset.new = "false";
+          const av = card.querySelector(".card-av");
+          if (av) av.classList.remove("card-av-new");
+        }
+      }
+      window.marcarMatchVisto = marcarMatchVisto;
+      window._db_marcarMatchVisto = marcarMatchVisto;
+
+      function buildMatchCardHTML(m) {
+        const circunferencia = 138.2;
+        const offset = (circunferencia * (1 - m.score / 100)).toFixed(1);
+        const avatarStyle = m.foto
+          ? `background-image:url('${m.foto}');background-size:cover;background-position:center`
+          : `background:linear-gradient(135deg,#888,#555)`;
+        const tagsHtml = (m.tags || [])
+          .slice(0, 3)
+          .map((t) => `<span class="card-tag">${t}</span>`)
+          .join("");
+        const reasonsHtml = m.ejes.length
+          ? m.ejes
+              .map(
+                (e) => `
+              <div class="reason-row">
+                <div class="reason-icon">${iconoCheck()}</div>
+                <div class="reason-text">
+                  <strong>${e.label}</strong>
+                  <div class="reason-score-row">
+                    <div class="reason-bar-wrap"><div class="reason-bar" style="width:${e.pct}%"></div></div>
+                    <span class="reason-bar-label">${e.pct}%</span>
+                  </div>
+                </div>
+              </div>`,
+              )
+              .join("")
+          : `<p style="font-size:0.8rem;color:var(--text-muted)">Todavía no hay suficientes conversaciones simuladas para desglosar la compatibilidad.</p>`;
+
+        return `
+          <div class="match-card fu" data-id="${m.id}" data-score="${m.score}" data-new="${m.isNew}" data-active="${m.hasChat}">
+            <div class="card-top" onclick="openProfile('${m.id}')" role="button" tabindex="0" aria-label="Ver perfil de ${m.nombre}">
+              <div class="card-av${m.isNew ? " card-av-new" : ""}" style="${avatarStyle}" aria-hidden="true"></div>
+              <div class="card-info">
+                <div class="card-name">${m.nombre}${m.edad ? ", " + m.edad : ""}</div>
+                <div class="card-meta">${[m.ciudad, m.metaTexto].filter(Boolean).join(" · ")}</div>
+                ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ""}
+              </div>
+              <div class="score-wrap">
+                <div class="score-ring" aria-label="${m.score}% de compatibilidad">
+                  <svg viewBox="0 0 56 56">
+                    <circle class="score-ring-bg" cx="28" cy="28" r="22"/>
+                    <circle class="score-ring-fill" cx="28" cy="28" r="22" stroke="#FF751F" stroke-dasharray="${circunferencia}" stroke-dashoffset="${offset}"/>
+                  </svg>
+                  <span class="score-number">${m.score}%</span>
+                </div>
+                <span class="score-label">Afinidad</span>
+              </div>
+            </div>
+            <div class="card-reasons">
+              <p class="reasons-title">Por qué son compatibles</p>
+              ${reasonsHtml}
+            </div>
+            <div class="card-actions">
+              <button class="btn-profile" onclick="openProfile('${m.id}')" aria-label="Ver perfil de ${m.nombre}">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Perfil
+              </button>
+              <button class="btn-chat" onclick="marcarMatchVisto('${m.id}');window.location.href='./chats.html?persona=${m.id}'" aria-label="Hablar con ${m.nombre}">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Escribirle a ${m.nombre}
+              </button>
+            </div>
+          </div>`;
+      }
+
+      // Arma las matches reales desde Firestore: conexiones donde el usuario
+      // es participante y superaron el umbral de compatibilidad. Si pasó una
+      // semana desde que se creó la conexión y todavía no hay chat real
+      // arrancado, esa match deja de mostrarse (se "vence").
+      async function cargarMatchesReales(user) {
+        const emptyEl = document.getElementById("matchesEmpty");
+        const countEl = document.getElementById("match-count");
+        const main = document.querySelector(".app-main");
+
+        const misSnap = await getDoc(doc(db, "usuarios", user.uid));
+        const mis = misSnap.exists() ? misSnap.data() : {};
+        const misIntereses = mis.intereses || [];
+
+        const conexionesSnap = await getDocs(
+          query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+        );
+
+        const ahora = Date.now();
+        const candidatos = [];
+        conexionesSnap.forEach((d) => {
+          const data = d.data();
+          if (!data.supera_umbral) return;
+          const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
+          const tieneChatReal = Array.isArray(data.real?.msgs) && data.real.msgs.length > 0;
+          const hasChat =
+            tieneChatReal || (Array.isArray(data.gemelo?.msgs) && data.gemelo.msgs.length > 0);
+          const creadoMs = data.creado && data.creado.toMillis ? data.creado.toMillis() : null;
+          // Match nueva sin chat real hace más de una semana: desaparece.
+          if (creadoMs && !tieneChatReal && ahora - creadoMs > SEMANA_MS) return;
+          candidatos.push({ parId: d.id, otroId, data, hasChat, creadoMs });
+        });
+
+        if (!candidatos.length) {
+          if (emptyEl) emptyEl.style.display = "flex";
+          if (countEl) countEl.textContent = "0 matches";
+          return;
+        }
+        if (emptyEl) emptyEl.style.display = "none";
+
+        await Promise.all(
+          candidatos.map(async (c) => {
+            try {
+              const s = await getDoc(doc(db, "usuarios", c.otroId));
+              c.otro = s.exists() ? s.data() : {};
+            } catch (e) {
+              c.otro = {};
+            }
+            try {
+              const simSnap = await getDocs(
+                query(
+                  collection(db, "conexiones", c.parId, "simulaciones"),
+                  orderBy("fecha", "desc"),
+                  limit(1),
+                ),
+              );
+              c.ultimaSim = simSnap.empty ? null : simSnap.docs[0].data();
+            } catch (e) {
+              c.ultimaSim = null;
+            }
+          }),
+        );
+
+        if (countEl) {
+          countEl.textContent = `${candidatos.length} match${candidatos.length === 1 ? "" : "es"}`;
+        }
+
+        let html = "";
+        candidatos.forEach((c) => {
+          const nombreGuardado =
+            c.data.usuario_1.uid === c.otroId ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+          const nombre = c.otro.nombre || nombreGuardado || "Usuario";
+          const edad = typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null;
+          const ciudad = c.otro.ciudad || "";
+          const foto = c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "";
+          const score = Math.round((c.data.ultimo_score || 0) * 100);
+          const isNew = !mis[`match_visto_${c.otroId}`];
+          const tags = interesesCompartidos(misIntereses, c.otro.intereses);
+          const ejes = construirEjes(c.ultimaSim);
+          const historial =
+            c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat) ? c.ultimaSim.historial_chat : [];
+
+          profiles[c.otroId] = {
+            name: nombre,
+            age: edad,
+            city: ciudad,
+            score,
+            photo: foto,
+            photos: Array.isArray(c.otro.fotos) ? c.otro.fotos : [],
+            bio: c.otro.bio || "",
+            compat: ejes,
+            interests: (c.otro.intereses || []).slice(0, 10),
+            shared: tags,
+            preview: historial.slice(-3).map((msg) => ({
+              side: msg.name && mis.nombre && msg.name === mis.nombre ? "right" : "left",
+              text: msg.content || "",
+            })),
+          };
+
+          html += buildMatchCardHTML({
+            id: c.otroId,
+            nombre,
+            edad,
+            ciudad,
+            foto,
+            score,
+            isNew,
+            hasChat: c.hasChat,
+            tags,
+            ejes,
+            metaTexto: c.creadoMs ? haceTiempo(c.creadoMs) : "",
+          });
+        });
+
+        main.insertAdjacentHTML("beforeend", html);
+        if (typeof initScoreRings === "function") initScoreRings();
+      }
 
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
@@ -2564,37 +1934,15 @@
           console.warn("Error cargando avatar:", e);
         }
 
-        // Actualizar data-active en las cards según chats reales en Firestore
-        // (conexiones/{parId}, doc compartido con la otra persona). Una sola
-        // query con array-contains: dos queries separadas por
-        // usuario_1.uid/usuario_2.uid con una regla OR entre ambos campos
-        // fallan con PERMISSION_DENIED en Firestore (probado con el
-        // emulador), aunque los datos estén bien.
+        // Matches reales desde Firestore (conexiones/{parId}, doc compartido
+        // con la otra persona) -- arma las cards, marca cuáles son nuevas y
+        // filtra las que vencieron sin chat real hace más de una semana.
         try {
-          const conexionesSnap = await getDocs(
-            query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
-          );
-          const chatsMap = {};
-          conexionesSnap.forEach((d) => {
-            const data = d.data();
-            const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
-            chatsMap[otroId] = data;
-          });
-
-          document.querySelectorAll(".match-card[data-id]").forEach((card) => {
-            const id = card.dataset.id;
-            const c = chatsMap[id];
-            // Tiene chat activo si hay al menos un mensaje real o gemelo guardado
-            const hasChat =
-              !!c &&
-              ["real", "gemelo"].some(
-                (mode) =>
-                  Array.isArray(c[mode]?.msgs) && c[mode].msgs.length > 0,
-              );
-            card.dataset.active = hasChat ? "true" : "false";
-          });
+          await cargarMatchesReales(user);
         } catch (e) {
-          console.warn("Error cargando estado de chats:", e);
+          console.warn("Error cargando matches:", e);
+          const emptyEl = document.getElementById("matchesEmpty");
+          if (emptyEl) emptyEl.style.display = "flex";
         }
 
         const el = document.getElementById("loadingOverlay");

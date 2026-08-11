@@ -3,10 +3,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Mismo esquema de par_id que usa el backend (motor._par_id) y el
+    // frontend (parId() en chats.html/home.html/matches.html).
+    function parId(a, b) {
+      return a < b ? a + '_' + b : b + '_' + a;
+    }
+
     // Cuenta del usuario: perfil básico, chats guardados, plan, etc.
     // (todo lo que ya escriben home.html, chats.html, perfil.html, pago.html...)
     match /usuarios/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid;
+
+      // El dueño siempre puede leer el suyo. Además, alguien con quien ya
+      // tiene una conexión (match.html necesita nombre/foto/edad/ciudad/bio
+      // del otro para armar la tarjeta) puede leerlo también -- una vez
+      // "conectados" el perfil se vuelve visible entre ellos, es la misma
+      // idea de revelado progresivo que ya tiene perfil.html.
+      allow read: if request.auth != null && (
+        request.auth.uid == uid ||
+        exists(/databases/$(database)/documents/conexiones/$(parId(uid, request.auth.uid)))
+      );
 
       // Respuestas crudas del onboarding (gemelo-setup.html).
       match /gemelo_setup/{docId} {
