@@ -2497,7 +2497,7 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 const functionsInstance = getFunctions(app);
-const actualizarGeneroOrientacionCallable = httpsCallable(functionsInstance, "actualizar_genero_orientacion");
+const actualizarPreferenciasMatchingCallable = httpsCallable(functionsInstance, "actualizar_preferencias_matching");
 
 let uid = null;
 
@@ -2745,18 +2745,20 @@ window._db_saveInfo = async (data) => {
 
   // usuarios/{uid}/gemelo/perfil (lo que usa el matching real) es de
   // solo-lectura para el cliente -- se genera una sola vez desde el
-  // onboarding y después queda congelado, así que editar género/orientación
-  // acá no lo tocaría por sí solo. Este callable es el único lugar donde ese
-  // cambio se propaga también al perfil real (ver
-  // main.actualizar_genero_orientacion), para no tener dos valores
-  // desincronizados de "tu género"/"tu orientación".
+  // onboarding y después queda congelado, así que editar género/orientación/
+  // rango de edad acá no lo tocaría por sí solo. Este callable es el único
+  // lugar donde ese cambio se propaga también al perfil real (ver
+  // main.actualizar_preferencias_matching), para no tener dos valores
+  // desincronizados de tus preferencias.
   try {
-    await actualizarGeneroOrientacionCallable({
+    await actualizarPreferenciasMatchingCallable({
       genero: data.genero,
       orientacion: data.orientacion,
+      edadMinBusco: data.rangoEdadMin,
+      edadMaxBusco: data.rangoEdadMax,
     });
   } catch (e) {
-    console.warn('No se pudo sincronizar género/orientación con el matching:', e);
+    console.warn('No se pudieron sincronizar las preferencias con el matching:', e);
   }
 };
 window._db_saveBio = async (bio) => {

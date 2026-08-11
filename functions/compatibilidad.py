@@ -150,6 +150,52 @@ def compatible_por_genero(perfil1, perfil2):
     return ok_1_acepta_2 and ok_2_acepta_1
 
 
+# Años de margen sobre el rango de edad que cada uno pidió -- "busco 25-30"
+# no descarta a alguien de 32. Nunca baja el piso legal (ver EDAD_MINIMA en
+# _edad_en_rango): con busco 18-25, el margen no hace que alguien de 16
+# pueda entrar.
+TOLERANCIA_EDAD = 3
+
+EDAD_MINIMA = 18
+
+
+def _edad_en_rango(edad_candidato, rango_busco, tolerancia):
+    """True si edad_candidato entra en rango_busco (+-tolerancia años). Sin
+    la edad del candidato o sin preferencia de rango puesta, no se puede
+    evaluar esa mitad -- se deja pasar en vez de bloquear el par entero."""
+
+    if edad_candidato is None or not rango_busco:
+        return True
+
+    minimo = rango_busco.get("min")
+    maximo = rango_busco.get("max")
+
+    piso = max(EDAD_MINIMA, minimo - tolerancia) if minimo is not None else EDAD_MINIMA
+    techo = maximo + tolerancia if maximo is not None else 999
+
+    return piso <= edad_candidato <= techo
+
+
+def compatible_por_edad(perfil1, perfil2, tolerancia=TOLERANCIA_EDAD):
+    """True si la edad de cada uno entra en el rango que busca el otro (con
+    `tolerancia` años de margen para cada lado). Sea cual sea la preferencia
+    de cualquiera de los dos, alguien menor de 18 nunca es candidato de
+    nadie -- ese piso es absoluto y la tolerancia nunca lo cruza."""
+
+    edad1 = perfil1.get("edad")
+    edad2 = perfil2.get("edad")
+
+    if edad1 is not None and edad1 < EDAD_MINIMA:
+        return False
+    if edad2 is not None and edad2 < EDAD_MINIMA:
+        return False
+
+    ok_1_acepta_2 = _edad_en_rango(edad2, perfil1.get("rango_edad_busco"), tolerancia)
+    ok_2_acepta_1 = _edad_en_rango(edad1, perfil2.get("rango_edad_busco"), tolerancia)
+
+    return ok_1_acepta_2 and ok_2_acepta_1
+
+
 def compatibilidad_psicologica(perfil1, perfil2):
 
     p1 = perfil1.get("personalidad", {})

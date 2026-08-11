@@ -279,9 +279,25 @@ def _construir_ubicacion(e1):
     return {"lat": lat, "lng": lng}
 
 
-def _construir_identidad(e1):
-    edad_raw = str(e1.get("edad", "")).strip()
+def _construir_edad_int(valor):
+    valor = str(valor or "").strip()
+    return int(valor) if valor.isdigit() else None
 
+
+def _construir_rango_edad_busco(e1):
+    """Rango de edad que la persona busca en un match -- lo usa
+    compatibilidad.compatible_por_edad() para filtrar candidatos (con un
+    margen de tolerancia y un piso de 18 años que nunca se cruza). Si no
+    puso min y/o max, esa punta queda en None -- compatible_por_edad() lo
+    trata como "sin preferencia" en esa punta, no como "rechaza todo"."""
+    minimo = _construir_edad_int(e1.get("edadMinBusco"))
+    maximo = _construir_edad_int(e1.get("edadMaxBusco"))
+    if minimo is None and maximo is None:
+        return None
+    return {"min": minimo, "max": maximo}
+
+
+def _construir_identidad(e1):
     # Si eligió "Otro" en orientación o género, usamos lo que escribió a mano
     # como el valor real en vez de guardar el string "Otro" literal -- si no
     # lo completó, se queda en "Otro".
@@ -296,7 +312,8 @@ def _construir_identidad(e1):
     return {
         "nombre": e1.get("nombre") or e1.get("apodo") or "Usuario",
         "apodo": e1.get("apodo", ""),
-        "edad": int(edad_raw) if edad_raw.isdigit() else None,
+        "edad": _construir_edad_int(e1.get("edad")),
+        "rango_edad_busco": _construir_rango_edad_busco(e1),
         "ciudad": e1.get("ciudad", ""),
         "ubicacion": _construir_ubicacion(e1),
         "profesion": e1.get("ocupacion", ""),

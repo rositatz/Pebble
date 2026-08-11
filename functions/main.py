@@ -8,7 +8,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
-from compatibilidad import compatible_por_genero
+from compatibilidad import compatible_por_genero, compatible_por_edad
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -53,19 +53,21 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
 
 
 @https_fn.on_call()
-def actualizar_genero_orientacion(request: https_fn.CallableRequest):
+def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     """usuarios/{uid}/gemelo/perfil (lo que usa el matching real) es de
     solo-lectura para el cliente -- se genera una sola vez en el onboarding
     y después queda congelado (ver generar_perfil_gemelo), justamente para
     que nadie pueda inventarse rasgos falsos y matchear mejor. Pero
-    perfil.html también deja editar género/orientación desde la tarjeta de
-    perfil, así que hace falta un lugar server-side que propague ESE cambio
-    puntual al perfil real -- este endpoint es ese lugar, y solo toca esos
-    dos campos, nada más.
+    perfil.html también deja editar género/orientación/rango de edad desde
+    la tarjeta de perfil, así que hace falta un lugar server-side que
+    propague ESE cambio puntual al perfil real -- este endpoint es ese
+    lugar, y solo toca estos campos puntuales, nada más.
 
     Datos esperados en request.data:
       - genero (opcional)
       - orientacion (opcional)
+      - edadMinBusco (opcional)
+      - edadMaxBusco (opcional)
     """
 
     if request.auth is None:
@@ -82,6 +84,13 @@ def actualizar_genero_orientacion(request: https_fn.CallableRequest):
         cambios["genero"] = (data.get("genero") or "").strip()
     if "orientacion" in data:
         cambios["orientacion"] = (data.get("orientacion") or "").strip()
+
+    if "edadMinBusco" in data or "edadMaxBusco" in data:
+        minimo = data.get("edadMinBusco")
+        maximo = data.get("edadMaxBusco")
+        minimo = int(minimo) if isinstance(minimo, (int, float)) else None
+        maximo = int(maximo) if isinstance(maximo, (int, float)) else None
+        cambios["rango_edad_busco"] = {"min": minimo, "max": maximo} if (minimo or maximo) else None
 
     if not cambios:
         return {"ok": True}
@@ -308,6 +317,9 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 continue
 
             if not compatible_por_genero(perfil1, perfil2):
+                continue
+
+            if not compatible_por_edad(perfil1, perfil2):
                 continue
 
             par_id = motor._par_id(uid1, uid2)
