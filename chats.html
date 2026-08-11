@@ -1781,7 +1781,11 @@
     <script>
       // Se llena con datos reales de Firestore -- ver cargarChatsReales()
       // más abajo. openChat()/refreshListItem()/etc. leen de acá igual que antes.
-      let people = {};
+      // "var" (no "let") a propósito: un top-level "let" en un <script>
+      // clásico NO queda expuesto en window, así que el otro <script
+      // type="module"> de más abajo (que es el que arma "people" con datos
+      // reales de Firestore) no podría verlo -- "var" sí queda en window.
+      var people = {};
 
       // Persona actualmente abierta en el panel de chat (ej: 'sofia', 'mateo')
       let curPerson = null;

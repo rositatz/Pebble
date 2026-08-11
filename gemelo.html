@@ -1541,7 +1541,7 @@
       <div
         class="plus-menu-item"
         onclick="
-          sendQuick('¿Cómo hablo con Sofía?');
+          abrirPickerConsejo();
           togglePlusMenu();
         "
       >
@@ -1724,6 +1724,12 @@
       let chatLog = [];
       let replayingChat = false;
       let _saveChatTimer = null;
+
+      // Matches reales (id + nombre) para el picker de "Consejo para un
+      // match" -- lo llena el <script type="module"> de más abajo. "var" (no
+      // "let") a propósito: así queda expuesto en window y ese otro script
+      // puede escribirlo.
+      var matchesReales = [];
 
       function logChatEntry(entry) {
         if (replayingChat) return;
@@ -1931,10 +1937,12 @@
       // Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
       // Convierte &, < y > en sus entidades HTML seguras
       function escHtml(t) {
-        return t
+        return String(t)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;");
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
       }
 
       // Toma el texto del input, lo muestra como mensaje del usuario y dispara la respuesta del gemelo
@@ -2176,6 +2184,72 @@
 
       // Reemplaza los chips de respuesta rápida con una nueva lista de opciones
       // Se llama cada vez que el gemelo responde para mostrar sugerencias relevantes
+      // Reemplaza la fila de respuestas rápidas por chips con tus matches
+      // reales (window.matchesReales, cargado por el script de Firestore de
+      // más abajo). A diferencia del resto de los chips de este archivo (que
+      // van a twinRespond, con texto fijo), elegir uno acá corre una
+      // simulación de verdad contra ese match -- no es una respuesta
+      // enlatada. Se arma con el DOM directamente (no innerHTML con texto
+      // interpolado) para no tener que lidiar con escapar nombres reales
+      // dentro de un atributo onclick.
+      function abrirPickerConsejo() {
+        const qr = document.getElementById("quickReplies");
+        if (!qr) return;
+        qr.innerHTML = "";
+        const reales = window.matchesReales || [];
+        if (!reales.length) {
+          const span = document.createElement("span");
+          span.className = "qr-chip";
+          span.style.cursor = "default";
+          span.textContent = "Todavía no tenés matches";
+          qr.appendChild(span);
+          return;
+        }
+        reales.slice(0, 6).forEach((m) => {
+          const btn = document.createElement("button");
+          btn.className = "qr-chip";
+          btn.textContent = m.nombre;
+          btn.onclick = () => elegirMatchParaConsejo(m.uid, m.nombre);
+          qr.appendChild(btn);
+        });
+      }
+
+      // Corre una simulación real (Cloud Function simular_situacion) contra
+      // el match elegido y muestra el resumen y el score que devuelve de
+      // verdad -- reemplaza el flujo viejo que solo mostraba una respuesta
+      // enlatada mencionando nombres fijos (Sofía, Valentina, etc).
+      function elegirMatchParaConsejo(otroUid, nombre) {
+        addUserMsg(`Dame un consejo para hablar con ${nombre}`);
+        setTimeout(() => {
+          addTyping();
+          if (typeof window._llamarSimularSituacion !== "function") {
+            removeTyping();
+            addTwinMsg("Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.");
+            return;
+          }
+          window
+            ._llamarSimularSituacion(otroUid)
+            .then((res) => {
+              removeTyping();
+              const pct = Math.round(((res.score && res.score.compatibilidad_total) || 0) * 100);
+              const resumen = escHtml(res.resumen || "No hubo un resumen para esta simulación.");
+              const escenario = escHtml(res.escenario || "");
+              const nombreSafe = escHtml(nombre);
+              addTwinMsg(
+                `Simulé una situación con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}`,
+              );
+              setQuickReplies(["¿Cómo van mis matches?", "Dame un consejo", "Quiero darte feedback"]);
+            })
+            .catch((err) => {
+              removeTyping();
+              console.error("Error en simular_situacion:", err);
+              addTwinMsg(
+                `No pude correr la simulación (${escHtml(err.message || "error desconocido")}). Probá de nuevo en un rato.`,
+              );
+            });
+        }, 300);
+      }
+
       function setQuickReplies(opts) {
         const qr = document.getElementById("quickReplies");
         qr.innerHTML = opts
@@ -2303,7 +2377,15 @@
         doc,
         getDoc,
         setDoc,
+        collection,
+        getDocs,
+        query,
+        where,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import {
+        getFunctions,
+        httpsCallable,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
       const app = initializeApp({
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
         authDomain: "pebble-78e95.firebaseapp.com",
@@ -2314,6 +2396,17 @@
       });
       const auth = getAuth(app);
       const db = getFirestore(app);
+      const functionsInstance = getFunctions(app);
+      const simularSituacionCallable = httpsCallable(functionsInstance, "simular_situacion");
+
+      // Bridge para el script clásico de más abajo (elegirMatchParaConsejo):
+      // llama a la Cloud Function real simular_situacion, que corre una
+      // simulación nueva entre tu gemelo y el de "otroUid" (con la situación
+      // en texto libre si se pasa una) y devuelve resumen + score reales.
+      window._llamarSimularSituacion = async function (otroUid, situacion) {
+        const res = await simularSituacionCallable({ otroUid, situacion: situacion || "" });
+        return res.data;
+      };
 
       // El chat con el propio gemelo (mensajes, tarjetas, quick replies) se
       // guarda como un log ordenado en un solo doc -- se pisa entero en cada
@@ -2353,6 +2446,29 @@
         const primerNombre = nombre.trim().split(/\s+/)[0];
         const navName = document.getElementById("navTwinName");
         if (navName) navName.textContent = `Tu gemelo · ${primerNombre}`;
+
+        // Matches reales (conexiones donde supera_umbral es true) -- se usan
+        // para el picker real de "Consejo para un match" (ver
+        // elegirMatchParaConsejo en el script clásico de más arriba). Solo
+        // necesitamos id + nombre acá, ya guardados en el propio doc de
+        // conexión, así que no hace falta traer el perfil de cada uno.
+        try {
+          const conexionesSnap = await getDocs(
+            query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+          );
+          const reales = [];
+          conexionesSnap.forEach((d) => {
+            const data = d.data();
+            if (!data.supera_umbral) return;
+            const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
+            const otroNombre = data.usuario_1.uid === user.uid ? data.usuario_2.nombre : data.usuario_1.nombre;
+            reales.push({ uid: otroId, nombre: otroNombre || "Usuario" });
+          });
+          window.matchesReales = reales;
+        } catch (err) {
+          console.error("Error cargando matches reales:", err);
+          window.matchesReales = [];
+        }
 
         // Si ya había conversación guardada, se reconstruye encima del
         // mensaje de bienvenida fijo (que sigue siendo el mismo de siempre).

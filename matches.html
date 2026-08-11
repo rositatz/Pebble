@@ -1422,7 +1422,11 @@
 
       // Se llena con datos reales de Firestore -- ver cargarMatchesReales()
       // más abajo. openProfile() lee de acá igual que antes.
-      let profiles = {};
+      // "var" (no "let") a propósito: un top-level "let" en un <script>
+      // clásico NO queda expuesto en window, así que el otro <script
+      // type="module"> de más abajo (que arma "profiles" con datos reales de
+      // Firestore) no podría verlo -- "var" sí queda en window.
+      var profiles = {};
 
       // Abre el modal con el perfil completo del match seleccionado
       // Construye dinámicamente el header, bio, barras de compatibilidad, intereses,
@@ -1553,13 +1557,16 @@
         if (e.key === "Escape") closeModal();
       });
 
-      // Si la página fue abierta con ?persona=ID (desde home), abre ese perfil automáticamente
-      (function () {
+      // Si la página fue abierta con ?persona=ID (desde home/chats), abre ese
+      // perfil automáticamente -- se llama desde cargarMatchesReales() (script
+      // de más abajo) una vez que "profiles" ya tiene datos reales, no acá,
+      // porque a esta altura todavía no cargó nada de Firestore.
+      function abrirPerfilDesdeQueryParam() {
         const param = new URLSearchParams(location.search).get("persona");
         if (param && profiles[param]) {
           setTimeout(() => openProfile(param), 150);
         }
-      })();
+      }
 
       // Ordena o filtra las match cards según el criterio elegido
       // 'afinidad' y 'nuevos': reordena todas las cards con animación de fade
@@ -1838,6 +1845,7 @@
         if (!candidatos.length) {
           if (emptyEl) emptyEl.style.display = "flex";
           if (countEl) countEl.textContent = "0 matches";
+          abrirPerfilDesdeQueryParam();
           return;
         }
         if (emptyEl) emptyEl.style.display = "none";
@@ -1918,6 +1926,7 @@
 
         main.insertAdjacentHTML("beforeend", html);
         if (typeof initScoreRings === "function") initScoreRings();
+        abrirPerfilDesdeQueryParam();
       }
 
       onAuthStateChanged(auth, async (user) => {

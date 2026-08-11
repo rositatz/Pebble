@@ -1336,9 +1336,9 @@
             </div>
             <div class="gemelo-info">
               <div class="gemelo-info-title">Tu gemelo está activo</div>
-              <div class="gemelo-info-sub">
-                Tuvo <strong>3 conversaciones</strong> hoy · Mayor afinidad con
-                Sofía: <strong>92%</strong>
+              <!-- Se llena con datos reales -- ver actualizarBannerGemelo() más abajo. -->
+              <div class="gemelo-info-sub" id="gemeloInfoSub">
+                Cargando actividad del gemelo…
               </div>
             </div>
             <div class="gemelo-live">
@@ -1997,6 +1997,35 @@
         );
       }
 
+      // Actualiza el banner "Tu gemelo está activo" con datos reales: cuántos
+      // de tus matches tuvieron una simulación nueva hoy (conexiones.data.
+      // actualizado, que la Cloud Function pisa con la fecha de la última
+      // simulación) y cuál es tu mayor afinidad real.
+      function actualizarBannerGemelo(candidatos) {
+        const el = document.getElementById("gemeloInfoSub");
+        if (!el) return;
+        if (!candidatos.length) {
+          el.innerHTML = "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
+          return;
+        }
+        const hoy = new Date().toDateString();
+        const conversacionesHoy = candidatos.filter((c) => {
+          const f = c.data.actualizado;
+          return f && new Date(f).toDateString() === hoy;
+        }).length;
+
+        const mejor = candidatos.reduce((a, b) =>
+          (b.data.ultimo_score || 0) > (a.data.ultimo_score || 0) ? b : a,
+        );
+        const nombreMejor =
+          mejor.data.usuario_1.uid === mejor.otroId
+            ? mejor.data.usuario_1.nombre
+            : mejor.data.usuario_2.nombre;
+        const pctMejor = Math.round((mejor.data.ultimo_score || 0) * 100);
+
+        el.innerHTML = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
+      }
+
       // Arma la tira de "Matches recientes" (hasta 5, ordenados por mayor
       // afinidad) con fotos y nombres reales -- reemplaza los 5 items fijos
       // de antes. Reusa mostrarPip/ocultarPip vía el mismo id "mav-{id}".
@@ -2090,9 +2119,12 @@
             });
 
             actualizarBadgesSecciones(data, candidatos);
+            actualizarBannerGemelo(candidatos);
             await cargarMatchesRecientes(user, data, candidatos);
           } catch (e) {
             console.warn("Error cargando matches/chats:", e);
+            const sub = document.getElementById("gemeloInfoSub");
+            if (sub) sub.textContent = "";
           }
         } else {
           showGate();
