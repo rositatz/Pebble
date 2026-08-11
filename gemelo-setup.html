@@ -213,6 +213,24 @@ body.is-upgrade .upgrade-banner{display:block}
          esto no rompe nada del backend. Si más adelante se vuelve a testear
          con otros tipos de relación, se puede volver a agregar acá. -->
     <div class="q">
+      <div class="ql">¿Cuál es tu género?</div>
+      <div class="pills" data-field="generoIdentidad">
+        <button class="pill" onclick="selPill(this)">Hombre</button>
+        <button class="pill" onclick="selPill(this)">Mujer</button>
+        <button class="pill" onclick="selPill(this)">No binario</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+        <button class="pill" onclick="selPill(this)">Prefiero no decir</button>
+      </div>
+    </div>
+    <div class="q" id="otro-generoIdentidad" style="display:none">
+      <div class="ql">Contanos con qué te identificás</div>
+      <textarea class="inp" id="generoIdentidadOtro" placeholder="Tu género" rows="1"></textarea>
+    </div>
+    <!-- El matching real por orientación/género (ver
+         compatibilidad.compatible_por_genero en el backend) necesita saber
+         tanto tu género como a quién te atrae -- por eso ahora se preguntan
+         los dos, no solo la orientación. -->
+    <div class="q">
       <div class="ql">¿Cuál es tu orientación sexual?</div>
       <div class="pills" data-field="orientacion">
         <button class="pill" onclick="selPill(this)">Heterosexual</button>

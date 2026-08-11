@@ -8,6 +8,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
+from compatibilidad import compatible_por_genero
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -49,6 +50,53 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
 
     db = firestore.client()
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+
+
+@https_fn.on_call()
+def actualizar_genero_orientacion(request: https_fn.CallableRequest):
+    """usuarios/{uid}/gemelo/perfil (lo que usa el matching real) es de
+    solo-lectura para el cliente -- se genera una sola vez en el onboarding
+    y después queda congelado (ver generar_perfil_gemelo), justamente para
+    que nadie pueda inventarse rasgos falsos y matchear mejor. Pero
+    perfil.html también deja editar género/orientación desde la tarjeta de
+    perfil, así que hace falta un lugar server-side que propague ESE cambio
+    puntual al perfil real -- este endpoint es ese lugar, y solo toca esos
+    dos campos, nada más.
+
+    Datos esperados en request.data:
+      - genero (opcional)
+      - orientacion (opcional)
+    """
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado."
+        )
+
+    uid = request.auth.uid
+    data = request.data or {}
+
+    cambios = {}
+    if "genero" in data:
+        cambios["genero"] = (data.get("genero") or "").strip()
+    if "orientacion" in data:
+        cambios["orientacion"] = (data.get("orientacion") or "").strip()
+
+    if not cambios:
+        return {"ok": True}
+
+    db = firestore.client()
+    ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+
+    # Si todavía no generó su gemelo, no hay nada que actualizar -- cuando
+    # complete el onboarding, generar_perfil_gemelo va a crear el perfil con
+    # los valores que haya puesto ahí en ese momento.
+    if not ref.get().exists:
+        return {"ok": True}
+
+    ref.set(cambios, merge=True)
+    return {"ok": True}
 
 
 @https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=300, memory=MemoryOption.MB_512)
@@ -257,6 +305,9 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             uid2, perfil2 = usuarios[j]
 
             if (perfil1.get("busco") or "") != (perfil2.get("busco") or ""):
+                continue
+
+            if not compatible_por_genero(perfil1, perfil2):
                 continue
 
             par_id = motor._par_id(uid1, uid2)

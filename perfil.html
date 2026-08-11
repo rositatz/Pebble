@@ -2481,6 +2481,8 @@ import { getAuth, onAuthStateChanged, signOut,
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -2494,6 +2496,8 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const functionsInstance = getFunctions(app);
+const actualizarGeneroOrientacionCallable = httpsCallable(functionsInstance, "actualizar_genero_orientacion");
 
 let uid = null;
 
@@ -2738,6 +2742,22 @@ onAuthStateChanged(auth, async user => {
 window._db_saveInfo = async (data) => {
   if (!uid) return;
   await setDoc(doc(db, 'usuarios', uid), data, { merge: true });
+
+  // usuarios/{uid}/gemelo/perfil (lo que usa el matching real) es de
+  // solo-lectura para el cliente -- se genera una sola vez desde el
+  // onboarding y después queda congelado, así que editar género/orientación
+  // acá no lo tocaría por sí solo. Este callable es el único lugar donde ese
+  // cambio se propaga también al perfil real (ver
+  // main.actualizar_genero_orientacion), para no tener dos valores
+  // desincronizados de "tu género"/"tu orientación".
+  try {
+    await actualizarGeneroOrientacionCallable({
+      genero: data.genero,
+      orientacion: data.orientacion,
+    });
+  } catch (e) {
+    console.warn('No se pudo sincronizar género/orientación con el matching:', e);
+  }
 };
 window._db_saveBio = async (bio) => {
   if (!uid) return;

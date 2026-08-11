@@ -94,6 +94,62 @@ def actualizar_memoria(memoria, analisis):
     })
 
     return memoria
+
+
+# Géneros posibles que puede tener una persona (perfil.get("genero")) --
+# "Otro" con texto libre (ej: "Género fluido") también cae acá como
+# candidato válido para quien busca "todos los géneros".
+_GENEROS_CONOCIDOS = {"Hombre", "Mujer", "No binario"}
+
+
+def _generos_aceptados(genero, orientacion):
+    """A partir del género de una persona y su orientación sexual, arma el
+    conjunto de géneros con los que estaría dispuesta a matchear.
+
+    Con datos faltantes o ambiguos (orientación "Prefiero no decir"/"Otro",
+    o una etiqueta pensada para binario -tipo "Heterosexual"- combinada con
+    un género no binario/"Otro"/sin dato) se deja ABIERTO a todos los
+    géneros en vez de excluir: con información incompleta preferimos
+    mostrar de más que ocultar matches por error."""
+
+    TODOS = {"Hombre", "Mujer", "No binario", "Otro"}
+
+    o = (orientacion or "").strip().casefold()
+    g = (genero or "").strip()
+
+    if o == "heterosexual":
+        if g == "Hombre":
+            return {"Mujer"}
+        if g == "Mujer":
+            return {"Hombre"}
+        return TODOS
+    if o in ("gay / lesbiana", "gay/lesbiana", "gay", "lesbiana"):
+        if g in _GENEROS_CONOCIDOS:
+            return {g}
+        return TODOS
+    # bisexual, pansexual, asexual, "prefiero no decir", "otro", vacío, o
+    # cualquier valor no reconocido: no filtramos por género.
+    return TODOS
+
+
+def compatible_por_genero(perfil1, perfil2):
+    """True si, según género + orientación de cada uno, ninguno de los dos
+    quedaría excluido como candidato del otro. Si a alguno le falta el
+    género propio no se puede chequear esa mitad -- se deja pasar (no
+    excluir por datos faltantes) en vez de bloquear el par entero."""
+
+    g1 = (perfil1.get("genero") or "").strip()
+    g2 = (perfil2.get("genero") or "").strip()
+
+    acepta1 = _generos_aceptados(g1, perfil1.get("orientacion"))
+    acepta2 = _generos_aceptados(g2, perfil2.get("orientacion"))
+
+    ok_1_acepta_2 = (not g2) or (g2 in acepta1)
+    ok_2_acepta_1 = (not g1) or (g1 in acepta2)
+
+    return ok_1_acepta_2 and ok_2_acepta_1
+
+
 def compatibilidad_psicologica(perfil1, perfil2):
 
     p1 = perfil1.get("personalidad", {})

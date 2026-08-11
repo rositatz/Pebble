@@ -282,12 +282,16 @@ def _construir_ubicacion(e1):
 def _construir_identidad(e1):
     edad_raw = str(e1.get("edad", "")).strip()
 
-    # Si eligió "Otro" en orientación, usamos lo que escribió a mano
-    # (orientacionOtro) como el valor real en vez de guardar el string "Otro"
-    # literal -- si no lo completó, se queda en "Otro".
+    # Si eligió "Otro" en orientación o género, usamos lo que escribió a mano
+    # como el valor real en vez de guardar el string "Otro" literal -- si no
+    # lo completó, se queda en "Otro".
     orientacion = e1.get("orientacion", "")
     if orientacion == "Otro":
         orientacion = (e1.get("orientacionOtro") or "").strip() or "Otro"
+
+    genero = e1.get("generoIdentidad", "")
+    if genero == "Otro":
+        genero = (e1.get("generoIdentidadOtro") or "").strip() or "Otro"
 
     return {
         "nombre": e1.get("nombre") or e1.get("apodo") or "Usuario",
@@ -298,6 +302,7 @@ def _construir_identidad(e1):
         "profesion": e1.get("ocupacion", ""),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),
+        "genero": genero,
         "orientacion": orientacion,
         # Qué tipo de relación busca ("Algo serio"/"Algo casual"/"Nuevas
         # amistades"/"Sin definir") -- lo usa escenarios_para_tipo() para
