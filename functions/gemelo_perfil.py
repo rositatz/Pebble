@@ -297,6 +297,41 @@ def _construir_rango_edad_busco(e1):
     return {"min": minimo, "max": maximo}
 
 
+def _con_otro(e1, campo, campo_otro):
+    """Igual que el manejo de "Otro" en orientación/género: si eligió
+    "Otro" en un pill, usa lo que escribió a mano en vez del string "Otro"
+    literal -- si no lo completó, se queda en "Otro"."""
+    valor = e1.get(campo, "")
+    if valor == "Otro":
+        return (e1.get(campo_otro) or "").strip() or "Otro"
+    return valor
+
+
+def _construir_situacion(e1):
+    """Arma un texto natural para el prompt (perfil.profesion) a partir de
+    "¿cuál es tu situación actual?" + las preguntas condicionales que
+    dispara (nivel de estudio si estudia, área si trabaja) + el proyecto
+    adicional -- antes esto era un solo campo de texto libre (ocupacion),
+    ahora son varias preguntas de opciones (ver gemelo-setup.html)."""
+
+    situacion = e1.get("situacion", "")
+    nivel = _con_otro(e1, "nivelEstudio", "nivelEstudioOtro")
+    area = _con_otro(e1, "areaTrabajo", "areaTrabajoOtro")
+    proyecto = _con_otro(e1, "proyectoAdicional", "proyectoAdicionalOtro")
+
+    partes = []
+    if situacion and situacion != "Prefiero no decirlo":
+        partes.append(situacion)
+    if nivel:
+        partes.append(f"nivel: {nivel}")
+    if area:
+        partes.append(f"área: {area}")
+    if proyecto and proyecto != "Ninguno":
+        partes.append(f"además: {proyecto}")
+
+    return " · ".join(partes)
+
+
 def _construir_identidad(e1):
     # Si eligió "Otro" en orientación o género, usamos lo que escribió a mano
     # como el valor real en vez de guardar el string "Otro" literal -- si no
@@ -316,7 +351,7 @@ def _construir_identidad(e1):
         "rango_edad_busco": _construir_rango_edad_busco(e1),
         "ciudad": e1.get("ciudad", ""),
         "ubicacion": _construir_ubicacion(e1),
-        "profesion": e1.get("ocupacion", ""),
+        "profesion": _construir_situacion(e1),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),
         "genero": genero,

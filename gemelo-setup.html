@@ -293,7 +293,98 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">💼 Estudio / Trabajo</div>
-    <div class="q"><div class="ql">¿Qué estudiás o a qué te dedicás?</div><textarea class="inp" id="ocupacion" placeholder="Carrera, trabajo, proyecto..." rows="1"></textarea></div>
+    <div class="q">
+      <div class="ql">¿Cuál es tu situación actual?</div>
+      <div class="pills" data-field="situacion">
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Estudio</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Estudio y trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Tengo un emprendimiento / negocio propio</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Trabajo de manera independiente</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Estoy buscando trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Actualmente no estudio ni trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Prefiero no decirlo</button>
+      </div>
+    </div>
+
+    <!-- Solo se muestra si "situacion" es "Estudio" o "Estudio y trabajo" --
+         ver actualizarPreguntasSituacion(). -->
+    <div class="q" id="nivel-estudio" style="display:none">
+      <div class="ql">¿En qué nivel estás estudiando?</div>
+      <div class="pills" data-field="nivelEstudio">
+        <button class="pill" onclick="selPill(this)">Secundaria</button>
+        <button class="pill" onclick="selPill(this)">Terciario / Tecnicatura</button>
+        <button class="pill" onclick="selPill(this)">Carrera universitaria / Licenciatura</button>
+        <button class="pill" onclick="selPill(this)">Maestría</button>
+        <button class="pill" onclick="selPill(this)">Doctorado</button>
+        <button class="pill" onclick="selPill(this)">Curso / certificación</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q" id="otro-nivelEstudio" style="display:none">
+      <div class="ql">Contanos qué estás estudiando</div>
+      <textarea class="inp" id="nivelEstudioOtro" placeholder="Qué estás estudiando" rows="1"></textarea>
+    </div>
+
+    <!-- Solo se muestra si "situacion" implica trabajo (Trabajo / Estudio y
+         trabajo / emprendimiento / independiente) -- ver
+         actualizarPreguntasSituacion(). -->
+    <div class="q" id="area-trabajo" style="display:none">
+      <div class="ql">¿En qué área trabajás principalmente?</div>
+      <div class="pills" data-field="areaTrabajo">
+        <button class="pill" onclick="selPill(this)">Tecnología / Sistemas</button>
+        <button class="pill" onclick="selPill(this)">Datos / Inteligencia Artificial</button>
+        <button class="pill" onclick="selPill(this)">Ingeniería</button>
+        <button class="pill" onclick="selPill(this)">Ciencias</button>
+        <button class="pill" onclick="selPill(this)">Medicina / Salud</button>
+        <button class="pill" onclick="selPill(this)">Psicología</button>
+        <button class="pill" onclick="selPill(this)">Derecho</button>
+        <button class="pill" onclick="selPill(this)">Finanzas / Contabilidad</button>
+        <button class="pill" onclick="selPill(this)">Economía</button>
+        <button class="pill" onclick="selPill(this)">Administración / Negocios</button>
+        <button class="pill" onclick="selPill(this)">Marketing / Publicidad</button>
+        <button class="pill" onclick="selPill(this)">Comunicación / Relaciones Públicas</button>
+        <button class="pill" onclick="selPill(this)">Periodismo</button>
+        <button class="pill" onclick="selPill(this)">Diseño / Arte</button>
+        <button class="pill" onclick="selPill(this)">Educación</button>
+        <button class="pill" onclick="selPill(this)">Gastronomía</button>
+        <button class="pill" onclick="selPill(this)">Turismo / Hotelería</button>
+        <button class="pill" onclick="selPill(this)">Arquitectura / Construcción</button>
+        <button class="pill" onclick="selPill(this)">Ventas / Comercial</button>
+        <button class="pill" onclick="selPill(this)">Recursos Humanos</button>
+        <button class="pill" onclick="selPill(this)">Industria / Producción</button>
+        <button class="pill" onclick="selPill(this)">Sector público</button>
+        <button class="pill" onclick="selPill(this)">Influencer / Creador/a de contenido</button>
+        <button class="pill" onclick="selPill(this)">Entretenimiento / Medios</button>
+        <button class="pill" onclick="selPill(this)">Deportes</button>
+        <button class="pill" onclick="selPill(this)">Belleza / Estética</button>
+        <button class="pill" onclick="selPill(this)">Transporte / Logística</button>
+        <button class="pill" onclick="selPill(this)">Agricultura / Ganadería</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q" id="otro-areaTrabajo" style="display:none">
+      <div class="ql">Contanos en qué área trabajás</div>
+      <textarea class="inp" id="areaTrabajoOtro" placeholder="Tu área de trabajo" rows="1"></textarea>
+    </div>
+
+    <div class="q">
+      <div class="ql">¿Además de estudiar o trabajar, tenés algún proyecto o actividad que sea importante para vos?</div>
+      <div class="pills" data-field="proyectoAdicional">
+        <button class="pill" onclick="selPill(this)">Emprendimiento</button>
+        <button class="pill" onclick="selPill(this)">Creación de contenido / redes sociales</button>
+        <button class="pill" onclick="selPill(this)">Arte / música</button>
+        <button class="pill" onclick="selPill(this)">Deporte</button>
+        <button class="pill" onclick="selPill(this)">Voluntariado</button>
+        <button class="pill" onclick="selPill(this)">Proyecto personal</button>
+        <button class="pill" onclick="selPill(this)">Ninguno</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q" id="otro-proyectoAdicional" style="display:none">
+      <div class="ql">Contanos de qué se trata</div>
+      <textarea class="inp" id="proyectoAdicionalOtro" placeholder="Tu proyecto o actividad" rows="1"></textarea>
+    </div>
     <div class="q">
       <div class="ql">¿Te gusta lo que hacés actualmente?</div>
       <div class="pills" data-field="gustaOcup">
@@ -957,10 +1048,21 @@ function preguntaVisible(el) {
   // opcional, no una pregunta más -- si contaran en el total, nadie que no
   // comparta su ubicación podría llegar al 100% de progreso.
   if (el.type === 'hidden') return false;
-  // Los campos "contanos más" (ej: #orientacionOtro) solo cuentan cuando están
-  // visibles -- si no, alguien que no eligió "Otro" nunca llegaría al 100%.
-  const otroWrap = el.closest('[id^="otro-"]');
-  if (otroWrap && otroWrap.style.display === 'none') return false;
+  // Cualquier pregunta condicional oculta (ej: #orientacionOtro cuando no
+  // eligió "Otro", o "en qué nivel estudiás"/"área de trabajo" según la
+  // respuesta a "situación actual") no cuenta para el progreso -- si no,
+  // alguien a quien no le toca esa pregunta nunca llegaría al 100%. Se
+  // camina hacia arriba por el DOM en vez de buscar un patrón de id
+  // puntual ("otro-*"), así funciona para cualquier bloque que se oculte
+  // con display:none inline, sin tener que tocar esto cada vez que se
+  // agrega una pregunta condicional nueva. Las etapas (.stage sin
+  // .active) se ocultan por CSS, no por style inline, así que esto no las
+  // toca -- si no, dejaría de contar preguntas de otras etapas.
+  let ancestro = el.parentElement;
+  while (ancestro) {
+    if (ancestro.style && ancestro.style.display === 'none') return false;
+    ancestro = ancestro.parentElement;
+  }
   const premEl = el.closest('.prem-only');
   if (premEl && !document.body.classList.contains('is-premium')) return false;
   return true;
@@ -1022,6 +1124,41 @@ function toggleOtroInput(pillsEl) {
   if (!esOtro) {
     const campo = otroWrap.querySelector('textarea,input');
     if (campo) campo.value = '';
+  }
+}
+
+// Muestra "¿en qué nivel estudiás?" / "¿en qué área trabajás?" según la
+// respuesta a "¿cuál es tu situación actual?" -- preguntaVisible() (más
+// arriba) ya sabe ignorar estas preguntas para el % de progreso cuando
+// están ocultas, con solo mirar el display:none inline.
+function actualizarPreguntasSituacion() {
+  const sel = document.querySelector('.pills[data-field="situacion"] .pill.sel');
+  const valor = sel ? sel.textContent.trim() : '';
+  const estudia = valor === 'Estudio' || valor === 'Estudio y trabajo';
+  const trabaja = [
+    'Trabajo', 'Estudio y trabajo',
+    'Tengo un emprendimiento / negocio propio', 'Trabajo de manera independiente',
+  ].includes(valor);
+
+  toggleCondicional('nivel-estudio', estudia, 'nivelEstudio');
+  toggleCondicional('area-trabajo', trabaja, 'areaTrabajo');
+
+  actualizarBarraProgreso();
+}
+
+// Muestra u oculta un bloque condicional -- al ocultarlo, deselecciona lo
+// que hubiera elegido antes (y cierra su propio "Otro" si estaba abierto),
+// para no dejar guardada una respuesta a una pregunta que ya no aplica.
+function toggleCondicional(wrapId, mostrar, field) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  wrap.style.display = mostrar ? 'block' : 'none';
+  if (!mostrar) {
+    const pillsEl = wrap.querySelector(`.pills[data-field="${field}"]`);
+    if (pillsEl) {
+      pillsEl.querySelectorAll('.pill.sel').forEach(p => p.classList.remove('sel'));
+      toggleOtroInput(pillsEl);
+    }
   }
 }
 
@@ -1182,6 +1319,11 @@ function repoblarFormulario() {
   if (stageData.etapa5 && stageData.etapa5.flags) {
     flagVotes = { ...stageData.etapa5.flags };
   }
+
+  // Muestra "en qué nivel"/"en qué área" si ya había una respuesta guardada
+  // para "situación actual" -- si no, quedarían ocultas con una respuesta
+  // adentro que el usuario ya había dado.
+  actualizarPreguntasSituacion();
 
   actualizarBarraProgreso();
 }
