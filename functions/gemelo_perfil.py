@@ -65,9 +65,13 @@ REGLAS_NUMERICAS = [
     ("etapa2", "sobreLikes", "Para nada", {"personalidad.sensibilidad_emocional": -0.05}),
     ("etapa2", "stalkear", "Obvio que sí", {"personalidad.necesidad_afecto": 0.10}),
     ("etapa2", "stalkear", "No, no me interesa", {"personalidad.necesidad_afecto": -0.05, "personalidad.independencia": 0.05}),
-    ("etapa2", "lugarIdeal", "Ruta / viaje", {"valores.aventura": 0.10}),
-    ("etapa2", "lugarIdeal", "En casa", {"valores.estabilidad": 0.05, "personalidad.introversion": 0.05}),
-    ("etapa2", "lugarIdeal", "Recital", {"valores.aventura": 0.05}),
+    ("etapa2", "planIdeal", "Pasar el día al aire libre, en la playa, parque o naturaleza.", {"valores.aventura": 0.10}),
+    ("etapa2", "planIdeal", "Quedarme en casa y disfrutar de un plan tranquilo.", {"valores.estabilidad": 0.05, "personalidad.introversion": 0.05}),
+    ("etapa2", "planIdeal", "Ir a un recital, bar o evento.", {"valores.aventura": 0.05}),
+    ("etapa2", "planIdeal", "Improvisar y salir a descubrir la ciudad.", {"valores.aventura": 0.10, "personalidad.apertura_mental": 0.05}),
+    ("etapa2", "planIdeal", "Recorrer una librería, museo o lugar cultural.", {"personalidad.apertura_mental": 0.05}),
+    ("etapa2", "planIdeal", "Ir a una cafetería y charlar durante horas.", {"personalidad.introversion": -0.05, "personalidad.necesidad_afecto": 0.05}),
+    ("etapa2", "planIdeal", "Hacer algo creativo: cocinar, pintar, sacar fotos, etc.", {"personalidad.apertura_mental": 0.05}),
 
     # ── Etapa 3: personalidad y mundo interior ──
     ("etapa3", "comoSoy", "Tranquilo/a", {"personalidad.introversion": 0.05, "valores.estabilidad": 0.05}),
@@ -208,7 +212,7 @@ CAMPOS_NOTAS = [
     ("etapa2", "probarNuevo", "Algo nuevo que probaría"),
     ("etapa3", "cuestaMostrar", "Lo que me cuesta mostrar"),
     ("etapa3", "malinterp", "Lo que la gente suele malinterpretar de mí"),
-    ("etapa3", "ansiedadSeg", "Qué me da ansiedad y qué me da seguridad"),
+    ("etapa3", "ansiedadSeg", "Qué me da ansiedad y qué me da seguridad sobre el futuro"),
     ("etapa6", "psi1", "Lo que aprendí de vínculos pasados"),
     ("etapa6", "psi3", "Cómo manejo soltar personas o idealizar relaciones"),
     ("etapa6", "psi4", "Patrones que se repiten en mi vida"),
@@ -375,8 +379,6 @@ def _construir_intereses(e1, e2):
         intereses.append(deporte)
     if e2.get("equipo"):
         intereses.append(e2["equipo"])
-    if e2.get("lugarIdeal"):
-        intereses.append(e2["lugarIdeal"])
     if e2.get("estetica"):
         intereses.append(e2["estetica"])
 

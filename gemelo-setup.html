@@ -465,9 +465,18 @@ body.is-upgrade .upgrade-banner{display:block}
   <div class="sec">
     <div class="sec-title">📍 Lugares y sensaciones</div>
     <div class="q">
-      <div class="ql">¿Cuál sería tu lugar ideal?</div>
-      <div class="pills" data-field="lugarIdeal">
-        <button class="pill" onclick="selPill(this)">Cafetería</button><button class="pill" onclick="selPill(this)">Playa</button><button class="pill" onclick="selPill(this)">Ciudad de noche</button><button class="pill" onclick="selPill(this)">Bosque</button><button class="pill" onclick="selPill(this)">Recital</button><button class="pill" onclick="selPill(this)">Shopping</button><button class="pill" onclick="selPill(this)">En casa</button><button class="pill" onclick="selPill(this)">Ruta / viaje</button><button class="pill" onclick="selPill(this)">Librería</button><button class="pill" onclick="selPill(this)">Otro</button>
+      <div class="ql">Si tuvieras una tarde libre para hacer algo que disfrutes, ¿qué plan elegirías?</div>
+      <div class="pills" data-field="planIdeal">
+        <button class="pill" onclick="selPill(this)">Ir a una cafetería y charlar durante horas.</button>
+        <button class="pill" onclick="selPill(this)">Pasar el día al aire libre, en la playa, parque o naturaleza.</button>
+        <button class="pill" onclick="selPill(this)">Recorrer una librería, museo o lugar cultural.</button>
+        <button class="pill" onclick="selPill(this)">Salir a comer.</button>
+        <button class="pill" onclick="selPill(this)">Ir a un recital, bar o evento.</button>
+        <button class="pill" onclick="selPill(this)">Ver una película.</button>
+        <button class="pill" onclick="selPill(this)">Hacer alguna actividad física o deportiva.</button>
+        <button class="pill" onclick="selPill(this)">Hacer algo creativo: cocinar, pintar, sacar fotos, etc.</button>
+        <button class="pill" onclick="selPill(this)">Quedarme en casa y disfrutar de un plan tranquilo.</button>
+        <button class="pill" onclick="selPill(this)">Improvisar y salir a descubrir la ciudad.</button>
       </div>
     </div>
   </div>
@@ -582,7 +591,7 @@ body.is-upgrade .upgrade-banner{display:block}
       </div>
     </div>
     <div class="q">
-      <div class="ql">Cuando algo te impacta emocionalmente, ¿cómo lo manejás?</div>
+      <div class="ql">Imaginá que te enterás de algo malo que no querías que pasara. ¿Qué hacés primero?</div>
       <div class="rlist" data-field="impactoEmoc">
         <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Necesito hablarlo con alguien para ordenarme</span></div>
         <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Lo proceso por mi cuenta y después veo si lo comparto</span></div>
@@ -597,7 +606,7 @@ body.is-upgrade .upgrade-banner{display:block}
         <button class="pill" onclick="selPill(this)">No saber qué va a pasar</button><button class="pill" onclick="selPill(this)">No poder cambiar la situación</button><button class="pill" onclick="selPill(this)">Presión por expectativas</button><button class="pill" onclick="selPill(this)">Lo que alguien piensa de mí</button><button class="pill" onclick="selPill(this)">Otra</button>
       </div>
     </div>
-    <div class="q"><div class="ql">¿Qué cosas te dan ansiedad y cuáles te dan seguridad?</div><textarea class="txa" id="ansiedadSeg" placeholder="Contanos un poco..."></textarea></div>
+    <div class="q"><div class="ql">¿Qué cosas te dan ansiedad y cuáles te dan seguridad sobre el futuro?</div><textarea class="txa" id="ansiedadSeg" placeholder="Contanos un poco..."></textarea></div>
   </div>
 
   <div class="sec">
@@ -1413,13 +1422,16 @@ function buildGemelo() {
   const amor     = e5.enElAmor  || '';
   const relacion = (e5.enRelacion || []).slice(0,3).join(', ') || 'auténtico/a';
   const vibe     = e6.vibeAtrae  || 'especial';
-  const lugar    = e2.lugarIdeal || 'un lugar único';
+  const plan     = e2.planIdeal  || 'improvisar y ver qué surge';
   const artista  = e2.artista    || 'la música';
   const estetica = e2.estetica   || '';
 
   const amorLine = amor ? `, ${amor.toLowerCase()}` : '';
   const esteticaLine = estetica ? ` Tu estética es ${estetica.toLowerCase()}.` : '';
-  const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Me sentís bien en "${lugar.toLowerCase()}" y con ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
+  // "plan" ya viene como oración completa con mayúscula y punto (ver
+  // gemelo-setup.html data-field="planIdeal"), así que no se le agrega
+  // puntuación extra ni se pasa a minúscula.
+  const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Mi plan ideal para una tarde libre: ${plan} Y no puede faltar ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
 
   document.getElementById('gemelo-gen-text').textContent = text;
   const geditEl = document.getElementById('gedit');
