@@ -582,6 +582,19 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
 
     nombre = perfil.get("nombre") or "tu usuario"
 
+    # Antes este prompt solo tenía la personalidad -- no sabía nada de la
+    # situación real de la persona (estudia/trabaja/en qué), sus intereses
+    # ni su bio, así que no podía dar consejos que tuvieran en cuenta eso.
+    identidad_txt = "\n    SOBRE VOS (la persona a la que representás):\n"
+    if perfil.get("edad"):
+        identidad_txt += f"    - Edad: {perfil['edad']}\n"
+    if perfil.get("profesion"):
+        identidad_txt += f"    - Situación actual: {perfil['profesion']}\n"
+    if perfil.get("intereses"):
+        identidad_txt += f"    - Intereses: {', '.join(perfil['intereses'])}\n"
+    if perfil.get("bio"):
+        identidad_txt += f"    - Cómo se describe: {perfil['bio']}\n"
+
     matches_txt = ""
     if matches_resumen:
         matches_txt = "\n    SUS MATCHES ACTUALES (para dar consejos concretos si te preguntan por alguno):\n"
@@ -601,6 +614,7 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
 
     PERSONALIDAD (tiene que notarse en cómo hablás):
     {personalidad_txt}
+    {identidad_txt}
     {matches_txt}
 
     REGLAS:
@@ -613,7 +627,10 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
     3. Sé breve: entre 1 y 4 oraciones, salvo que te pidan algo más largo.
     4. No actúes como asistente genérico ("¿en qué puedo ayudarte?") -- tenés
        personalidad propia, mostrala.
-    5. Si no sabés algo, decilo con naturalidad en vez de inventar.
+    5. Usá los datos de "SOBRE VOS" cuando sea relevante (ej: si te pregunta
+       algo sobre su día a día, su carrera o sus intereses) -- son datos
+       reales, no los ignores ni inventes otros en su lugar.
+    6. Si no sabés algo, decilo con naturalidad en vez de inventar.
     """
 
     return prompt
