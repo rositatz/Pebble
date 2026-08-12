@@ -1935,7 +1935,6 @@
       }
 
       /* ── Badges dinámicos de las tarjetas de sección (Matches / Chats / Notificaciones) ── */
-      const NOTIFS_DEFAULT_COUNT = 4; // cantidad de .notif-card.unread en notificaciones.html -- todavía no hay backend real de notificaciones
 
       // texto: función (cantidad) => string a mostrar. Si cantidad es 0, se vacía el
       // badge (mismo truco que ya usa la tarjeta "Mi perfil" con un <span> vacío) en
@@ -1960,7 +1959,9 @@
 
       // candidatos: array de { otroId, data } armado desde conexiones reales
       // (participantes array-contains uid, supera_umbral true).
-      function actualizarBadgesSecciones(data, candidatos) {
+      // notifsSinLeer: cantidad real de usuarios/{uid}/notificaciones con
+      // leida=false (ver notificaciones.html / main.py _crear_notificacion).
+      function actualizarBadgesSecciones(data, candidatos, notifsSinLeer) {
         // Matches: cuántos todavía no se abrieron desde el home o matches.html
         const nuevosMatches = candidatos.filter(
           (c) => !data[`match_visto_${c.otroId}`],
@@ -1988,11 +1989,10 @@
         });
         actualizarBadge("Chats", sinLeer, (n) => `${n} sin leer`);
 
-        // Notificaciones: se marcan todas leídas apenas se visita esa sección
-        // (todavía no hay backend real de notificaciones para contar acá).
+        // Notificaciones: cantidad real sin leer.
         actualizarBadge(
           "Notificaciones",
-          data.notifs_leidas ? 0 : NOTIFS_DEFAULT_COUNT,
+          notifsSinLeer || 0,
           (n) => `${n} nueva${n === 1 ? "" : "s"}`,
         );
       }
@@ -2118,7 +2118,19 @@
               candidatos.push({ otroId, data: cdata });
             });
 
-            actualizarBadgesSecciones(data, candidatos);
+            // Notificaciones reales sin leer (usuarios/{uid}/notificaciones,
+            // leida=false) -- ver notificaciones.html / main.py.
+            let notifsSinLeer = 0;
+            try {
+              const notifsSnap = await getDocs(
+                query(collection(db, "usuarios", uid, "notificaciones"), where("leida", "==", false)),
+              );
+              notifsSinLeer = notifsSnap.size;
+            } catch (e) {
+              console.warn("Error contando notificaciones sin leer:", e);
+            }
+
+            actualizarBadgesSecciones(data, candidatos, notifsSinLeer);
             actualizarBannerGemelo(candidatos);
             await cargarMatchesRecientes(user, data, candidatos);
           } catch (e) {

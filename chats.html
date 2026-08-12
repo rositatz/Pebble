@@ -2417,6 +2417,7 @@
         where,
         orderBy,
         limit,
+        serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Mismo esquema de id que usa el backend (motor._par_id en Python):
@@ -2616,9 +2617,18 @@
           const snap = await getDoc(doc(db, "usuarios", uid));
           const mis = snap.exists() ? snap.data() : {};
           renderNavAvatar(mis.avatarFoto);
-          if (mis.notifs_leidas) {
+
+          // Punto naranja del ícono de notificaciones: solo si hay
+          // notificaciones reales sin leer (usuarios/{uid}/notificaciones,
+          // leida=false) -- ver notificaciones.html / main.py.
+          try {
+            const notifsSnap = await getDocs(
+              query(collection(db, "usuarios", uid, "notificaciones"), where("leida", "==", false)),
+            );
             const pip = document.querySelector(".nav-icon-btn .notif-pip");
-            if (pip) pip.style.display = "none";
+            if (pip) pip.style.display = notifsSnap.size > 0 ? "" : "none";
+          } catch (e) {
+            console.warn("Error contando notificaciones sin leer:", e);
           }
 
           await cargarChatsReales(user, mis);
@@ -2687,11 +2697,19 @@
       window._db_saveChat = async (personaId, mode, msgs) => {
         if (!uid) return;
         const ref = doc(db, "conexiones", parId(uid, personaId));
+        // "real.ultimaActividad" (solo en modo real) es lo que usa
+        // generar_recordatorios_diarios en el backend para saber hace
+        // cuánto no hay mensajes nuevos y avisar "¿Retomás con X?" -- por
+        // eso es un Timestamp real, no el "HH:MM" de md.lastTime (que no
+        // sirve para calcular días de diferencia).
+        const campos = { [`${mode}.msgs`]: msgs };
+        if (mode === "real") campos["real.ultimaActividad"] = serverTimestamp();
         try {
-          await updateDoc(ref, { [`${mode}.msgs`]: msgs });
+          await updateDoc(ref, campos);
         } catch (e) {
           // El documento todavía no existe (primer mensaje con esta persona)
-          await setDoc(ref, { ...parUsuarios(personaId), [mode]: { msgs } }, { merge: true });
+          const modoData = mode === "real" ? { msgs, ultimaActividad: serverTimestamp() } : { msgs };
+          await setDoc(ref, { ...parUsuarios(personaId), [mode]: modoData }, { merge: true });
         }
       };
     </script>

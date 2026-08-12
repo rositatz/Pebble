@@ -1,4 +1,5 @@
 import random
+import datetime
 
 import firebase_admin
 from firebase_admin import firestore
@@ -22,6 +23,35 @@ def _con_creado(par_ref, payload):
     if not par_ref.get().exists:
         payload["creado"] = firestore.SERVER_TIMESTAMP
     return payload
+
+
+def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombre=None, accion=None):
+    """Todas las notificaciones reales (nuevo match, interés en común,
+    recordatorio de retomar chat, gemelo inactivo) pasan por acá -- ver
+    notificaciones.html, que lee usuarios/{uid}/notificaciones tal cual se
+    escribe esto."""
+    db.collection("usuarios").document(uid).collection("notificaciones").add({
+        "tipo": tipo,
+        "titulo": titulo,
+        "cuerpo": cuerpo,
+        "otroUid": otro_uid,
+        "otroNombre": otro_nombre,
+        "accion": accion,
+        "leida": False,
+        "creado": firestore.SERVER_TIMESTAMP,
+    })
+
+
+def _parse_fecha(valor):
+    """'actualizado' en conexiones se guarda como string ISO (ver
+    registro_simulacion), no como Timestamp nativo -- hay que parsearlo a
+    mano para poder compararlo con datetime.now()."""
+    if not valor:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(valor)
+    except (TypeError, ValueError):
+        return None
 
 
 @firestore_fn.on_document_written(document="usuarios/{uid}/gemelo_setup/data")
@@ -454,6 +484,44 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 par_ref.collection("simulaciones").add(registro)
             par_ref.set(payload, merge=True)
 
+            # Como cada pareja llega acá una sola vez (buscar_parejas_pendientes
+            # ya descarta pares que ya tienen conexión), supera_umbral==True acá
+            # siempre significa "match nuevo" -- no hace falta comparar contra
+            # un score anterior. El umbral (0.75) lo define
+            # simular_relacion_completa/registro_simulacion, no algo hardcodeado
+            # acá: supera_umbral ya viene calculado con ese piso.
+            if resultado["supera_umbral"]:
+                nombre1 = data["usuario_1"]["nombre"] or "Usuario"
+                nombre2 = data["usuario_2"]["nombre"] or "Usuario"
+                pct = round(resultado["compatibilidad_promedio"] * 100)
+
+                _crear_notificacion(
+                    db, uid1, "match", f"¡Nuevo match con {nombre2}!",
+                    f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
+                    otro_uid=uid2, otro_nombre=nombre2, accion="matches",
+                )
+                _crear_notificacion(
+                    db, uid2, "match", f"¡Nuevo match con {nombre1}!",
+                    f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
+                    otro_uid=uid1, otro_nombre=nombre1, accion="matches",
+                )
+
+                # Interés real en común (no un evento inventado) -- solo si
+                # ambos perfiles comparten al menos uno de verdad.
+                comunes = set(doc1.to_dict().get("intereses") or []) & set(doc2.to_dict().get("intereses") or [])
+                if comunes:
+                    interes = sorted(comunes)[0]
+                    _crear_notificacion(
+                        db, uid1, "interes", f"Vos y {nombre2} tienen algo en común",
+                        f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                        otro_uid=uid2, otro_nombre=nombre2, accion="chats",
+                    )
+                    _crear_notificacion(
+                        db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
+                        f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                        otro_uid=uid1, otro_nombre=nombre1, accion="chats",
+                    )
+
             doc.reference.update({"estado": "COMPLETADO"})
             procesadas += 1
 
@@ -462,3 +530,97 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             con_error += 1
 
     print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error.")
+
+
+# Mismo umbral que usa matches.html para hacer desaparecer un match nuevo
+# sin empezar a hablar -- acá es "recordame retomar" en vez de "ocultalo",
+# pero es la misma ventana de tiempo conceptualmente.
+DIAS_RETOMAR_CHAT = 7
+
+# Cuántos días sin que le corran una simulación nueva antes de avisarle que
+# su gemelo está inactivo.
+DIAS_INACTIVIDAD_GEMELO = 3
+
+
+@scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires")
+def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
+    """Corre una vez por día (separado del batch pesado de las 3am) y genera
+    los dos tipos de aviso que no dependen de que corra una simulación
+    nueva:
+
+    - "¿Retomás con X?": un chat real que ya arrancó pero no tiene mensajes
+      nuevos hace DIAS_RETOMAR_CHAT días.
+    - "Tu gemelo lleva N días sin interacciones": a este usuario no se le
+      corrió ninguna simulación nueva en DIAS_INACTIVIDAD_GEMELO días.
+
+    Cada aviso se throttlea con un timestamp guardado -- sin eso, correr
+    todos los días generaría una notificación nueva todos los días mientras
+    la situación no cambie."""
+
+    db = firestore.client()
+    ahora = datetime.datetime.now(datetime.timezone.utc)
+
+    ultima_actividad_por_usuario = {}
+    avisos_retomar = 0
+
+    for doc in db.collection("conexiones").where("supera_umbral", "==", True).stream():
+        data = doc.to_dict()
+        participantes = data.get("participantes") or []
+        if len(participantes) != 2:
+            continue
+        uid1, uid2 = participantes
+        nombre1 = data.get("usuario_1", {}).get("nombre", "Usuario")
+        nombre2 = data.get("usuario_2", {}).get("nombre", "Usuario")
+
+        fecha_sim = _parse_fecha(data.get("actualizado"))
+        if fecha_sim:
+            for u in (uid1, uid2):
+                actual = ultima_actividad_por_usuario.get(u)
+                if actual is None or fecha_sim > actual:
+                    ultima_actividad_por_usuario[u] = fecha_sim
+
+        real = data.get("real") or {}
+        msgs = real.get("msgs") or []
+        ultima_msg = real.get("ultimaActividad")  # Timestamp real -- ver chats.html
+        if msgs and ultima_msg:
+            dias_inactivo = (ahora - ultima_msg).days
+            recordado_en = real.get("recordatorioRetomarEn")
+            ya_avisado = recordado_en and (ahora - recordado_en).days < DIAS_RETOMAR_CHAT
+            if dias_inactivo >= DIAS_RETOMAR_CHAT and not ya_avisado:
+                _crear_notificacion(
+                    db, uid1, "retomar", f"¿Retomás con {nombre2}?",
+                    f"La conversación quedó abierta hace {dias_inactivo} días.",
+                    otro_uid=uid2, otro_nombre=nombre2, accion="chats",
+                )
+                _crear_notificacion(
+                    db, uid2, "retomar", f"¿Retomás con {nombre1}?",
+                    f"La conversación quedó abierta hace {dias_inactivo} días.",
+                    otro_uid=uid1, otro_nombre=nombre1, accion="chats",
+                )
+                doc.reference.update({"real.recordatorioRetomarEn": firestore.SERVER_TIMESTAMP})
+                avisos_retomar += 2
+
+    avisos_inactivo = 0
+    for uid, fecha_sim in ultima_actividad_por_usuario.items():
+        dias_inactivo = (ahora - fecha_sim).days
+        if dias_inactivo < DIAS_INACTIVIDAD_GEMELO:
+            continue
+
+        ref_usuario = db.collection("usuarios").document(uid)
+        doc_usuario = ref_usuario.get()
+        recordado_en = doc_usuario.to_dict().get("recordatorioInactivoEn") if doc_usuario.exists else None
+        if recordado_en and (ahora - recordado_en).days < DIAS_INACTIVIDAD_GEMELO:
+            continue
+
+        _crear_notificacion(
+            db, uid, "inactivo", f"Tu gemelo lleva {dias_inactivo} días sin interacciones",
+            "Ajustar su personalidad o tus preferencias puede mejorar los resultados.",
+            accion="gemelo",
+        )
+        ref_usuario.set({"recordatorioInactivoEn": firestore.SERVER_TIMESTAMP}, merge=True)
+        avisos_inactivo += 1
+
+    print(
+        f"generar_recordatorios_diarios: {avisos_retomar} avisos de retomar chat, "
+        f"{avisos_inactivo} avisos de gemelo inactivo (sobre {len(ultima_actividad_por_usuario)} usuarios con conexiones)."
+    )

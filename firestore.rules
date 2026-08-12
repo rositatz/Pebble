@@ -47,6 +47,14 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == uid;
         allow write: if false;
       }
+
+      // Notificaciones reales (las genera el backend vía Admin SDK --
+      // procesar_parejas_pendientes/generar_recordatorios_diarios -- pero es
+      // la propia bandeja del usuario, así que se le deja leer/marcar
+      // leída/borrar libremente, no hay nada que proteger de sí mismo acá.
+      match /notificaciones/{notifId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // Conexión entre dos usuarios: identidad de la pareja + resultado de las
