@@ -1365,30 +1365,27 @@ body {
         </div>
       </div>
 
-      <div class="twin-traits">
-        <span class="trait-pill">Empática</span>
-        <span class="trait-pill">Directa</span>
-        <span class="trait-pill">Curiosa</span>
-        <span class="trait-pill">Humor seco</span>
-        <span class="trait-pill">Profundidad emocional</span>
-        <span class="trait-pill">Introvertida social</span>
-      </div>
+      <!-- Se llena con datos reales -- ver cargarGemeloDigitalCard() en el
+           script de más abajo. -->
+      <div class="twin-traits" id="twinTraits"></div>
 
-      <div class="twin-quote">
-        "Cuando algo me importa, lo digo aunque cueste. Prefiero una conversación incómoda a un silencio cómodo. Y si hay música de por medio, ya sé que vamos a llevarnos bien."
-      </div>
+      <div class="twin-quote" id="twinQuote" style="display:none"></div>
+
+      <p id="twinSinCompletar" style="display:none;font-size:0.85rem;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:4px">
+        Todavía no completaste el onboarding de tu gemelo -- terminalo para que empiece a representarte de verdad.
+      </p>
 
       <div class="twin-stats">
         <div class="twin-stat">
-          <span class="twin-stat-value">12</span>
+          <span class="twin-stat-value" id="twinStatConversaciones">—</span>
           <span class="twin-stat-label">Conversaciones activas</span>
         </div>
         <div class="twin-stat">
-          <span class="twin-stat-value">87%</span>
+          <span class="twin-stat-value" id="twinStatAfinidad">—</span>
           <span class="twin-stat-label">Mayor afinidad</span>
         </div>
         <div class="twin-stat">
-          <span class="twin-stat-value">3</span>
+          <span class="twin-stat-value" id="twinStatConexiones">—</span>
           <span class="twin-stat-label">Conexiones desbloqueadas</span>
         </div>
       </div>
@@ -1396,10 +1393,10 @@ body {
       <div class="twin-progress">
         <div class="twin-progress-label">
           <span>Completitud del gemelo</span>
-          <span>78%</span>
+          <span id="twinProgressPct">—</span>
         </div>
         <div class="twin-progress-track">
-          <div class="twin-progress-fill" style="width:78%"></div>
+          <div class="twin-progress-fill" id="twinProgressFill" style="width:0%"></div>
         </div>
       </div>
 
@@ -2479,7 +2476,7 @@ import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/fire
 import { getAuth, onAuthStateChanged, signOut,
          reauthenticateWithCredential, EmailAuthProvider, updatePassword }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc }
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getFunctions, httpsCallable }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
@@ -2534,6 +2531,119 @@ function aplicarNombre(nombre) {
 // (el pago es mensual, pago.html guarda hasta cuándo vale cada vez que se paga)
 function esPremiumActivo(d) {
   return d.plan === 'premium' && !!d.premiumHasta && new Date(d.premiumHasta) > new Date();
+}
+
+// Traduce un valor 0-1 en una etiqueta corta para la tarjeta "Mi gemelo
+// digital" -- mismo umbral (0.65) y misma idea que _directiva() en el
+// backend (simulador.py), pero acá el resultado es un adjetivo de una
+// palabra para un pill, no una instrucción de prompt completa.
+function _traitCorta(valor, alto, bajo, umbral = 0.65) {
+  if (typeof valor !== 'number') return null;
+  if (valor >= umbral) return alto;
+  if (valor <= 1 - umbral) return bajo;
+  return null;
+}
+
+function traitsDesdePersonalidad(personalidad, estilo) {
+  const p = personalidad || {};
+  const e = estilo || {};
+  const candidatos = [
+    _traitCorta(p.introversion, 'Introvertida', 'Extrovertida'),
+    _traitCorta(p.empatia, 'Empática', 'Directa'),
+    _traitCorta(p.sarcasmo, 'Humor seco', null),
+    _traitCorta(p.apertura_mental, 'Mente abierta', 'Tradicional'),
+    _traitCorta(p.sensibilidad_emocional, 'Sensible', 'Estable'),
+    _traitCorta(p.tolerancia_conflicto, 'Frontal', 'Evita el conflicto'),
+    _traitCorta(p.independencia, 'Independiente', 'Cercana'),
+    e.mensajes_cortos ? 'Mensajes cortos' : null,
+    e.usa_humor ? 'Con humor' : null,
+    e.analitico ? 'Analítica' : null,
+  ];
+  return candidatos.filter(Boolean).slice(0, 6);
+}
+
+// Llena la tarjeta "Mi gemelo digital" con datos reales -- traits derivados
+// de tu personalidad real (gemelo/perfil, solo lectura para el cliente),
+// tu propia bio como "cita", y estadísticas reales de tus conexiones.
+async function cargarGemeloDigitalCard(uid, datosUsuario) {
+  const traitsEl       = document.getElementById('twinTraits');
+  const quoteEl         = document.getElementById('twinQuote');
+  const sinCompletarEl  = document.getElementById('twinSinCompletar');
+  const statConv        = document.getElementById('twinStatConversaciones');
+  const statAfin        = document.getElementById('twinStatAfinidad');
+  const statConex       = document.getElementById('twinStatConexiones');
+  const progressPct     = document.getElementById('twinProgressPct');
+  const progressFill    = document.getElementById('twinProgressFill');
+
+  // Completitud: gemelo-setup.html ya guarda esto en usuarios/{uid} en cada
+  // paso (gemelo_progreso/gemelo_completado) -- se reusa tal cual acá.
+  const pct = datosUsuario.gemelo_completado ? 100 : (datosUsuario.gemelo_progreso || 0);
+  if (progressPct)  progressPct.textContent = pct + '%';
+  if (progressFill) progressFill.style.width = pct + '%';
+
+  let perfil = null;
+  try {
+    const snap = await getDoc(doc(db, 'usuarios', uid, 'gemelo', 'perfil'));
+    if (snap.exists()) perfil = snap.data();
+  } catch (e) {
+    console.warn('Error cargando gemelo/perfil:', e);
+  }
+
+  if (!perfil) {
+    if (sinCompletarEl) sinCompletarEl.style.display = 'block';
+    if (traitsEl) traitsEl.innerHTML = '';
+    if (quoteEl) quoteEl.style.display = 'none';
+    [statConv, statAfin, statConex].forEach(el => { if (el) el.textContent = '—'; });
+    return;
+  }
+  if (sinCompletarEl) sinCompletarEl.style.display = 'none';
+
+  if (traitsEl) {
+    const traits = traitsDesdePersonalidad(perfil.personalidad, perfil.estilo_chat);
+    traitsEl.innerHTML = traits.map(t => `<span class="trait-pill">${escHtml(t)}</span>`).join('');
+  }
+
+  if (quoteEl) {
+    if (perfil.bio) {
+      quoteEl.textContent = `"${perfil.bio}"`;
+      quoteEl.style.display = 'block';
+    } else {
+      quoteEl.style.display = 'none';
+    }
+  }
+
+  // Estadísticas reales desde tus conexiones (mismo dato que usa
+  // matches.html/chats.html/home.html: participantes array-contains uid).
+  try {
+    const conexionesSnap = await getDocs(
+      query(collection(db, 'conexiones'), where('participantes', 'array-contains', uid)),
+    );
+    let conversacionesActivas = 0;
+    let mayorAfinidad = 0;
+    let conexionesDesbloqueadas = 0;
+    conexionesSnap.forEach(d => {
+      const c = d.data();
+      if (!c.supera_umbral) return;
+      conexionesDesbloqueadas++;
+      mayorAfinidad = Math.max(mayorAfinidad, c.ultimo_score || 0);
+      const tieneMsgs = (m) => Array.isArray(m?.msgs) && m.msgs.length > 0;
+      if (tieneMsgs(c.real) || tieneMsgs(c.gemelo)) conversacionesActivas++;
+    });
+    if (statConv)  statConv.textContent  = String(conversacionesActivas);
+    if (statAfin)  statAfin.textContent  = conexionesDesbloqueadas ? Math.round(mayorAfinidad * 100) + '%' : '—';
+    if (statConex) statConex.textContent = String(conexionesDesbloqueadas);
+  } catch (e) {
+    console.warn('Error cargando estadísticas del gemelo:', e);
+  }
+}
+
+// Escapa texto para insertarlo en contenido de texto (traits vienen de
+// nuestra propia lista fija, pero se escapa igual por las dudas).
+function escHtml(t) {
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // Actualiza el badge del hero y la sección "Tu plan" según el plan real del
@@ -2604,6 +2714,9 @@ onAuthStateChanged(auth, async user => {
     // Plan (gratuito/premium) -- se chequea acá mismo, cada vez que carga el
     // perfil, si el pago mensual sigue vigente
     await actualizarPlanUI(d);
+
+    // Tarjeta "Mi gemelo digital" con datos reales (traits, cita, stats)
+    await cargarGemeloDigitalCard(uid, d);
 
     // Nombre (si fue editado por el usuario)
     if (d.nombre) aplicarNombre(d.nombre);

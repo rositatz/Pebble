@@ -1457,7 +1457,11 @@
           else if (e.tipo === "feedback") addFeedbackCard(e.question, e.options);
           else if (e.tipo === "progress")
             addProgressCard(e.name, e.initials, e.color, e.event, e.pct, e.unlockText);
-          else if (e.tipo === "quickReplies") setQuickReplies(e.opts);
+          // "quickReplies" ya NO se reproduce -- son solo accesos rápidos de
+          // la UI, no algo que haya pasado en la conversación. Reproducir
+          // logs viejos (de antes del chat real) hacía que reaparecieran
+          // chips con nombres de ejemplo ("Consejo para Sofía") tapando los
+          // chips reales de la fila estática.
         });
         replayingChat = false;
         scrollBottom(false);
@@ -1764,15 +1768,16 @@
         }, 300);
       }
 
+      // No se loguea/persiste -- son solo accesos rápidos de la UI actual,
+      // no algo dicho en la conversación (ver nota en replayChatLog).
       function setQuickReplies(opts) {
         const qr = document.getElementById("quickReplies");
         qr.innerHTML = opts
           .map(
             (o) =>
-              `<button class="qr-chip" onclick="sendQuick('${o}')">${o}</button>`,
+              `<button class="qr-chip" onclick="sendQuick('${escHtml(o)}')">${escHtml(o)}</button>`,
           )
           .join("");
-        logChatEntry({ tipo: "quickReplies", opts });
       }
 
       // Procesa la elección del usuario en una tarjeta de feedback

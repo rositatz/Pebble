@@ -79,17 +79,36 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     uid = request.auth.uid
     data = request.data or {}
 
+    # Esto es una Cloud Function: nada impide llamarla directo con
+    # cualquier string, aunque el <select> de perfil.html solo mande estos
+    # valores. Si viene algo fuera de esta lista, se ignora ese campo en vez
+    # de guardar basura en el perfil que usa el matching.
+    GENEROS_VALIDOS = {"Mujer", "Hombre", "No binario", "Género fluido", "Prefiero no decir", "Otro"}
+    ORIENTACIONES_VALIDAS = {
+        "Heterosexual", "Bisexual", "Gay / Lesbiana", "Pansexual", "Asexual",
+        "Prefiero no decir", "Otro",
+    }
+    EDAD_MIN_VALIDA, EDAD_MAX_VALIDA = 18, 99
+
     cambios = {}
     if "genero" in data:
-        cambios["genero"] = (data.get("genero") or "").strip()
+        valor = (data.get("genero") or "").strip()
+        if valor in GENEROS_VALIDOS:
+            cambios["genero"] = valor
     if "orientacion" in data:
-        cambios["orientacion"] = (data.get("orientacion") or "").strip()
+        valor = (data.get("orientacion") or "").strip()
+        if valor in ORIENTACIONES_VALIDAS:
+            cambios["orientacion"] = valor
 
     if "edadMinBusco" in data or "edadMaxBusco" in data:
         minimo = data.get("edadMinBusco")
         maximo = data.get("edadMaxBusco")
         minimo = int(minimo) if isinstance(minimo, (int, float)) else None
         maximo = int(maximo) if isinstance(maximo, (int, float)) else None
+        if minimo is not None:
+            minimo = max(EDAD_MIN_VALIDA, min(EDAD_MAX_VALIDA, minimo))
+        if maximo is not None:
+            maximo = max(EDAD_MIN_VALIDA, min(EDAD_MAX_VALIDA, maximo))
         cambios["rango_edad_busco"] = {"min": minimo, "max": maximo} if (minimo or maximo) else None
 
     if not cambios:
@@ -142,6 +161,11 @@ def simular_situacion(request: https_fn.CallableRequest):
             https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
             "No podés simular una situación con vos mismo/a."
         )
+    if len(situacion) > 500:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "La situación es demasiado larga (máximo 500 caracteres)."
+        )
 
     db = firestore.client()
 
@@ -161,6 +185,24 @@ def simular_situacion(request: https_fn.CallableRequest):
 
     perfil1 = doc1.to_dict()
     perfil2 = doc2.to_dict()
+
+    # Este endpoint se llama con cualquier otroUid que mande el cliente --
+    # normalmente viene del picker de "Consejo para un match" (que solo
+    # ofrece matches reales), pero como Cloud Function nada impide llamarlo
+    # directo con cualquier uid. Sin este chequeo, alguien podría usarlo para
+    # esquivar los mismos filtros de género/orientación/edad que aplica la
+    # cola automática (buscar_parejas_pendientes) y forzar una conexión real
+    # con alguien que nunca hubiera sido un candidato válido.
+    if not compatible_por_genero(perfil1, perfil2):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Esa persona no es un candidato válido según género/orientación."
+        )
+    if not compatible_por_edad(perfil1, perfil2):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Esa persona no es un candidato válido según el rango de edad."
+        )
 
     if situacion:
         escenario = motor.armar_escenario_personalizado(situacion)
@@ -221,6 +263,13 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
             https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
             "Falta el mensaje."
         )
+    if len(mensaje) > 2000:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "El mensaje es demasiado largo (máximo 2000 caracteres)."
+        )
+    if not isinstance(historial, list):
+        historial = []
 
     db = firestore.client()
 
@@ -255,8 +304,10 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
 
     mensajes = [{"role": "system", "content": system_prompt}]
     for h in historial[-8:]:
+        if not isinstance(h, dict):
+            continue
         role = h.get("role")
-        content = (h.get("content") or "").strip()
+        content = (h.get("content") or "").strip()[:2000]
         if role in ("user", "assistant") and content:
             mensajes.append({"role": role, "content": content})
     mensajes.append({"role": "user", "content": mensaje})
