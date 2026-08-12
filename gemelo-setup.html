@@ -1131,7 +1131,17 @@ function toggleOtroInput(pillsEl) {
 // respuesta a "¿cuál es tu situación actual?" -- preguntaVisible() (más
 // arriba) ya sabe ignorar estas preguntas para el % de progreso cuando
 // están ocultas, con solo mirar el display:none inline.
-function actualizarPreguntasSituacion() {
+//
+// "window.actualizarPreguntasSituacion" (no una function declaration suelta)
+// a propósito: TODO este archivo es un único <script type="module">, y una
+// function declaration ahí NO queda expuesta en window -- los onclick="" del
+// HTML se resuelven contra el scope global, así que sin esto el click
+// tiraba silenciosamente "actualizarPreguntasSituacion is not defined" y la
+// pregunta condicional nunca se mostraba (comprobado con el emulador de
+// navegador: selPill() sí corría porque ya estaba como window.selPill, pero
+// esta llamada moría ahí mismo). Mismo criterio que ya usa selPill/selMulti/
+// selRadio/selBin más abajo.
+window.actualizarPreguntasSituacion = function () {
   const sel = document.querySelector('.pills[data-field="situacion"] .pill.sel');
   const valor = sel ? sel.textContent.trim() : '';
   const estudia = valor === 'Estudio' || valor === 'Estudio y trabajo';
@@ -1144,11 +1154,14 @@ function actualizarPreguntasSituacion() {
   toggleCondicional('area-trabajo', trabaja, 'areaTrabajo');
 
   actualizarBarraProgreso();
-}
+};
 
 // Muestra u oculta un bloque condicional -- al ocultarlo, deselecciona lo
 // que hubiera elegido antes (y cierra su propio "Otro" si estaba abierto),
 // para no dejar guardada una respuesta a una pregunta que ya no aplica.
+// Esta no se llama desde ningún onclick="" del HTML (solo desde
+// actualizarPreguntasSituacion, código a código), así que sí puede quedar
+// como function declaration normal sin problema.
 function toggleCondicional(wrapId, mostrar, field) {
   const wrap = document.getElementById(wrapId);
   if (!wrap) return;
