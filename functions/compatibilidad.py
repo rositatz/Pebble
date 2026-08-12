@@ -196,6 +196,23 @@ def compatible_por_edad(perfil1, perfil2, tolerancia=TOLERANCIA_EDAD):
     return ok_1_acepta_2 and ok_2_acepta_1
 
 
+def compatible_por_hijos(perfil1, perfil2):
+    """Si alguien dijo que le incomodaría salir con alguien que ya tiene
+    hijos ("¿Te incomodaría salir con alguien que ya tiene hijos?" ==
+    "Sí, prefiero que no"), no se lo considera candidato de alguien que sí
+    tiene hijos -- y viceversa. "Un poco" no excluye, es una molestia leve
+    declarada, no un rechazo. Sin el dato de alguno de los dos lados, no se
+    puede evaluar esa mitad -- se deja pasar en vez de excluir."""
+
+    rechaza1 = perfil1.get("tolerancia_hijos") == "Sí, prefiero que no"
+    rechaza2 = perfil2.get("tolerancia_hijos") == "Sí, prefiero que no"
+
+    ok_1_acepta_2 = not (rechaza1 and perfil2.get("tiene_hijos"))
+    ok_2_acepta_1 = not (rechaza2 and perfil1.get("tiene_hijos"))
+
+    return ok_1_acepta_2 and ok_2_acepta_1
+
+
 def compatibilidad_psicologica(perfil1, perfil2):
 
     p1 = perfil1.get("personalidad", {})

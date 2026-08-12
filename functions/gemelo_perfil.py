@@ -48,7 +48,6 @@ REGLAS_NUMERICAS = [
     # ── Etapa 1: identidad y rutina ──
     ("etapa1", "convivo", "Solo/a", {"personalidad.independencia": 0.10, "personalidad.introversion": 0.05}),
     ("etapa1", "convivo", "Con mi familia", {"valores.familia": 0.10}),
-    ("etapa1", "convivo", "Con pareja", {"valores.estabilidad": 0.05}),
     ("etapa1", "gustaOcup", "Sí, mucho", {"valores.ambicion": 0.15}),
     ("etapa1", "gustaOcup", "Bastante", {"valores.ambicion": 0.08}),
     ("etapa1", "gustaOcup", "No realmente", {"valores.ambicion": -0.10}),
@@ -405,6 +404,20 @@ def _construir_estilo_chat(e3, e4):
     }
 
 
+def _construir_hijos(e3):
+    """De etapa3: si ya tiene hijos (hijosFuturo == "Ya tengo") y qué tan
+    dispuesta está a salir con alguien que ya los tiene (hijosAjenos) --
+    antes esto solo alimentaba el valor numérico "familia", ahora también
+    queda como dato crudo para que compatibilidad.compatible_por_hijos()
+    pueda usarlo como filtro real: si alguien dijo que le incomodaría salir
+    con alguien que ya tiene hijos, no se lo empareja con alguien que sí
+    tiene, y viceversa."""
+    return {
+        "tiene_hijos": e3.get("hijosFuturo") == "Ya tengo",
+        "tolerancia_hijos": e3.get("hijosAjenos", ""),
+    }
+
+
 def _construir_conflictos(e4):
     pelea = (e4.get("pelea") or "").strip()
     molesta = (e4.get("cuandoMolesta") or "").strip()
@@ -479,6 +492,7 @@ def construir_perfil_gemelo(respuestas_raw):
 
     perfil = {
         **_construir_identidad(e1),
+        **_construir_hijos(e3),
         "intereses": _construir_intereses(e1, e2),
         "personalidad": personalidad,
         "estilo_chat": _construir_estilo_chat(e3, e4),

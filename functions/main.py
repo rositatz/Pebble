@@ -9,7 +9,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
-from compatibilidad import compatible_por_genero, compatible_por_edad
+from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -233,6 +233,11 @@ def simular_situacion(request: https_fn.CallableRequest):
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Esa persona no es un candidato válido según el rango de edad."
         )
+    if not compatible_por_hijos(perfil1, perfil2):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Esa persona no es un candidato válido según hijos."
+        )
 
     if situacion:
         escenario = motor.armar_escenario_personalizado(situacion)
@@ -401,6 +406,9 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 continue
 
             if not compatible_por_edad(perfil1, perfil2):
+                continue
+
+            if not compatible_por_hijos(perfil1, perfil2):
                 continue
 
             par_id = motor._par_id(uid1, uid2)
