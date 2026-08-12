@@ -1233,7 +1233,15 @@ window.usarMiUbicacion = function() {
       }
     },
     err => {
-      status.textContent = 'No pudimos acceder a tu ubicación (' + err.message + ').';
+      // PERMISSION_DENIED (código 1) no se puede resolver desde JS: una vez
+      // que el usuario le dice que no a un sitio, el navegador guarda esa
+      // decisión y ni siquiera vuelve a mostrar el cartel de permiso en los
+      // próximos intentos -- hay que ir a la configuración del sitio a mano.
+      if (err.code === err.PERMISSION_DENIED) {
+        status.textContent = 'Bloqueaste el permiso de ubicación para este sitio. Para activarlo: tocá el ícono de candado/info junto a la URL → Permisos del sitio → Ubicación → Permitir, y volvé a tocar "Usar mi ubicación". Es un dato opcional, podés seguir sin él.';
+      } else {
+        status.textContent = 'No pudimos acceder a tu ubicación (' + err.message + ').';
+      }
     },
     { enableHighAccuracy: false, timeout: 10000 }
   );
@@ -1381,8 +1389,37 @@ function showStage(n, dir) {
   history.pushState({ stage: n }, '', '#etapa-' + n);
 }
 
+// Antes de avanzar de etapa, si esta pantalla tiene los campos de edad
+// (etapa 1: tu edad / rango que buscás), no deja seguir si alguno quedó
+// por debajo de 18 -- el input ya tiene min="18", pero eso solo afecta las
+// flechitas del campo numérico, no evita que alguien escriba "1" a mano.
+// Si el campo está vacío no bloquea nada (eso ya lo maneja el % de
+// progreso) -- solo frena un valor puesto a mano que sea inválido. No
+// toca ni borra ningún dato ya guardado, solo evita seguir con uno nuevo
+// inválido.
+function edadesValidas() {
+  const EDAD_MINIMA = 18;
+  const campos = [
+    { id: 'edad', label: 'tu edad' },
+    { id: 'edadMinBusco', label: 'la edad mínima que buscás en un match' },
+    { id: 'edadMaxBusco', label: 'la edad máxima que buscás en un match' },
+  ];
+  for (const { id, label } of campos) {
+    const el = document.getElementById(id);
+    if (!el || el.value.trim() === '') continue;
+    const valor = parseInt(el.value, 10);
+    if (!isNaN(valor) && valor < EDAD_MINIMA) {
+      alert(`Pebble es solo para mayores de edad -- poné ${EDAD_MINIMA} años o más en "${label}".`);
+      el.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
 window.goNext = async function() {
   if (currentStage === TOTAL) return;
+  if (!edadesValidas()) return;
   await saveStage(currentStage);
   const next = currentStage + 1;
   showStage(next);
