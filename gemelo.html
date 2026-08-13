@@ -1122,8 +1122,8 @@
           </div>
           <div class="nav-twin-info">
             <span class="nav-twin-name" id="navTwinName">Tu gemelo</span>
-            <span class="nav-twin-status"
-              >Activo · 12 conversaciones abiertas</span
+            <span class="nav-twin-status" id="navTwinStatus"
+              >Activo · cargando…</span
             >
           </div>
         </div>
@@ -1652,6 +1652,24 @@
           .replace(/'/g, "&#39;");
       }
 
+      // Los callables de Firebase exponen el código del error en err.code
+      // (ej: "functions/failed-precondition", "functions/unavailable") --
+      // antes se mostraba err.message tal cual, que para cualquier falla no
+      // prevista (red, cuota de OpenAI, etc.) el SDK lo reemplaza por el
+      // genérico "INTERNAL" sin ninguna pista de qué pasó. Acá se arma un
+      // mensaje distinto según la causa real en vez de mostrar ese texto
+      // crudo, y solo se usa err.message cuando SÍ es un mensaje pensado
+      // para mostrarse (los que arma nuestro propio backend a propósito).
+      function mensajeErrorGemelo(err) {
+        if (err.code === "functions/failed-precondition") {
+          return "Terminá de personalizar tu gemelo primero. Probá de nuevo en un rato.";
+        }
+        if (err.code === "functions/unavailable") {
+          return `${escHtml(err.message || "Tu gemelo no pudo responder ahora.")} `;
+        }
+        return "Tuvimos un problema para responder ahora. Probá de nuevo en un rato.";
+      }
+
       // Toma el texto del input, lo muestra como mensaje del usuario y dispara la respuesta del gemelo
       // Espera 300ms, muestra el indicador de escritura, y después de 1.2-1.8s muestra la respuesta
       // Envía el mensaje del usuario y le pide una respuesta real a la
@@ -1690,15 +1708,7 @@
             .catch((err) => {
               removeTyping();
               console.error("Error en chatear_con_gemelo:", err);
-              // Los mensajes de error del backend (ej: "Todavía no generaste
-              // tu gemelo (completá el onboarding primero).") ya vienen con
-              // paréntesis y punto propios -- envolverlos en otro paréntesis
-              // acá quedaba con parántesis anidados feos ("(No generaste
-              // (completá primero).).").  Un separador simple en vez de
-              // paréntesis se lee bien con cualquier mensaje.
-              addTwinMsg(
-                `No pude responder: ${escHtml(err.message || "error desconocido")} Probá de nuevo en un rato.`,
-              );
+              addTwinMsg(`No pude responder: ${mensajeErrorGemelo(err)}`);
             });
         }, 300);
       }
@@ -1767,9 +1777,7 @@
             .catch((err) => {
               removeTyping();
               console.error("Error en simular_situacion:", err);
-              addTwinMsg(
-                `No pude correr la simulación: ${escHtml(err.message || "error desconocido")} Probá de nuevo en un rato.`,
-              );
+              addTwinMsg(`No pude correr la simulación: ${mensajeErrorGemelo(err)}`);
             });
         }, 300);
       }
@@ -1922,16 +1930,29 @@
           return;
         }
 
-        // Mostrar nombre real en el nav
-        const nombre = user.displayName || user.email.split("@")[0];
-        const primerNombre = nombre.trim().split(/\s+/)[0];
+        // Mostrar nombre real en el nav -- se prioriza el apodo que la
+        // persona puso en el onboarding ("¿Cómo te gusta que te digan?",
+        // guardado en gemelo/perfil.apodo) sobre el nombre de la cuenta, y
+        // solo se cae al nombre de cuenta si todavía no respondió esa
+        // pregunta (perfil inexistente o campo vacío).
         const navName = document.getElementById("navTwinName");
-        if (navName) navName.textContent = `Tu gemelo · ${primerNombre}`;
+        const nombreCuenta = user.displayName || user.email.split("@")[0];
+        let nombreParaMostrar = nombreCuenta.trim().split(/\s+/)[0];
+        try {
+          const perfilSnap = await getDoc(doc(db, "usuarios", user.uid, "gemelo", "perfil"));
+          const apodo = perfilSnap.exists() ? (perfilSnap.data().apodo || "").trim() : "";
+          if (apodo) nombreParaMostrar = apodo.split(/\s+/)[0];
+        } catch (err) {
+          console.error("Error cargando apodo del gemelo:", err);
+        }
+        if (navName) navName.textContent = `Tu gemelo · ${nombreParaMostrar}`;
 
         // Matches reales (conexiones donde supera_umbral es true) -- se usan
         // para el picker real de "Consejo para un match" (ver
-        // elegirMatchParaConsejo en el script clásico de más arriba). Solo
-        // necesitamos id + nombre acá, ya guardados en el propio doc de
+        // elegirMatchParaConsejo en el script clásico de más arriba) y para
+        // el contador de "conversaciones abiertas" del header, que antes
+        // era un "12" fijo sin relación con los matches reales del usuario.
+        // Solo necesitamos id + nombre acá, ya guardados en el propio doc de
         // conexión, así que no hace falta traer el perfil de cada uno.
         try {
           const conexionesSnap = await getDocs(
@@ -1946,9 +1967,16 @@
             reales.push({ uid: otroId, nombre: otroNombre || "Usuario" });
           });
           window.matchesReales = reales;
+          const navStatus = document.getElementById("navTwinStatus");
+          if (navStatus) {
+            const n = reales.length;
+            navStatus.textContent = `Activo · ${n} conversación${n === 1 ? "" : "es"} abierta${n === 1 ? "" : "s"}`;
+          }
         } catch (err) {
           console.error("Error cargando matches reales:", err);
           window.matchesReales = [];
+          const navStatus = document.getElementById("navTwinStatus");
+          if (navStatus) navStatus.textContent = "Activo";
         }
 
         // Si ya había conversación guardada, se reconstruye encima del

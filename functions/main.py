@@ -309,7 +309,18 @@ def simular_situacion(request: https_fn.CallableRequest):
     else:
         escenario = random.randrange(len(motor.escenarios_db))
 
-    registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=2, escenario=escenario)
+    try:
+        registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=2, escenario=escenario)
+    except Exception as e:
+        # Igual que en chatear_con_gemelo: sin este try/except una falla de
+        # OpenAI acá (red, cuota, etc.) llegaba al cliente como "INTERNAL"
+        # sin ninguna pista. Se loguea el error real y se devuelve un
+        # mensaje honesto en vez de uno genérico.
+        print(f"simular_situacion: error corriendo la simulación: {e}")
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            "No se pudo correr la simulación en este momento. Probá de nuevo en un rato."
+        )
 
     par_ref = db.collection("conexiones").document(registro["par_id"])
     payload = {
@@ -411,10 +422,23 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
             mensajes.append({"role": role, "content": content})
     mensajes.append({"role": "user", "content": mensaje})
 
-    response = motor.client().chat.completions.create(
-        model="gpt-4o-mini",
-        messages=mensajes,
-    )
+    try:
+        response = motor.client().chat.completions.create(
+            model="gpt-4o-mini",
+            messages=mensajes,
+        )
+    except Exception as e:
+        # Sin este try/except, cualquier falla acá (red, cuota de la API,
+        # etc.) se propagaba sin atrapar y el cliente solo veía "INTERNAL"
+        # -- un error sin ninguna pista de qué pasó ni qué hacer. Se loguea
+        # el error real server-side (visible en los logs de la función) y se
+        # le devuelve al usuario un mensaje honesto: el problema fue de la
+        # IA en ese momento, no que le falte terminar su gemelo.
+        print(f"chatear_con_gemelo: error llamando a OpenAI: {e}")
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            "Tu gemelo no pudo responder en este momento. Probá de nuevo en un rato."
+        )
 
     return {"respuesta": response.choices[0].message.content}
 
