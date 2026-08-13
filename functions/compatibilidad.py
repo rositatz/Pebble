@@ -282,11 +282,206 @@ def compatibilidad_psicologica(perfil1, perfil2):
             p1[atributo] - p2[atributo]
         )
 
-        compatibilidad = 1 - diferencia
+        # Excepción confirmada por la investigación (Investigacion de
+        # pareja.pdf): la complementariedad ("los opuestos se atraen") en
+        # general tiene poco respaldo, PERO introvertido/a + extrovertido/a
+        # fue el único caso con efecto positivo real en parejas casadas --
+        # por eso acá la diferencia pesa la mitad en vez de penalizar igual
+        # que el resto de los rasgos.
+        if atributo == "introversion":
+            compatibilidad = 1 - diferencia * 0.5
+        else:
+            compatibilidad = 1 - diferencia
 
         score += compatibilidad
 
     return score / len(atributos)
+
+
+def compatibilidad_intereses(perfil1, perfil2):
+    """Similitud de Jaccard (intersección / unión, sin importar mayúsculas)
+    entre los intereses de cada uno. Usa intereses_onboarding -- la copia
+    CONGELADA en el momento de generar el perfil (ver
+    gemelo_perfil.construir_perfil_gemelo) -- y no "intereses", que
+    actualizar_aprendizaje_gemelo puede seguir sumando con el tiempo a
+    partir de chats reales. Si esto usara "intereses" directamente, alguien
+    podría chatear con su propio gemelo mencionando intereses falsos para
+    matchear más -- exactamente el hueco que se evitó a propósito con
+    personalidad/valores. Perfiles generados antes de que existiera
+    intereses_onboarding caen a "intereses" como respaldo."""
+
+    i1 = {str(i).strip().casefold() for i in (perfil1.get("intereses_onboarding") or perfil1.get("intereses") or [])}
+    i2 = {str(i).strip().casefold() for i in (perfil2.get("intereses_onboarding") or perfil2.get("intereses") or [])}
+
+    if not i1 or not i2:
+        return 0.5
+
+    union = i1 | i2
+    return len(i1 & i2) / len(union) if union else 0.5
+
+
+# Escala ordinal para comparar preferencia de medio de comunicación
+# (prefCom) -- 0 a 4, de más escrito/asincrónico a más presencial. Da
+# crédito parcial a preferencias cercanas (llamada vs. videollamada) en vez
+# de todo-o-nada.
+_ESCALA_COMUNICACION = {
+    "Mensajes de texto": 0,
+    "Audios": 1,
+    "Llamadas": 2,
+    "Videollamadas": 3,
+    "Verse en persona": 4,
+}
+
+
+def compatibilidad_comunicacion(perfil1, perfil2):
+    """Similitud en cómo prefieren comunicarse (prefCom, etapa4 del
+    onboarding) -- la investigación ubica las "habilidades sociales/estilo
+    de comunicación" como el tercer tipo de similitud más preferido en
+    pareja, después de valores e intereses."""
+
+    c1 = _ESCALA_COMUNICACION.get((perfil1.get("prefCom") or "").strip())
+    c2 = _ESCALA_COMUNICACION.get((perfil2.get("prefCom") or "").strip())
+    if c1 is None or c2 is None:
+        return 0.5
+
+    return 1 - abs(c1 - c2) / 4
+
+
+# Escalas ordinales propias por pregunta -- politicaImportancia tiene 3
+# opciones, religionImportancia tiene 4, así que no comparten una sola
+# escala.
+_ESCALA_POLITICA_IMPORTANCIA = {"Muy importante": 2, "Algo importante": 1, "No me importa": 0}
+_ESCALA_RELIGION_IMPORTANCIA = {"Muy importante": 3, "Algo importante": 2, "Poco importante": 1, "Nada importante": 0}
+
+
+def _similitud_ordinal(v1, v2, escala):
+    n1 = escala.get((v1 or "").strip())
+    n2 = escala.get((v2 or "").strip())
+    if n1 is None or n2 is None:
+        return None
+    maximo = max(escala.values()) or 1
+    return 1 - abs(n1 - n2) / maximo
+
+
+# Margen en cm dentro del cual dos alturas se consideran "misma altura" --
+# nadie mide justo lo mismo, así que un par de cm de diferencia no debería
+# arruinar la compatibilidad física.
+_MARGEN_ALTURA_CM = 3
+
+
+def _pref_categoria_satisfecha(preferencia, propio_del_otro):
+    """True/False si la autodescripción del candidato (propio_del_otro)
+    coincide con lo que el evaluador dijo que le atrae (preferencia) --
+    None si falta algún dato o si la preferencia es de las que significan
+    "no tengo preferencia" (ahí no hay nada que evaluar ni penalizar)."""
+    if not preferencia or preferencia.strip().casefold() in ("me da igual", "indiferente"):
+        return None
+    if not propio_del_otro:
+        return None
+    return 1.0 if preferencia.strip().casefold() == propio_del_otro.strip().casefold() else 0.0
+
+
+def _altura_satisfecha(preferencia, altura_propia_evaluador, altura_candidato, margen=_MARGEN_ALTURA_CM):
+    """La preferencia de altura es relativa ("más bajo/a que yo"), así que
+    hace falta la altura propia del evaluador para poder compararla contra
+    la del candidato -- no alcanza con un solo dato como en las otras
+    dimensiones físicas. Cerca del límite (dentro del margen) da crédito
+    parcial en vez de todo o nada."""
+    if not preferencia or preferencia == "Indiferente":
+        return None
+    if altura_propia_evaluador is None or altura_candidato is None:
+        return None
+
+    diferencia = altura_candidato - altura_propia_evaluador
+
+    if preferencia == "Más bajos/as que yo":
+        if diferencia <= -margen:
+            return 1.0
+        if diferencia >= margen:
+            return 0.0
+        return 0.5
+    if preferencia == "Más altos/as":
+        if diferencia >= margen:
+            return 1.0
+        if diferencia <= -margen:
+            return 0.0
+        return 0.5
+    if preferencia == "Misma altura":
+        return 1.0 if abs(diferencia) <= margen else max(0.0, 1 - (abs(diferencia) - margen) / 10)
+    return None
+
+
+def _satisfaccion_fisica_direccion(evaluador, candidato):
+    """Cuánto satisface el físico real de "candidato" las preferencias que
+    declaró "evaluador" -- promedio de las dimensiones donde hay preferencia
+    Y autodescripción del otro para compararla. None si no hay ninguna
+    dimensión evaluable en esta dirección."""
+    prefs = evaluador.get("preferencias_pareja") or {}
+    fisico_candidato = candidato.get("fisico_propio") or {}
+    fisico_evaluador = evaluador.get("fisico_propio") or {}
+
+    scores = []
+    for campo in ("colorPelo", "estiloPelo", "contextura"):
+        s = _pref_categoria_satisfecha(prefs.get(campo), fisico_candidato.get(campo))
+        if s is not None:
+            scores.append(s)
+
+    s_altura = _altura_satisfecha(
+        prefs.get("alturaAtrae"),
+        fisico_evaluador.get("altura_cm"),
+        fisico_candidato.get("altura_cm"),
+    )
+    if s_altura is not None:
+        scores.append(s_altura)
+
+    return sum(scores) / len(scores) if scores else None
+
+
+def compatibilidad_fisica(perfil1, perfil2):
+    """A diferencia de los demás ejes (similitud entre los dos), este mide
+    SATISFACCIÓN de preferencia: ¿el físico que cada uno dice que le atrae
+    (preferencias_pareja: colorPelo/estiloPelo/alturaAtrae/contextura)
+    coincide con la autodescripción real del otro (fisico_propio)? Antes
+    esas preferencias se guardaban pero no tenían con qué compararse -- el
+    onboarding no preguntaba el físico propio de nadie. Se promedian las dos
+    direcciones (qué tanto A satisface a B, y B a A). Sin preferencias
+    declaradas o sin autodescripción de ningún lado, 0.5 neutro, igual que
+    el resto de los ejes con datos faltantes -- nunca excluye por falta de
+    datos."""
+
+    s1 = _satisfaccion_fisica_direccion(perfil1, perfil2)
+    s2 = _satisfaccion_fisica_direccion(perfil2, perfil1)
+
+    if s1 is None and s2 is None:
+        return 0.5
+    if s1 is None:
+        return s2
+    if s2 is None:
+        return s1
+    return (s1 + s2) / 2
+
+
+def compatibilidad_creencias(perfil1, perfil2):
+    """Similitud en cuánto les importa la política y la religión
+    (politicaImportancia/religionImportancia, guardados en perfil.creencias)
+    -- el estudio de parejas reales encontró correlación MODERADA (no
+    fuerte) en actitudes políticas/religiosas, por eso este eje pesa menos
+    que valores/intereses/comunicacion en PESOS_DEFAULT. Falta el dato de
+    alguna de las dos preguntas en algún lado -> esa preguntá no promedia,
+    no bloquea el eje entero."""
+
+    c1 = perfil1.get("creencias") or {}
+    c2 = perfil2.get("creencias") or {}
+
+    scores = []
+    sp = _similitud_ordinal(c1.get("politicaImportancia"), c2.get("politicaImportancia"), _ESCALA_POLITICA_IMPORTANCIA)
+    if sp is not None:
+        scores.append(sp)
+    sr = _similitud_ordinal(c1.get("religionImportancia"), c2.get("religionImportancia"), _ESCALA_RELIGION_IMPORTANCIA)
+    if sr is not None:
+        scores.append(sr)
+
+    return sum(scores) / len(scores) if scores else 0.5
 
 def compatibilidad_valores(perfil1, perfil2):
 
@@ -356,53 +551,35 @@ def pesos_compatibilidad_pareja(perfil1, perfil2):
 
 def calcular_compatibilidad(perfil1, perfil2, analisis):
 
-    score_psicologico = compatibilidad_psicologica(
-        perfil1,
-        perfil2
-    )
-
-    score_valores = compatibilidad_valores(
-        perfil1,
-        perfil2
-    )
-
-    score_conversacional = compatibilidad_conversacional(
-        analisis
-    )
+    score_psicologico = compatibilidad_psicologica(perfil1, perfil2)
+    score_valores = compatibilidad_valores(perfil1, perfil2)
+    score_conversacional = compatibilidad_conversacional(analisis)
+    score_intereses = compatibilidad_intereses(perfil1, perfil2)
+    score_comunicacion = compatibilidad_comunicacion(perfil1, perfil2)
+    score_creencias = compatibilidad_creencias(perfil1, perfil2)
+    score_fisico = compatibilidad_fisica(perfil1, perfil2)
 
     pesos = pesos_compatibilidad_pareja(perfil1, perfil2)
 
     compatibilidad_total = (
-
         score_psicologico * pesos["psicologico"] +
-
         score_conversacional * pesos["conversacional"] +
-
-        score_valores * pesos["valores"]
+        score_valores * pesos["valores"] +
+        score_intereses * pesos["intereses"] +
+        score_comunicacion * pesos["comunicacion"] +
+        score_creencias * pesos["creencias"] +
+        score_fisico * pesos["fisico"]
     )
 
     return {
-
-        "compatibilidad_total": round(
-            compatibilidad_total,
-            2
-        ),
-
-        "score_psicologico": round(
-            score_psicologico,
-            2
-        ),
-
-        "score_conversacional": round(
-            score_conversacional,
-            2
-        ),
-
-        "score_valores": round(
-            score_valores,
-            2
-        ),
-
+        "compatibilidad_total": round(compatibilidad_total, 2),
+        "score_psicologico": round(score_psicologico, 2),
+        "score_conversacional": round(score_conversacional, 2),
+        "score_valores": round(score_valores, 2),
+        "score_intereses": round(score_intereses, 2),
+        "score_comunicacion": round(score_comunicacion, 2),
+        "score_creencias": round(score_creencias, 2),
+        "score_fisico": round(score_fisico, 2),
         "pesos_usados": {
             eje: round(v, 2) for eje, v in pesos.items()
         }

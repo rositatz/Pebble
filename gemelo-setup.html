@@ -908,6 +908,34 @@ body.is-upgrade .upgrade-banner{display:block}
   </div>
 
   <div class="sec">
+    <!-- Autodescripción física -- a diferencia de las preguntas de arriba
+         (qué te atrae en otra persona), estas son sobre uno/a mismo/a.
+         gemelo_perfil._construir_fisico_propio las junta en
+         perfil.fisico_propio, que compatibilidad.compatibilidad_fisica usa
+         para chequear si el físico real del otro coincide con lo que cada
+         uno dijo que le atrae arriba -- antes esas preferencias no tenían
+         con qué compararse. -->
+    <div class="sec-title">🪞 Sobre tu físico</div>
+    <p class="help" style="margin-bottom:14px">Esto es sobre vos, no sobre lo que te atrae -- ayuda a que el % de compatibilidad tenga en cuenta el físico real del otro, no solo tu gusto.</p>
+    <div class="q">
+      <div class="ql">¿De qué color es tu pelo?</div>
+      <div class="pills" data-field="colorPeloPropio"><button class="pill" onclick="selPill(this)">Negro</button><button class="pill" onclick="selPill(this)">Castaño</button><button class="pill" onclick="selPill(this)">Rubio</button><button class="pill" onclick="selPill(this)">Pelirrojo</button><button class="pill" onclick="selPill(this)">Otro</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Cómo es tu pelo?</div>
+      <div class="pills" data-field="estiloPeloPropio"><button class="pill" onclick="selPill(this)">Corto</button><button class="pill" onclick="selPill(this)">Largo</button><button class="pill" onclick="selPill(this)">Ondulado</button><button class="pill" onclick="selPill(this)">Lacio</button><button class="pill" onclick="selPill(this)">Despeinado</button><button class="pill" onclick="selPill(this)">Prolijo</button></div>
+    </div>
+    <div class="q">
+      <div class="ql">¿Cuánto medís? (en cm)</div>
+      <input class="inp" id="alturaPropia" type="number" min="140" max="220" placeholder="Ej: 170" style="-moz-appearance:textfield"/>
+    </div>
+    <div class="q">
+      <div class="ql">¿Cómo describirías tu contextura?</div>
+      <div class="pills" data-field="contexturaPropia"><button class="pill" onclick="selPill(this)">Delgada</button><button class="pill" onclick="selPill(this)">Atlética</button><button class="pill" onclick="selPill(this)">Musculosa</button><button class="pill" onclick="selPill(this)">Con curvas</button><button class="pill" onclick="selPill(this)">Robusta</button></div>
+    </div>
+  </div>
+
+  <div class="sec">
     <div class="sec-title">🗳️ Creencias y política</div>
     <div class="q">
       <div class="ql">¿Qué tan importante es para vos compartir postura política con tu pareja?</div>

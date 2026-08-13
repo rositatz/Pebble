@@ -14,24 +14,51 @@ BASE_PERSONALIDAD = (
 )
 BASE_VALORES = ("familia", "ambicion", "aventura", "estabilidad")
 
-# Pesos por default para combinar los 3 ejes de calcular_compatibilidad
-# (deben coincidir con los que usaba prueba.py originalmente, así el
-# comportamiento no cambia para quien no respondió estas preguntas).
-PESOS_DEFAULT = {"psicologico": 0.35, "conversacional": 0.40, "valores": 0.25}
+# Pesos por default para combinar los 7 ejes de calcular_compatibilidad.
+# Informados por la investigación que pasó la usuaria (Investigacion de
+# pareja.pdf): conversacional queda primero porque los patrones de
+# interacción P×O son, según esos papers, el factor con más probabilidad de
+# generar compatibilidad inicial -- más que la similitud estática sola.
+# Entre las similitudes estáticas, el orden de preferencia que reportan los
+# estudios es valores > intereses > habilidades sociales/comunicación >
+# origen, por eso valores > intereses > comunicacion en esta tabla.
+# psicologico baja de 0.35 (el valor original, antes de esta investigación)
+# a 0.12 porque el mismo estudio de parejas reales (assortative mating)
+# encontró correlación débil/inconsistente en rasgos de personalidad
+# tomados solos -- sigue pesando, pero bastante menos que antes.
+# fisico es nuevo: ese mismo estudio encontró correlación FUERTE en
+# atractivo físico entre parejas reales (a la par de edad/educación/ocio),
+# así que le toca un peso comparable al de intereses -- pero como los datos
+# que hay para medirlo son categorías gruesas (color de pelo, contextura,
+# etc.), no se le da más peso que a valores/intereses, que están mejor
+# respaldados. creencias sigue siendo lo más bajo porque la correlación
+# real en actitudes políticas/religiosas fue moderada, no fuerte.
+PESOS_DEFAULT = {
+    "conversacional": 0.26,
+    "valores": 0.20,
+    "intereses": 0.14,
+    "fisico": 0.12,
+    "psicologico": 0.12,
+    "comunicacion": 0.09,
+    "creencias": 0.07,
+}
 
 # Qué tan importante es cada eje de compatibilidad para ESTE usuario, según lo
-# que dijo que más necesita en un vínculo (necesitasVinc) y qué es lo que más
+# que dijo que más necesita en un vínculo (necesitasVinc), qué es lo que más
 # le atrae / qué tipo de conexión busca primero en otra persona (conexionPrimero,
-# atraeMas). Esto reemplaza el peso fijo 0.35/0.40/0.25 por uno propio de cada
-# persona; calcular_compatibilidad() combina el de los dos usuarios de la pareja.
+# atraeMas), y qué tan importante le resultan la política/religión
+# (politicaImportancia/religionImportancia -- si le importan mucho a ESTA
+# persona, el eje "creencias" pesa más específicamente para ella). Esto
+# reemplaza el peso fijo por uno propio de cada persona; calcular_compatibilidad()
+# combina el de los dos usuarios de la pareja.
 REGLAS_PESOS = [
     ("etapa4", "necesitasVinc", "Poder hablar de lo que me pasa sin filtro", {"psicologico": 0.05}),
-    ("etapa4", "necesitasVinc", "Disponibilidad real cuando la necesito", {"conversacional": 0.05}),
+    ("etapa4", "necesitasVinc", "Disponibilidad real cuando la necesito", {"conversacional": 0.05, "comunicacion": 0.05}),
     ("etapa4", "necesitasVinc", "Estabilidad y tranquilidad en el vínculo", {"valores": 0.08}),
     ("etapa4", "necesitasVinc", "Que respeten mi independencia y tiempos", {"psicologico": 0.05}),
-    ("etapa4", "necesitasVinc", "Poder resolver conflictos hablando, sin dramas", {"psicologico": 0.05}),
+    ("etapa4", "necesitasVinc", "Poder resolver conflictos hablando, sin dramas", {"psicologico": 0.05, "comunicacion": 0.05}),
     ("etapa6", "conexionPrimero", "Emocional", {"psicologico": 0.08}),
-    ("etapa6", "conexionPrimero", "Mental", {"psicologico": 0.05}),
+    ("etapa6", "conexionPrimero", "Mental", {"psicologico": 0.05, "intereses": 0.05}),
     ("etapa6", "conexionPrimero", "Física", {"conversacional": 0.08}),
     ("etapa6", "conexionPrimero", "Divertida", {"conversacional": 0.08}),
     ("etapa6", "conexionPrimero", "Tranquila", {"valores": 0.08}),
@@ -41,6 +68,8 @@ REGLAS_PESOS = [
     ("etapa6", "atraeMas", "Inteligente", {"psicologico": 0.04}),
     ("etapa6", "atraeMas", "Creativo/a", {"conversacional": 0.04}),
     ("etapa6", "atraeMas", "Ambicioso/a", {"valores": 0.06}),
+    ("etapa6", "politicaImportancia", "Muy importante", {"creencias": 0.10}),
+    ("etapa6", "religionImportancia", "Muy importante", {"creencias": 0.10}),
 ]
 
 # (etapa, campo, respuesta_exacta, {"grupo.rasgo": delta})
@@ -181,12 +210,63 @@ REGLAS_NUMERICAS = [
     ("etapa3", "futuro5anios", "Viajando, sin planes fijos", {"valores.aventura": 0.15}),
     ("etapa3", "estabilidadEconomica", "Muy importante", {"valores.ambicion": 0.10, "valores.estabilidad": 0.10}),
     ("etapa3", "estabilidadEconomica", "No es prioridad ahora", {"valores.ambicion": -0.05, "valores.aventura": 0.05}),
+
+    # ── Preguntas que antes no tocaban nada (ni personalidad ni compatibilidad) ──
+    # Se les asigna acá el rasgo que más describen, mismo criterio que el
+    # resto del archivo -- deltas chicos porque son señales secundarias, no
+    # las preguntas centrales de personalidad.
+    ("etapa1", "productiv", "De noche", {"valores.aventura": 0.05, "personalidad.apertura_mental": 0.05}),
+    ("etapa1", "productiv", "De mañana", {"valores.estabilidad": 0.05}),
+    ("etapa2", "arreglo", "Me arreglo bastante", {"personalidad.apertura_mental": 0.05}),
+    ("etapa2", "arreglo", "Cómodo/a siempre", {"personalidad.independencia": 0.05}),
+    ("etapa2", "prefComida", "Cocinar", {"valores.estabilidad": 0.05}),
+    ("etapa2", "prefComida", "Ir a un restaurante", {"valores.aventura": 0.03}),
+    ("etapa2", "prefComida", "Pedir delivery", {"personalidad.independencia": 0.03}),
+    ("etapa3", "causaAnsiedad", "No saber qué va a pasar", {"personalidad.sensibilidad_emocional": 0.08, "valores.estabilidad": 0.05}),
+    ("etapa3", "causaAnsiedad", "No poder cambiar la situación", {"personalidad.tolerancia_conflicto": -0.05}),
+    ("etapa3", "causaAnsiedad", "Presión por expectativas", {"valores.ambicion": 0.05, "personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa3", "causaAnsiedad", "Lo que alguien piensa de mí", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa4", "prefCom", "Verse en persona", {"personalidad.introversion": -0.05}),
+    ("etapa4", "prefCom", "Mensajes de texto", {"personalidad.introversion": 0.03}),
+    ("etapa4", "inaceptable", "Que me grite o se vuelva agresivo/a", {"personalidad.tolerancia_conflicto": 0.05}),
+    ("etapa4", "inaceptable", "Que minimice lo que siento", {"personalidad.sensibilidad_emocional": 0.08, "personalidad.empatia": 0.05}),
+    ("etapa4", "inaceptable", "Que no escuche mi punto de vista", {"personalidad.empatia": 0.05}),
+    ("etapa4", "inaceptable", "Que me mienta o me oculte cosas", {"valores.estabilidad": 0.05}),
+    ("etapa4", "inaceptable", "Que me falte el respeto", {"personalidad.tolerancia_conflicto": 0.05}),
+    ("etapa4", "fiestaReac", "Me muestro natural y sigo la conversación", {"personalidad.introversion": -0.10}),
+    ("etapa4", "fiestaReac", "Me pongo nervioso/a pero intento seguirle el ritmo", {"personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa4", "fiestaReac", "Espero señales antes de abrirme más", {"personalidad.introversion": 0.05}),
+    ("etapa4", "fiestaReac", "Me quedo más reservado/a", {"personalidad.introversion": 0.15}),
+    ("etapa4", "comportaInt", "Me pongo más atento/a y presente, lo demuestro bastante", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa4", "comportaInt", "Me vuelvo un poco más tímido/a", {"personalidad.introversion": 0.10}),
+    ("etapa4", "comportaInt", "Intento actuar normal aunque por dentro piense todo", {"personalidad.introversion": 0.05}),
+    ("etapa4", "comportaInt", "Depende, puedo ser muy expresivo/a o muy frío/a", {"personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa5", "citaClima", "Lluvia y películas", {"personalidad.introversion": 0.05}),
+    ("etapa5", "citaClima", "Playa y música", {"personalidad.introversion": -0.05, "valores.aventura": 0.03}),
+    ("etapa5", "citaActividad", "Mirar estrellas", {"personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa5", "citaActividad", "Caminar sin rumbo", {"valores.aventura": 0.05}),
+    ("etapa5", "carinoComm", "Audios", {"personalidad.necesidad_afecto": 0.05}),
+    ("etapa5", "carinoComm", "Videollamadas", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa5", "carinoResp", "Responder rápido", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa5", "carinoResp", "Responder bien", {"personalidad.independencia": 0.05}),
+    ("etapa5", "carinoCoqueteo", "Coqueteo directo", {"personalidad.introversion": -0.08}),
+    ("etapa5", "carinoCoqueteo", "Coqueteo indirecto", {"personalidad.introversion": 0.05}),
+    ("etapa5", "siGusta", "Le hablo más", {"personalidad.introversion": -0.05}),
+    ("etapa5", "siGusta", "Le hablo menos (me pongo raro/a)", {"personalidad.sensibilidad_emocional": 0.08}),
+    ("etapa5", "siGusta", "Stalkeo todas sus redes", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa5", "siGusta", "Sobrepiensa cada mensaje", {"personalidad.sensibilidad_emocional": 0.08}),
+    ("etapa5", "siGusta", "Espero señales", {"personalidad.introversion": 0.05}),
+    ("etapa5", "siGusta", "Soy directo/a, lo dejo claro", {"personalidad.introversion": -0.08}),
+    ("etapa5", "siGusta", "Lo muestro con indirectas", {"personalidad.introversion": 0.03}),
+    ("etapa5", "siGusta", "Observo si hay reciprocidad", {"personalidad.tolerancia_conflicto": 0.03}),
+    ("etapa5", "siGusta", "Me cuesta mucho demostrarlo", {"personalidad.introversion": 0.10}),
 ]
 
 # Campos que describen preferencias sobre LA OTRA PERSONA, no rasgos propios.
 # No se usan hoy en calcular_compatibilidad; quedan disponibles para un futuro
 # prefiltro de matching.
 CAMPOS_PREFERENCIA_PAREJA = [
+    ("etapa3", "persEngancha"),
     ("etapa5", "similitud"), ("etapa5", "carinoIntens"),
     ("etapa6", "vibeAtrae"), ("etapa6", "conexionPrimero"), ("etapa6", "gustaMueven"),
     ("etapa6", "atraeMas"), ("etapa6", "colorPelo"), ("etapa6", "estiloPelo"),
@@ -418,6 +498,20 @@ def _construir_hijos(e3):
     }
 
 
+def _construir_fisico_propio(e6):
+    """Autodescripción física real (etapa6, sección "Sobre tu físico") --
+    distinto de preferencias_pareja (qué tipo físico ATRAE), esto es sobre
+    uno/a mismo/a. compatibilidad.compatibilidad_fisica lo usa para chequear
+    si el físico real de cada uno coincide con lo que el otro dijo que le
+    atrae -- antes esas preferencias no tenían con qué compararse."""
+    return {
+        "colorPelo": e6.get("colorPeloPropio", ""),
+        "estiloPelo": e6.get("estiloPeloPropio", ""),
+        "altura_cm": _construir_edad_int(e6.get("alturaPropia")),
+        "contextura": e6.get("contexturaPropia", ""),
+    }
+
+
 def _construir_conflictos(e4):
     pelea = (e4.get("pelea") or "").strip()
     molesta = (e4.get("cuandoMolesta") or "").strip()
@@ -473,6 +567,7 @@ def construir_perfil_gemelo(respuestas_raw):
     e3 = respuestas_raw.get("etapa3") or {}
     e4 = respuestas_raw.get("etapa4") or {}
     e5 = respuestas_raw.get("etapa5") or {}
+    e6 = respuestas_raw.get("etapa6") or {}
     e7 = respuestas_raw.get("etapa7") or {}
 
     personalidad = {k: 0.5 for k in BASE_PERSONALIDAD}
@@ -490,17 +585,34 @@ def construir_perfil_gemelo(respuestas_raw):
     # recalcula dos veces para no generar contradicciones.
     personalidad["ambicion"] = valores["ambicion"]
 
+    intereses = _construir_intereses(e1, e2)
+
     perfil = {
         **_construir_identidad(e1),
         **_construir_hijos(e3),
-        "intereses": _construir_intereses(e1, e2),
+        # "intereses" es el que se sigue mostrando/usando en los prompts y
+        # que actualizar_aprendizaje_gemelo (main.py) puede seguir sumando
+        # con el tiempo a partir de chats reales (con consentimiento).
+        # "intereses_onboarding" es una copia CONGELADA del mismo valor
+        # inicial, tomada en el momento de generar el perfil -- es la que
+        # usa compatibilidad.compatibilidad_intereses() para el % de
+        # compatibilidad real, justamente para que nadie pueda "inflar" sus
+        # intereses charlando con su propio gemelo y matchear más fácil.
+        "intereses": intereses,
+        "intereses_onboarding": intereses,
         "personalidad": personalidad,
         "estilo_chat": _construir_estilo_chat(e3, e4),
         "valores": valores,
         "conflictos": _construir_conflictos(e4),
         "notas_personales": _construir_notas(respuestas_raw),
         "preferencias_pareja": _construir_preferencias_pareja(respuestas_raw),
+        "fisico_propio": _construir_fisico_propio(e6),
         "creencias": _construir_creencias(respuestas_raw),
+        # Preferencia de medio de comunicación ("Mensajes de texto"/"Audios"/
+        # "Llamadas"/"Videollamadas"/"Verse en persona") -- además de nutrir
+        # personalidad.introversion vía REGLAS_NUMERICAS, es el dato crudo
+        # que lee compatibilidad.compatibilidad_comunicacion() directamente.
+        "prefCom": e4.get("prefCom", ""),
         "pesos_compatibilidad": _construir_pesos_compatibilidad(respuestas_raw),
         "flags_resumen": _resumir_flags(e5),
         "bio": (respuestas_raw.get("gemelo_final") or e7.get("gedit") or "").strip(),
