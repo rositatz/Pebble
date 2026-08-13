@@ -1652,6 +1652,20 @@
           .replace(/'/g, "&#39;");
       }
 
+      // El modelo devuelve texto con Markdown liviano (negrita **así**,
+      // saltos de línea entre puntos de una lista) pero la burbuja del chat
+      // no lo interpreta -- sin este paso se veían los asteriscos literales
+      // y todo el texto pegado en una sola línea. Recibe el texto YA
+      // escapado por escHtml (los < > & " ' del usuario/modelo ya están
+      // convertidos a entidades), así que insertar el resultado como HTML
+      // es seguro: acá solo se agregan <strong> y <br> propios, nunca
+      // contenido sin escapar.
+      function formatearMarkdownLite(textoEscapado) {
+        return textoEscapado
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\n/g, "<br>");
+      }
+
       // Los callables de Firebase exponen el código del error en err.code
       // (ej: "functions/failed-precondition", "functions/unavailable") --
       // antes se mostraba err.message tal cual, que para cualquier falla no
@@ -1703,7 +1717,7 @@
             ._llamarChatGemelo(text, historial)
             .then((respuesta) => {
               removeTyping();
-              addTwinMsg(escHtml(respuesta));
+              addTwinMsg(formatearMarkdownLite(escHtml(respuesta)));
             })
             .catch((err) => {
               removeTyping();
