@@ -208,6 +208,30 @@
       .conv-list {
         background: var(--surf-1);
       }
+      .chats-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 64px 24px;
+        color: var(--text-muted);
+      }
+      .chats-empty svg {
+        stroke: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .chats-empty-title {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: var(--text-primary);
+      }
+      .chats-empty-sub {
+        font-size: 0.85rem;
+        max-width: 320px;
+        line-height: 1.5;
+      }
       .conv-item {
         display: flex;
         gap: 12px;
@@ -1518,7 +1542,7 @@
           </svg>
           <span class="notif-pip"></span>
         </a>
-        <a href="./perfil.html" class="nav-avatar" aria-label="Mi perfil">M</a>
+        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">M</a>
       </div>
     </nav>
 
@@ -1540,167 +1564,31 @@
         </div>
       </div>
 
-      <div class="conv-count">3 conversaciones activas</div>
+      <div class="conv-count" id="conv-count">0 conversaciones activas</div>
 
-      <div class="conv-list" id="convList">
-        <!-- Sofía -->
-        <div
-          class="conv-item"
-          id="conv-sofia"
-          onclick="openChat('sofia', event)"
+      <!-- Se arma dinámicamente desde Firestore (conexiones reales) -- ver
+           cargarChatsReales() en el script de más abajo. -->
+      <div class="conv-list" id="convList"></div>
+      <div id="chatsEmpty" class="chats-empty" style="display: none">
+        <svg
+          viewBox="0 0 24 24"
+          width="40"
+          height="40"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <div
-            class="conv-av"
-            style="
-              background-image: url(./images/sofia.png);
-              background-size: cover;
-              background-position: center;
-            "
-          ></div>
-          <div class="conv-content">
-            <div class="conv-top">
-              <span class="conv-name">Sofía</span>
-              <span class="conv-afinidad">87%</span>
-              <span class="conv-time" id="sofia-time">11:02</span>
-            </div>
-            <div class="conv-preview-row">
-              <span class="conv-preview bold" id="sofia-preview"
-                >Jaja, espera ¿eso fue en serio?</span
-              >
-              <span class="conv-unread" id="sofia-unread">2</span>
-            </div>
-            <div class="conv-modes">
-              <button
-                class="conv-mode-btn mode-active"
-                id="sofia-btn-real"
-                onclick="listSwitch(event, 'sofia', 'real')"
-              >
-                <svg viewBox="0 0 24 24">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                Real
-              </button>
-              <button
-                class="conv-mode-btn"
-                id="sofia-btn-gemelo"
-                onclick="listSwitch(event, 'sofia', 'gemelo')"
-              >
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v4l3 3" />
-                </svg>
-                Gemelo
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mateo -->
-        <div
-          class="conv-item"
-          id="conv-mateo"
-          onclick="openChat('mateo', event)"
-        >
-          <div
-            class="conv-av"
-            style="
-              background-image: url(./images/mateo.png);
-              background-size: cover;
-              background-position: center;
-            "
-          ></div>
-          <div class="conv-content">
-            <div class="conv-top">
-              <span class="conv-name">Mateo</span>
-              <span class="conv-afinidad">83%</span>
-              <span class="conv-time" id="mateo-time">19:45</span>
-            </div>
-            <div class="conv-preview-row">
-              <span class="conv-preview bold" id="mateo-preview"
-                >(La tengo para esta semana si no la viste, avisame)</span
-              >
-              <span class="conv-unread" id="mateo-unread">1</span>
-            </div>
-            <div class="conv-modes">
-              <button
-                class="conv-mode-btn mode-active"
-                id="mateo-btn-real"
-                onclick="listSwitch(event, 'mateo', 'real')"
-              >
-                <svg viewBox="0 0 24 24">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                Real
-              </button>
-              <button
-                class="conv-mode-btn"
-                id="mateo-btn-gemelo"
-                onclick="listSwitch(event, 'mateo', 'gemelo')"
-              >
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v4l3 3" />
-                </svg>
-                Gemelo
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Valentina -->
-        <div
-          class="conv-item"
-          id="conv-valentina"
-          onclick="openChat('valentina', event)"
-        >
-          <div
-            class="conv-av"
-            style="
-              background-image: url(./images/valentina.png);
-              background-size: cover;
-              background-position: center;
-            "
-          ></div>
-          <div class="conv-content">
-            <div class="conv-top">
-              <span class="conv-name">Valentina</span>
-              <span class="conv-afinidad">76%</span>
-              <span class="conv-time" id="valentina-time">Ayer</span>
-            </div>
-            <div class="conv-preview-row">
-              <span class="conv-preview bold" id="valentina-preview"
-                >Le interesan los proyectos con impacto real…</span
-              >
-              <span class="conv-unread" id="valentina-unread">1</span>
-            </div>
-            <div class="conv-modes">
-              <button
-                class="conv-mode-btn mode-active"
-                id="valentina-btn-gemelo"
-                onclick="listSwitch(event, 'valentina', 'gemelo')"
-              >
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v4l3 3" />
-                </svg>
-                Gemelo
-              </button>
-              <button
-                class="conv-mode-btn"
-                id="valentina-btn-real"
-                onclick="listSwitch(event, 'valentina', 'real')"
-              >
-                <svg viewBox="0 0 24 24">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                Real
-              </button>
-            </div>
-          </div>
-        </div>
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          />
+        </svg>
+        <p class="chats-empty-title">Todavía no hablaste con nadie</p>
+        <p class="chats-empty-sub">
+          Cuando le escribas a un match desde Matches, la conversación va a
+          aparecer acá.
+        </p>
       </div>
     </div>
 
@@ -1891,451 +1779,13 @@
     </nav>
 
     <script>
-      const people = {
-        sofia: {
-          name: "Sofía",
-          initials: "S",
-          color: "linear-gradient(135deg,#FF9700,#FF751F)",
-          photo: "./images/sofia.png",
-          age: 26,
-          city: "Buenos Aires",
-          afinidad: 87,
-          bio: "Licenciada en Comunicación. Apasionada por la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Busca algo que valga la pena construir.",
-          interests: [
-            "Jazz",
-            "Cine independiente",
-            "Viajes",
-            "Lectura",
-            "Naturaleza",
-            "Música en vivo",
-          ],
-          sharedInterests: ["Jazz", "Cine independiente", "Naturaleza"],
-          photos: [
-            "linear-gradient(145deg,#FF9700,#FF751F)",
-            "linear-gradient(145deg,#FFD580,#FF9700)",
-            "linear-gradient(145deg,#FF751F,#c74b00)",
-            "linear-gradient(145deg,#FFBB30,#FF9700)",
-            "linear-gradient(145deg,#ff9a3c,#e05000)",
-          ],
-          realUnlocked: true,
-          currentMode: "real",
-          simulacion: [
-            {
-              from: "su-gemelo",
-              text: "Hola. Represento a Sofía. Antes de que se conozcan quiero ver si hay algo real acá. ¿Qué busca la persona que vos representás?",
-              time: "10:14",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Algo con profundidad. No necesariamente serio, pero que vaya a algún lado. Le aburre lo que no deja huella.",
-              time: "10:15",
-            },
-            {
-              from: "su-gemelo",
-              text: "Eso es Sofía casi en sus propias palabras. Interesante que lo dijiste sin que yo te preguntara específicamente eso.",
-              time: "10:16",
-            },
-            {
-              from: "mi-gemelo",
-              text: "¿Qué hace cuando una conversación le empieza a parecer forzada?",
-              time: "10:18",
-            },
-            {
-              from: "su-gemelo",
-              text: "La desvía con humor, pero si no mejora la corta con gracia. No soporta el ruido social vacío. El silencio honesto le parece mejor que la charla de relleno.",
-              time: "10:19",
-            },
-            {
-              from: "mi-gemelo",
-              text: "La persona que represento también. No llena los silencios por obligación.",
-              time: "10:21",
-            },
-            {
-              from: "su-gemelo",
-              text: "Eso puede funcionar muy bien o muy mal dependiendo de cómo se lean. ¿Tiene confianza para sostener un silencio incómodo con alguien nuevo?",
-              time: "10:22",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Sí. Y suele ser la primera en romperlo con algo que vale la pena.",
-              time: "10:24",
-            },
-            {
-              from: "su-gemelo",
-              text: "Sofía aprecia eso. Hay algo acá que no es solo compatibilidad de gustos — es compatibilidad de forma de estar en el mundo. 92% no es un número casual.",
-              time: "10:25",
-            },
-          ],
-          gemelo: {
-            lastTime: "10:47",
-            unread: 0,
-            msgs: [
-              {
-                from: "them",
-                text: "Hola, soy el gemelo de Sofía. Puedo ayudarte a conocerla antes de chatear directamente.",
-                time: "10:30",
-              },
-              {
-                from: "me",
-                text: "¿Qué tipo de música le gusta realmente?",
-                time: "10:32",
-              },
-              {
-                from: "them",
-                text: "Jazz sobre todo — Coltrane, Miles Davis, Bill Evans. Pero también le llega el post-rock instrumental. El silencio entre las notas le importa tanto como las notas mismas.",
-                time: "10:33",
-              },
-              {
-                from: "me",
-                text: "¿Cómo reacciona si uno la lleva a un lugar desconocido en la primera cita?",
-                time: "10:40",
-              },
-              {
-                from: "them",
-                text: "Le encanta, siempre que no sea forzado. Odia el protocolo pero adora la sorpresa genuina. Si el lugar la representa, vas muy bien.",
-                time: "10:41",
-              },
-              {
-                from: "them",
-                text: "Escuché algo de Explosions in the Sky hace poco. ¿Los conocés?",
-                time: "10:47",
-              },
-            ],
-          },
-          real: {
-            lastTime: "11:02",
-            unread: 2,
-            msgs: [
-              {
-                from: "them",
-                text: "¡Hola! Nuestros gemelos me dijeron que tenemos mucho en común 😄",
-                time: "10:55",
-              },
-              {
-                from: "me",
-                text: "Sí, vi que ambos tenemos una obsesión bastante seria con el jazz.",
-                time: "10:56",
-              },
-              {
-                from: "them",
-                text: "Serious es poco. Fui a ver a Brad Mehldau el mes pasado y me quedé llorando en el taxi de vuelta. Lo digo sin vergüenza.",
-                time: "10:58",
-              },
-              {
-                from: "me",
-                text: 'Eso es exactamente lo que tiene que hacer la música buena. ¿Alguna vez escuchaste "Anything Goes" en vivo?',
-                time: "11:00",
-              },
-              {
-                from: "them",
-                text: "Jaja, espera ¿eso fue en serio?",
-                time: "11:02",
-              },
-            ],
-          },
-        },
-        mateo: {
-          name: "Mateo",
-          initials: "M",
-          color: "linear-gradient(135deg,#1e293b,#475569)",
-          photo: "./images/mateo.png",
-          age: 28,
-          city: "Buenos Aires",
-          afinidad: 83,
-          bio: "Trabaja en tecnología pero vive para el cine y las series de culto. Le gusta correr de madrugada y cocinar con recetas improvisadas. Busca algo real, sin apuro.",
-          interests: [
-            "Cine de autor",
-            "Música",
-            "Running",
-            "Cocina",
-            "Series",
-            "Tecnología",
-          ],
-          sharedInterests: ["Cine de autor", "Música"],
-          photos: [
-            "linear-gradient(145deg,#1e293b,#475569)",
-            "linear-gradient(145deg,#334155,#64748b)",
-            "linear-gradient(145deg,#0f172a,#334155)",
-            "linear-gradient(145deg,#475569,#94a3b8)",
-            "linear-gradient(145deg,#1e3a5f,#2563eb)",
-          ],
-          realUnlocked: true,
-          currentMode: "real",
-          simulacion: [
-            {
-              from: "su-gemelo",
-              text: "Represento a Mateo. Empecemos directo: ¿qué es lo que realmente busca la persona que vos representás en otra persona?",
-              time: "17:50",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Algo real, sin performance. Alguien que sea lo mismo cuando nadie está mirando. No le pide que tenga todo resuelto — le pide que no actúe.",
-              time: "17:51",
-            },
-            {
-              from: "su-gemelo",
-              text: "Mateo dice casi lo mismo. Tiene algo de sospechoso lo parecido que son en eso.",
-              time: "17:52",
-            },
-            {
-              from: "mi-gemelo",
-              text: "¿Qué cosas lo hacen realmente entusiasmarse, aunque no lo muestre?",
-              time: "17:54",
-            },
-            {
-              from: "su-gemelo",
-              text: "El cine. Cuando algo lo mueve de verdad le cuesta ocultarlo — se le nota en cómo habla, en los silencios que deja. Pero tiene pudor de mostrar ese entusiasmo demasiado rápido.",
-              time: "17:55",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Ese tipo de pudor suele venir de haber mostrado entusiasmo y que no fuera correspondido. ¿Le pasó?",
-              time: "17:57",
-            },
-            {
-              from: "su-gemelo",
-              text: "Sí. Y aprendió a ir más despacio con eso. Pero cuando baja la guardia, la conversación que tiene es de las mejores.",
-              time: "17:58",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Creo que acá hay algo sólido. No explosivo — del tipo que construye.",
-              time: "18:00",
-            },
-            {
-              from: "su-gemelo",
-              text: "Coincido. 87% de compatibilidad. Los voy a presentar.",
-              time: "18:01",
-            },
-          ],
-          gemelo: {
-            lastTime: "18:03",
-            unread: 0,
-            msgs: [
-              {
-                from: "them",
-                text: "Hola, soy el gemelo de Mateo. Puedo contarte más sobre él antes de que hablen directamente.",
-                time: "18:00",
-              },
-              {
-                from: "me",
-                text: "¿Qué tipo de cine le gusta?",
-                time: "18:02",
-              },
-              {
-                from: "them",
-                text: "Cine de autor principalmente — Jarmusch, Kaurismäki, Haneke. No es snob, le puede entrar cualquier cosa bien hecha. Le molesta el mal gusto más que el cine comercial.",
-                time: "18:03",
-              },
-            ],
-          },
-          real: {
-            lastTime: "19:45",
-            unread: 1,
-            msgs: [
-              {
-                from: "them",
-                text: "¿Viste Paterson de Jarmusch? Me la recomendó tu gemelo.",
-                time: "19:30",
-              },
-              {
-                from: "me",
-                text: "Es de las mejores. La vi tres veces, cada vez encontrás algo nuevo.",
-                time: "19:32",
-              },
-              {
-                from: "them",
-                text: "Exacto. ¿Viste la de Kaurismäki nueva? Fallen Leaves.",
-                time: "19:40",
-              },
-              {
-                from: "them",
-                text: "(La tengo para esta semana si no la viste, avisame)",
-                time: "19:45",
-              },
-            ],
-          },
-        },
-
-        valentina: {
-          name: "Valentina",
-          initials: "V",
-          color: "linear-gradient(135deg,#7c3aed,#a855f7)",
-          photo: "./images/valentina.png",
-          age: 24,
-          city: "Córdoba",
-          afinidad: 76,
-          bio: "Diseñadora UX y fotógrafa. Trabaja de voluntaria en una ONG de educación rural los fines de semana. Prefiere la honestidad incómoda a la amabilidad de fachada.",
-          interests: [
-            "Diseño UX",
-            "Fotografía",
-            "Voluntariado",
-            "Educación",
-            "Naturaleza",
-            "Viajes",
-          ],
-          sharedInterests: ["Fotografía", "Naturaleza"],
-          photos: [
-            "linear-gradient(145deg,#7c3aed,#a855f7)",
-            "linear-gradient(145deg,#a855f7,#c084fc)",
-            "linear-gradient(145deg,#6d28d9,#8b5cf6)",
-            "linear-gradient(145deg,#9333ea,#c084fc)",
-            "linear-gradient(145deg,#7e22ce,#a21caf)",
-          ],
-          realUnlocked: true,
-          currentMode: "gemelo",
-          simulacion: [
-            {
-              from: "su-gemelo",
-              text: "Soy el gemelo de Valentina. No me gusta perder tiempo — ¿qué hace que alguien valga la pena para la persona que representás?",
-              time: "08:50",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Coherencia. Que sea lo mismo cuando nadie mira. No le pedimos que tenga todo resuelto, le pedimos que no actúe.",
-              time: "08:51",
-            },
-            {
-              from: "su-gemelo",
-              text: "Eso es exactamente lo que Valentina no negocia. La autenticidad para ella es innegociable. Seguí.",
-              time: "08:52",
-            },
-            {
-              from: "mi-gemelo",
-              text: "¿Qué cosas la hacen sentir que alguien realmente la escucha?",
-              time: "08:54",
-            },
-            {
-              from: "su-gemelo",
-              text: 'Que le hagan preguntas específicas. No "¿cómo te fue?" sino "¿cómo terminó lo del proyecto del que me hablaste la semana pasada?". La memoria es su lenguaje del amor.',
-              time: "08:55",
-            },
-            {
-              from: "mi-gemelo",
-              text: "Eso requiere prestar atención de verdad. No es para cualquiera.",
-              time: "08:57",
-            },
-            {
-              from: "su-gemelo",
-              text: "No. Y ella lo sabe. Por eso le da mucho valor cuando pasa. ¿Qué no soportaría la persona que representás?",
-              time: "08:58",
-            },
-            {
-              from: "mi-gemelo",
-              text: "La pasividad. Alguien que deja que todo lo decida el otro. Necesita interlocutores, no espectadores.",
-              time: "09:00",
-            },
-            {
-              from: "su-gemelo",
-              text: "Valentina tampoco lo soporta. Es 76% de compatibilidad — no es flechazo, pero es el tipo de conexión que, si se cuida, dura. Los voy a presentar.",
-              time: "09:01",
-            },
-          ],
-          gemelo: {
-            lastTime: "Ayer",
-            unread: 1,
-            msgs: [
-              {
-                from: "them",
-                text: "Hola, soy el gemelo de Valentina. Podemos explorar la conexión antes del chat directo.",
-                time: "09:00",
-              },
-              {
-                from: "me",
-                text: "¿Qué es lo que más valora en una relación?",
-                time: "09:05",
-              },
-              {
-                from: "them",
-                text: "La honestidad cruda por sobre la amabilidad de fachada. Prefiere que le digan algo incómodo con respeto a que le doren la píldora.",
-                time: "09:07",
-              },
-              { from: "me", text: "¿Trabaja en algo creativo?", time: "09:15" },
-              {
-                from: "them",
-                text: "Diseño UX. Y trabaja como voluntaria en una ONG de educación rural los fines de semana.",
-                time: "09:16",
-              },
-              {
-                from: "them",
-                text: "Le interesan los proyectos con impacto real, no solo los que quedan bien en LinkedIn.",
-                time: "09:20",
-              },
-            ],
-          },
-          real: {
-            lastTime: "Ayer",
-            unread: 0,
-            msgs: [
-              {
-                from: "them",
-                text: "Hola 🙂 Tu gemelo y el mío me contaron que hay mucha compatibilidad. Me pareció bien que nos presentaran directamente.",
-                time: "09:45",
-              },
-              {
-                from: "me",
-                text: "Sí, me alegra. ¿Cómo te cayó la idea de los gemelos digitales?",
-                time: "09:47",
-              },
-              {
-                from: "them",
-                text: "Al principio rara jaja. Pero me gustó que el mío me preguntó cosas de verdad antes de presentarme. Se siente menos al azar que otras apps.",
-                time: "09:50",
-              },
-            ],
-          },
-        },
-
-        lucia: {
-          name: "Lucía",
-          initials: "L",
-          color: "linear-gradient(135deg,#333,#555)",
-          photo: "./images/lucia.png",
-          age: 27,
-          city: "Buenos Aires",
-          afinidad: 76,
-          bio: "Estudiante de Letras y barista. Escribe poesía de madrugada y le cuesta soltar los libros que empezó. Busca alguien que tenga conversación de verdad.",
-          interests: ["Lectura", "Poesía", "Café", "Arte", "Cine"],
-          sharedInterests: ["Lectura", "Cine"],
-          photos: [
-            "linear-gradient(145deg,#333,#555)",
-            "linear-gradient(145deg,#555,#777)",
-            "linear-gradient(145deg,#222,#444)",
-            "linear-gradient(145deg,#444,#666)",
-            "linear-gradient(145deg,#2a2a2a,#4a4a4a)",
-          ],
-          realUnlocked: false,
-          currentMode: "gemelo",
-          simulacion: [],
-          gemelo: { lastTime: "", unread: 0, msgs: [] },
-          real: { lastTime: "", unread: 0, msgs: [] },
-        },
-
-        agustin: {
-          name: "Agustín",
-          initials: "A",
-          color: "linear-gradient(135deg,#222,#3A3A3A)",
-          photo: "./images/Agustin.png",
-          age: 29,
-          city: "Buenos Aires",
-          afinidad: 71,
-          bio: "Trabaja en gastronomía y entrena todos los días. Le gustan los viajes sin planificación y los asados que se alargan hasta la madrugada.",
-          interests: ["Deporte", "Viajes", "Gastronomía", "Fútbol", "Cocina"],
-          sharedInterests: ["Viajes"],
-          photos: [
-            "linear-gradient(145deg,#222,#3A3A3A)",
-            "linear-gradient(145deg,#3A3A3A,#555)",
-            "linear-gradient(145deg,#111,#2a2a2a)",
-            "linear-gradient(145deg,#2a2a2a,#444)",
-            "linear-gradient(145deg,#333,#4a4a4a)",
-          ],
-          realUnlocked: false,
-          currentMode: "gemelo",
-          simulacion: [],
-          gemelo: { lastTime: "", unread: 0, msgs: [] },
-          real: { lastTime: "", unread: 0, msgs: [] },
-        },
-      };
+      // Se llena con datos reales de Firestore -- ver cargarChatsReales()
+      // más abajo. openChat()/refreshListItem()/etc. leen de acá igual que antes.
+      // "var" (no "let") a propósito: un top-level "let" en un <script>
+      // clásico NO queda expuesto en window, así que el otro <script
+      // type="module"> de más abajo (que es el que arma "people" con datos
+      // reales de Firestore) no podría verlo -- "var" sí queda en window.
+      var people = {};
 
       // Persona actualmente abierta en el panel de chat (ej: 'sofia', 'mateo')
       let curPerson = null;
@@ -2356,7 +1806,9 @@
         document.getElementById("panelAv").textContent = "";
         document.getElementById("panelName").textContent = p.name;
         document.getElementById("panelMeta").textContent =
-          `${p.age} años · ${p.city} · ${p.afinidad}% afinidad`;
+          [p.age ? `${p.age} años` : "", p.city, `${p.afinidad}% afinidad`]
+            .filter(Boolean)
+            .join(" · ");
 
         const realBtn = document.getElementById("pmBtnReal");
         realBtn.classList.toggle("locked", !p.realUnlocked);
@@ -2539,6 +1991,18 @@
               const reply = autoReply(text, persona, mode);
               md.msgs.push({ from: "them", text: reply, time: nowTime() });
               md.lastTime = nowTime();
+              // Si seguís mirando esta misma conversación cuando llega la
+              // respuesta, se da por leída al toque (en vez de sumarla a los
+              // no leídos); si no, sí cuenta como no leído -- el contador
+              // tiene que poder subir, no solo bajar.
+              const sigueAbierto = curPerson === persona && curMode === mode;
+              if (sigueAbierto) {
+                if (typeof window._db_marcarLeido === "function") {
+                  window._db_marcarLeido(persona);
+                }
+              } else {
+                md.unread = (md.unread || 0) + 1;
+              }
               renderMessages();
               refreshListItem(persona);
               setTimeout(scrollBottom, 40);
@@ -2734,7 +2198,7 @@
     <div class="conv-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
     <div class="conv-content">
       <div class="conv-top">
-        <span class="conv-name">${p.name}</span>
+        <span class="conv-name">${esc(p.name)}</span>
         <span class="conv-afinidad">${p.afinidad}%</span>
         <span class="conv-time" id="${id}-time"></span>
       </div>
@@ -2747,7 +2211,7 @@
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
           Gemelo
         </button>
-        <button class="conv-mode-btn mode-locked" id="${id}-btn-real" onclick="listSwitch(event,'${id}','real')">
+        <button class="conv-mode-btn${p.realUnlocked ? "" : " mode-locked"}" id="${id}-btn-real" onclick="listSwitch(event,'${id}','real')">
           <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Real
         </button>
@@ -2802,7 +2266,7 @@
     <div class="po-hero">
       <div class="po-hero-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
       <div class="po-hero-info">
-        <div class="po-hero-name">${esc(p.name)}, ${p.age}</div>
+        <div class="po-hero-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
         <div class="po-hero-meta">${esc(p.city)}</div>
       </div>
       <div class="po-hero-score">${p.afinidad}%<span>Afinidad</span></div>
@@ -2902,7 +2366,9 @@
         return String(t)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;");
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
       }
       // Detecta Enter en el input del panel para enviar el mensaje (Shift+Enter hace salto de línea)
       function handlePanelKey(e) {
@@ -2917,11 +2383,11 @@
         el.style.height = Math.min(el.scrollHeight, 100) + "px";
       }
 
-      // Inicializa los badges de no leídos para las conversaciones preexistentes
-      ["sofia", "mateo", "valentina"].forEach((id) => refreshListItem(id));
-
-      // Si la página fue abierta con ?persona=ID (desde home o matches), abre ese chat directamente
-      (function () {
+      // Si la página fue abierta con ?persona=ID (desde home o matches), abre ese
+      // chat directamente -- se ejecuta desde cargarChatsReales() (script de más
+      // abajo) una vez que "people" ya tiene datos reales, no acá, porque a esta
+      // altura todavía no cargó nada de Firestore.
+      function abrirChatDesdeQueryParam() {
         const param = new URLSearchParams(location.search).get("persona");
         if (param && people[param]) {
           openChat(param);
@@ -2929,7 +2395,7 @@
           // el chat si el usuario ya lo cerró.
           history.replaceState(null, "", location.pathname + location.hash);
         }
-      })();
+      }
     </script>
 
     <script type="module">
@@ -2949,12 +2415,40 @@
         getDocs,
         query,
         where,
+        orderBy,
+        limit,
+        serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Mismo esquema de id que usa el backend (motor._par_id en Python):
       // un solo id por pareja, sin importar quién de los dos lo calcula.
       function parId(a, b) {
         return String(a) < String(b) ? `${a}_${b}` : `${b}_${a}`;
+      }
+
+      // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
+      // ícono de arriba a la derecha en vez de la letra fija.
+      function renderNavAvatar(avatarFoto) {
+        const el = document.getElementById("nav-avatar");
+        if (!el) return;
+        if (avatarFoto) {
+          el.style.backgroundImage = `url(${avatarFoto})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+          el.textContent = "";
+        } else {
+          el.style.backgroundImage = "";
+        }
+      }
+
+      function calcAge(fechaNac) {
+        if (!fechaNac) return null;
+        const b = new Date(fechaNac),
+          hoy = new Date();
+        let a = hoy.getFullYear() - b.getFullYear();
+        const m = hoy.getMonth() - b.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < b.getDate())) a--;
+        return a;
       }
 
       const app = initializeApp({
@@ -2969,6 +2463,130 @@
       const db = getFirestore(app);
 
       let uid = null;
+
+      // Arma "people" con matches reales (conexiones donde supera_umbral es
+      // true) -- reemplaza la lista fija de 5 personas demo. Para cada uno
+      // trae el perfil real de la otra persona y su última simulación real
+      // (para el teaser "Ver simulación"). El no-leídos se calcula desde
+      // vistoHasta (cuántos mensajes ya vio) contra los mensajes reales de
+      // "them" -- así puede subir Y bajar, no solo bajar desde un tope fijo.
+      async function cargarChatsReales(user, mis) {
+        const conexionesSnap = await getDocs(
+          query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+        );
+
+        const candidatos = [];
+        conexionesSnap.forEach((d) => {
+          const data = d.data();
+          if (!data.supera_umbral) return;
+          const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
+          candidatos.push({ parId: d.id, otroId, data });
+        });
+
+        if (!candidatos.length) {
+          const emptyEl = document.getElementById("chatsEmpty");
+          if (emptyEl) emptyEl.style.display = "flex";
+          return;
+        }
+
+        await Promise.all(
+          candidatos.map(async (c) => {
+            try {
+              const s = await getDoc(doc(db, "usuarios", c.otroId));
+              c.otro = s.exists() ? s.data() : {};
+            } catch (e) {
+              c.otro = {};
+            }
+            try {
+              const simSnap = await getDocs(
+                query(
+                  collection(db, "conexiones", c.parId, "simulaciones"),
+                  orderBy("fecha", "desc"),
+                  limit(1),
+                ),
+              );
+              c.ultimaSim = simSnap.empty ? null : simSnap.docs[0].data();
+            } catch (e) {
+              c.ultimaSim = null;
+            }
+          }),
+        );
+
+        const misIntereses = mis.intereses || [];
+        let hayConversaciones = false;
+
+        candidatos.forEach((c) => {
+          const id = c.otroId;
+          const nombreGuardado =
+            c.data.usuario_1.uid === id ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+          const nombre = c.otro.nombre || nombreGuardado || "Usuario";
+          const susIntereses = c.otro.intereses || [];
+
+          let simulacion = [];
+          if (c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)) {
+            const horaSim = c.ultimaSim.fecha
+              ? new Date(c.ultimaSim.fecha).toLocaleTimeString("es-AR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "";
+            simulacion = c.ultimaSim.historial_chat.map((msg) => ({
+              from: msg.name && mis.nombre && msg.name === mis.nombre ? "mi-gemelo" : "su-gemelo",
+              text: msg.content || "",
+              time: horaSim,
+            }));
+          }
+
+          const real = c.data.real || {};
+          const gemelo = c.data.gemelo || {};
+          const realMsgs = Array.isArray(real.msgs) ? real.msgs : [];
+          const gemeloMsgs = Array.isArray(gemelo.msgs) ? gemelo.msgs : [];
+          const realUnread = realMsgs
+            .slice(real.vistoHasta || 0)
+            .filter((m) => m.from === "them").length;
+          const gemeloUnread = gemeloMsgs
+            .slice(gemelo.vistoHasta || 0)
+            .filter((m) => m.from === "them").length;
+
+          people[id] = {
+            name: nombre,
+            color: "linear-gradient(135deg,#FF9700,#FF751F)",
+            photo: c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "",
+            age: calcAge(c.otro.fechaNac),
+            city: c.otro.ciudad || "",
+            afinidad: Math.round((c.data.ultimo_score || 0) * 100),
+            bio: c.otro.bio || "",
+            interests: susIntereses,
+            sharedInterests: misIntereses.filter((i) => susIntereses.includes(i)),
+            photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).map(
+              (url) => `url('${url}') center/cover no-repeat`,
+            ),
+            realUnlocked: true,
+            currentMode: realMsgs.length ? "real" : "gemelo",
+            simulacion,
+            gemelo: {
+              lastTime: gemeloMsgs.length ? gemeloMsgs[gemeloMsgs.length - 1].time || "" : "",
+              unread: gemeloUnread,
+              msgs: gemeloMsgs,
+            },
+            real: {
+              lastTime: realMsgs.length ? realMsgs[realMsgs.length - 1].time || "" : "",
+              unread: realUnread,
+              msgs: realMsgs,
+            },
+          };
+
+          if (realMsgs.length > 0 || gemeloMsgs.length > 0) {
+            hayConversaciones = true;
+            injectConvItem(id);
+          }
+        });
+
+        const emptyEl = document.getElementById("chatsEmpty");
+        if (emptyEl) emptyEl.style.display = hayConversaciones ? "none" : "flex";
+
+        abrirChatDesdeQueryParam();
+      }
 
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
@@ -2992,54 +2610,32 @@
 
         // ── Cargar conversaciones guardadas de Firestore ──
         // Los chats viven en conexiones/{parId}, un solo doc compartido por
-        // pareja (antes cada usuario tenía su propia copia en
-        // usuarios/{uid}/chats/{personaId}) -- se arma chatsMap con la misma
-        // forma de antes (keyed por el id de la OTRA persona) para no tener
-        // que tocar el resto del código que la consume.
+        // pareja -- cargarChatsReales() arma "people" con los matches reales
+        // (conexiones/{parId} donde supera_umbral es true) en vez de la
+        // lista fija de 5 personas demo que había antes.
         try {
           const snap = await getDoc(doc(db, "usuarios", uid));
-          if (snap.exists() && snap.data().notifs_leidas) {
+          const mis = snap.exists() ? snap.data() : {};
+          renderNavAvatar(mis.avatarFoto);
+
+          // Punto naranja del ícono de notificaciones: solo si hay
+          // notificaciones reales sin leer (usuarios/{uid}/notificaciones,
+          // leida=false) -- ver notificaciones.html / main.py.
+          try {
+            const notifsSnap = await getDocs(
+              query(collection(db, "usuarios", uid, "notificaciones"), where("leida", "==", false)),
+            );
             const pip = document.querySelector(".nav-icon-btn .notif-pip");
-            if (pip) pip.style.display = "none";
+            if (pip) pip.style.display = notifsSnap.size > 0 ? "" : "none";
+          } catch (e) {
+            console.warn("Error contando notificaciones sin leer:", e);
           }
 
-          const [comoUno, comoDos] = await Promise.all([
-            getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", uid))),
-            getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", uid))),
-          ]);
-          const chatsMap = {};
-          comoUno.forEach((d) => {
-            chatsMap[d.data().usuario_2.uid] = d.data();
-          });
-          comoDos.forEach((d) => {
-            chatsMap[d.data().usuario_1.uid] = d.data();
-          });
-
-          ["sofia", "mateo", "valentina", "lucia", "agustin"].forEach((id) => {
-            const c = chatsMap[id];
-            let hasMessages = false;
-            if (c) {
-              ["real", "gemelo"].forEach((mode) => {
-                const modo = c[mode];
-                if (!modo) return;
-                if (Array.isArray(modo.msgs) && modo.msgs.length > 0) {
-                  people[id][mode].msgs = modo.msgs;
-                  hasMessages = true;
-                }
-                // Si ya abrió este chat antes → sin badge de no leídos
-                if (modo.leido) {
-                  people[id][mode].unread = 0;
-                }
-              });
-            }
-            // Para personas nuevas (lucia/agustín), solo mostrar en lista si tienen mensajes guardados
-            if (!document.getElementById(`conv-${id}`) && hasMessages) {
-              injectConvItem(id);
-            }
-            refreshListItem(id);
-          });
+          await cargarChatsReales(user, mis);
         } catch (e) {
           console.warn("Error cargando chats:", e);
+          const emptyEl = document.getElementById("chatsEmpty");
+          if (emptyEl) emptyEl.style.display = "flex";
         }
 
         // Quitar overlay cuando todo esté listo
@@ -3053,26 +2649,44 @@
       // Arma el par usuario_1/usuario_2 en orden estable (el más chico de los
       // dos uid primero) -- así siempre queda igual sin importar cuál de los
       // dos usuarios está escribiendo, que es lo que espera el backend.
+      // "participantes" es lo que usan las reglas y la query de carga.
       function parUsuarios(personaId) {
-        return String(uid) < String(personaId)
+        const base = String(uid) < String(personaId)
           ? { usuario_1: { uid }, usuario_2: { uid: personaId } }
           : { usuario_1: { uid: personaId }, usuario_2: { uid } };
+        return { ...base, participantes: [uid, personaId] };
       }
 
       // Marca ambos modos (gemelo y real) de una conversación como leídos en Firestore
       // Se llama al abrir el panel de chat para eliminar los badges de no leídos
+      // Guarda hasta qué mensaje (índice) ya vio el usuario, por modo --
+      // reemplaza el flag booleano "leido" de antes. Con un booleano el
+      // contador de no leídos solo podía bajar a 0 y quedarse ahí; con un
+      // índice se puede recalcular en cada carga cuántos mensajes de "them"
+      // llegaron después de ese punto, así que sube y baja como corresponde.
       window._db_marcarLeido = async (personaId) => {
         if (!uid) return;
+        const p = window.people && window.people[personaId];
+        const realHasta = p && p.real ? p.real.msgs.length : 0;
+        const gemeloHasta = p && p.gemelo ? p.gemelo.msgs.length : 0;
         const ref = doc(db, "conexiones", parId(uid, personaId));
         try {
-          // updateDoc SÍ interpreta 'real.leido' como ruta anidada (setDoc con
-          // merge:true no -- crea un campo llamado literalmente "real.leido").
-          await updateDoc(ref, { "real.leido": true, "gemelo.leido": true });
+          // updateDoc SÍ interpreta 'real.vistoHasta' como ruta anidada
+          // (setDoc con merge:true no -- crea un campo llamado literalmente
+          // "real.vistoHasta").
+          await updateDoc(ref, {
+            "real.vistoHasta": realHasta,
+            "gemelo.vistoHasta": gemeloHasta,
+          });
         } catch (e) {
           // El documento todavía no existe (primera vez que se toca esta conversación)
           await setDoc(
             ref,
-            { ...parUsuarios(personaId), real: { leido: true }, gemelo: { leido: true } },
+            {
+              ...parUsuarios(personaId),
+              real: { vistoHasta: realHasta },
+              gemelo: { vistoHasta: gemeloHasta },
+            },
             { merge: true },
           );
         }
@@ -3083,11 +2697,19 @@
       window._db_saveChat = async (personaId, mode, msgs) => {
         if (!uid) return;
         const ref = doc(db, "conexiones", parId(uid, personaId));
+        // "real.ultimaActividad" (solo en modo real) es lo que usa
+        // generar_recordatorios_diarios en el backend para saber hace
+        // cuánto no hay mensajes nuevos y avisar "¿Retomás con X?" -- por
+        // eso es un Timestamp real, no el "HH:MM" de md.lastTime (que no
+        // sirve para calcular días de diferencia).
+        const campos = { [`${mode}.msgs`]: msgs };
+        if (mode === "real") campos["real.ultimaActividad"] = serverTimestamp();
         try {
-          await updateDoc(ref, { [`${mode}.msgs`]: msgs });
+          await updateDoc(ref, campos);
         } catch (e) {
           // El documento todavía no existe (primer mensaje con esta persona)
-          await setDoc(ref, { ...parUsuarios(personaId), [mode]: { msgs } }, { merge: true });
+          const modoData = mode === "real" ? { msgs, ultimaActividad: serverTimestamp() } : { msgs };
+          await setDoc(ref, { ...parUsuarios(personaId), [mode]: modoData }, { merge: true });
         }
       };
     </script>

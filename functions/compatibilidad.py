@@ -94,6 +94,125 @@ def actualizar_memoria(memoria, analisis):
     })
 
     return memoria
+
+
+# Géneros posibles que puede tener una persona (perfil.get("genero")) --
+# "Otro" con texto libre (ej: "Género fluido") también cae acá como
+# candidato válido para quien busca "todos los géneros".
+_GENEROS_CONOCIDOS = {"Hombre", "Mujer", "No binario"}
+
+
+def _generos_aceptados(genero, orientacion):
+    """A partir del género de una persona y su orientación sexual, arma el
+    conjunto de géneros con los que estaría dispuesta a matchear.
+
+    Con datos faltantes o ambiguos (orientación "Prefiero no decir"/"Otro",
+    o una etiqueta pensada para binario -tipo "Heterosexual"- combinada con
+    un género no binario/"Otro"/sin dato) se deja ABIERTO a todos los
+    géneros en vez de excluir: con información incompleta preferimos
+    mostrar de más que ocultar matches por error."""
+
+    TODOS = {"Hombre", "Mujer", "No binario", "Otro"}
+
+    o = (orientacion or "").strip().casefold()
+    g = (genero or "").strip()
+
+    if o == "heterosexual":
+        if g == "Hombre":
+            return {"Mujer"}
+        if g == "Mujer":
+            return {"Hombre"}
+        return TODOS
+    if o in ("gay / lesbiana", "gay/lesbiana", "gay", "lesbiana"):
+        if g in _GENEROS_CONOCIDOS:
+            return {g}
+        return TODOS
+    # bisexual, pansexual, asexual, "prefiero no decir", "otro", vacío, o
+    # cualquier valor no reconocido: no filtramos por género.
+    return TODOS
+
+
+def compatible_por_genero(perfil1, perfil2):
+    """True si, según género + orientación de cada uno, ninguno de los dos
+    quedaría excluido como candidato del otro. Si a alguno le falta el
+    género propio no se puede chequear esa mitad -- se deja pasar (no
+    excluir por datos faltantes) en vez de bloquear el par entero."""
+
+    g1 = (perfil1.get("genero") or "").strip()
+    g2 = (perfil2.get("genero") or "").strip()
+
+    acepta1 = _generos_aceptados(g1, perfil1.get("orientacion"))
+    acepta2 = _generos_aceptados(g2, perfil2.get("orientacion"))
+
+    ok_1_acepta_2 = (not g2) or (g2 in acepta1)
+    ok_2_acepta_1 = (not g1) or (g1 in acepta2)
+
+    return ok_1_acepta_2 and ok_2_acepta_1
+
+
+# Años de margen sobre el rango de edad que cada uno pidió -- "busco 25-30"
+# no descarta a alguien de 32. Nunca baja el piso legal (ver EDAD_MINIMA en
+# _edad_en_rango): con busco 18-25, el margen no hace que alguien de 16
+# pueda entrar.
+TOLERANCIA_EDAD = 3
+
+EDAD_MINIMA = 18
+
+
+def _edad_en_rango(edad_candidato, rango_busco, tolerancia):
+    """True si edad_candidato entra en rango_busco (+-tolerancia años). Sin
+    la edad del candidato o sin preferencia de rango puesta, no se puede
+    evaluar esa mitad -- se deja pasar en vez de bloquear el par entero."""
+
+    if edad_candidato is None or not rango_busco:
+        return True
+
+    minimo = rango_busco.get("min")
+    maximo = rango_busco.get("max")
+
+    piso = max(EDAD_MINIMA, minimo - tolerancia) if minimo is not None else EDAD_MINIMA
+    techo = maximo + tolerancia if maximo is not None else 999
+
+    return piso <= edad_candidato <= techo
+
+
+def compatible_por_edad(perfil1, perfil2, tolerancia=TOLERANCIA_EDAD):
+    """True si la edad de cada uno entra en el rango que busca el otro (con
+    `tolerancia` años de margen para cada lado). Sea cual sea la preferencia
+    de cualquiera de los dos, alguien menor de 18 nunca es candidato de
+    nadie -- ese piso es absoluto y la tolerancia nunca lo cruza."""
+
+    edad1 = perfil1.get("edad")
+    edad2 = perfil2.get("edad")
+
+    if edad1 is not None and edad1 < EDAD_MINIMA:
+        return False
+    if edad2 is not None and edad2 < EDAD_MINIMA:
+        return False
+
+    ok_1_acepta_2 = _edad_en_rango(edad2, perfil1.get("rango_edad_busco"), tolerancia)
+    ok_2_acepta_1 = _edad_en_rango(edad1, perfil2.get("rango_edad_busco"), tolerancia)
+
+    return ok_1_acepta_2 and ok_2_acepta_1
+
+
+def compatible_por_hijos(perfil1, perfil2):
+    """Si alguien dijo que le incomodaría salir con alguien que ya tiene
+    hijos ("¿Te incomodaría salir con alguien que ya tiene hijos?" ==
+    "Sí, prefiero que no"), no se lo considera candidato de alguien que sí
+    tiene hijos -- y viceversa. "Un poco" no excluye, es una molestia leve
+    declarada, no un rechazo. Sin el dato de alguno de los dos lados, no se
+    puede evaluar esa mitad -- se deja pasar en vez de excluir."""
+
+    rechaza1 = perfil1.get("tolerancia_hijos") == "Sí, prefiero que no"
+    rechaza2 = perfil2.get("tolerancia_hijos") == "Sí, prefiero que no"
+
+    ok_1_acepta_2 = not (rechaza1 and perfil2.get("tiene_hijos"))
+    ok_2_acepta_1 = not (rechaza2 and perfil1.get("tiene_hijos"))
+
+    return ok_1_acepta_2 and ok_2_acepta_1
+
+
 def compatibilidad_psicologica(perfil1, perfil2):
 
     p1 = perfil1.get("personalidad", {})

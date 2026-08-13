@@ -206,6 +206,18 @@ body {
   box-shadow: 0 0 6px rgba(255,117,31,0.45);
 }
 
+/* Borrar notificación -- siempre visible (no solo al pasar el mouse) para
+   que también se pueda usar con touch, no solo con mouse. */
+.notif-delete {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+  touch-action: manipulation;
+}
+.notif-delete:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); }
+
 /* ── Empty state ── */
 .empty-state {
   display: flex; flex-direction: column; align-items: center;
@@ -321,191 +333,18 @@ body {
     <button class="filter-chip active" role="tab" aria-selected="true"  onclick="filterNotifs('todas', this)">Todas</button>
     <button class="filter-chip"        role="tab" aria-selected="false" onclick="filterNotifs('matches', this)">Matches</button>
     <button class="filter-chip"        role="tab" aria-selected="false" onclick="filterNotifs('gemelo', this)">Gemelo</button>
-    <button class="filter-chip"        role="tab" aria-selected="false" onclick="filterNotifs('eventos', this)">Eventos</button>
-    <button class="filter-chip"        role="tab" aria-selected="false" onclick="filterNotifs('resumen', this)">Resúmenes</button>
   </div>
 
-  <!-- ══ HOY ══ -->
-  <div class="day-group fu" data-group>
-    <p class="day-label">Hoy</p>
-    <div class="notif-list">
+  <!-- Se arma dinámicamente desde Firestore (usuarios/{uid}/notificaciones) --
+       ver cargarNotificaciones() en el script de más abajo. -->
+  <div id="notifGroups"></div>
 
-      <!-- MATCH NUEVO -->
-      <a href="#" class="notif-card unread" data-type="matches"
-         onclick="markRead(this); goTo('matches'); return false;"
-         aria-label="Nuevo match con Sofía, 92% de afinidad">
-        <div class="notif-icon ni-match" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">¡Nuevo match con Sofía!</span>
-            <span class="notif-time">hace 12 min</span>
-          </div>
-          <p class="notif-desc">Tu gemelo alcanzó <strong>92% de afinidad</strong> con ella. Ya podés ver la conversación completa.</p>
-          <button class="notif-cta" onclick="event.stopPropagation(); goTo('chats')">Ver conversación</button>
-        </div>
-        <span class="unread-dot" aria-hidden="true"></span>
-      </a>
-
-      <!-- AFINIDAD EN AUMENTO -->
-      <a href="#" class="notif-card unread" data-type="gemelo"
-         onclick="markRead(this); goTo('matches'); return false;"
-         aria-label="Afinidad con Valentina subió al 81%">
-        <div class="notif-icon ni-afinidad" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">Tu afinidad con Valentina subió</span>
-            <span class="notif-time">hace 1 h</span>
-          </div>
-          <p class="notif-desc">Pasó de 73% a <strong>81%</strong> esta semana. Tu gemelo y el suyo siguen conectando.</p>
-        </div>
-        <span class="unread-dot" aria-hidden="true"></span>
-      </a>
-
-      <!-- EVENTO CONTEXTUAL -->
-      <a href="#" class="notif-card unread" data-type="eventos"
-         onclick="markRead(this); return false;"
-         aria-label="Evento relacionado con Sofía">
-        <div class="notif-icon ni-evento" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">A Sofía le encanta el jazz</span>
-            <span class="notif-time">hace 2 h</span>
-          </div>
-          <p class="notif-desc">Hay un festival de jazz este sábado cerca tuyo. Podría ser una buena excusa para escribirle.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-            <button class="notif-cta" onclick="event.stopPropagation(); goTo('chats')">Escribirle a Sofía</button>
-            <button class="notif-cta secondary" onclick="event.stopPropagation()">Ver evento</button>
-          </div>
-        </div>
-        <span class="unread-dot" aria-hidden="true"></span>
-      </a>
-
+  <div id="notifEmpty" class="empty-state" style="display:none">
+    <div class="empty-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
     </div>
-  </div>
-
-  <!-- ══ AYER ══ -->
-  <div class="day-group fu" data-group>
-    <p class="day-label">Ayer</p>
-    <div class="notif-list">
-
-      <!-- GEMELO INACTIVO -->
-      <a href="#" class="notif-card unread" data-type="gemelo"
-         onclick="markRead(this); goTo('gemelo'); return false;"
-         aria-label="Tu gemelo lleva 2 días sin interacciones">
-        <div class="notif-icon ni-inactivo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">Tu gemelo lleva 2 días sin interacciones</span>
-            <span class="notif-time">ayer, 18:30</span>
-          </div>
-          <p class="notif-desc">Ajustar su personalidad o sus preferencias puede mejorar los resultados.</p>
-          <button class="notif-cta" onclick="event.stopPropagation(); goTo('gemelo')">Ajustar gemelo</button>
-        </div>
-        <span class="unread-dot" aria-hidden="true"></span>
-      </a>
-
-      <!-- RETOMAR CONVERSACIÓN -->
-      <a href="#" class="notif-card" data-type="matches"
-         onclick="goTo('chats'); return false;"
-         aria-label="Retomar conversación con Lucía">
-        <div class="notif-icon ni-retomar" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">¿Retomás con Lucía?</span>
-            <span class="notif-time">ayer, 14:10</span>
-          </div>
-          <p class="notif-desc">Empezaste a hablar hace 3 días. La conversación quedó abierta.</p>
-          <button class="notif-cta" onclick="event.stopPropagation(); goTo('chats')">Retomar chat</button>
-        </div>
-      </a>
-
-      <!-- INSIGHT DE PERSONALIDAD -->
-      <a href="#" class="notif-card" data-type="gemelo"
-         onclick="goTo('matches'); return false;"
-         aria-label="Nuevo insight de compatibilidad">
-        <div class="notif-icon ni-insight" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">Hay alguien con quien tenés mucho en común</span>
-            <span class="notif-time">ayer, 10:45</span>
-          </div>
-          <p class="notif-desc">Tu gemelo detectó una compatibilidad alta con un nuevo perfil. Ya está en contacto.</p>
-        </div>
-      </a>
-
-      <!-- EVENTO CONTEXTUAL 2 -->
-      <a href="#" class="notif-card" data-type="eventos"
-         onclick="return false;"
-         aria-label="Evento relacionado con Mateo">
-        <div class="notif-icon ni-evento" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">Mateo también sigue a Drake</span>
-            <span class="notif-time">ayer, 09:20</span>
-          </div>
-          <p class="notif-desc">Hay un show este viernes. Pueden tener algo para hablar.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-            <button class="notif-cta" onclick="event.stopPropagation(); goTo('chats')">Escribirle a Mateo</button>
-            <button class="notif-cta secondary" onclick="event.stopPropagation()">Ver evento</button>
-          </div>
-        </div>
-      </a>
-
-    </div>
-  </div>
-
-  <!-- ══ ESTA SEMANA ══ -->
-  <div class="day-group fu" data-group>
-    <p class="day-label">Esta semana</p>
-    <div class="notif-list">
-
-      <!-- RESUMEN SEMANAL -->
-      <a href="#" class="notif-card" data-type="resumen"
-         onclick="return false;"
-         aria-label="Resumen semanal de tu gemelo">
-        <div class="notif-icon ni-resumen" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">Resumen semanal de tu gemelo</span>
-            <span class="notif-time">lun, 09:00</span>
-          </div>
-          <p class="notif-desc">Esta semana tu gemelo tuvo <strong>12 conversaciones</strong>. Tu mayor afinidad subió al <strong>94%</strong>. Tenés 3 matches nuevos esperándote.</p>
-        </div>
-      </a>
-
-      <!-- MATCH (leído) -->
-      <a href="#" class="notif-card" data-type="matches"
-         onclick="goTo('matches'); return false;"
-         aria-label="Match con Agustín">
-        <div class="notif-icon ni-match" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
-        <div class="notif-body">
-          <div class="notif-header">
-            <span class="notif-title">Match con Agustín</span>
-            <span class="notif-time">mar, 16:30</span>
-          </div>
-          <p class="notif-desc">71% de afinidad. Todavía no hablaron.</p>
-        </div>
-      </a>
-
-    </div>
+    <p class="empty-title">No tenés notificaciones</p>
+    <p class="empty-sub">Cuando tu gemelo encuentre un match o tengas algo pendiente, va a aparecer acá.</p>
   </div>
 
 </main>
@@ -539,7 +378,6 @@ body {
 </nav>
 
 <script>
-// ── REEMPLAZAR goTo() por window.location.href cuando estén listas las páginas ──
 // Navega a otra pantalla de la app según el nombre de la página
 function goTo(page) {
   const map = {
@@ -552,19 +390,17 @@ function goTo(page) {
   if (url) window.location.href = url;
 }
 
-// Marca una notificación individual como leída
-// Quita la clase 'unread', elimina el punto indicador y normaliza el peso del texto
-function markRead(el) {
-  el.classList.remove('unread');
-  const dot = el.querySelector('.unread-dot');
-  if (dot) dot.remove();
-  const title = el.querySelector('.notif-title');
-  if (title) title.style.fontWeight = '600';
-}
-
-// Marca todas las notificaciones no leídas como leídas de una vez
+// Marca todas las notificaciones no leídas como leídas -- visual al toque,
+// y persistido de verdad en Firestore vía el bridge del script de módulo.
 function markAllRead() {
-  document.querySelectorAll('.notif-card.unread').forEach(markRead);
+  document.querySelectorAll('.notif-card.unread').forEach(card => {
+    card.classList.remove('unread');
+    const dot = card.querySelector('.unread-dot');
+    if (dot) dot.remove();
+  });
+  if (typeof window._db_marcarTodasNotifsLeidas === 'function') {
+    window._db_marcarTodasNotifsLeidas();
+  }
 }
 
 // Filtra las notificaciones por tipo (todas, matches, mensajes, sistema, etc.)
@@ -599,11 +435,229 @@ function filterNotifs(type, btn) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore, collection, getDocs, query, orderBy, limit,
+  doc, updateDoc, deleteDoc, writeBatch,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
 const auth = getAuth(app);
 const db   = getFirestore(app);
+
+let uid = null;
+// id -> notificación real (creada por el backend: procesar_parejas_pendientes
+// / generar_recordatorios_diarios -- ver main.py). Se guarda acá para no
+// tener que interpolar título/cuerpo/otroUid dentro de atributos onclick.
+const notifsPorId = {};
+
+function escHtml(t) {
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const TIPO_ICONO = {
+  match:    { cls: 'ni-match',    svg: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' },
+  interes:  { cls: 'ni-insight',  svg: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>' },
+  retomar:  { cls: 'ni-retomar',  svg: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' },
+  inactivo: { cls: 'ni-inactivo', svg: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
+};
+// Los 3 filtros de la barra son "todas / matches / gemelo" -- match,
+// interés y retomar son todos sobre una conexión con otra persona, así que
+// caen en "matches"; inactivo es sobre el gemelo propio.
+const TIPO_FILTRO = { match: 'matches', interes: 'matches', retomar: 'matches', inactivo: 'gemelo' };
+const ACCION_CTA = { matches: 'Ver match', chats: 'Escribirle', gemelo: 'Ajustar gemelo' };
+
+function bucketDia(fecha) {
+  const ahora = new Date();
+  const hoy0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const fecha0 = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  const dias = Math.round((hoy0 - fecha0) / 86400000);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Ayer';
+  if (dias <= 7) return 'Esta semana';
+  return 'Más viejas';
+}
+
+function formatearHora(fecha, esHoy) {
+  if (esHoy) {
+    const diffMin = Math.floor((Date.now() - fecha.getTime()) / 60000);
+    if (diffMin < 1) return 'recién';
+    if (diffMin < 60) return `hace ${diffMin} min`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `hace ${diffH} h`;
+  }
+  const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  const hh = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return `${dias[fecha.getDay()]}, ${hh}`;
+}
+
+function buildNotifCardHTML(n, esHoy) {
+  const icono = TIPO_ICONO[n.tipo] || TIPO_ICONO.match;
+  const dataType = TIPO_FILTRO[n.tipo] || 'matches';
+  const unread = !n.leida;
+  const ctaLabel = n.accion
+    ? (n.accion === 'chats' && n.otroNombre ? `Escribirle a ${escHtml(n.otroNombre)}` : ACCION_CTA[n.accion])
+    : null;
+  const hora = formatearHora(n.fecha, esHoy);
+
+  return `
+    <div class="notif-card${unread ? ' unread' : ''}" data-type="${dataType}" data-id="${n.id}"
+         role="button" tabindex="0" onclick="abrirNotificacion('${n.id}')"
+         onkeydown="if(event.key==='Enter')abrirNotificacion('${n.id}')">
+      <div class="notif-icon ${icono.cls}" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icono.svg}</svg>
+      </div>
+      <div class="notif-body">
+        <div class="notif-header">
+          <span class="notif-title">${escHtml(n.titulo)}</span>
+          <span class="notif-time">${hora}</span>
+        </div>
+        <p class="notif-desc">${escHtml(n.cuerpo)}</p>
+        ${ctaLabel ? `<button class="notif-cta" onclick="event.stopPropagation(); abrirNotificacion('${n.id}')">${escHtml(ctaLabel)}</button>` : ''}
+      </div>
+      <button class="notif-delete" onclick="event.stopPropagation(); borrarNotificacion('${n.id}')" aria-label="Borrar notificación">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      ${unread ? '<span class="unread-dot" aria-hidden="true"></span>' : ''}
+    </div>`;
+}
+
+function renderizarNotificaciones() {
+  const notifs = Object.values(notifsPorId).sort((a, b) => b.fecha - a.fecha);
+  const groupsEl = document.getElementById('notifGroups');
+  const emptyEl = document.getElementById('notifEmpty');
+  if (!groupsEl) return;
+
+  if (!notifs.length) {
+    groupsEl.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'flex';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const buckets = new Map();
+  notifs.forEach(n => {
+    const b = bucketDia(n.fecha);
+    if (!buckets.has(b)) buckets.set(b, []);
+    buckets.get(b).push(n);
+  });
+
+  const orden = ['Hoy', 'Ayer', 'Esta semana', 'Más viejas'];
+  groupsEl.innerHTML = orden
+    .filter(b => buckets.has(b))
+    .map(b => `
+      <div class="day-group fu" data-group>
+        <p class="day-label">${b}</p>
+        <div class="notif-list">
+          ${buckets.get(b).map(n => buildNotifCardHTML(n, b === 'Hoy')).join('')}
+        </div>
+      </div>`)
+    .join('');
+
+  // Reaplica el filtro activo (si el usuario ya había elegido uno antes de
+  // que esto terminara de cargar).
+  const chipActivo = document.querySelector('.filter-chip.active');
+  if (chipActivo && typeof filterNotifs === 'function') {
+    const tipo = chipActivo.textContent.trim() === 'Todas' ? 'todas'
+      : chipActivo.textContent.trim() === 'Matches' ? 'matches' : 'gemelo';
+    filterNotifs(tipo, chipActivo);
+  }
+}
+
+async function cargarNotificaciones() {
+  if (!uid) return;
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'usuarios', uid, 'notificaciones'), orderBy('creado', 'desc'), limit(100)),
+    );
+    snap.forEach(d => {
+      const data = d.data();
+      notifsPorId[d.id] = {
+        id: d.id,
+        tipo: data.tipo || 'match',
+        titulo: data.titulo || '',
+        cuerpo: data.cuerpo || '',
+        otroUid: data.otroUid || null,
+        otroNombre: data.otroNombre || null,
+        accion: data.accion || null,
+        leida: !!data.leida,
+        fecha: data.creado && data.creado.toDate ? data.creado.toDate() : new Date(),
+      };
+    });
+  } catch (e) {
+    console.warn('Error cargando notificaciones:', e);
+  }
+  renderizarNotificaciones();
+}
+
+// Marca como leída (local + Firestore) y navega según la acción de la
+// notificación -- si tiene otroUid, va directo a esa conversación/perfil en
+// vez de a la pantalla genérica.
+window.abrirNotificacion = async function (id) {
+  const n = notifsPorId[id];
+  if (!n) return;
+
+  if (!n.leida) {
+    n.leida = true;
+    const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+    if (card) {
+      card.classList.remove('unread');
+      const dot = card.querySelector('.unread-dot');
+      if (dot) dot.remove();
+    }
+    try {
+      await updateDoc(doc(db, 'usuarios', uid, 'notificaciones', id), { leida: true });
+    } catch (e) {
+      console.warn('Error marcando notificación leída:', e);
+    }
+  }
+
+  const destinos = {
+    matches: n.otroUid ? `./matches.html?persona=${n.otroUid}` : './matches.html',
+    chats:   n.otroUid ? `./chats.html?persona=${n.otroUid}` : './chats.html',
+    gemelo:  './gemelo.html',
+  };
+  const url = destinos[n.accion];
+  if (url) window.location.href = url;
+};
+
+window.borrarNotificacion = async function (id) {
+  delete notifsPorId[id];
+  const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+  if (card) card.remove();
+  // Si el grupo del día se quedó sin cards, sacarlo para no dejar un
+  // encabezado "Hoy"/"Ayer" vacío colgando.
+  document.querySelectorAll('[data-group]').forEach(g => {
+    if (!g.querySelector('.notif-card')) g.remove();
+  });
+  if (!Object.keys(notifsPorId).length) {
+    const emptyEl = document.getElementById('notifEmpty');
+    if (emptyEl) emptyEl.style.display = 'flex';
+  }
+  try {
+    await deleteDoc(doc(db, 'usuarios', uid, 'notificaciones', id));
+  } catch (e) {
+    console.warn('Error borrando notificación:', e);
+  }
+};
+
+// Bridge para markAllRead() (script clásico de más arriba).
+window._db_marcarTodasNotifsLeidas = async function () {
+  const idsNoLeidos = Object.values(notifsPorId).filter(n => !n.leida).map(n => n.id);
+  idsNoLeidos.forEach(id => { if (notifsPorId[id]) notifsPorId[id].leida = true; });
+  if (!idsNoLeidos.length) return;
+  try {
+    const batch = writeBatch(db);
+    idsNoLeidos.forEach(id => batch.update(doc(db, 'usuarios', uid, 'notificaciones', id), { leida: true }));
+    await batch.commit();
+  } catch (e) {
+    console.warn('Error marcando todas las notificaciones leídas:', e);
+  }
+};
 
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = './home.html'; return; }
@@ -617,11 +671,8 @@ onAuthStateChanged(auth, async user => {
     window.location.href = './home.html'; return;
   }
 
-  // Al entrar a notificaciones → marcar todo como leído visual y en Firestore
-  markAllRead();
-  try {
-    await setDoc(doc(db, 'usuarios', user.uid), { notifs_leidas: true }, { merge: true });
-  } catch(e) { console.warn('Error guardando estado notifs:', e); }
+  uid = user.uid;
+  await cargarNotificaciones();
 
   const el = document.getElementById('loadingOverlay');
   if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }

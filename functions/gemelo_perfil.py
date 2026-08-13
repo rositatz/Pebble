@@ -48,7 +48,6 @@ REGLAS_NUMERICAS = [
     # ── Etapa 1: identidad y rutina ──
     ("etapa1", "convivo", "Solo/a", {"personalidad.independencia": 0.10, "personalidad.introversion": 0.05}),
     ("etapa1", "convivo", "Con mi familia", {"valores.familia": 0.10}),
-    ("etapa1", "convivo", "Con pareja", {"valores.estabilidad": 0.05}),
     ("etapa1", "gustaOcup", "Sí, mucho", {"valores.ambicion": 0.15}),
     ("etapa1", "gustaOcup", "Bastante", {"valores.ambicion": 0.08}),
     ("etapa1", "gustaOcup", "No realmente", {"valores.ambicion": -0.10}),
@@ -65,9 +64,13 @@ REGLAS_NUMERICAS = [
     ("etapa2", "sobreLikes", "Para nada", {"personalidad.sensibilidad_emocional": -0.05}),
     ("etapa2", "stalkear", "Obvio que sí", {"personalidad.necesidad_afecto": 0.10}),
     ("etapa2", "stalkear", "No, no me interesa", {"personalidad.necesidad_afecto": -0.05, "personalidad.independencia": 0.05}),
-    ("etapa2", "lugarIdeal", "Ruta / viaje", {"valores.aventura": 0.10}),
-    ("etapa2", "lugarIdeal", "En casa", {"valores.estabilidad": 0.05, "personalidad.introversion": 0.05}),
-    ("etapa2", "lugarIdeal", "Recital", {"valores.aventura": 0.05}),
+    ("etapa2", "planIdeal", "Pasar el día al aire libre, en la playa, parque o naturaleza.", {"valores.aventura": 0.10}),
+    ("etapa2", "planIdeal", "Quedarme en casa y disfrutar de un plan tranquilo.", {"valores.estabilidad": 0.05, "personalidad.introversion": 0.05}),
+    ("etapa2", "planIdeal", "Ir a un recital, bar o evento.", {"valores.aventura": 0.05}),
+    ("etapa2", "planIdeal", "Improvisar y salir a descubrir la ciudad.", {"valores.aventura": 0.10, "personalidad.apertura_mental": 0.05}),
+    ("etapa2", "planIdeal", "Recorrer una librería, museo o lugar cultural.", {"personalidad.apertura_mental": 0.05}),
+    ("etapa2", "planIdeal", "Ir a una cafetería y charlar durante horas.", {"personalidad.introversion": -0.05, "personalidad.necesidad_afecto": 0.05}),
+    ("etapa2", "planIdeal", "Hacer algo creativo: cocinar, pintar, sacar fotos, etc.", {"personalidad.apertura_mental": 0.05}),
 
     # ── Etapa 3: personalidad y mundo interior ──
     ("etapa3", "comoSoy", "Tranquilo/a", {"personalidad.introversion": 0.05, "valores.estabilidad": 0.05}),
@@ -208,7 +211,7 @@ CAMPOS_NOTAS = [
     ("etapa2", "probarNuevo", "Algo nuevo que probaría"),
     ("etapa3", "cuestaMostrar", "Lo que me cuesta mostrar"),
     ("etapa3", "malinterp", "Lo que la gente suele malinterpretar de mí"),
-    ("etapa3", "ansiedadSeg", "Qué me da ansiedad y qué me da seguridad"),
+    ("etapa3", "ansiedadSeg", "Qué me da ansiedad y qué me da seguridad sobre el futuro"),
     ("etapa6", "psi1", "Lo que aprendí de vínculos pasados"),
     ("etapa6", "psi3", "Cómo manejo soltar personas o idealizar relaciones"),
     ("etapa6", "psi4", "Patrones que se repiten en mi vida"),
@@ -268,8 +271,9 @@ def _construir_pesos_compatibilidad(respuestas_raw):
 def _construir_ubicacion(e1):
     """lat/lng vienen del botón "Usar mi ubicación" del onboarding (geolocalización
     del navegador) -- es opcional, así que si no están no se arma nada acá.
-    Lo usa geolocalizacion.ordenar_por_cercania() para priorizar con quién se
-    corren las simulaciones primero (ver simulador.simular_matches_por_cercania)."""
+    Se usa para calcular distancia_km entre perfiles (ver
+    geolocalizacion.distancia_entre_perfiles), que es lo que ordena la cola
+    de parejas pendientes en main.buscar_parejas_pendientes."""
     try:
         lat = float(e1.get("lat"))
         lng = float(e1.get("lng"))
@@ -278,25 +282,82 @@ def _construir_ubicacion(e1):
     return {"lat": lat, "lng": lng}
 
 
-def _construir_identidad(e1):
-    edad_raw = str(e1.get("edad", "")).strip()
+def _construir_edad_int(valor):
+    valor = str(valor or "").strip()
+    return int(valor) if valor.isdigit() else None
 
-    # Si eligió "Otro" en orientación, usamos lo que escribió a mano
-    # (orientacionOtro) como el valor real en vez de guardar el string "Otro"
-    # literal -- si no lo completó, se queda en "Otro".
+
+def _construir_rango_edad_busco(e1):
+    """Rango de edad que la persona busca en un match -- lo usa
+    compatibilidad.compatible_por_edad() para filtrar candidatos (con un
+    margen de tolerancia y un piso de 18 años que nunca se cruza). Si no
+    puso min y/o max, esa punta queda en None -- compatible_por_edad() lo
+    trata como "sin preferencia" en esa punta, no como "rechaza todo"."""
+    minimo = _construir_edad_int(e1.get("edadMinBusco"))
+    maximo = _construir_edad_int(e1.get("edadMaxBusco"))
+    if minimo is None and maximo is None:
+        return None
+    return {"min": minimo, "max": maximo}
+
+
+def _con_otro(e1, campo, campo_otro):
+    """Igual que el manejo de "Otro" en orientación/género: si eligió
+    "Otro" en un pill, usa lo que escribió a mano en vez del string "Otro"
+    literal -- si no lo completó, se queda en "Otro"."""
+    valor = e1.get(campo, "")
+    if valor == "Otro":
+        return (e1.get(campo_otro) or "").strip() or "Otro"
+    return valor
+
+
+def _construir_situacion(e1):
+    """Arma un texto natural para el prompt (perfil.profesion) a partir de
+    "¿cuál es tu situación actual?" + las preguntas condicionales que
+    dispara (nivel de estudio si estudia, área si trabaja) + el proyecto
+    adicional -- antes esto era un solo campo de texto libre (ocupacion),
+    ahora son varias preguntas de opciones (ver gemelo-setup.html)."""
+
+    situacion = e1.get("situacion", "")
+    nivel = _con_otro(e1, "nivelEstudio", "nivelEstudioOtro")
+    area = _con_otro(e1, "areaTrabajo", "areaTrabajoOtro")
+    proyecto = _con_otro(e1, "proyectoAdicional", "proyectoAdicionalOtro")
+
+    partes = []
+    if situacion and situacion != "Prefiero no decirlo":
+        partes.append(situacion)
+    if nivel:
+        partes.append(f"nivel: {nivel}")
+    if area:
+        partes.append(f"área: {area}")
+    if proyecto and proyecto != "Ninguno":
+        partes.append(f"además: {proyecto}")
+
+    return " · ".join(partes)
+
+
+def _construir_identidad(e1):
+    # Si eligió "Otro" en orientación o género, usamos lo que escribió a mano
+    # como el valor real en vez de guardar el string "Otro" literal -- si no
+    # lo completó, se queda en "Otro".
     orientacion = e1.get("orientacion", "")
     if orientacion == "Otro":
         orientacion = (e1.get("orientacionOtro") or "").strip() or "Otro"
 
+    genero = e1.get("generoIdentidad", "")
+    if genero == "Otro":
+        genero = (e1.get("generoIdentidadOtro") or "").strip() or "Otro"
+
     return {
         "nombre": e1.get("nombre") or e1.get("apodo") or "Usuario",
         "apodo": e1.get("apodo", ""),
-        "edad": int(edad_raw) if edad_raw.isdigit() else None,
+        "edad": _construir_edad_int(e1.get("edad")),
+        "rango_edad_busco": _construir_rango_edad_busco(e1),
         "ciudad": e1.get("ciudad", ""),
         "ubicacion": _construir_ubicacion(e1),
-        "profesion": e1.get("ocupacion", ""),
+        "profesion": _construir_situacion(e1),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),
+        "genero": genero,
         "orientacion": orientacion,
         # Qué tipo de relación busca ("Algo serio"/"Algo casual"/"Nuevas
         # amistades"/"Sin definir") -- lo usa escenarios_para_tipo() para
@@ -317,8 +378,6 @@ def _construir_intereses(e1, e2):
         intereses.append(deporte)
     if e2.get("equipo"):
         intereses.append(e2["equipo"])
-    if e2.get("lugarIdeal"):
-        intereses.append(e2["lugarIdeal"])
     if e2.get("estetica"):
         intereses.append(e2["estetica"])
 
@@ -342,6 +401,20 @@ def _construir_estilo_chat(e3, e4):
         "usa_humor": "Divertido/a" in como_soy or "Espontáneo/a" in como_soy,
         "coqueto": coqueteo in ("Directo/a, lo dejo claro", "Indirecto/a, por actitudes", "Primero espero señales"),
         "analitico": decision == "La pienso un montón, analizo pros y contras",
+    }
+
+
+def _construir_hijos(e3):
+    """De etapa3: si ya tiene hijos (hijosFuturo == "Ya tengo") y qué tan
+    dispuesta está a salir con alguien que ya los tiene (hijosAjenos) --
+    antes esto solo alimentaba el valor numérico "familia", ahora también
+    queda como dato crudo para que compatibilidad.compatible_por_hijos()
+    pueda usarlo como filtro real: si alguien dijo que le incomodaría salir
+    con alguien que ya tiene hijos, no se lo empareja con alguien que sí
+    tiene, y viceversa."""
+    return {
+        "tiene_hijos": e3.get("hijosFuturo") == "Ya tengo",
+        "tolerancia_hijos": e3.get("hijosAjenos", ""),
     }
 
 
@@ -419,6 +492,7 @@ def construir_perfil_gemelo(respuestas_raw):
 
     perfil = {
         **_construir_identidad(e1),
+        **_construir_hijos(e3),
         "intereses": _construir_intereses(e1, e2),
         "personalidad": personalidad,
         "estilo_chat": _construir_estilo_chat(e3, e4),

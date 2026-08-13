@@ -9,7 +9,6 @@ import datetime
 
 from gemelo_perfil import construir_perfil_gemelo
 from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad
-from geolocalizacion import ordenar_por_cercania
 
 # El cliente de OpenAI se crea recién al usarlo (ver _client()), no al importar
 # el módulo: así se puede armar/comparar perfiles y correr los tests sin tener
@@ -25,9 +24,13 @@ def client():
     return _client
 
 
-# Cada escenario tiene "tipos_relacion": para qué opciones del campo "busco"
-# (perfil.html: Algo serio / Algo casual / Nuevas amistades / Sin definir) es
-# relevante correrlo. Ver escenarios_para_tipo() más abajo, que filtra por esto.
+# Por ahora solo se prueba con "Algo serio" -- se sacaron los escenarios que
+# eran exclusivos de "Algo casual"/"Nuevas amistades" (planes de finde, humor
+# y coqueteo, hobbies para compartir, buena onda en grupo) y se dejó
+# "tipos_relacion" en ["Algo serio"] en todos. El mecanismo de filtrado
+# (escenarios_para_tipo, más abajo) queda igual -- cuando se vuelva a testear
+# con otros tipos de relación, alcanza con agregar escenarios nuevos con su
+# tipo correspondiente, no hace falta tocar la lógica.
 escenarios_db = [
 
     {
@@ -53,7 +56,7 @@ escenarios_db = [
         """,
 
         "tono": "Intelectual, relajado y curioso.",
-        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -179,7 +182,7 @@ escenarios_db = [
         """,
 
         "tono": "Motivador, reflexivo y maduro.",
-        "tipos_relacion": ["Algo serio", "Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -229,7 +232,7 @@ escenarios_db = [
         """,
 
         "tono": "Relajado, emocional y espontáneo.",
-        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     },
 
     {
@@ -254,107 +257,7 @@ escenarios_db = [
         """,
 
         "tono": "Reflexivo, relajado y cercano.",
-        "tipos_relacion": ["Algo serio", "Algo casual", "Nuevas amistades"]
-    },
-
-    {
-        "titulo": "Planes de finde y salidas",
-
-        "contexto": """
-        La conversación gira en torno a qué hacen un sábado a la noche,
-        salidas espontáneas, previas, recitales o planes de último momento.
-        Es una charla liviana, sin hablar de futuro ni de compromiso.
-        """,
-
-        "objetivo": [
-            "Evaluar compatibilidad de planes y ritmo social",
-            "Medir espontaneidad",
-            "Detectar química inmediata",
-            "Evaluar sentido del humor"
-        ],
-
-        "tension": """
-        Pueden chocar los ritmos: alguien más de planificar
-        contra alguien más de improvisar sobre la marcha.
-        """,
-
-        "tono": "Divertido, liviano y espontáneo.",
-        "tipos_relacion": ["Algo casual"]
-    },
-
-    {
-        "titulo": "Códigos de humor y coqueteo",
-
-        "contexto": """
-        Ambos empiezan a tirar chistes y ver si hay buena onda y química.
-        La charla se mueve con soltura entre bromas, indirectas
-        y algo de coqueteo, sin ninguna presión de que "vaya a algún lado".
-        """,
-
-        "objetivo": [
-            "Medir compatibilidad de humor",
-            "Evaluar química y coqueteo",
-            "Detectar soltura conversacional",
-            "Medir capacidad de seguir el juego sin incomodarse"
-        ],
-
-        "tension": """
-        El humor de uno puede no aterrizar en el otro,
-        o el nivel de coqueteo puede no estar parejo.
-        """,
-
-        "tono": "Juguetón, picante y relajado.",
-        "tipos_relacion": ["Algo casual"]
-    },
-
-    {
-        "titulo": "Hobbies y planes para compartir",
-
-        "contexto": """
-        Hablan de hobbies, deportes, juegos o series que les gustan,
-        pensando en cosas que podrían hacer juntos como amigos.
-        No hay ninguna carga romántica en la charla.
-        """,
-
-        "objetivo": [
-            "Detectar intereses en común",
-            "Evaluar compatibilidad de planes de amistad",
-            "Medir iniciativa social",
-            "Analizar afinidad de sentido del humor"
-        ],
-
-        "tension": """
-        Pueden no compartir casi ningún hobby,
-        o tener ritmos de vida social muy distintos.
-        """,
-
-        "tono": "Natural, cómodo y sin presión.",
-        "tipos_relacion": ["Nuevas amistades"]
-    },
-
-    {
-        "titulo": "Buena onda en grupo",
-
-        "contexto": """
-        Charlan sobre cómo son en una juntada con amigos, si son de sumar
-        gente nueva al grupo o prefieren círculos chicos, y qué tipo de
-        energía aportan cuando están con otras personas.
-        """,
-
-        "objetivo": [
-            "Evaluar compatibilidad social",
-            "Medir apertura a integrarse a nuevos grupos",
-            "Detectar estilo de vínculo entre amigos",
-            "Analizar empatía grupal"
-        ],
-
-        "tension": """
-        Uno puede ser mucho más sociable/expansivo que el otro,
-        o tener expectativas distintas de qué tan seguido verse.
-        """,
-
-        "tono": "Cálido, sociable y genuino.",
-        "tipos_relacion": ["Nuevas amistades"]
+        "tipos_relacion": ["Algo serio"]
     }
 ]
 
@@ -382,6 +285,21 @@ def armar_escenario_personalizado(texto):
         "tono": "Natural, como si fuera una conversación real entre dos personas conociéndose.",
     }
 
+def _directiva(valor, texto_alto, texto_bajo, umbral=0.65):
+    """Traduce un valor numérico 0-1 (ej: personalidad.introversion) en una
+    instrucción concreta de comportamiento. Un modelo sigue mucho mejor
+    "escribís mensajes de una sola oración" que un dato suelto como
+    "Introversión: 0.9" sin ninguna indicación de qué hacer con ese número
+    -- por eso el prompt viejo (solo números) no se notaba en las respuestas.
+    Valores cerca del medio (ni alto ni bajo) no generan ninguna directiva,
+    para no forzar un rasgo que la persona no marcó con claridad."""
+    if valor >= umbral:
+        return texto_alto
+    if valor <= 1 - umbral:
+        return texto_bajo
+    return ""
+
+
 def generar_prompt_gemelo(perfil, memoria=None):
 
     # =====================================================
@@ -390,19 +308,38 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     personalidad = perfil.get("personalidad", {})
 
-    personalidad_txt = f"""
-    PERFIL PSICOLÓGICO:
+    directivas_personalidad = list(filter(None, [
+        _directiva(personalidad.get('introversion', 0.5),
+            "Sos bastante introvertido/a: profundizás de a poco, no bombardeás con preguntas ni te lanzás de lleno a temas personales enseguida.",
+            "Sos bastante extrovertido/a: hablás con soltura, hacés preguntas seguido y te entusiasmás fácil con temas nuevos."),
+        _directiva(personalidad.get('empatia', 0.5),
+            "Sos muy empático/a: validás lo que siente la otra persona antes de opinar, mostrás interés genuino en cómo se siente.",
+            "Vas más al grano con las emociones ajenas: te enfocás más en los hechos que en cómo se siente el otro."),
+        _directiva(personalidad.get('sarcasmo', 0.5),
+            "Tenés un humor bastante sarcástico o irónico, lo metés seguido en tus respuestas.",
+            "No sos de tirar sarcasmo -- tu humor, si aparece, es directo y sin doble intención."),
+        _directiva(personalidad.get('apertura_mental', 0.5),
+            "Sos muy abierto/a a ideas nuevas, te copás fácil con propuestas distintas a lo que ya conocés.",
+            "Sos más escéptico/a con ideas nuevas, preferís lo conocido antes de sumarte a algo distinto."),
+        _directiva(personalidad.get('ambicion', 0.5),
+            "Sos ambicioso/a: te gusta hablar de metas, crecimiento y planes a futuro.",
+            "No te mueve tanto la ambición, vivís más el presente que planificando el futuro."),
+        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
+            "Sos emocionalmente sensible: las cosas te afectan con facilidad y lo mostrás.",
+            "Sos bastante estable emocionalmente, no te alteran fácil los temas sensibles."),
+        _directiva(personalidad.get('necesidad_afecto', 0.5),
+            "Necesitás bastante validación y cercanía afectiva, y lo buscás en la conversación.",
+            "Sos independiente afectivamente, no necesitás validación constante del otro."),
+        _directiva(personalidad.get('independencia', 0.5),
+            "Valorás mucho tu independencia, y lo dejás claro cuando se habla de planes en pareja.",
+            "No te cuesta depender del otro, disfrutás de la cercanía y de hacer las cosas en conjunto."),
+        _directiva(personalidad.get('tolerancia_conflicto', 0.5),
+            "Tolerás bien el conflicto: no te incomoda discutir o no estar de acuerdo.",
+            "Evitás el conflicto, preferís bajar un tema antes que discutir."),
+    ]))
 
-    - Introversión: {personalidad.get('introversion', 0.5)}
-    - Empatía: {personalidad.get('empatia', 0.5)}
-    - Sarcasmo: {personalidad.get('sarcasmo', 0.5)}
-    - Apertura mental: {personalidad.get('apertura_mental', 0.5)}
-    - Ambición: {personalidad.get('ambicion', 0.5)}
-    - Sensibilidad emocional: {personalidad.get('sensibilidad_emocional', 0.5)}
-    - Necesidad afectiva: {personalidad.get('necesidad_afecto', 0.5)}
-    - Independencia: {personalidad.get('independencia', 0.5)}
-    - Tolerancia al conflicto: {personalidad.get('tolerancia_conflicto', 0.5)}
-    """
+    personalidad_txt = "PERFIL PSICOLÓGICO (cómo se traduce en tu forma de hablar):\n" + \
+        "\n".join(f"    - {d}" for d in directivas_personalidad) if directivas_personalidad else ""
 
     # =====================================================
     # ESTILO CONVERSACIONAL
@@ -410,14 +347,26 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     estilo_chat = perfil.get("estilo_chat", {})
 
-    estilo = f"""
-    ESTILO CONVERSACIONAL:
+    directivas_estilo = [
+        "ESCRIBÍS MENSAJES MUY CORTOS: una sola oración, a veces solo unas pocas palabras. Nunca mandes párrafos largos."
+        if estilo_chat.get('mensajes_cortos', False) else
+        "Podés escribir mensajes un poco más desarrollados (2-3 oraciones), sin pasarte.",
 
-    - Mensajes cortos: {estilo_chat.get('mensajes_cortos', False)}
-    - Usa humor: {estilo_chat.get('usa_humor', False)}
-    - Nivel de coqueteo: {estilo_chat.get('coqueto', False)}
-    - Estilo analítico: {estilo_chat.get('analitico', False)}
-    """
+        "Metés humor seguido: chistes, comentarios graciosos, ironía liviana."
+        if estilo_chat.get('usa_humor', False) else
+        "No forzás chistes, tu tono es más serio y directo.",
+
+        "Coqueteás activamente: indirectas, piropos, doble sentido."
+        if estilo_chat.get('coqueto', False) else
+        "Mantenés un tono amistoso pero sin coquetear.",
+
+        "Analizás lo que te dicen antes de responder, hacés preguntas de seguimiento con sustancia."
+        if estilo_chat.get('analitico', False) else
+        "Respondés más espontáneo, sin sobre-pensarlo.",
+    ]
+
+    estilo = "ESTILO CONVERSACIONAL (seguilo al pie de la letra):\n" + \
+        "\n".join(f"    - {d}" for d in directivas_estilo)
 
     # =====================================================
     # VALORES PERSONALES
@@ -572,9 +521,120 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     10. La conversación debe sentirse
     espontánea y no perfecta.
+
+    11. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
+    (algo concreto que mencionó, no una reacción genérica tipo "qué
+    interesante" que serviría para cualquier mensaje). Mostrá que
+    escuchaste de verdad antes de agregar algo tuyo.
+
+    12. No te quedes dando vueltas sobre la misma pregunta muchos turnos
+    seguidos. Si ya charlaron un par de intercambios sobre el mismo punto
+    puntual, sumá un ángulo nuevo relacionado al escenario en vez de
+    repreguntar "¿y vos?" de nuevo -- una conversación real avanza, no gira
+    en el mismo lugar.
     """
 
     return prompt
+
+
+def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
+    """Prompt para el chat DIRECTO entre el usuario y su propio gemelo
+    (gemelo.html) -- a diferencia de generar_prompt_gemelo (que arma un
+    gemelo simulando una cita con el gemelo de OTRA persona), acá el gemelo
+    le habla al propio usuario, en segunda persona, como su reflejo de
+    confianza dentro de la app. Reusa la misma traducción de personalidad a
+    directivas de comportamiento (_directiva) para que el tono sea
+    consistente con el que se ve en las simulaciones."""
+
+    personalidad = perfil.get("personalidad", {})
+
+    directivas_personalidad = list(filter(None, [
+        _directiva(personalidad.get('introversion', 0.5),
+            "Sos bastante introvertido/a: no te desvivís por llenar el silencio ni sos efusivo/a de entrada.",
+            "Sos bastante extrovertido/a: hablás con soltura y entusiasmo."),
+        _directiva(personalidad.get('empatia', 0.5),
+            "Sos muy empático/a: antes de opinar, validás lo que siente la persona que te escribe.",
+            "Vas más al grano: te enfocás en resolver, no tanto en cómo se siente el otro."),
+        _directiva(personalidad.get('sarcasmo', 0.5),
+            "Tenés un humor bastante sarcástico o irónico, lo metés seguido.",
+            "No sos de tirar sarcasmo -- tu humor, si aparece, es directo."),
+        _directiva(personalidad.get('apertura_mental', 0.5),
+            "Sos abierto/a a ideas nuevas y a que te contradigan.",
+            "Sos más escéptico/a, preferís lo probado antes que lo nuevo."),
+        _directiva(personalidad.get('ambicion', 0.5),
+            "Sos ambicioso/a: te gusta hablar en términos de metas y progreso.",
+            "No te mueve tanto la ambición, vivís más el presente."),
+        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
+            "Sos emocionalmente sensible: las cosas te afectan y lo mostrás.",
+            "Sos bastante estable emocionalmente, no te alteran fácil los temas sensibles."),
+        _directiva(personalidad.get('necesidad_afecto', 0.5),
+            "Buscás cercanía afectiva en cómo te comunicás.",
+            "Sos independiente afectivamente, no necesitás validar todo el tiempo."),
+        _directiva(personalidad.get('independencia', 0.5),
+            "Valorás mucho la independencia, y se nota en los consejos que das.",
+            "No te cuesta la cercanía ni depender del otro."),
+        _directiva(personalidad.get('tolerancia_conflicto', 0.5),
+            "Tolerás bien el conflicto: no evitás decir algo incómodo si hace falta.",
+            "Evitás el conflicto, suavizás lo que decís."),
+    ]))
+
+    personalidad_txt = "\n".join(f"    - {d}" for d in directivas_personalidad)
+
+    nombre = perfil.get("nombre") or "tu usuario"
+
+    # Antes este prompt solo tenía la personalidad -- no sabía nada de la
+    # situación real de la persona (estudia/trabaja/en qué), sus intereses
+    # ni su bio, así que no podía dar consejos que tuvieran en cuenta eso.
+    identidad_txt = "\n    SOBRE VOS (la persona a la que representás):\n"
+    if perfil.get("edad"):
+        identidad_txt += f"    - Edad: {perfil['edad']}\n"
+    if perfil.get("profesion"):
+        identidad_txt += f"    - Situación actual: {perfil['profesion']}\n"
+    if perfil.get("intereses"):
+        identidad_txt += f"    - Intereses: {', '.join(perfil['intereses'])}\n"
+    if perfil.get("bio"):
+        identidad_txt += f"    - Cómo se describe: {perfil['bio']}\n"
+
+    matches_txt = ""
+    if matches_resumen:
+        matches_txt = "\n    SUS MATCHES ACTUALES (para dar consejos concretos si te preguntan por alguno):\n"
+        for m in matches_resumen:
+            matches_txt += f"    - {m['nombre']}: {m['score']}% de afinidad\n"
+    else:
+        matches_txt = "\n    Todavía no tiene matches -- si te pregunta por eso, decíselo tal cual, no inventes nombres.\n"
+
+    prompt = f"""
+    Sos el gemelo digital de {nombre} dentro de la app de citas Pebble.
+
+    IMPORTANTE: acá NO estás simulando una cita ni hablando con el gemelo de
+    otra persona. Le estás hablando DIRECTAMENTE a {nombre}, tu propio
+    usuario -- sos su reflejo de IA, hecho de su propia personalidad, y tu
+    trabajo es darle charla, consejos y compañía sobre su vida en la app
+    (sus matches, cómo hablarles, cómo le está yendo).
+
+    PERSONALIDAD (tiene que notarse en cómo hablás):
+    {personalidad_txt}
+    {identidad_txt}
+    {matches_txt}
+
+    REGLAS:
+    1. Hablále a {nombre} en segunda persona, como alguien que lo/la conoce
+       mejor que nadie -- nunca en primera persona como si fueras la persona
+       en una cita.
+    2. Si te pregunta por un match específico, usá SOLO los datos reales de
+       arriba (nombre y % de afinidad) -- si no tenés más info que esa, decilo,
+       no inventes detalles sobre esa persona.
+    3. Sé breve: entre 1 y 4 oraciones, salvo que te pidan algo más largo.
+    4. No actúes como asistente genérico ("¿en qué puedo ayudarte?") -- tenés
+       personalidad propia, mostrala.
+    5. Usá los datos de "SOBRE VOS" cuando sea relevante (ej: si te pregunta
+       algo sobre su día a día, su carrera o sus intereses) -- son datos
+       reales, no los ignores ni inventes otros en su lugar.
+    6. Si no sabés algo, decilo con naturalidad en vez de inventar.
+    """
+
+    return prompt
+
 
 def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
     """escenario puede ser un índice de escenarios_db o un dict
@@ -611,10 +671,21 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
     prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1)
     prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2)
 
-    ultimo_mensaje = """
-    Hola, me llamó la atención este tema.
-    ¿Vos qué pensás?
-    """
+    # El mensaje inicial ya no es un texto fijo igual en todas las
+    # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
+    # personalidad y estilo), solo agregándole la instrucción de que en este
+    # turno le toca arrancar la charla. No hace falta una función aparte:
+    # es el mismo generar_prompt_gemelo, solo que este primer llamado no
+    # tiene mensajes previos a los que responder.
+    instruccion_inicio = "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba. Mandá un primer mensaje corto y natural, como si le escribieras por primera vez a alguien que recién conociste."
+
+    response_inicio = client().chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
+        ]
+    )
+    ultimo_mensaje = response_inicio.choices[0].message.content
 
     print(f"{nombre1}: {ultimo_mensaje}\n")
 
@@ -624,6 +695,19 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
         "name": nombre1,
         "content": ultimo_mensaje
     })
+
+    # historial_chat (arriba) es la versión "para humanos" -- la que se
+    # guarda y se le pasa a analizar_conversacion, con roles fijos y el
+    # nombre de quién habló. Pero para pedirle al modelo el turno de CADA
+    # gemelo hace falta una vista de la conversación DESDE SU perspectiva:
+    # sus propios mensajes anteriores como "assistant", los del otro como
+    # "user". Si se le manda la misma lista a los dos (como antes), la
+    # llamada de un gemelo termina con el último mensaje ya en rol
+    # "assistant" sin ningún "user" nuevo en el medio -- ahí el modelo tiende
+    # a continuar/repetir ese mismo turno en vez de responder como otra
+    # persona (así se producía la repetición literal del mensaje anterior).
+    vista_1 = []
+    vista_2 = [{"role": "user", "content": ultimo_mensaje}]
 
     for _ in range(turnos):
 
@@ -644,7 +728,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
                         prompt_2
                 },
 
-                *historial_chat
+                *vista_2
             ]
         )
 
@@ -658,6 +742,8 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
             "name": nombre2,
             "content": msg_2
         })
+        vista_2.append({"role": "assistant", "content": msg_2})
+        vista_1.append({"role": "user", "content": msg_2})
 
         # =================================================
         # PERFIL 1 RESPONDE
@@ -676,7 +762,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
                         prompt_1
                 },
 
-                *historial_chat
+                *vista_1
             ]
         )
 
@@ -690,6 +776,8 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
             "name": nombre1,
             "content": msg_1
         })
+        vista_1.append({"role": "assistant", "content": msg_1})
+        vista_2.append({"role": "user", "content": msg_1})
 
     analisis = analizar_conversacion(historial_chat)
     score = calcular_compatibilidad(perfil1, perfil2, analisis)
@@ -805,36 +893,3 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, 
     }
 
 
-def simular_matches_por_cercania(uid, perfil, candidatos, tipo_relacion=None, turnos=2, umbral=0.75, limite_candidatos=None):
-    """Corre simular_relacion_completa contra una lista de candidatos, pero no
-    en cualquier orden: primero contra los que están geográficamente más
-    cerca (ver geolocalizacion.ordenar_por_cercania). Las simulaciones llaman
-    a OpenAI turno a turno y salen caras, así que si hay muchos candidatos
-    conviene evaluar primero a la gente cercana -- de ahí `limite_candidatos`,
-    que si se pasa corta la corrida después de esa cantidad (ya ordenada por
-    cercanía, o sea que lo que se corta son los más lejanos).
-
-    uid/perfil: el usuario para el que se buscan matches.
-    candidatos: lista de (uid_candidato, perfil_candidato).
-
-    Devuelve una lista de resultados (uno por candidato), en el mismo orden
-    en que se evaluaron (de más cerca a más lejos), cada uno con su
-    "distancia_km" agregada (None si a ese candidato le falta ubicación)."""
-
-    ordenados = ordenar_por_cercania(perfil, candidatos)
-
-    if limite_candidatos is not None:
-        ordenados = ordenados[:limite_candidatos]
-
-    resultados = []
-
-    for uid_candidato, perfil_candidato, distancia in ordenados:
-        resultado = simular_relacion_completa(
-            uid, perfil, uid_candidato, perfil_candidato,
-            tipo_relacion=tipo_relacion, turnos=turnos, umbral=umbral,
-        )
-        resultado["uid_candidato"] = uid_candidato
-        resultado["distancia_km"] = round(distancia, 1) if distancia is not None else None
-        resultados.append(resultado)
-
-    return resultados

@@ -64,27 +64,6 @@ html, body {
   font-size: 1rem; color: var(--text-secondary); line-height: 1.65;
 }
 
-/* ── Period toggle ── */
-.period-toggle {
-  display: flex; align-items: center; justify-content: center;
-  gap: 0; background: var(--surf-1); border: 1px solid var(--border2);
-  border-radius: 22px; padding: 3px; margin-bottom: 20px;
-  width: fit-content; margin-left: auto; margin-right: auto;
-}
-.period-btn {
-  padding: 7px 20px; border-radius: 20px; border: none; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.8rem; font-weight: 600;
-  color: var(--text-muted); background: none; transition: all 0.2s;
-  white-space: nowrap;
-}
-.period-btn.active { background: var(--surf-dark); color: #fff; }
-.period-save-badge {
-  font-size: 0.65rem; font-weight: 700; background: rgba(34,197,94,0.15);
-  color: #16a34a; padding: 2px 7px; border-radius: 10px;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  margin-left: 6px; display: inline-block; vertical-align: middle;
-}
-
 /* ── Plan cards ── */
 .plans-stack { display: flex; flex-direction: column; gap: 14px; }
 
@@ -207,14 +186,6 @@ html, body {
   <div class="headline">
     <h1>Elegí cómo<br>usar <em>Pebble</em></h1>
     <p>Tu gemelo empieza a trabajar desde el primer día. Podés cambiar de plan cuando quieras.</p>
-  </div>
-
-  <!-- Period toggle -->
-  <div class="period-toggle">
-    <button class="period-btn active" id="btnMensual" onclick="setPeriod('mensual')">Mensual</button>
-    <button class="period-btn" id="btnAnual" onclick="setPeriod('anual')">
-      Anual <span class="period-save-badge">-17%</span>
-    </button>
   </div>
 
   <!-- Plan cards -->
@@ -351,29 +322,7 @@ window.elegirGratis = async function() {
   window.location.href = './gemelo-setup.html';
 };
 
-let currentPeriod = 'mensual';
 
-window.setPeriod = function setPeriod(p) {
-  currentPeriod = p;
-  document.getElementById('btnMensual').classList.toggle('active', p === 'mensual');
-  document.getElementById('btnAnual').classList.toggle('active', p === 'anual');
-
-  const priceEl = document.getElementById('premiumPrice');
-  const noteEl  = document.getElementById('premiumNote');
-  const ctaEl   = document.getElementById('premiumCta');
-
-  if (p === 'anual') {
-    priceEl.textContent = '$50';
-    noteEl.textContent  = 'por año · ahorrás $10';
-    ctaEl.textContent   = 'Empezar con Premium anual →';
-    ctaEl.href = './pago.html?periodo=anual';
-  } else {
-    priceEl.textContent = '$5';
-    noteEl.textContent  = 'Facturado mensualmente';
-    ctaEl.textContent   = 'Empezar con Premium →';
-    ctaEl.href = './pago.html';
-  }
-}
 </script>
 </body>
 </html>

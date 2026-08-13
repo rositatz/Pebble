@@ -205,15 +205,31 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">👤 Identidad básica</div>
+    <!-- La pregunta "¿Qué estás buscando?" (busco) se sacó por ahora: solo se
+         está testeando con "Algo serio", así que preguntarla no aporta nada
+         todavía. escenarios_para_tipo() ya cae de vuelta a correr todos los
+         escenarios cuando busco viene vacío -- que son los de "Algo serio",
+         los únicos que quedan en escenarios_db por ahora -- así que sacar
+         esto no rompe nada del backend. Si más adelante se vuelve a testear
+         con otros tipos de relación, se puede volver a agregar acá. -->
     <div class="q">
-      <div class="ql">¿Qué estás buscando?</div>
-      <div class="pills" data-field="busco">
-        <button class="pill" onclick="selPill(this)">Algo serio</button>
-        <button class="pill" onclick="selPill(this)">Algo casual</button>
-        <button class="pill" onclick="selPill(this)">Nuevas amistades</button>
-        <button class="pill" onclick="selPill(this)">Sin definir</button>
+      <div class="ql">¿Cuál es tu género?</div>
+      <div class="pills" data-field="generoIdentidad">
+        <button class="pill" onclick="selPill(this)">Hombre</button>
+        <button class="pill" onclick="selPill(this)">Mujer</button>
+        <button class="pill" onclick="selPill(this)">No binario</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+        <button class="pill" onclick="selPill(this)">Prefiero no decir</button>
       </div>
     </div>
+    <div class="q" id="otro-generoIdentidad" style="display:none">
+      <div class="ql">Contanos con qué te identificás</div>
+      <textarea class="inp" id="generoIdentidadOtro" placeholder="Tu género" rows="1"></textarea>
+    </div>
+    <!-- El matching real por orientación/género (ver
+         compatibilidad.compatible_por_genero en el backend) necesita saber
+         tanto tu género como a quién te atrae -- por eso ahora se preguntan
+         los dos, no solo la orientación. -->
     <div class="q">
       <div class="ql">¿Cuál es tu orientación sexual?</div>
       <div class="pills" data-field="orientacion">
@@ -232,7 +248,14 @@ body.is-upgrade .upgrade-banner{display:block}
     </div>
     <div class="q"><div class="ql">¿Cómo te llamás?</div><textarea class="inp" id="nombre" placeholder="Tu nombre" rows="1"></textarea></div>
     <div class="q"><div class="ql">¿Cómo te gusta que te digan?</div><textarea class="inp" id="apodo" placeholder="Apodo o preferencia" rows="1"></textarea></div>
-    <div class="q"><div class="ql">¿Qué edad tenés?</div><input class="inp" id="edad" type="number" min="16" max="99" placeholder="Ej: 23" style="-moz-appearance:textfield"/></div>
+    <div class="q"><div class="ql">¿Qué edad tenés?</div><input class="inp" id="edad" type="number" min="18" max="99" placeholder="Ej: 23" style="-moz-appearance:textfield"/></div>
+    <div class="q">
+      <div class="ql">¿Qué rango de edad buscás en un match?</div>
+      <div style="display:flex;gap:10px">
+        <input class="inp" id="edadMinBusco" type="number" min="18" max="99" placeholder="Mínima" style="-moz-appearance:textfield"/>
+        <input class="inp" id="edadMaxBusco" type="number" min="18" max="99" placeholder="Máxima" style="-moz-appearance:textfield"/>
+      </div>
+    </div>
     <div class="q">
       <div class="ql">Ubicación <span style="font-weight:400;opacity:.6">(opcional — nos ayuda a priorizar matches cerca tuyo)</span></div>
       <input type="hidden" id="lat"/>
@@ -246,7 +269,6 @@ body.is-upgrade .upgrade-banner{display:block}
         <button class="pill" onclick="selPill(this)">Solo/a</button>
         <button class="pill" onclick="selPill(this)">Con mi familia</button>
         <button class="pill" onclick="selPill(this)">Con amigos/as</button>
-        <button class="pill" onclick="selPill(this)">Con pareja</button>
       </div>
     </div>
     <div class="q">
@@ -270,7 +292,97 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">💼 Estudio / Trabajo</div>
-    <div class="q"><div class="ql">¿Qué estudiás o a qué te dedicás?</div><textarea class="inp" id="ocupacion" placeholder="Carrera, trabajo, proyecto..." rows="1"></textarea></div>
+    <div class="q">
+      <div class="ql">¿Cuál es tu situación actual?</div>
+      <div class="pills" data-field="situacion">
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Estudio</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Estudio y trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Tengo un emprendimiento / negocio propio</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Trabajo de manera independiente</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Estoy buscando trabajo</button>
+        <button class="pill" onclick="selPill(this); actualizarPreguntasSituacion()">Actualmente no estudio ni trabajo</button>
+      </div>
+    </div>
+
+    <!-- Solo se muestra si "situacion" es "Estudio" o "Estudio y trabajo" --
+         ver actualizarPreguntasSituacion(). -->
+    <div class="q" id="nivel-estudio" style="display:none">
+      <div class="ql">¿En qué nivel estás estudiando?</div>
+      <div class="pills" data-field="nivelEstudio">
+        <button class="pill" onclick="selPill(this)">Secundaria</button>
+        <button class="pill" onclick="selPill(this)">Terciario / Tecnicatura</button>
+        <button class="pill" onclick="selPill(this)">Carrera universitaria / Licenciatura</button>
+        <button class="pill" onclick="selPill(this)">Maestría</button>
+        <button class="pill" onclick="selPill(this)">Doctorado</button>
+        <button class="pill" onclick="selPill(this)">Curso / certificación</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q" id="otro-nivelEstudio" style="display:none">
+      <div class="ql">Contanos qué estás estudiando</div>
+      <textarea class="inp" id="nivelEstudioOtro" placeholder="Qué estás estudiando" rows="1"></textarea>
+    </div>
+
+    <!-- Solo se muestra si "situacion" implica trabajo (Trabajo / Estudio y
+         trabajo / emprendimiento / independiente) -- ver
+         actualizarPreguntasSituacion(). -->
+    <div class="q" id="area-trabajo" style="display:none">
+      <div class="ql">¿En qué área trabajás principalmente?</div>
+      <div class="pills" data-field="areaTrabajo">
+        <button class="pill" onclick="selPill(this)">Tecnología / Sistemas</button>
+        <button class="pill" onclick="selPill(this)">Datos / Inteligencia Artificial</button>
+        <button class="pill" onclick="selPill(this)">Ingeniería</button>
+        <button class="pill" onclick="selPill(this)">Ciencias</button>
+        <button class="pill" onclick="selPill(this)">Medicina / Salud</button>
+        <button class="pill" onclick="selPill(this)">Psicología</button>
+        <button class="pill" onclick="selPill(this)">Derecho</button>
+        <button class="pill" onclick="selPill(this)">Finanzas / Contabilidad</button>
+        <button class="pill" onclick="selPill(this)">Economía</button>
+        <button class="pill" onclick="selPill(this)">Administración / Negocios</button>
+        <button class="pill" onclick="selPill(this)">Marketing / Publicidad</button>
+        <button class="pill" onclick="selPill(this)">Comunicación / Relaciones Públicas</button>
+        <button class="pill" onclick="selPill(this)">Periodismo</button>
+        <button class="pill" onclick="selPill(this)">Diseño / Arte</button>
+        <button class="pill" onclick="selPill(this)">Educación</button>
+        <button class="pill" onclick="selPill(this)">Gastronomía</button>
+        <button class="pill" onclick="selPill(this)">Turismo / Hotelería</button>
+        <button class="pill" onclick="selPill(this)">Arquitectura / Construcción</button>
+        <button class="pill" onclick="selPill(this)">Ventas / Comercial</button>
+        <button class="pill" onclick="selPill(this)">Recursos Humanos</button>
+        <button class="pill" onclick="selPill(this)">Industria / Producción</button>
+        <button class="pill" onclick="selPill(this)">Sector público</button>
+        <button class="pill" onclick="selPill(this)">Influencer / Creador/a de contenido</button>
+        <button class="pill" onclick="selPill(this)">Entretenimiento / Medios</button>
+        <button class="pill" onclick="selPill(this)">Deportes</button>
+        <button class="pill" onclick="selPill(this)">Belleza / Estética</button>
+        <button class="pill" onclick="selPill(this)">Transporte / Logística</button>
+        <button class="pill" onclick="selPill(this)">Agricultura / Ganadería</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q" id="otro-areaTrabajo" style="display:none">
+      <div class="ql">Contanos en qué área trabajás</div>
+      <textarea class="inp" id="areaTrabajoOtro" placeholder="Tu área de trabajo" rows="1"></textarea>
+    </div>
+
+    <div class="q">
+      <div class="ql">¿Además de estudiar o trabajar, tenés algún proyecto o actividad que sea importante para vos?</div>
+      <div class="pills" data-field="proyectoAdicional">
+        <button class="pill" onclick="selPill(this)">Emprendimiento</button>
+        <button class="pill" onclick="selPill(this)">Creación de contenido / redes sociales</button>
+        <button class="pill" onclick="selPill(this)">Arte / música</button>
+        <button class="pill" onclick="selPill(this)">Deporte</button>
+        <button class="pill" onclick="selPill(this)">Voluntariado</button>
+        <button class="pill" onclick="selPill(this)">Proyecto personal</button>
+        <button class="pill" onclick="selPill(this)">Ninguno</button>
+        <button class="pill" onclick="selPill(this)">Otro</button>
+      </div>
+    </div>
+    <div class="q" id="otro-proyectoAdicional" style="display:none">
+      <div class="ql">Contanos de qué se trata</div>
+      <textarea class="inp" id="proyectoAdicionalOtro" placeholder="Tu proyecto o actividad" rows="1"></textarea>
+    </div>
     <div class="q">
       <div class="ql">¿Te gusta lo que hacés actualmente?</div>
       <div class="pills" data-field="gustaOcup">
@@ -352,9 +464,18 @@ body.is-upgrade .upgrade-banner{display:block}
   <div class="sec">
     <div class="sec-title">📍 Lugares y sensaciones</div>
     <div class="q">
-      <div class="ql">¿Cuál sería tu lugar ideal?</div>
-      <div class="pills" data-field="lugarIdeal">
-        <button class="pill" onclick="selPill(this)">Cafetería</button><button class="pill" onclick="selPill(this)">Playa</button><button class="pill" onclick="selPill(this)">Ciudad de noche</button><button class="pill" onclick="selPill(this)">Bosque</button><button class="pill" onclick="selPill(this)">Recital</button><button class="pill" onclick="selPill(this)">Shopping</button><button class="pill" onclick="selPill(this)">En casa</button><button class="pill" onclick="selPill(this)">Ruta / viaje</button><button class="pill" onclick="selPill(this)">Librería</button><button class="pill" onclick="selPill(this)">Otro</button>
+      <div class="ql">Si tuvieras una tarde libre para hacer algo que disfrutes, ¿qué plan elegirías?</div>
+      <div class="pills" data-field="planIdeal">
+        <button class="pill" onclick="selPill(this)">Ir a una cafetería y charlar durante horas.</button>
+        <button class="pill" onclick="selPill(this)">Pasar el día al aire libre, en la playa, parque o naturaleza.</button>
+        <button class="pill" onclick="selPill(this)">Recorrer una librería, museo o lugar cultural.</button>
+        <button class="pill" onclick="selPill(this)">Salir a comer.</button>
+        <button class="pill" onclick="selPill(this)">Ir a un recital, bar o evento.</button>
+        <button class="pill" onclick="selPill(this)">Ver una película.</button>
+        <button class="pill" onclick="selPill(this)">Hacer alguna actividad física o deportiva.</button>
+        <button class="pill" onclick="selPill(this)">Hacer algo creativo: cocinar, pintar, sacar fotos, etc.</button>
+        <button class="pill" onclick="selPill(this)">Quedarme en casa y disfrutar de un plan tranquilo.</button>
+        <button class="pill" onclick="selPill(this)">Improvisar y salir a descubrir la ciudad.</button>
       </div>
     </div>
   </div>
@@ -369,7 +490,7 @@ body.is-upgrade .upgrade-banner{display:block}
 
   <div class="sec">
     <div class="sec-title">🎮 Hobbies y tiempo libre</div>
-    <div class="q"><div class="ql">Una tarde libre, sin obligaciones. ¿Qué probablemente estabas haciendo?</div><textarea class="txa" id="tardeLibre" placeholder="Lo primero que se te viene..."></textarea></div>
+    <div class="q"><div class="ql">Una tarde libre, sin obligaciones. ¿Qué estabas haciendo probablemente?</div><textarea class="txa" id="tardeLibre" placeholder="Lo primero que se te viene..."></textarea></div>
     <div class="q prem-only"><div class="ql">Si tuvieras que probar algo completamente nuevo este fin de semana, ¿qué elegirías? <span class="ptag">★ Premium</span></div><textarea class="txa" id="probarNuevo" placeholder="Algo que nunca hiciste..."></textarea></div>
     <div class="q"><div class="ql">Después de un día agotador, ¿qué te ayuda a desconectar?</div><textarea class="txa" id="desconectar" placeholder="Esa cosa que siempre funciona..."></textarea></div>
     <div class="q"><div class="ql">¿Hacés deporte? ¿Cuál?</div><textarea class="inp" id="deporte" placeholder="O escribí 'No hago'" rows="1"></textarea></div>
@@ -462,14 +583,14 @@ body.is-upgrade .upgrade-banner{display:block}
       </div>
     </div>
     <div class="q prem-only">
-      <div class="ql">¿Sos de sentir las cosas «a fondo» o mantener distancia emocional? <span class="ptag">★ Premium</span></div>
+      <div class="ql">¿Sos de sentir las cosas a fondo o mantener distancia emocional? <span class="ptag">★ Premium</span></div>
       <div class="rlist" data-field="sentirFondo">
         <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Siento todo bastante intenso, me atraviesa lo que me pasa</span></div>
         <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Suelo mantener cierta distancia emocional</span></div>
       </div>
     </div>
     <div class="q">
-      <div class="ql">Cuando algo te impacta emocionalmente, ¿cómo lo manejás?</div>
+      <div class="ql">Imaginá que te enterás de algo malo que no querías que pasara. ¿Qué hacés primero?</div>
       <div class="rlist" data-field="impactoEmoc">
         <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Necesito hablarlo con alguien para ordenarme</span></div>
         <div class="ritem" onclick="selRadio(this)"><div class="rdot"></div><span class="rtext">Lo proceso por mi cuenta y después veo si lo comparto</span></div>
@@ -479,12 +600,12 @@ body.is-upgrade .upgrade-banner{display:block}
       </div>
     </div>
     <div class="q prem-only">
-      <div class="ql">Cuando empezás a preocuparte demasiado, ¿cuál suele ser la causa? <span class="ptag">★ Premium</span></div>
+      <div class="ql">¿Cuándo empezás a preocuparte demasiado, cuál suele ser la causa? <span class="ptag">★ Premium</span></div>
       <div class="pills" data-field="causaAnsiedad">
         <button class="pill" onclick="selPill(this)">No saber qué va a pasar</button><button class="pill" onclick="selPill(this)">No poder cambiar la situación</button><button class="pill" onclick="selPill(this)">Presión por expectativas</button><button class="pill" onclick="selPill(this)">Lo que alguien piensa de mí</button><button class="pill" onclick="selPill(this)">Otra</button>
       </div>
     </div>
-    <div class="q"><div class="ql">¿Qué cosas te dan ansiedad y cuáles te dan seguridad?</div><textarea class="txa" id="ansiedadSeg" placeholder="Contanos un poco..."></textarea></div>
+    <div class="q"><div class="ql">¿Qué cosas te dan ansiedad y cuáles te dan seguridad sobre el futuro?</div><textarea class="txa" id="ansiedadSeg" placeholder="Contanos un poco..."></textarea></div>
   </div>
 
   <div class="sec">
@@ -782,7 +903,7 @@ body.is-upgrade .upgrade-banner{display:block}
     </div>
     <div class="q">
       <div class="ql">¿Qué tipo de contextura te atrae más?</div>
-      <div class="pills" data-field="contextura"><button class="pill" onclick="selPill(this)">Delgada</button><button class="pill" onclick="selPill(this)">Atlética</button><button class="pill" onclick="selPill(this)">Musculosa</button><button class="pill" onclick="selPill(this)">Curvy</button><button class="pill" onclick="selPill(this)">Plus size</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
+      <div class="pills" data-field="contextura"><button class="pill" onclick="selPill(this)">Delgada</button><button class="pill" onclick="selPill(this)">Atlética</button><button class="pill" onclick="selPill(this)">Musculosa</button><button class="pill" onclick="selPill(this)">Con curvas</button><button class="pill" onclick="selPill(this)">Robusta</button><button class="pill" onclick="selPill(this)">Me da igual</button></div>
     </div>
   </div>
 
@@ -867,6 +988,7 @@ body.is-upgrade .upgrade-banner{display:block}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -875,6 +997,8 @@ const app = initializeApp({
 });
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const functionsInstance = getFunctions(app);
+const generarGemeloAhoraCallable = httpsCallable(functionsInstance, "generar_gemelo_ahora");
 
 let uid = null, userPlan = 'free', stageData = {}, currentStage = 1;
 const TOTAL = 7;
@@ -934,10 +1058,21 @@ function preguntaVisible(el) {
   // opcional, no una pregunta más -- si contaran en el total, nadie que no
   // comparta su ubicación podría llegar al 100% de progreso.
   if (el.type === 'hidden') return false;
-  // Los campos "contanos más" (ej: #orientacionOtro) solo cuentan cuando están
-  // visibles -- si no, alguien que no eligió "Otro" nunca llegaría al 100%.
-  const otroWrap = el.closest('[id^="otro-"]');
-  if (otroWrap && otroWrap.style.display === 'none') return false;
+  // Cualquier pregunta condicional oculta (ej: #orientacionOtro cuando no
+  // eligió "Otro", o "en qué nivel estudiás"/"área de trabajo" según la
+  // respuesta a "situación actual") no cuenta para el progreso -- si no,
+  // alguien a quien no le toca esa pregunta nunca llegaría al 100%. Se
+  // camina hacia arriba por el DOM en vez de buscar un patrón de id
+  // puntual ("otro-*"), así funciona para cualquier bloque que se oculte
+  // con display:none inline, sin tener que tocar esto cada vez que se
+  // agrega una pregunta condicional nueva. Las etapas (.stage sin
+  // .active) se ocultan por CSS, no por style inline, así que esto no las
+  // toca -- si no, dejaría de contar preguntas de otras etapas.
+  let ancestro = el.parentElement;
+  while (ancestro) {
+    if (ancestro.style && ancestro.style.display === 'none') return false;
+    ancestro = ancestro.parentElement;
+  }
   const premEl = el.closest('.prem-only');
   if (premEl && !document.body.classList.contains('is-premium')) return false;
   return true;
@@ -1002,6 +1137,54 @@ function toggleOtroInput(pillsEl) {
   }
 }
 
+// Muestra "¿en qué nivel estudiás?" / "¿en qué área trabajás?" según la
+// respuesta a "¿cuál es tu situación actual?" -- preguntaVisible() (más
+// arriba) ya sabe ignorar estas preguntas para el % de progreso cuando
+// están ocultas, con solo mirar el display:none inline.
+//
+// "window.actualizarPreguntasSituacion" (no una function declaration suelta)
+// a propósito: TODO este archivo es un único <script type="module">, y una
+// function declaration ahí NO queda expuesta en window -- los onclick="" del
+// HTML se resuelven contra el scope global, así que sin esto el click
+// tiraba silenciosamente "actualizarPreguntasSituacion is not defined" y la
+// pregunta condicional nunca se mostraba (comprobado con el emulador de
+// navegador: selPill() sí corría porque ya estaba como window.selPill, pero
+// esta llamada moría ahí mismo). Mismo criterio que ya usa selPill/selMulti/
+// selRadio/selBin más abajo.
+window.actualizarPreguntasSituacion = function () {
+  const sel = document.querySelector('.pills[data-field="situacion"] .pill.sel');
+  const valor = sel ? sel.textContent.trim() : '';
+  const estudia = valor === 'Estudio' || valor === 'Estudio y trabajo';
+  const trabaja = [
+    'Trabajo', 'Estudio y trabajo',
+    'Tengo un emprendimiento / negocio propio', 'Trabajo de manera independiente',
+  ].includes(valor);
+
+  toggleCondicional('nivel-estudio', estudia, 'nivelEstudio');
+  toggleCondicional('area-trabajo', trabaja, 'areaTrabajo');
+
+  actualizarBarraProgreso();
+};
+
+// Muestra u oculta un bloque condicional -- al ocultarlo, deselecciona lo
+// que hubiera elegido antes (y cierra su propio "Otro" si estaba abierto),
+// para no dejar guardada una respuesta a una pregunta que ya no aplica.
+// Esta no se llama desde ningún onclick="" del HTML (solo desde
+// actualizarPreguntasSituacion, código a código), así que sí puede quedar
+// como function declaration normal sin problema.
+function toggleCondicional(wrapId, mostrar, field) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  wrap.style.display = mostrar ? 'block' : 'none';
+  if (!mostrar) {
+    const pillsEl = wrap.querySelector(`.pills[data-field="${field}"]`);
+    if (pillsEl) {
+      pillsEl.querySelectorAll('.pill.sel').forEach(p => p.classList.remove('sel'));
+      toggleOtroInput(pillsEl);
+    }
+  }
+}
+
 window.selPill = function(btn) {
   const pillsEl = btn.closest('.pills');
   pillsEl.querySelectorAll('.pill').forEach(p => p.classList.remove('sel'));
@@ -1053,7 +1236,15 @@ window.usarMiUbicacion = function() {
       }
     },
     err => {
-      status.textContent = 'No pudimos acceder a tu ubicación (' + err.message + ').';
+      // PERMISSION_DENIED (código 1) no se puede resolver desde JS: una vez
+      // que el usuario le dice que no a un sitio, el navegador guarda esa
+      // decisión y ni siquiera vuelve a mostrar el cartel de permiso en los
+      // próximos intentos -- hay que ir a la configuración del sitio a mano.
+      if (err.code === err.PERMISSION_DENIED) {
+        status.textContent = 'Bloqueaste el permiso de ubicación para este sitio. Para activarlo: tocá el ícono de candado/info junto a la URL → Permisos del sitio → Ubicación → Permitir, y volvé a tocar "Usar mi ubicación". Es un dato opcional, podés seguir sin él.';
+      } else {
+        status.textContent = 'No pudimos acceder a tu ubicación (' + err.message + ').';
+      }
     },
     { enableHighAccuracy: false, timeout: 10000 }
   );
@@ -1160,6 +1351,11 @@ function repoblarFormulario() {
     flagVotes = { ...stageData.etapa5.flags };
   }
 
+  // Muestra "en qué nivel"/"en qué área" si ya había una respuesta guardada
+  // para "situación actual" -- si no, quedarían ocultas con una respuesta
+  // adentro que el usuario ya había dado.
+  actualizarPreguntasSituacion();
+
   actualizarBarraProgreso();
 }
 
@@ -1196,8 +1392,37 @@ function showStage(n, dir) {
   history.pushState({ stage: n }, '', '#etapa-' + n);
 }
 
+// Antes de avanzar de etapa, si esta pantalla tiene los campos de edad
+// (etapa 1: tu edad / rango que buscás), no deja seguir si alguno quedó
+// por debajo de 18 -- el input ya tiene min="18", pero eso solo afecta las
+// flechitas del campo numérico, no evita que alguien escriba "1" a mano.
+// Si el campo está vacío no bloquea nada (eso ya lo maneja el % de
+// progreso) -- solo frena un valor puesto a mano que sea inválido. No
+// toca ni borra ningún dato ya guardado, solo evita seguir con uno nuevo
+// inválido.
+function edadesValidas() {
+  const EDAD_MINIMA = 18;
+  const campos = [
+    { id: 'edad', label: 'tu edad' },
+    { id: 'edadMinBusco', label: 'la edad mínima que buscás en un match' },
+    { id: 'edadMaxBusco', label: 'la edad máxima que buscás en un match' },
+  ];
+  for (const { id, label } of campos) {
+    const el = document.getElementById(id);
+    if (!el || el.value.trim() === '') continue;
+    const valor = parseInt(el.value, 10);
+    if (!isNaN(valor) && valor < EDAD_MINIMA) {
+      alert(`Pebble es solo para mayores de edad -- poné ${EDAD_MINIMA} años o más en "${label}".`);
+      el.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
 window.goNext = async function() {
   if (currentStage === TOTAL) return;
+  if (!edadesValidas()) return;
   await saveStage(currentStage);
   const next = currentStage + 1;
   showStage(next);
@@ -1236,13 +1461,16 @@ function buildGemelo() {
   const amor     = e5.enElAmor  || '';
   const relacion = (e5.enRelacion || []).slice(0,3).join(', ') || 'auténtico/a';
   const vibe     = e6.vibeAtrae  || 'especial';
-  const lugar    = e2.lugarIdeal || 'un lugar único';
+  const plan     = e2.planIdeal  || 'improvisar y ver qué surge';
   const artista  = e2.artista    || 'la música';
   const estetica = e2.estetica   || '';
 
   const amorLine = amor ? `, ${amor.toLowerCase()}` : '';
   const esteticaLine = estetica ? ` Tu estética es ${estetica.toLowerCase()}.` : '';
-  const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Me sentís bien en "${lugar.toLowerCase()}" y con ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
+  // "plan" ya viene como oración completa con mayúscula y punto (ver
+  // gemelo-setup.html data-field="planIdeal"), así que no se le agrega
+  // puntuación extra ni se pasa a minúscula.
+  const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Mi plan ideal para una tarde libre: ${plan} Y no puede faltar ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
 
   document.getElementById('gemelo-gen-text').textContent = text;
   const geditEl = document.getElementById('gedit');
@@ -1281,6 +1509,17 @@ window.finalizarGemelo = async function() {
       completed: true,
       completedAt: new Date().toISOString()
     }, { merge: true });
+    // Se espera a que usuarios/{uid}/gemelo/perfil quede escrito ANTES de
+    // marcar gemelo_completado y redirigir -- si no, quedaba una ventana en
+    // la que gemelo_completado ya era true pero el perfil real todavía no
+    // existía (el trigger generar_perfil_gemelo es asincrónico), y el chat
+    // con el gemelo / la tarjeta de perfil.html mostraban "todavía no
+    // completaste el onboarding" aunque ya estaba terminado.
+    try {
+      await generarGemeloAhoraCallable();
+    } catch (e) {
+      console.error('generar_gemelo_ahora:', e);
+    }
     await updateDoc(doc(db,'usuarios',uid), { gemelo_completado: true });
   } catch(e) {
     console.error('finalizar gemelo:', e);

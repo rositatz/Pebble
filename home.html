@@ -1336,9 +1336,9 @@
             </div>
             <div class="gemelo-info">
               <div class="gemelo-info-title">Tu gemelo está activo</div>
-              <div class="gemelo-info-sub">
-                Tuvo <strong>3 conversaciones</strong> hoy · Mayor afinidad con
-                Sofía: <strong>92%</strong>
+              <!-- Se llena con datos reales -- ver actualizarBannerGemelo() más abajo. -->
+              <div class="gemelo-info-sub" id="gemeloInfoSub">
+                Cargando actividad del gemelo…
               </div>
             </div>
             <div class="gemelo-live">
@@ -1388,123 +1388,21 @@
               </svg>
             </a>
           </div>
-          <div class="matches-strip" role="list">
-            <a
-              href="#"
-              class="match-item"
-              onclick="
-                goToMatch('sofia');
-                return false;
-              "
-              role="listitem"
-              aria-label="Sofía, 92%"
-            >
-              <div class="match-av-wrap" id="mav-sofia">
-                <div
-                  class="match-av"
-                  style="
-                    background-image: url(./images/sofia.png);
-                    background-size: cover;
-                    background-position: center;
-                  "
-                ></div>
-              </div>
-              <span class="match-score">92%</span>
-              <span class="match-name">Sofía</span>
-            </a>
-            <a
-              href="#"
-              class="match-item"
-              onclick="
-                goToMatch('mateo');
-                return false;
-              "
-              role="listitem"
-              aria-label="Mateo, 87%"
-            >
-              <div class="match-av-wrap" id="mav-mateo">
-                <div
-                  class="match-av"
-                  style="
-                    background-image: url(./images/mateo.png);
-                    background-size: cover;
-                    background-position: center;
-                  "
-                ></div>
-              </div>
-              <span class="match-score">87%</span>
-              <span class="match-name">Mateo</span>
-            </a>
-            <a
-              href="#"
-              class="match-item"
-              onclick="
-                goToMatch('valentina');
-                return false;
-              "
-              role="listitem"
-              aria-label="Valentina, 81%"
-            >
-              <div class="match-av-wrap" id="mav-valentina">
-                <div
-                  class="match-av"
-                  style="
-                    background-image: url(./images/valentina.png);
-                    background-size: cover;
-                    background-position: center;
-                  "
-                ></div>
-              </div>
-              <span class="match-score">81%</span>
-              <span class="match-name">Valentina</span>
-            </a>
-            <a
-              href="#"
-              class="match-item"
-              onclick="
-                goToMatch('lucia');
-                return false;
-              "
-              role="listitem"
-              aria-label="Lucía, 76%"
-            >
-              <div class="match-av-wrap" id="mav-lucia">
-                <div
-                  class="match-av"
-                  style="
-                    background-image: url(./images/lucia.png);
-                    background-size: cover;
-                    background-position: center;
-                  "
-                ></div>
-              </div>
-              <span class="match-score">76%</span>
-              <span class="match-name">Lucía</span>
-            </a>
-            <a
-              href="#"
-              class="match-item"
-              onclick="
-                goToMatch('agustin');
-                return false;
-              "
-              role="listitem"
-              aria-label="Agustín, 71%"
-            >
-              <div class="match-av-wrap" id="mav-agustin">
-                <div
-                  class="match-av"
-                  style="
-                    background-image: url(./images/Agustin.png);
-                    background-size: cover;
-                    background-position: center;
-                  "
-                ></div>
-              </div>
-              <span class="match-score">71%</span>
-              <span class="match-name">Agustín</span>
-            </a>
-          </div>
+          <!-- Se arma dinámicamente desde Firestore (conexiones reales) -- ver
+               cargarMatchesRecientes() en el script de más abajo. -->
+          <div class="matches-strip" role="list" id="matchesStrip"></div>
+          <p
+            id="matchesStripEmpty"
+            style="
+              display: none;
+              font-size: 0.82rem;
+              color: var(--text-muted);
+              padding: 4px 2px;
+            "
+          >
+            Todavía no tenés matches. Completá tu gemelo para empezar a
+            conectar.
+          </p>
         </section>
 
         <div class="home-divider fu"></div>
@@ -1884,6 +1782,23 @@
         document.getElementById("nav-avatar").textContent =
           nombre[0].toUpperCase();
       }
+
+      // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
+      // ícono de arriba a la derecha en vez de la inicial del nombre.
+      function renderNavAvatar(avatarFoto) {
+        const el = document.getElementById("nav-avatar");
+        if (avatarFoto) {
+          el.style.backgroundImage = `url(${avatarFoto})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+          el.textContent = "";
+        } else {
+          el.style.backgroundImage = "";
+          el.textContent = (
+            document.getElementById("user-name").textContent || "U"
+          )[0].toUpperCase();
+        }
+      }
       function switchTab(tab) {
         const isSignin = tab === "signin";
         document
@@ -1986,7 +1901,17 @@
       const facebookProvider = new FacebookAuthProvider();
       let uid = null;
 
-      const MATCH_IDS = ["sofia", "mateo", "valentina", "lucia", "agustin"];
+      // Escapa texto para insertarlo en contenido de texto y en atributos
+      // HTML entre comillas (aria-label, etc.) -- el nombre viene de
+      // Firestore y lo escribe libremente cada usuario desde perfil.html.
+      function esc(t) {
+        return String(t)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
 
       // Muestra el pip naranja en el match-av-wrap dado
       function mostrarPip(id) {
@@ -2009,18 +1934,7 @@
         if (pip) pip.remove();
       }
 
-      /* ── Badges dinámicos de las tarjetas de sección (Matches / Chats / Notificaciones) ──
-   Mismos datos "por default" que usa chats.html para saber cuánto hay sin leer
-   por persona y por modo (gemelo/real); se descuenta lo que Firestore ya marcó
-   como leído (leido_{id}_{modo}). */
-      const CHATS_DEFAULT_UNREAD = {
-        sofia: { gemelo: 0, real: 2 },
-        mateo: { gemelo: 0, real: 1 },
-        valentina: { gemelo: 1, real: 0 },
-        lucia: { gemelo: 0, real: 0 },
-        agustin: { gemelo: 0, real: 0 },
-      };
-      const NOTIFS_DEFAULT_COUNT = 4; // cantidad de .notif-card.unread en notificaciones.html
+      /* ── Badges dinámicos de las tarjetas de sección (Matches / Chats / Notificaciones) ── */
 
       // texto: función (cantidad) => string a mostrar. Si cantidad es 0, se vacía el
       // badge (mismo truco que ya usa la tarjeta "Mi perfil" con un <span> vacío) en
@@ -2043,10 +1957,14 @@
         }
       }
 
-      function actualizarBadgesSecciones(data, chatsMap) {
-        // Matches: cuántos todavía no se abrieron desde el home
-        const nuevosMatches = MATCH_IDS.filter(
-          (id) => !data[`match_visto_${id}`],
+      // candidatos: array de { otroId, data } armado desde conexiones reales
+      // (participantes array-contains uid, supera_umbral true).
+      // notifsSinLeer: cantidad real de usuarios/{uid}/notificaciones con
+      // leida=false (ver notificaciones.html / main.py _crear_notificacion).
+      function actualizarBadgesSecciones(data, candidatos, notifsSinLeer) {
+        // Matches: cuántos todavía no se abrieron desde el home o matches.html
+        const nuevosMatches = candidatos.filter(
+          (c) => !data[`match_visto_${c.otroId}`],
         ).length;
         actualizarBadge(
           "Matches",
@@ -2054,24 +1972,109 @@
           (n) => `${n} nuevo${n === 1 ? "" : "s"}`,
         );
 
-        // Chats: suma de no leídos según lo que ya se marcó leído al abrir cada chat.
-        // El "leído" vive en usuarios/{uid}/chats/{id}, no como campo suelto acá.
+        // Chats: no leídos reales -- mensajes de "them" que llegaron después
+        // de vistoHasta (el índice hasta donde el usuario ya vio), sumados
+        // entre modo real y gemelo de todos los matches. Mismo cálculo que
+        // usa chats.html, así que sube y baja igual que ahí, no solo baja
+        // desde un tope fijo.
         let sinLeer = 0;
-        Object.entries(CHATS_DEFAULT_UNREAD).forEach(([id, modos]) => {
-          Object.entries(modos).forEach(([modo, cantidad]) => {
-            const leido =
-              chatsMap[id] && chatsMap[id][modo] && chatsMap[id][modo].leido;
-            if (!leido) sinLeer += cantidad;
+        candidatos.forEach((c) => {
+          ["real", "gemelo"].forEach((modo) => {
+            const md = c.data[modo];
+            if (!md || !Array.isArray(md.msgs)) return;
+            sinLeer += md.msgs
+              .slice(md.vistoHasta || 0)
+              .filter((m) => m.from === "them").length;
           });
         });
         actualizarBadge("Chats", sinLeer, (n) => `${n} sin leer`);
 
-        // Notificaciones: se marcan todas leídas apenas se visita esa sección
+        // Notificaciones: cantidad real sin leer.
         actualizarBadge(
           "Notificaciones",
-          data.notifs_leidas ? 0 : NOTIFS_DEFAULT_COUNT,
+          notifsSinLeer || 0,
           (n) => `${n} nueva${n === 1 ? "" : "s"}`,
         );
+      }
+
+      // Actualiza el banner "Tu gemelo está activo" con datos reales: cuántos
+      // de tus matches tuvieron una simulación nueva hoy (conexiones.data.
+      // actualizado, que la Cloud Function pisa con la fecha de la última
+      // simulación) y cuál es tu mayor afinidad real.
+      function actualizarBannerGemelo(candidatos) {
+        const el = document.getElementById("gemeloInfoSub");
+        if (!el) return;
+        if (!candidatos.length) {
+          el.innerHTML = "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
+          return;
+        }
+        const hoy = new Date().toDateString();
+        const conversacionesHoy = candidatos.filter((c) => {
+          const f = c.data.actualizado;
+          return f && new Date(f).toDateString() === hoy;
+        }).length;
+
+        const mejor = candidatos.reduce((a, b) =>
+          (b.data.ultimo_score || 0) > (a.data.ultimo_score || 0) ? b : a,
+        );
+        const nombreMejor =
+          mejor.data.usuario_1.uid === mejor.otroId
+            ? mejor.data.usuario_1.nombre
+            : mejor.data.usuario_2.nombre;
+        const pctMejor = Math.round((mejor.data.ultimo_score || 0) * 100);
+
+        el.innerHTML = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
+      }
+
+      // Arma la tira de "Matches recientes" (hasta 5, ordenados por mayor
+      // afinidad) con fotos y nombres reales -- reemplaza los 5 items fijos
+      // de antes. Reusa mostrarPip/ocultarPip vía el mismo id "mav-{id}".
+      async function cargarMatchesRecientes(user, data, candidatos) {
+        const strip = document.getElementById("matchesStrip");
+        const emptyEl = document.getElementById("matchesStripEmpty");
+        if (!candidatos.length) {
+          if (emptyEl) emptyEl.style.display = "block";
+          return;
+        }
+        if (emptyEl) emptyEl.style.display = "none";
+
+        const top = [...candidatos]
+          .sort((a, b) => (b.data.ultimo_score || 0) - (a.data.ultimo_score || 0))
+          .slice(0, 5);
+
+        await Promise.all(
+          top.map(async (c) => {
+            try {
+              const s = await getDoc(doc(db, "usuarios", c.otroId));
+              c.otro = s.exists() ? s.data() : {};
+            } catch (e) {
+              c.otro = {};
+            }
+          }),
+        );
+
+        let html = "";
+        top.forEach((c) => {
+          const nombreGuardado =
+            c.data.usuario_1.uid === c.otroId ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+          const nombre = c.otro.nombre || nombreGuardado || "Usuario";
+          const foto = c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "";
+          const score = Math.round((c.data.ultimo_score || 0) * 100);
+          html += `
+      <a href="#" class="match-item" onclick="goToMatch('${c.otroId}');return false;" role="listitem" aria-label="${esc(nombre)}, ${score}%">
+        <div class="match-av-wrap" id="mav-${c.otroId}">
+          <div class="match-av" style="${foto ? `background-image:url('${foto}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}"></div>
+        </div>
+        <span class="match-score">${score}%</span>
+        <span class="match-name">${esc(nombre)}</span>
+      </a>`;
+        });
+        strip.innerHTML = html;
+
+        candidatos.forEach((c) => {
+          if (data[`match_visto_${c.otroId}`]) ocultarPip(c.otroId);
+          else mostrarPip(c.otroId);
+        });
       }
 
       // ── Sesión persistente: Firebase la maneja sola ──
@@ -2092,30 +2095,48 @@
           showApp(user);
           uid = user.uid;
 
-          // Cargar qué matches ya vio el usuario + badges de las tarjetas de sección
+          // Cargar matches reales + badges de las tarjetas de sección
           try {
             const snap = await getDoc(doc(db, "usuarios", uid));
             const data = snap.exists() ? snap.data() : {};
-            MATCH_IDS.forEach((id) => {
-              if (data[`match_visto_${id}`]) ocultarPip(id);
-              else mostrarPip(id);
+            renderNavAvatar(data.avatarFoto);
+
+            // Los matches/chats viven en conexiones/{parId} (un doc
+            // compartido por pareja). Una sola query con array-contains:
+            // dos queries separadas por usuario_1.uid/usuario_2.uid con una
+            // regla OR entre ambos campos fallan con PERMISSION_DENIED en
+            // Firestore (probado con el emulador), aunque los datos estén
+            // bien.
+            const conexionesSnap = await getDocs(
+              query(collection(db, "conexiones"), where("participantes", "array-contains", uid)),
+            );
+            const candidatos = [];
+            conexionesSnap.forEach((d) => {
+              const cdata = d.data();
+              if (!cdata.supera_umbral) return;
+              const otroId = cdata.usuario_1.uid === uid ? cdata.usuario_2.uid : cdata.usuario_1.uid;
+              candidatos.push({ otroId, data: cdata });
             });
 
-            // Los chats viven en conexiones/{parId} (un doc compartido por
-            // pareja) -- se arma chatsMap keyed por el id de la OTRA persona,
-            // igual que antes, para no tocar actualizarBadgesSecciones.
-            const [comoUno, comoDos] = await Promise.all([
-              getDocs(query(collection(db, "conexiones"), where("usuario_1.uid", "==", uid))),
-              getDocs(query(collection(db, "conexiones"), where("usuario_2.uid", "==", uid))),
-            ]);
-            const chatsMap = {};
-            comoUno.forEach((d) => { chatsMap[d.data().usuario_2.uid] = d.data(); });
-            comoDos.forEach((d) => { chatsMap[d.data().usuario_1.uid] = d.data(); });
+            // Notificaciones reales sin leer (usuarios/{uid}/notificaciones,
+            // leida=false) -- ver notificaciones.html / main.py.
+            let notifsSinLeer = 0;
+            try {
+              const notifsSnap = await getDocs(
+                query(collection(db, "usuarios", uid, "notificaciones"), where("leida", "==", false)),
+              );
+              notifsSinLeer = notifsSnap.size;
+            } catch (e) {
+              console.warn("Error contando notificaciones sin leer:", e);
+            }
 
-            actualizarBadgesSecciones(data, chatsMap);
+            actualizarBadgesSecciones(data, candidatos, notifsSinLeer);
+            actualizarBannerGemelo(candidatos);
+            await cargarMatchesRecientes(user, data, candidatos);
           } catch (e) {
-            // Si falla Firestore, mostrar todos como nuevos por defecto
-            MATCH_IDS.forEach((id) => mostrarPip(id));
+            console.warn("Error cargando matches/chats:", e);
+            const sub = document.getElementById("gemeloInfoSub");
+            if (sub) sub.textContent = "";
           }
         } else {
           showGate();
