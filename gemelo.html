@@ -1690,8 +1690,14 @@
             .catch((err) => {
               removeTyping();
               console.error("Error en chatear_con_gemelo:", err);
+              // Los mensajes de error del backend (ej: "Todavía no generaste
+              // tu gemelo (completá el onboarding primero).") ya vienen con
+              // paréntesis y punto propios -- envolverlos en otro paréntesis
+              // acá quedaba con parántesis anidados feos ("(No generaste
+              // (completá primero).).").  Un separador simple en vez de
+              // paréntesis se lee bien con cualquier mensaje.
               addTwinMsg(
-                `No pude responder (${escHtml(err.message || "error desconocido")}). Probá de nuevo en un rato.`,
+                `No pude responder: ${escHtml(err.message || "error desconocido")} Probá de nuevo en un rato.`,
               );
             });
         }, 300);
@@ -1762,7 +1768,7 @@
               removeTyping();
               console.error("Error en simular_situacion:", err);
               addTwinMsg(
-                `No pude correr la simulación (${escHtml(err.message || "error desconocido")}). Probá de nuevo en un rato.`,
+                `No pude correr la simulación: ${escHtml(err.message || "error desconocido")} Probá de nuevo en un rato.`,
               );
             });
         }, 300);

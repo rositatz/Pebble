@@ -42,6 +42,32 @@ def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombr
     })
 
 
+def _obtener_o_generar_perfil(db, uid):
+    """Lee usuarios/{uid}/gemelo/perfil -- si todavía no existe pero el
+    onboarding ya está completed:true, lo genera ahí mismo en vez de
+    devolver None. generar_perfil_gemelo (el trigger de Firestore) hace este
+    mismo trabajo pero de forma asincrónica, así que hay una ventana real
+    (o, si el trigger falló una sola vez por lo que sea, una ventana
+    permanente) en la que el onboarding ya está marcado como completo pero
+    el perfil real todavía no existe. En vez de que el chat con el gemelo y
+    las simulaciones fallen con "todavía no generaste tu gemelo" en ese
+    caso, se genera acá al vuelo -- es la misma función pura
+    (construir_perfil_gemelo) que ya usa el trigger, así que el resultado es
+    idéntico. Devuelve None solo si de verdad no completó el onboarding."""
+    ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+    snap = ref.get()
+    if snap.exists:
+        return snap.to_dict()
+
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+    if not doc_setup.exists or not doc_setup.get("completed"):
+        return None
+
+    perfil = construir_perfil_gemelo(doc_setup.to_dict())
+    ref.set(perfil)
+    return perfil
+
+
 def _parse_fecha(valor):
     """'actualizado' en conexiones se guarda como string ISO (ver
     registro_simulacion), no como Timestamp nativo -- hay que parsearlo a
@@ -80,6 +106,48 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
 
     db = firestore.client()
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+
+
+@https_fn.on_call()
+def generar_gemelo_ahora(request: https_fn.CallableRequest):
+    """Genera usuarios/{uid}/gemelo/perfil DE FORMA SINCRÓNICA y lo espera
+    antes de devolver la respuesta -- generar_perfil_gemelo (arriba) hace lo
+    mismo pero como trigger asincrónico de Firestore, que dispara con demora
+    variable (cold start, etc.). gemelo-setup.html marcaba completed:true y
+    redirigía en el mismo instante, sin esperar a que el trigger terminara:
+    quedaba una ventana real en la que usuarios/{uid}.gemelo_completado ya
+    era true pero usuarios/{uid}/gemelo/perfil todavía no existía, y tanto el
+    chat con el gemelo (chatear_con_gemelo/simular_situacion) como la
+    tarjeta "Mi gemelo digital" de perfil.html lo interpretaban como
+    "todavía no completaste el onboarding" -- aunque la persona ya lo había
+    terminado. Este endpoint se llama y se espera (`await`) justo después de
+    marcar completed:true, así el perfil real ya existe antes de redirigir.
+    Es idempotente: si el trigger ya escribió el perfil, esto simplemente lo
+    recalcula con los mismos datos y pisa el mismo resultado."""
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado."
+        )
+
+    uid = request.auth.uid
+    db = firestore.client()
+
+    # Se fuerza la regeneración (no simplemente reusar si ya existe) porque
+    # este endpoint se llama justo al terminar el onboarding, cuando
+    # gemelo_setup/data tiene la versión más nueva de las respuestas.
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+    if not doc_setup.exists or not doc_setup.get("completed"):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Todavía no completaste el onboarding de tu gemelo."
+        )
+
+    perfil = construir_perfil_gemelo(doc_setup.to_dict())
+    db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+
+    return {"ok": True}
 
 
 @https_fn.on_call()
@@ -199,22 +267,19 @@ def simular_situacion(request: https_fn.CallableRequest):
 
     db = firestore.client()
 
-    doc1 = db.collection("usuarios").document(uid1).collection("gemelo").document("perfil").get()
-    doc2 = db.collection("usuarios").document(uid2).collection("gemelo").document("perfil").get()
+    perfil1 = _obtener_o_generar_perfil(db, uid1)
+    perfil2 = _obtener_o_generar_perfil(db, uid2)
 
-    if not doc1.exists:
+    if perfil1 is None:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no generaste tu gemelo (completá el onboarding primero)."
         )
-    if not doc2.exists:
+    if perfil2 is None:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.NOT_FOUND,
             "Esa persona todavía no tiene su gemelo generado."
         )
-
-    perfil1 = doc1.to_dict()
-    perfil2 = doc2.to_dict()
 
     # Este endpoint se llama con cualquier otroUid que mande el cliente --
     # normalmente viene del picker de "Consejo para un match" (que solo
@@ -308,13 +373,12 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
 
     db = firestore.client()
 
-    doc_perfil = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
-    if not doc_perfil.exists:
+    perfil = _obtener_o_generar_perfil(db, uid)
+    if perfil is None:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no generaste tu gemelo (completá el onboarding primero)."
         )
-    perfil = doc_perfil.to_dict()
 
     # Resumen liviano de los matches reales (solo nombre + score) para que
     # el gemelo pueda dar consejos concretos si le preguntan por alguno --

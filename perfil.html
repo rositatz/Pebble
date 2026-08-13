@@ -2495,6 +2495,7 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 const functionsInstance = getFunctions(app);
 const actualizarPreferenciasMatchingCallable = httpsCallable(functionsInstance, "actualizar_preferencias_matching");
+const generarGemeloAhoraCallable = httpsCallable(functionsInstance, "generar_gemelo_ahora");
 
 let uid = null;
 
@@ -2587,6 +2588,21 @@ async function cargarGemeloDigitalCard(uid, datosUsuario) {
     if (snap.exists()) perfil = snap.data();
   } catch (e) {
     console.warn('Error cargando gemelo/perfil:', e);
+  }
+
+  // Si el onboarding ya está marcado como completo pero el perfil real
+  // todavía no existe (el trigger que lo genera es asincrónico y puede
+  // quedar atrás, o falló una vez), se regenera acá mismo antes de mostrar
+  // "sin completar" -- si no, alguien que ya terminó su gemelo vería la
+  // tarjeta como si nunca lo hubiera hecho.
+  if (!perfil && datosUsuario.gemelo_completado) {
+    try {
+      await generarGemeloAhoraCallable();
+      const snap2 = await getDoc(doc(db, 'usuarios', uid, 'gemelo', 'perfil'));
+      if (snap2.exists()) perfil = snap2.data();
+    } catch (e) {
+      console.warn('Error regenerando gemelo/perfil:', e);
+    }
   }
 
   if (!perfil) {

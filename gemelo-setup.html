@@ -988,6 +988,7 @@ body.is-upgrade .upgrade-banner{display:block}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
@@ -996,6 +997,8 @@ const app = initializeApp({
 });
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const functionsInstance = getFunctions(app);
+const generarGemeloAhoraCallable = httpsCallable(functionsInstance, "generar_gemelo_ahora");
 
 let uid = null, userPlan = 'free', stageData = {}, currentStage = 1;
 const TOTAL = 7;
@@ -1506,6 +1509,17 @@ window.finalizarGemelo = async function() {
       completed: true,
       completedAt: new Date().toISOString()
     }, { merge: true });
+    // Se espera a que usuarios/{uid}/gemelo/perfil quede escrito ANTES de
+    // marcar gemelo_completado y redirigir -- si no, quedaba una ventana en
+    // la que gemelo_completado ya era true pero el perfil real todavía no
+    // existía (el trigger generar_perfil_gemelo es asincrónico), y el chat
+    // con el gemelo / la tarjeta de perfil.html mostraban "todavía no
+    // completaste el onboarding" aunque ya estaba terminado.
+    try {
+      await generarGemeloAhoraCallable();
+    } catch (e) {
+      console.error('generar_gemelo_ahora:', e);
+    }
     await updateDoc(doc(db,'usuarios',uid), { gemelo_completado: true });
   } catch(e) {
     console.error('finalizar gemelo:', e);
