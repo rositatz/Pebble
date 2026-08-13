@@ -72,6 +72,58 @@ def analizar_conversacion(historial_chat):
     )
 
     return analisis
+def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
+    """Analiza mensajes REALES que la persona escribió (chat con su propio
+    gemelo + chats con matches, solo mensajes propios) y devuelve señales
+    para que el gemelo hable/se relacione más parecido a como esa persona
+    escribe de verdad. A propósito NO devuelve ni toca personalidad/valores
+    numéricos -- esos siguen viniendo solo del onboarding (ver
+    main.actualizar_aprendizaje_gemelo), así que esto es puramente
+    descriptivo: estilo de escritura + intereses nuevos que se mencionaron
+    de verdad, nunca inventados."""
+
+    intereses_actuales = intereses_actuales or []
+    texto_mensajes = "\n".join(f"- {m}" for m in mensajes)
+
+    prompt = f"""
+    Estos son mensajes reales que una persona escribió en distintas
+    conversaciones (con su propio asistente de IA y con otras personas en
+    una app de citas). Analizá SOLO su forma de escribir y de relacionarse
+    -- no evalúes ni juzgues el contenido.
+
+    Devolvé únicamente JSON válido con esta forma:
+    {{
+      "estilo": "2-3 oraciones describiendo cómo escribe (largo de
+        mensajes, tono, humor, formalidad, muletillas) y cómo se relaciona
+        (directo/a, cariñoso/a, reservado/a, etc.)",
+      "intereses_nuevos": ["intereses o gustos que se notan en los
+        mensajes y que NO están ya en esta lista: {', '.join(intereses_actuales) or 'ninguno'}
+        -- lista vacía si no hay ninguno claro, nunca inventes"]
+    }}
+
+    Mensajes:
+    {texto_mensajes}
+    """
+
+    response = client().chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "Analizás estilo de escritura a partir de mensajes reales. Nunca inventás datos que no estén en el texto."
+            },
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+
+    resultado = json.loads(response.choices[0].message.content)
+    return {
+        "estilo": (resultado.get("estilo") or "").strip(),
+        "intereses_nuevos": [str(i).strip() for i in (resultado.get("intereses_nuevos") or []) if str(i).strip()],
+    }
+
+
 def actualizar_memoria(memoria, analisis):
     """Si es la primera interacción entre este par de gemelos, memoria
     todavía no existe (None) -- se crea acá. Si ya existía, se le hace append

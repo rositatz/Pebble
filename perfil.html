@@ -563,6 +563,34 @@ body {
 }
 .twin-action-secondary:hover { background: rgba(255,255,255,0.14); }
 
+/* ── Banner de consentimiento para aprendizaje de chats ── */
+.twin-learn-banner {
+  padding: 14px 16px; border-radius: var(--r-md);
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 20px;
+}
+.twin-learn-text {
+  font-size: 0.78rem; line-height: 1.6; color: rgba(255,255,255,0.6);
+  margin-bottom: 12px;
+}
+.twin-learn-check {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.8rem; color: rgba(255,255,255,0.8);
+  margin-bottom: 12px; cursor: pointer;
+}
+.twin-learn-check input { accent-color: var(--orange); width: 16px; height: 16px; }
+.twin-learn-active {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-radius: var(--r-md);
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 20px;
+  font-size: 0.78rem; color: rgba(255,255,255,0.65);
+}
+.twin-learn-toggle-off {
+  background: none; border: none; color: var(--orange);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+
 /* ── Plan card ── */
 .plan-section { padding: 24px; }
 .plan-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
@@ -1398,6 +1426,23 @@ body {
         <div class="twin-progress-track">
           <div class="twin-progress-fill" id="twinProgressFill" style="width:0%"></div>
         </div>
+      </div>
+
+      <!-- Consentimiento para que el gemelo aprenda de los chats reales
+           (con el propio gemelo y con matches) -- ver
+           cargarGemeloDigitalCard() para cuál de los dos bloques se
+           muestra, y _db_saveConsentimientoAprendizaje más abajo. -->
+      <div class="twin-learn-banner" id="twinLearnBanner" style="display:none">
+        <p class="twin-learn-text">Dejá que tu gemelo aprenda de tus conversaciones (con vos mismo/a y con tus matches) para representarte mejor: tu estilo de escritura y tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad con otras personas, que siguen siendo los que contestaste en el onboarding. Podés desactivarlo cuando quieras.</p>
+        <label class="twin-learn-check">
+          <input type="checkbox" id="twinLearnCheckbox" onchange="document.getElementById('twinLearnAcceptBtn').disabled = !this.checked">
+          He leído y acepto
+        </label>
+        <button type="button" class="twin-action-btn twin-action-primary" id="twinLearnAcceptBtn" disabled onclick="activarAprendizajeGemelo()">Activar</button>
+      </div>
+      <div class="twin-learn-active" id="twinLearnActive" style="display:none">
+        <span>✓ Tu gemelo está aprendiendo de tus conversaciones</span>
+        <button type="button" class="twin-learn-toggle-off" onclick="desactivarAprendizajeGemelo()">Desactivar</button>
       </div>
 
       <div class="twin-actions">
@@ -2476,7 +2521,7 @@ import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/fire
 import { getAuth, onAuthStateChanged, signOut,
          reauthenticateWithCredential, EmailAuthProvider, updatePassword }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where }
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getFunctions, httpsCallable }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
@@ -2612,6 +2657,15 @@ async function cargarGemeloDigitalCard(uid, datosUsuario) {
     [statConv, statAfin, statConex].forEach(el => { if (el) el.textContent = '—'; });
     return;
   }
+
+  // Banner de consentimiento para el aprendizaje de chats -- solo tiene
+  // sentido mostrarlo una vez que el gemelo ya existe. Muestra uno de los
+  // dos bloques (pedir consentimiento / ya activado), nunca los dos.
+  const learnBanner = document.getElementById('twinLearnBanner');
+  const learnActive = document.getElementById('twinLearnActive');
+  const yaConsintio = datosUsuario.consentimientoAprendizajeChats === true;
+  if (learnBanner) learnBanner.style.display = yaConsintio ? 'none' : 'block';
+  if (learnActive) learnActive.style.display = yaConsintio ? 'flex' : 'none';
   if (sinCompletarEl) sinCompletarEl.style.display = 'none';
 
   if (traitsEl) {
@@ -2651,6 +2705,8 @@ async function cargarGemeloDigitalCard(uid, datosUsuario) {
   } catch (e) {
     console.warn('Error cargando estadísticas del gemelo:', e);
   }
+
+  return perfil;
 }
 
 // Escapa texto para insertarlo en contenido de texto (traits vienen de
@@ -2731,8 +2787,10 @@ onAuthStateChanged(auth, async user => {
     // perfil, si el pago mensual sigue vigente
     await actualizarPlanUI(d);
 
-    // Tarjeta "Mi gemelo digital" con datos reales (traits, cita, stats)
-    await cargarGemeloDigitalCard(uid, d);
+    // Tarjeta "Mi gemelo digital" con datos reales (traits, cita, stats) --
+    // devuelve gemelo/perfil (o null si todavía no existe) para poder usarlo
+    // como respaldo de "Información básica" más abajo.
+    const perfilGemelo = await cargarGemeloDigitalCard(uid, d);
 
     // Nombre (si fue editado por el usuario)
     if (d.nombre) aplicarNombre(d.nombre);
@@ -2740,12 +2798,29 @@ onAuthStateChanged(auth, async user => {
     // Información básica -- se usa !== undefined (no truthy) para que un campo
     // opcional que el usuario dejó vacío a propósito se guarde vacío de verdad
     // y no vuelva a mostrar el valor anterior al recargar.
+    //
+    // Género/orientación/busco/ciudad/rango de edad se contestan primero en
+    // el onboarding del gemelo (gemelo-setup.html), no acá -- si nunca se
+    // editaron desde esta pantalla, usuarios/{uid} no tiene esos campos
+    // (quedaban con el valor de ejemplo del HTML, tipo "Bisexual" o "Mujer",
+    // como si fuera un dato real). Como respaldo, si el campo de acá no
+    // está seteado, se usa el mismo valor normalizado que ya usa el
+    // matching real (gemelo/perfil, gemelo_perfil._construir_identidad).
     if (d.fechaNac)          document.getElementById('eFechaNac').value       = d.fechaNac;
     if (d.ciudad      !== undefined) { document.getElementById('vCiudad').textContent      = d.ciudad      || '—'; document.getElementById('eCiudad').value      = d.ciudad; }
+    else if (perfilGemelo && perfilGemelo.ciudad) { document.getElementById('vCiudad').textContent = perfilGemelo.ciudad; document.getElementById('eCiudad').value = perfilGemelo.ciudad; }
+
     if (d.genero      !== undefined) { document.getElementById('vGenero').textContent      = d.genero      || '—'; document.getElementById('eGenero').value      = d.genero; }
+    else if (perfilGemelo && perfilGemelo.genero) { document.getElementById('vGenero').textContent = perfilGemelo.genero; document.getElementById('eGenero').value = perfilGemelo.genero; }
+
     if (d.pronombres  !== undefined) { document.getElementById('vPronombres').textContent  = d.pronombres  || '—'; document.getElementById('ePronombres').value  = d.pronombres; }
+    // Pronombres no se pregunta en el onboarding -- no hay de dónde sacar un respaldo.
+
     if (d.orientacion !== undefined) { document.getElementById('vOrientacion').textContent = d.orientacion || '—'; document.getElementById('eOrientacion').value = d.orientacion; }
+    else if (perfilGemelo && perfilGemelo.orientacion) { document.getElementById('vOrientacion').textContent = perfilGemelo.orientacion; document.getElementById('eOrientacion').value = perfilGemelo.orientacion; }
+
     if (d.busco       !== undefined) { document.getElementById('vBusco').textContent       = d.busco       || '—'; document.getElementById('eBusco').value       = d.busco; }
+    else if (perfilGemelo && perfilGemelo.busco) { document.getElementById('vBusco').textContent = perfilGemelo.busco; document.getElementById('eBusco').value = perfilGemelo.busco; }
 
     // Rango de edad preferido
     if (d.rangoEdadMin !== undefined && d.rangoEdadMax !== undefined) {
@@ -2755,6 +2830,23 @@ onAuthStateChanged(auth, async user => {
       rMaxEl.value = d.rangoEdadMax;
       rMinEl.dispatchEvent(new Event('input')); // reposiciona el slider y actualiza sus labels
       document.getElementById('vRangoEdad').textContent = `${d.rangoEdadMin} – ${d.rangoEdadMax} años`;
+    } else if (perfilGemelo && perfilGemelo.rango_edad_busco && (perfilGemelo.rango_edad_busco.min != null || perfilGemelo.rango_edad_busco.max != null)) {
+      const rMinEl = document.getElementById('rangeMin');
+      const rMaxEl = document.getElementById('rangeMax');
+      const rMin = perfilGemelo.rango_edad_busco.min ?? Number(rMinEl.min);
+      const rMax = perfilGemelo.rango_edad_busco.max ?? Number(rMaxEl.max);
+      rMinEl.value = rMin;
+      rMaxEl.value = rMax;
+      rMinEl.dispatchEvent(new Event('input'));
+      document.getElementById('vRangoEdad').textContent = `${rMin} – ${rMax} años`;
+    }
+
+    // Edad -- normalmente sale de fechaNac (fecha de nacimiento), pero el
+    // onboarding pregunta la edad como número directo, no una fecha, así
+    // que no hay forma de convertir una en la otra -- se muestra el número
+    // del onboarding tal cual si no hay fecha de nacimiento cargada.
+    if (!d.fechaNac && perfilGemelo && perfilGemelo.edad) {
+      document.getElementById('vEdad').textContent = `${perfilGemelo.edad} años`;
     }
 
     // Bio
@@ -2764,10 +2856,13 @@ onAuthStateChanged(auth, async user => {
       document.getElementById('bioCount').textContent = d.bio.length;
     }
 
-    // Hero meta: ciudad + edad
+    // Hero meta: ciudad + edad (con el mismo respaldo de gemelo/perfil que
+    // el resto de "Información básica" si no se cargó desde acá todavía)
+    const ciudadMeta = d.ciudad || (perfilGemelo && perfilGemelo.ciudad) || '';
+    const edadMeta = d.fechaNac ? `${calcAge(d.fechaNac)} años` : (perfilGemelo && perfilGemelo.edad ? `${perfilGemelo.edad} años` : '');
     const metaParts = [];
-    if (d.ciudad)   metaParts.push(d.ciudad);
-    if (d.fechaNac) metaParts.push(`${calcAge(d.fechaNac)} años`);
+    if (ciudadMeta) metaParts.push(ciudadMeta);
+    if (edadMeta)   metaParts.push(edadMeta);
     if (metaParts.length) document.getElementById('heroMeta').textContent = metaParts.join(' · ');
 
     // Edad en campo de vista
@@ -2941,6 +3036,48 @@ window._db_saveFotos = async (fotos) => {
 window._db_saveAvatar = async (avatarFoto) => {
   if (!uid) return;
   await setDoc(doc(db, 'usuarios', uid), { avatarFoto }, { merge: true });
+};
+
+// Guarda el consentimiento (o el retiro del consentimiento) para que el
+// gemelo aprenda de los chats reales -- ver actualizar_aprendizaje_gemelo
+// en el backend, que chequea este campo antes de leer un solo mensaje.
+window._db_saveConsentimientoAprendizaje = async (valor) => {
+  if (!uid) return;
+  await setDoc(doc(db, 'usuarios', uid), {
+    consentimientoAprendizajeChats: valor,
+    consentimientoAprendizajeChatsFecha: valor ? serverTimestamp() : null,
+  }, { merge: true });
+};
+
+window.activarAprendizajeGemelo = async function () {
+  const btn = document.getElementById('twinLearnAcceptBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Activando…'; }
+  try {
+    await window._db_saveConsentimientoAprendizaje(true);
+    const banner = document.getElementById('twinLearnBanner');
+    const activo = document.getElementById('twinLearnActive');
+    if (banner) banner.style.display = 'none';
+    if (activo) activo.style.display = 'flex';
+  } catch (e) {
+    console.error('Error activando aprendizaje del gemelo:', e);
+    if (btn) { btn.disabled = false; btn.textContent = 'Activar'; }
+  }
+};
+
+window.desactivarAprendizajeGemelo = async function () {
+  try {
+    await window._db_saveConsentimientoAprendizaje(false);
+    const banner = document.getElementById('twinLearnBanner');
+    const activo = document.getElementById('twinLearnActive');
+    const checkbox = document.getElementById('twinLearnCheckbox');
+    const acceptBtn = document.getElementById('twinLearnAcceptBtn');
+    if (activo) activo.style.display = 'none';
+    if (banner) banner.style.display = 'block';
+    if (checkbox) checkbox.checked = false;
+    if (acceptBtn) { acceptBtn.disabled = true; acceptBtn.textContent = 'Activar'; }
+  } catch (e) {
+    console.error('Error desactivando aprendizaje del gemelo:', e);
+  }
 };
 </script>
 </body>

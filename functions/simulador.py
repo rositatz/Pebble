@@ -300,6 +300,23 @@ def _directiva(valor, texto_alto, texto_bajo, umbral=0.65):
     return ""
 
 
+# Sin decirle explícitamente el género a la IA, por defecto escribe en
+# neutro/ambiguo -- "el/la que se enamora", "enamorado/a", con barras -- que
+# no es como habla una persona real. Con género conocido se le pide
+# terminantemente que escriba en ese género en vez de usar barras; "No
+# binario"/"Género fluido"/"Prefiero no decir"/"Otro"/vacío se dejan en
+# neutro a propósito (no hay una forma gramatical única "correcta" para
+# imponer ahí).
+_GENERO_INSTRUCCION = {
+    "Mujer": "Género: femenino -- escribí siempre en femenino (ej: \"segura\", \"la que se enamora rápido\"), nunca uses barras como \"o/a\" ni \"el/la\".",
+    "Hombre": "Género: masculino -- escribí siempre en masculino (ej: \"seguro\", \"el que se enamora rápido\"), nunca uses barras como \"o/a\" ni \"el/la\".",
+}
+
+
+def _instruccion_genero(perfil):
+    return _GENERO_INSTRUCCION.get((perfil.get("genero") or "").strip(), "")
+
+
 def generar_prompt_gemelo(perfil, memoria=None):
 
     # =====================================================
@@ -407,6 +424,16 @@ def generar_prompt_gemelo(perfil, memoria=None):
     if bio:
         bio_prompt = f"\n    CÓMO SE DESCRIBE A SÍ MISMO/A:\n    {bio}\n"
 
+    # Igual que en generar_prompt_gemelo_personal: estilo_aprendido viene de
+    # mensajes reales (con consentimiento) y solo afecta CÓMO habla acá, no
+    # los números de personalidad/valores de arriba -- esos siguen siendo
+    # los del onboarding, que es lo que se compara matemáticamente con el
+    # perfil de la otra persona en compatibilidad.calcular_compatibilidad.
+    estilo_aprendido_prompt = ""
+    estilo_aprendido = perfil.get("estilo_aprendido", "")
+    if estilo_aprendido:
+        estilo_aprendido_prompt = f"\n    CÓMO ESCRIBE/SE RELACIONA EN LA PRÁCTICA (aprendido de chats reales):\n    {estilo_aprendido}\n"
+
     # =====================================================
     # MEMORIA CONVERSACIONAL
     # =====================================================
@@ -457,6 +484,8 @@ def generar_prompt_gemelo(perfil, memoria=None):
     Intereses:
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
 
+    {_instruccion_genero(perfil)}
+
     =====================================================
     PERSONALIDAD
     =====================================================
@@ -468,7 +497,7 @@ def generar_prompt_gemelo(perfil, memoria=None):
     =====================================================
 
     {estilo}
-
+    {estilo_aprendido_prompt}
     =====================================================
     VALORES
     =====================================================
@@ -594,6 +623,16 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
         identidad_txt += f"    - Intereses: {', '.join(perfil['intereses'])}\n"
     if perfil.get("bio"):
         identidad_txt += f"    - Cómo se describe: {perfil['bio']}\n"
+    # estilo_aprendido lo arma actualizar_aprendizaje_gemelo (main.py) a partir
+    # de mensajes reales que la persona escribió (chat con su propio gemelo +
+    # chats con matches, solo si dio consentimiento) -- a diferencia de
+    # personalidad/valores (que son fijos desde el onboarding para que nadie
+    # pueda "inflarlos" chateando y matchear más fácil), esto es pura forma de
+    # hablar, así que sí se deja actualizar con el tiempo.
+    if perfil.get("estilo_aprendido"):
+        identidad_txt += f"    - Cómo escribe/se relaciona en la práctica: {perfil['estilo_aprendido']}\n"
+    if _instruccion_genero(perfil):
+        identidad_txt += f"    - {_instruccion_genero(perfil)}\n"
 
     matches_txt = ""
     if matches_resumen:
@@ -634,6 +673,76 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
     """
 
     return prompt
+
+
+def generar_resumen_gemelo(perfil):
+    """Arma el párrafo de presentación del gemelo (lo que se ve/edita en la
+    última etapa del onboarding, gemelo-setup.html) con IA en vez de la
+    plantilla vieja de una sola oración armada a mano en el cliente
+    (concatenaba 4-5 campos sueltos: nombre, comoSoy, vibeAtrae, planIdeal,
+    artista). Reusa _directiva para las mismas frases de personalidad que ya
+    se usan en los otros dos prompts, así el tono es consistente."""
+
+    personalidad = perfil.get("personalidad", {})
+    directivas = list(filter(None, [
+        _directiva(personalidad.get('introversion', 0.5),
+            "más reservado/a, de ir de a poco con la gente nueva",
+            "más extrovertido/a, sociable de entrada"),
+        _directiva(personalidad.get('apertura_mental', 0.5),
+            "curioso/a y abierto/a a cosas nuevas",
+            "de gustos más definidos, no tan de probar cosas nuevas"),
+        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
+            "sensible, las cosas le llegan y se le nota",
+            "bastante estable emocionalmente, no se lo ve alterarse fácil"),
+        _directiva(personalidad.get('independencia', 0.5),
+            "independiente, valora mucho su espacio propio",
+            "de disfrutar la cercanía y hacer las cosas en compañía"),
+        _directiva(perfil.get("valores", {}).get('aventura', 0.5),
+            "con ganas de aventura y planes nuevos",
+            "de valorar la estabilidad y lo conocido"),
+    ]))
+
+    nombre = perfil.get("nombre") or "esta persona"
+    partes_datos = []
+    if perfil.get("edad"):
+        partes_datos.append(f"Edad: {perfil['edad']}")
+    if perfil.get("profesion"):
+        partes_datos.append(f"Situación actual: {perfil['profesion']}")
+    if perfil.get("ciudad"):
+        partes_datos.append(f"Ciudad: {perfil['ciudad']}")
+    if perfil.get("intereses"):
+        partes_datos.append(f"Intereses: {', '.join(perfil['intereses'])}")
+    if perfil.get("busco"):
+        partes_datos.append(f"Busca: {perfil['busco']}")
+    if directivas:
+        partes_datos.append("Personalidad: " + "; ".join(directivas))
+    if perfil.get("notas_personales"):
+        partes_datos.append("En sus propias palabras:\n" + "\n".join(f"- {n}" for n in perfil["notas_personales"]))
+    if _instruccion_genero(perfil):
+        partes_datos.append(_instruccion_genero(perfil))
+
+    datos_txt = "\n".join(partes_datos) if partes_datos else "No hay datos suficientes todavía."
+
+    prompt = f"""
+    Escribí, en primera persona y como si fuera {nombre} presentándose en una
+    app de citas, un párrafo de presentación natural y detallado (4 a 6
+    oraciones). Tiene que sonar como algo que escribiría una persona real,
+    no una IA ni una lista de datos -- tejé la información en frases
+    naturales, no repitas cada dato como si fuera una ficha.
+
+    DATOS REALES DE LA PERSONA (usalos todos los que puedas, no inventes
+    otros):
+    {datos_txt}
+
+    Devolvé SOLO el párrafo final, sin comillas, sin encabezados, sin
+    explicaciones tuyas.
+    """
+
+    response = client().chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.choices[0].message.content.strip()
 
 
 def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):

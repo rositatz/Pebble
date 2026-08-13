@@ -9,7 +9,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
-from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos
+from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -148,6 +148,48 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
 
     return {"ok": True}
+
+
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
+    """Genera el párrafo de presentación de la última etapa del onboarding
+    (gemelo-setup.html, etapa 7) con IA -- reemplaza la plantilla vieja de
+    una sola oración armada en el cliente con motor.generar_resumen_gemelo,
+    que usa TODAS las respuestas ya dadas (intereses, notas personales,
+    personalidad, etc.), igual que ya se hace para el chat con el propio
+    gemelo. Se llama ANTES de terminar el onboarding (se llega a esta etapa
+    sin haber tocado "Este soy yo" todavía), así que a diferencia de
+    generar_gemelo_ahora no exige completed:true -- alcanza con que exista
+    el doc de gemelo_setup con lo que se completó hasta ahora."""
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado."
+        )
+
+    uid = request.auth.uid
+    db = firestore.client()
+
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+    if not doc_setup.exists:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Todavía no completaste ninguna etapa del onboarding."
+        )
+
+    perfil = construir_perfil_gemelo(doc_setup.to_dict())
+
+    try:
+        texto = motor.generar_resumen_gemelo(perfil)
+    except Exception as e:
+        print(f"generar_resumen_gemelo_ia: error llamando a OpenAI: {e}")
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            "No se pudo generar el resumen en este momento. Probá de nuevo en un rato."
+        )
+
+    return {"texto": texto}
 
 
 @https_fn.on_call()
@@ -637,6 +679,18 @@ DIAS_RETOMAR_CHAT = 7
 # su gemelo está inactivo.
 DIAS_INACTIVIDAD_GEMELO = 3
 
+# Mínimo de mensajes propios (chat con el gemelo + chats reales con
+# matches, combinados) para que valga la pena una llamada a OpenAI -- con
+# menos que esto no hay suficiente texto para sacar nada real.
+MIN_MENSAJES_APRENDIZAJE = 10
+
+# Ventana de mensajes propios más recientes que se analiza en cada corrida.
+# Los logs de chat se guardan como array completo pisado en cada guardado
+# (no son append-only), así que no hay forma barata de trackear "solo lo
+# nuevo desde la última vez" -- en cambio, se recalcula sobre esta ventana
+# reciente todos los días, que ya alcanza para mantener el estilo al día.
+VENTANA_MENSAJES_APRENDIZAJE = 40
+
 
 @scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires")
 def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
@@ -719,4 +773,106 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
     print(
         f"generar_recordatorios_diarios: {avisos_retomar} avisos de retomar chat, "
         f"{avisos_inactivo} avisos de gemelo inactivo (sobre {len(ultima_actividad_por_usuario)} usuarios con conexiones)."
+    )
+
+
+def _mensajes_propios_recientes(db, uid, limite=VENTANA_MENSAJES_APRENDIZAJE):
+    """Junta los mensajes que ESTA persona escribió de verdad -- del chat
+    con su propio gemelo (usuarios/{uid}/chats/gemelo_propio.log,
+    tipo:"user") y de sus chats reales con matches (conexiones/{parId}.real.msgs,
+    from:"me") -- y devuelve los últimos `limite`. No se mezclan mensajes
+    de la otra persona ni respuestas del propio gemelo: son solo palabras
+    de la persona dueña del perfil."""
+
+    mensajes = []
+
+    try:
+        snap = db.collection("usuarios").document(uid).collection("chats").document("gemelo_propio").get()
+        if snap.exists:
+            log = snap.to_dict().get("log") or []
+            for entrada in log:
+                if isinstance(entrada, dict) and entrada.get("tipo") == "user" and entrada.get("text"):
+                    mensajes.append(entrada["text"])
+    except Exception as e:
+        print(f"_mensajes_propios_recientes: error leyendo chat con el gemelo de {uid}: {e}")
+
+    try:
+        for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
+            real_msgs = (doc.to_dict().get("real") or {}).get("msgs") or []
+            for m in real_msgs:
+                if isinstance(m, dict) and m.get("from") == "me" and m.get("text"):
+                    mensajes.append(m["text"])
+    except Exception as e:
+        print(f"_mensajes_propios_recientes: error leyendo conexiones de {uid}: {e}")
+
+    return mensajes[-limite:]
+
+
+@scheduler_fn.on_schedule(
+    schedule="0 4 * * *",
+    timezone="America/Argentina/Buenos_Aires",
+    secrets=["OPENAI_API_KEY"],
+    timeout_sec=1800,
+    memory=MemoryOption.MB_512,
+)
+def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
+    """Corre una vez por día: para cada usuario que dio consentimiento
+    explícito (usuarios/{uid}.consentimientoAprendizajeChats == true), junta
+    sus mensajes propios recientes (chat con su gemelo + chats reales con
+    matches) y le pide a la IA que describa su estilo de escritura/forma de
+    relacionarse e identifique intereses nuevos mencionados de verdad.
+
+    A propósito NO toca personalidad ni valores -- esos números son los que
+    se comparan matemáticamente entre dos perfiles para calcular
+    compatibilidad real (compatibilidad.calcular_compatibilidad), y siguen
+    viniendo solo de lo que la persona contestó a conciencia en el
+    onboarding. Lo que se actualiza acá (estilo_aprendido + intereses
+    nuevos) solo afecta CÓMO habla el gemelo, no CON QUIÉN matchea. Ver
+    simulador.generar_prompt_gemelo/generar_prompt_gemelo_personal, que ya
+    usan estilo_aprendido si está presente."""
+
+    db = firestore.client()
+
+    actualizados, sin_perfil_generado, sin_mensajes_suficientes, con_error = 0, 0, 0, 0
+
+    for doc_usuario in db.collection("usuarios").where("consentimientoAprendizajeChats", "==", True).stream():
+        uid = doc_usuario.id
+
+        perfil_ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+        perfil_snap = perfil_ref.get()
+        if not perfil_snap.exists:
+            sin_perfil_generado += 1
+            continue
+
+        mensajes = _mensajes_propios_recientes(db, uid)
+        if len(mensajes) < MIN_MENSAJES_APRENDIZAJE:
+            sin_mensajes_suficientes += 1
+            continue
+
+        try:
+            perfil = perfil_snap.to_dict()
+            resultado = extraer_aprendizaje_chats(mensajes, intereses_actuales=perfil.get("intereses") or [])
+
+            intereses_actuales = perfil.get("intereses") or []
+            vistos = {i.casefold() for i in intereses_actuales}
+            intereses_nuevos = [i for i in resultado["intereses_nuevos"] if i.casefold() not in vistos]
+
+            cambios = {}
+            if resultado["estilo"]:
+                cambios["estilo_aprendido"] = resultado["estilo"]
+            if intereses_nuevos:
+                cambios["intereses"] = intereses_actuales + intereses_nuevos
+
+            if cambios:
+                perfil_ref.set(cambios, merge=True)
+                actualizados += 1
+
+        except Exception as e:
+            print(f"actualizar_aprendizaje_gemelo: error procesando {uid}: {e}")
+            con_error += 1
+
+    print(
+        f"actualizar_aprendizaje_gemelo: {actualizados} actualizados, "
+        f"{sin_perfil_generado} sin perfil generado todavía, "
+        f"{sin_mensajes_suficientes} sin mensajes suficientes, {con_error} con error."
     )

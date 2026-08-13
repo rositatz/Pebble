@@ -999,6 +999,7 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 const functionsInstance = getFunctions(app);
 const generarGemeloAhoraCallable = httpsCallable(functionsInstance, "generar_gemelo_ahora");
+const generarResumenGemeloCallable = httpsCallable(functionsInstance, "generar_resumen_gemelo_ia");
 
 let uid = null, userPlan = 'free', stageData = {}, currentStage = 1;
 const TOTAL = 7;
@@ -1428,7 +1429,7 @@ window.goNext = async function() {
   showStage(next);
   // Se arma después de mostrar la etapa 7: el textarea necesita estar visible
   // (display:block) para que autoGrowTextarea pueda medir su alto real.
-  if (next === TOTAL) buildGemelo();
+  if (next === TOTAL) generarResumenConIA();
 };
 window.goBack = function() {
   if (currentStage === 1) return;
@@ -1490,6 +1491,37 @@ function buildGemelo() {
 }
 
 window.regenGemelo = function() { buildGemelo(); };
+
+// Genera el resumen de la etapa 7 con IA (generar_resumen_gemelo_ia, usa
+// TODAS las respuestas ya dadas, no solo 4-5 campos sueltos como la
+// plantilla vieja de buildGemelo). buildGemelo() arma la plantilla de
+// siempre primero (traits + texto) para que la persona vea algo de
+// inmediato; si el llamado a la IA responde bien, se reemplaza el texto
+// (no los traits) por la versión más detallada. Si falla -- sin red, OpenAI
+// caído -- queda la plantilla de buildGemelo() como respaldo, nunca se deja
+// a la persona sin nada que editar.
+window.generarResumenConIA = async function() {
+  buildGemelo();
+  const textEl = document.getElementById('gemelo-gen-text');
+  const geditEl = document.getElementById('gedit');
+  const plantillaPrevia = geditEl.value;
+  textEl.textContent = 'Puliendo tu resumen con IA...';
+
+  try {
+    const res = await generarResumenGemeloCallable();
+    const texto = (res.data && res.data.texto || '').trim();
+    if (texto) {
+      textEl.textContent = texto;
+      geditEl.value = texto;
+      autoGrowTextarea(geditEl);
+      return;
+    }
+  } catch (e) {
+    console.error('generar_resumen_gemelo_ia:', e);
+  }
+  // Sin texto de la IA (falló o vino vacío): se deja la plantilla de siempre.
+  textEl.textContent = plantillaPrevia;
+};
 
 window.finalizarGemelo = async function() {
   // Mostrar estado de carga en el botón
