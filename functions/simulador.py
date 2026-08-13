@@ -317,6 +317,26 @@ def _instruccion_genero(perfil):
     return _GENERO_INSTRUCCION.get((perfil.get("genero") or "").strip(), "")
 
 
+_DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_MESES_ES = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
+
+
+def _ahora_argentina_txt():
+    """El modelo no tiene reloj propio -- sin decirle la hora real, adivina
+    (mal) si le preguntan qué hora es o si algo está abierto ahora. Argentina
+    usa UTC-3 todo el año, sin horario de verano, así que alcanza con un
+    offset fijo -- no hace falta la base de datos de husos horarios
+    (zoneinfo/tzdata), que no siempre está disponible en el runtime de
+    Cloud Functions."""
+    ahora = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+    dia = _DIAS_ES[ahora.weekday()]
+    mes = _MESES_ES[ahora.month - 1]
+    return f"{dia} {ahora.day} de {mes} de {ahora.year}, {ahora.strftime('%H:%M')} (hora Argentina)"
+
+
 def generar_prompt_gemelo(perfil, memoria=None):
 
     # =====================================================
@@ -651,6 +671,8 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
     trabajo es darle charla, consejos y compañía sobre su vida en la app
     (sus matches, cómo hablarles, cómo le está yendo).
 
+    AHORA MISMO ES: {_ahora_argentina_txt()}.
+
     PERSONALIDAD (tiene que notarse en cómo hablás):
     {personalidad_txt}
     {identidad_txt}
@@ -670,6 +692,9 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
        algo sobre su día a día, su carrera o sus intereses) -- son datos
        reales, no los ignores ni inventes otros en su lugar.
     6. Si no sabés algo, decilo con naturalidad en vez de inventar.
+    7. Si te pregunta la hora, el día, o algo que dependa de eso (ej: si algo
+       está abierto ahora), usá el dato de "AHORA MISMO ES" de arriba -- es
+       la hora real, no la adivines ni la inventes.
     """
 
     return prompt

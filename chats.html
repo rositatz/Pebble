@@ -1931,7 +1931,10 @@
       // Crea y agrega un elemento de mensaje al contenedor del chat
       // El estilo varía según si es mensaje propio (me), del gemelo IA (isG) o de la persona real (them)
       function addMsgEl(container, msg, p, isG) {
-        const isMe = msg.from === "me";
+        // "gemelo" sigue con "me"/"them" relativo (sin cambios); "real" usa
+        // el uid real de quien escribió cada mensaje, porque el mismo doc
+        // lo leen las dos cuentas y "me" no tiene sentido ahí.
+        const isMe = isG ? msg.from === "me" : msg.from === window._uid;
         const div = document.createElement("div");
         div.className = `pmsg ${isMe ? "me" : "them"}${!isMe && isG ? " is-gemelo" : ""}`;
 
@@ -1966,7 +1969,17 @@
         const persona = curPerson;
         const mode = curMode;
         const t = nowTime();
-        md.msgs.push({ from: "me", text, time: t });
+        // "real" guarda el uid real de quien escribe (no "me"/"them"
+        // relativo) -- el mismo documento lo leen las dos cuentas, así que
+        // "me" no significa nada ahí. "gemelo" sigue con "me"/"them" como
+        // siempre, no se tocó ese modo.
+        const msg = {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          from: mode === "real" ? window._uid : "me",
+          text,
+          time: t,
+        };
+        md.msgs.push(msg);
         md.lastTime = t;
         // Primer mensaje con esta persona → inyectar en la lista de conversaciones
         if (md.msgs.length === 1) {
@@ -1978,41 +1991,64 @@
         panelResize(input);
         setTimeout(scrollBottom, 40);
 
-        // Guardar mensaje del usuario en Firestore
+        if (mode === "real") {
+          // Chat real entre las dos cuentas: se guarda con arrayUnion (no
+          // pisa lo que la otra persona haya escrito un instante antes) y
+          // nada se inventa acá -- la respuesta real de la otra persona
+          // llega sola por el listener en vivo (onSnapshot, ver
+          // cargarChatsReales) cuando ella la escriba de verdad.
+          if (typeof window._db_agregarMensajeReal === "function") {
+            window._db_agregarMensajeReal(persona, msg);
+          }
+          return;
+        }
+
+        // Modo "gemelo": chat en vivo con el gemelo real del match.
         if (typeof window._db_saveChat === "function") {
           window._db_saveChat(persona, mode, [...md.msgs]);
         }
 
         setTimeout(() => {
           addTyping();
-          setTimeout(
-            () => {
-              removeTyping();
-              const reply = autoReply(text, persona, mode);
-              md.msgs.push({ from: "them", text: reply, time: nowTime() });
-              md.lastTime = nowTime();
-              // Si seguís mirando esta misma conversación cuando llega la
-              // respuesta, se da por leída al toque (en vez de sumarla a los
-              // no leídos); si no, sí cuenta como no leído -- el contador
-              // tiene que poder subir, no solo bajar.
-              const sigueAbierto = curPerson === persona && curMode === mode;
-              if (sigueAbierto) {
-                if (typeof window._db_marcarLeido === "function") {
-                  window._db_marcarLeido(persona);
-                }
-              } else {
-                md.unread = (md.unread || 0) + 1;
+          (async () => {
+            // Llama de verdad al gemelo del match (chatear_con_gemelo_match)
+            // -- reemplaza el autoReply() enlatado con nombres de demo que
+            // había acá antes. El historial excluye el mensaje que se acaba
+            // de mandar (ya va aparte como "mensaje" al backend).
+            let reply;
+            try {
+              const historial = md.msgs
+                .slice(0, -1)
+                .slice(-8)
+                .map((m) => ({ role: m.from === "me" ? "user" : "assistant", content: m.text }));
+              reply = await window._llamarChatGemeloMatch(persona, text, historial);
+            } catch (err) {
+              console.error("Error en chatear_con_gemelo_match:", err);
+              reply = "No pude responder ahora mismo. Probá de nuevo en un rato.";
+            }
+            removeTyping();
+            md.msgs.push({ from: "them", text: reply, time: nowTime() });
+            md.lastTime = nowTime();
+            // Si seguís mirando esta misma conversación cuando llega la
+            // respuesta, se da por leída al toque (en vez de sumarla a los
+            // no leídos); si no, sí cuenta como no leído -- el contador
+            // tiene que poder subir, no solo bajar.
+            const sigueAbierto = curPerson === persona && curMode === mode;
+            if (sigueAbierto) {
+              if (typeof window._db_marcarLeido === "function") {
+                window._db_marcarLeido(persona);
               }
-              renderMessages();
-              refreshListItem(persona);
-              setTimeout(scrollBottom, 40);
-              // Guardar respuesta automática en Firestore
-              if (typeof window._db_saveChat === "function") {
-                window._db_saveChat(persona, mode, [...md.msgs]);
-              }
-            },
-            1100 + Math.random() * 700,
-          );
+            } else {
+              md.unread = (md.unread || 0) + 1;
+            }
+            renderMessages();
+            refreshListItem(persona);
+            setTimeout(scrollBottom, 40);
+            // Guardar respuesta real en Firestore
+            if (typeof window._db_saveChat === "function") {
+              window._db_saveChat(persona, mode, [...md.msgs]);
+            }
+          })();
         }, 300);
       }
 
@@ -2041,94 +2077,6 @@
       // Genera una respuesta automática según el modo (gemelo o real) y el contenido del mensaje
       // En modo gemelo: responde preguntas sobre gustos, consejos, familia, etc. con info específica de cada persona
       // En modo real: elige al azar una respuesta del banco de frases de esa persona para simular conversación real
-      function autoReply(text, id, mode) {
-        const t = text.toLowerCase();
-        const p = people[id];
-        if (mode === "gemelo") {
-          if (
-            t.includes("gusta") ||
-            t.includes("hobby") ||
-            t.includes("interés") ||
-            t.includes("pasión")
-          ) {
-            const m = {
-              sofia:
-                "Le apasiona el jazz en vivo — Coltrane la cambió a los 19. También escribe, aunque no lo muestra fácilmente. Y el cine de autor: Bergman, Kieślowski.",
-              valentina:
-                "Diseño UX, voluntariado en educación rural y fotografía de viaje. Se mueve por lo que deja huella, no por lo que queda bien en el CV.",
-              lucas:
-                "Escala en roca los fines de semana y hace fotografía análoga. Le gusta que las cosas tomen tiempo — dice que la velocidad arruina la mayoría de las cosas buenas.",
-            };
-            return (
-              m[id] ||
-              `Puedo decirte más sobre ${p.name} si me hacés preguntas más específicas.`
-            );
-          }
-          if (
-            t.includes("consejo") ||
-            t.includes("primer") ||
-            t.includes("cómo") ||
-            t.includes("hablar")
-          ) {
-            const m = {
-              sofia:
-                'Arrancá con algo concreto, no con "hola ¿cómo estás?". Una referencia específica a algo de ella funciona mucho mejor que cualquier protocolo de app.',
-              valentina:
-                "Sé directo. Odia el rodeo. Si tenés algo genuino que decir, decilo. Si no tenés nada, mejor esperá.",
-              lucas:
-                "Ve despacio. No le tires todo junto. Le gusta que la conversación sea recíproca y tenga espacio para respirar.",
-            };
-            return (
-              m[id] ||
-              `Puedo darte consejos más específicos si me contás qué querés lograr con ${p.name}.`
-            );
-          }
-          if (
-            t.includes("familia") ||
-            t.includes("relación") ||
-            t.includes("pareja")
-          ) {
-            const m = {
-              sofia:
-                "Tiene buena relación con su familia pero necesita espacio propio. No le gustan las personas demasiado dependientes, le resulta sofocante.",
-              valentina:
-                "Valora mucho la independencia, tanto en ella como en una pareja. Quiere alguien que tenga su propio mundo.",
-              lucas:
-                "Es reservado en ese tema. Lo que sé es que valora la coherencia — que la persona sea lo mismo en público y en privado.",
-            };
-            return (
-              m[id] ||
-              "Es un tema que todavía no conozco bien. Seguí preguntando, voy aprendiendo."
-            );
-          }
-          return `Esa es una buena pregunta. Con cada conversación aprendo más sobre ${p.name}. ¿Querés que profundice en algún aspecto específico de su personalidad?`;
-        } else {
-          const banks = {
-            sofia: [
-              "¿En serio? Ahora tengo que escuchar eso. Tengo una playlist de jazz-cine que armé con todo lo que me fue cambiando la cabeza 🎷",
-              "Jajaja exacto. Hay algo en el silencio que dice más que las notas.",
-              "Buena onda. ¿Y qué onda vos? ¿Salís a shows o más escuchás en casa?",
-              "¡Ay dios! Eso es exactamente lo que digo siempre y nadie me entiende 😭",
-              "Sí, totalmente. Igual me quedé pensando en lo que dijiste antes...",
-            ],
-            valentina: [
-              "Sí, algo así. Igual prefiero que lo veamos en persona, es más fácil explicarlo.",
-              "Exacto, ¡alguien que lo entiende! La mayoría piensa que estoy exagerando.",
-              "¿Vos también? Qué interesante. ¿De dónde venís?",
-              "Me parece bien. ¿Tenés tiempo el finde para tomar algo?",
-            ],
-            lucas: [
-              "Sí, exacto. Ojalá más gente lo entendiera.",
-              "¿En serio? Yo también. La última vez que fui fue increíble.",
-              "Buena. ¿Y qué hacés normalmente los fines de semana?",
-              "Tiene sentido. Yo pienso lo mismo.",
-            ],
-          };
-          const arr = banks[id] || ["Jaja sí. ¿Y vos qué hacés?"];
-          return arr[Math.floor(Math.random() * arr.length)];
-        }
-      }
-
       /* ── List mode switch ── */
       // Cambia el modo activo (gemelo/real) desde los botones de la lista de conversaciones
       // Detiene la propagación para que no abra el chat al cambiar de modo
@@ -2413,12 +2361,15 @@
         updateDoc,
         collection,
         getDocs,
+        onSnapshot,
         query,
         where,
         orderBy,
         limit,
         serverTimestamp,
+        arrayUnion,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
       // Mismo esquema de id que usa el backend (motor._par_id en Python):
       // un solo id por pareja, sin importar quién de los dos lo calcula.
@@ -2461,8 +2412,26 @@
       });
       const auth = getAuth(app);
       const db = getFirestore(app);
+      const functionsInstance = getFunctions(app);
+      const chatearConGemeloMatchCallable = httpsCallable(functionsInstance, "chatear_con_gemelo_match");
+
+      // Bridge para el script clásico (sendPanelMsg) -- reemplaza el
+      // autoReply() enlatado del modo "gemelo": esto llama de verdad al
+      // gemelo del match (chatear_con_gemelo_match), con su personalidad
+      // real, en vez de una respuesta fija con nombres de demo.
+      window._llamarChatGemeloMatch = async function (otroUid, mensaje, historial) {
+        const res = await chatearConGemeloMatchCallable({ otroUid, mensaje, historial: historial || [] });
+        return res.data.respuesta;
+      };
 
       let uid = null;
+
+      // Cache de perfil + última simulación por otroId -- se trae una sola
+      // vez (no en cada snapshot en vivo) porque no cambia seguido y no
+      // vale la pena repetir esas lecturas cada vez que llega un mensaje
+      // nuevo.
+      const _perfilesCache = {};
+      let _primeraCargaChats = true;
 
       // Arma "people" con matches reales (conexiones donde supera_umbral es
       // true) -- reemplaza la lista fija de 5 personas demo. Para cada uno
@@ -2470,122 +2439,161 @@
       // (para el teaser "Ver simulación"). El no-leídos se calcula desde
       // vistoHasta (cuántos mensajes ya vio) contra los mensajes reales de
       // "them" -- así puede subir Y bajar, no solo bajar desde un tope fijo.
-      async function cargarChatsReales(user, mis) {
-        const conexionesSnap = await getDocs(
-          query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
-        );
+      //
+      // Usa onSnapshot en vez de un getDocs de una sola vez: así, cuando la
+      // otra cuenta te escribe un mensaje real, aparece solo acá sin
+      // recargar la página (antes no había forma de enterarse sin volver a
+      // entrar a la pantalla).
+      function cargarChatsReales(user, mis) {
+        return new Promise((resolveInicial) => {
+          onSnapshot(
+            query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+            async (conexionesSnap) => {
+              const candidatos = [];
+              conexionesSnap.forEach((d) => {
+                const data = d.data();
+                if (!data.supera_umbral) return;
+                const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
+                candidatos.push({ parId: d.id, otroId, data });
+              });
 
-        const candidatos = [];
-        conexionesSnap.forEach((d) => {
-          const data = d.data();
-          if (!data.supera_umbral) return;
-          const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
-          candidatos.push({ parId: d.id, otroId, data });
-        });
+              if (!candidatos.length) {
+                const emptyEl = document.getElementById("chatsEmpty");
+                if (emptyEl) emptyEl.style.display = "flex";
+                if (_primeraCargaChats) { _primeraCargaChats = false; resolveInicial(); }
+                return;
+              }
 
-        if (!candidatos.length) {
-          const emptyEl = document.getElementById("chatsEmpty");
-          if (emptyEl) emptyEl.style.display = "flex";
-          return;
-        }
-
-        await Promise.all(
-          candidatos.map(async (c) => {
-            try {
-              const s = await getDoc(doc(db, "usuarios", c.otroId));
-              c.otro = s.exists() ? s.data() : {};
-            } catch (e) {
-              c.otro = {};
-            }
-            try {
-              const simSnap = await getDocs(
-                query(
-                  collection(db, "conexiones", c.parId, "simulaciones"),
-                  orderBy("fecha", "desc"),
-                  limit(1),
-                ),
+              await Promise.all(
+                candidatos.map(async (c) => {
+                  if (_perfilesCache[c.otroId]) {
+                    c.otro = _perfilesCache[c.otroId].otro;
+                    c.ultimaSim = _perfilesCache[c.otroId].ultimaSim;
+                    return;
+                  }
+                  try {
+                    const s = await getDoc(doc(db, "usuarios", c.otroId));
+                    c.otro = s.exists() ? s.data() : {};
+                  } catch (e) {
+                    c.otro = {};
+                  }
+                  try {
+                    const simSnap = await getDocs(
+                      query(
+                        collection(db, "conexiones", c.parId, "simulaciones"),
+                        orderBy("fecha", "desc"),
+                        limit(1),
+                      ),
+                    );
+                    c.ultimaSim = simSnap.empty ? null : simSnap.docs[0].data();
+                  } catch (e) {
+                    c.ultimaSim = null;
+                  }
+                  _perfilesCache[c.otroId] = { otro: c.otro, ultimaSim: c.ultimaSim };
+                }),
               );
-              c.ultimaSim = simSnap.empty ? null : simSnap.docs[0].data();
-            } catch (e) {
-              c.ultimaSim = null;
-            }
-          }),
-        );
 
-        const misIntereses = mis.intereses || [];
-        let hayConversaciones = false;
+              const misIntereses = mis.intereses || [];
+              let hayConversaciones = false;
 
-        candidatos.forEach((c) => {
-          const id = c.otroId;
-          const nombreGuardado =
-            c.data.usuario_1.uid === id ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
-          const nombre = c.otro.nombre || nombreGuardado || "Usuario";
-          const susIntereses = c.otro.intereses || [];
+              candidatos.forEach((c) => {
+                const id = c.otroId;
+                const nombreGuardado =
+                  c.data.usuario_1.uid === id ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+                const nombre = c.otro.nombre || nombreGuardado || "Usuario";
+                const susIntereses = c.otro.intereses || [];
 
-          let simulacion = [];
-          if (c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)) {
-            const horaSim = c.ultimaSim.fecha
-              ? new Date(c.ultimaSim.fecha).toLocaleTimeString("es-AR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "";
-            simulacion = c.ultimaSim.historial_chat.map((msg) => ({
-              from: msg.name && mis.nombre && msg.name === mis.nombre ? "mi-gemelo" : "su-gemelo",
-              text: msg.content || "",
-              time: horaSim,
-            }));
-          }
+                let simulacion = [];
+                if (c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)) {
+                  const horaSim = c.ultimaSim.fecha
+                    ? new Date(c.ultimaSim.fecha).toLocaleTimeString("es-AR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "";
+                  simulacion = c.ultimaSim.historial_chat.map((msg) => ({
+                    from: msg.name && mis.nombre && msg.name === mis.nombre ? "mi-gemelo" : "su-gemelo",
+                    text: msg.content || "",
+                    time: horaSim,
+                  }));
+                }
 
-          const real = c.data.real || {};
-          const gemelo = c.data.gemelo || {};
-          const realMsgs = Array.isArray(real.msgs) ? real.msgs : [];
-          const gemeloMsgs = Array.isArray(gemelo.msgs) ? gemelo.msgs : [];
-          const realUnread = realMsgs
-            .slice(real.vistoHasta || 0)
-            .filter((m) => m.from === "them").length;
-          const gemeloUnread = gemeloMsgs
-            .slice(gemelo.vistoHasta || 0)
-            .filter((m) => m.from === "them").length;
+                const real = c.data.real || {};
+                const gemelo = c.data.gemelo || {};
+                const realMsgs = Array.isArray(real.msgs) ? real.msgs : [];
+                const gemeloMsgs = Array.isArray(gemelo.msgs) ? gemelo.msgs : [];
+                // "real" es un doc compartido por dos cuentas -- vistoHasta
+                // tiene que ser por usuario (real.vistoHasta = {uid: cant})
+                // porque si fuera un solo número, cualquiera de los dos lo
+                // pisaría con solo abrir el chat. El no-leído cuenta
+                // mensajes que NO escribió esta cuenta (from !== mi uid).
+                // "gemelo" sigue con un solo usuario tipeando de verdad
+                // (el otro lado es la IA), así que ahí el esquema viejo
+                // "them"/número plano sigue siendo válido.
+                const vistoHastaReal =
+                  real.vistoHasta && typeof real.vistoHasta === "object"
+                    ? real.vistoHasta[user.uid] || 0
+                    : 0;
+                const realUnread = realMsgs
+                  .slice(vistoHastaReal)
+                  .filter((m) => m.from !== user.uid).length;
+                const gemeloUnread = gemeloMsgs
+                  .slice(gemelo.vistoHasta || 0)
+                  .filter((m) => m.from === "them").length;
 
-          people[id] = {
-            name: nombre,
-            color: "linear-gradient(135deg,#FF9700,#FF751F)",
-            photo: c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "",
-            age: calcAge(c.otro.fechaNac),
-            city: c.otro.ciudad || "",
-            afinidad: Math.round((c.data.ultimo_score || 0) * 100),
-            bio: c.otro.bio || "",
-            interests: susIntereses,
-            sharedInterests: misIntereses.filter((i) => susIntereses.includes(i)),
-            photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).map(
-              (url) => `url('${url}') center/cover no-repeat`,
-            ),
-            realUnlocked: true,
-            currentMode: realMsgs.length ? "real" : "gemelo",
-            simulacion,
-            gemelo: {
-              lastTime: gemeloMsgs.length ? gemeloMsgs[gemeloMsgs.length - 1].time || "" : "",
-              unread: gemeloUnread,
-              msgs: gemeloMsgs,
+                people[id] = {
+                  name: nombre,
+                  color: "linear-gradient(135deg,#FF9700,#FF751F)",
+                  photo: c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "",
+                  age: calcAge(c.otro.fechaNac),
+                  city: c.otro.ciudad || "",
+                  afinidad: Math.round((c.data.ultimo_score || 0) * 100),
+                  bio: c.otro.bio || "",
+                  interests: susIntereses,
+                  sharedInterests: misIntereses.filter((i) => susIntereses.includes(i)),
+                  photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).map(
+                    (url) => `url('${url}') center/cover no-repeat`,
+                  ),
+                  realUnlocked: true,
+                  currentMode: (people[id] && people[id].currentMode) || (realMsgs.length ? "real" : "gemelo"),
+                  simulacion,
+                  gemelo: {
+                    lastTime: gemeloMsgs.length ? gemeloMsgs[gemeloMsgs.length - 1].time || "" : "",
+                    unread: gemeloUnread,
+                    msgs: gemeloMsgs,
+                  },
+                  real: {
+                    lastTime: realMsgs.length ? realMsgs[realMsgs.length - 1].time || "" : "",
+                    unread: realUnread,
+                    msgs: realMsgs,
+                  },
+                };
+
+                if (realMsgs.length > 0 || gemeloMsgs.length > 0) {
+                  hayConversaciones = true;
+                  injectConvItem(id);
+                }
+              });
+
+              const emptyEl = document.getElementById("chatsEmpty");
+              if (emptyEl) emptyEl.style.display = hayConversaciones ? "none" : "flex";
+
+              // El chat que esté abierto se re-renderiza con los datos
+              // frescos de este snapshot -- así, si es un mensaje nuevo de
+              // la otra cuenta, aparece solo sin recargar la página.
+              if (curPerson && people[curPerson]) {
+                renderMessages();
+                refreshListItem(curPerson);
+              }
+
+              if (_primeraCargaChats) {
+                _primeraCargaChats = false;
+                abrirChatDesdeQueryParam();
+                resolveInicial();
+              }
             },
-            real: {
-              lastTime: realMsgs.length ? realMsgs[realMsgs.length - 1].time || "" : "",
-              unread: realUnread,
-              msgs: realMsgs,
-            },
-          };
-
-          if (realMsgs.length > 0 || gemeloMsgs.length > 0) {
-            hayConversaciones = true;
-            injectConvItem(id);
-          }
+          );
         });
-
-        const emptyEl = document.getElementById("chatsEmpty");
-        if (emptyEl) emptyEl.style.display = hayConversaciones ? "none" : "flex";
-
-        abrirChatDesdeQueryParam();
       }
 
       onAuthStateChanged(auth, async (user) => {
@@ -2607,6 +2615,12 @@
           return;
         }
         uid = user.uid;
+        // El script clásico (sendPanelMsg/addMsgEl) no ve las variables de
+        // este script módulo -- se expone acá para que pueda comparar
+        // "¿este mensaje lo escribí yo?" contra el uid real en vez de un
+        // "me" relativo que no significa nada en un doc compartido por dos
+        // cuentas.
+        window._uid = uid;
 
         // ── Cargar conversaciones guardadas de Firestore ──
         // Los chats viven en conexiones/{parId}, un solo doc compartido por
@@ -2671,11 +2685,14 @@
         const gemeloHasta = p && p.gemelo ? p.gemelo.msgs.length : 0;
         const ref = doc(db, "conexiones", parId(uid, personaId));
         try {
-          // updateDoc SÍ interpreta 'real.vistoHasta' como ruta anidada
-          // (setDoc con merge:true no -- crea un campo llamado literalmente
-          // "real.vistoHasta").
+          // real.vistoHasta es un mapa por uid (real.vistoHasta.<mi uid>) --
+          // no un número plano -- porque el doc lo comparten las dos
+          // cuentas y cada una tiene que poder marcar SU propio punto de
+          // lectura sin pisar el de la otra. gemelo.vistoHasta sigue siendo
+          // un número plano: ahí solo escribe esta cuenta, el otro lado es
+          // la IA.
           await updateDoc(ref, {
-            "real.vistoHasta": realHasta,
+            [`real.vistoHasta.${uid}`]: realHasta,
             "gemelo.vistoHasta": gemeloHasta,
           });
         } catch (e) {
@@ -2684,7 +2701,7 @@
             ref,
             {
               ...parUsuarios(personaId),
-              real: { vistoHasta: realHasta },
+              real: { vistoHasta: { [uid]: realHasta } },
               gemelo: { vistoHasta: gemeloHasta },
             },
             { merge: true },
@@ -2710,6 +2727,31 @@
           // El documento todavía no existe (primer mensaje con esta persona)
           const modoData = mode === "real" ? { msgs, ultimaActividad: serverTimestamp() } : { msgs };
           await setDoc(ref, { ...parUsuarios(personaId), [mode]: modoData }, { merge: true });
+        }
+      };
+
+      // Agrega UN mensaje real al chat con un match -- a diferencia de
+      // _db_saveChat (que reescribe el array entero, pensado para cuando un
+      // solo lado escribe todo el historial), acá dos cuentas reales
+      // pueden escribir casi al mismo tiempo, así que se usa arrayUnion:
+      // una operación atómica de Firestore que agrega sin pisar lo que la
+      // otra cuenta haya guardado un instante antes.
+      window._db_agregarMensajeReal = async (personaId, mensaje) => {
+        if (!uid) return;
+        const ref = doc(db, "conexiones", parId(uid, personaId));
+        const campos = {
+          "real.msgs": arrayUnion(mensaje),
+          "real.ultimaActividad": serverTimestamp(),
+        };
+        try {
+          await updateDoc(ref, campos);
+        } catch (e) {
+          // El documento todavía no existe (primer mensaje real con esta persona)
+          await setDoc(
+            ref,
+            { ...parUsuarios(personaId), real: { msgs: [mensaje], ultimaActividad: serverTimestamp() } },
+            { merge: true },
+          );
         }
       };
     </script>

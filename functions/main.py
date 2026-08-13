@@ -485,6 +485,106 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
     return {"respuesta": response.choices[0].message.content}
 
 
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+def chatear_con_gemelo_match(request: https_fn.CallableRequest):
+    """Chat en vivo con el gemelo de UN MATCH real (chats.html, pestaña
+    "gemelo" del panel de conversación) -- a diferencia de
+    chatear_con_gemelo (que habla con TU PROPIO gemelo), acá el que responde
+    es el gemelo de LA OTRA PERSONA, con su personalidad real, como si
+    estuvieran charlando en vivo. Reemplaza el autoReply() enlatado que
+    había antes (respuestas fijas con nombres de demo hardcodeados) por una
+    respuesta real de OpenAI, usando el mismo generar_prompt_gemelo que ya
+    arma las simulaciones automáticas entre dos gemelos.
+
+    Datos esperados en request.data:
+      - otroUid (obligatorio): uid del match cuyo gemelo va a responder.
+      - mensaje (obligatorio): lo que escribió el usuario.
+      - historial (opcional): últimos mensajes, en formato
+        [{"role":"user"|"assistant","content":str}, ...].
+    """
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado."
+        )
+
+    uid = request.auth.uid
+    data = request.data or {}
+    otro_uid = (data.get("otroUid") or "").strip()
+    mensaje = (data.get("mensaje") or "").strip()
+    historial = data.get("historial") or []
+
+    if not otro_uid:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "Falta indicar de quién es el gemelo (otroUid)."
+        )
+    if otro_uid == uid:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "Para hablar con tu propio gemelo usá el chat de gemelo.html, no este."
+        )
+    if not mensaje:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "Falta el mensaje."
+        )
+    if len(mensaje) > 2000:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "El mensaje es demasiado largo (máximo 2000 caracteres)."
+        )
+    if not isinstance(historial, list):
+        historial = []
+
+    db = firestore.client()
+
+    # Solo se puede chatear con el gemelo de alguien con quien ya sos match
+    # real (supera_umbral) -- sin este chequeo, cualquiera podría usar este
+    # endpoint para sondear el gemelo de cualquier otro usuario adivinando
+    # su uid, sin haber pasado nunca por el matching real.
+    par_doc = db.collection("conexiones").document(motor._par_id(uid, otro_uid)).get()
+    if not par_doc.exists or not par_doc.to_dict().get("supera_umbral"):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Todavía no sos match con esa persona."
+        )
+
+    perfil_otro = _obtener_o_generar_perfil(db, otro_uid)
+    if perfil_otro is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.NOT_FOUND,
+            "Esa persona todavía no tiene su gemelo generado."
+        )
+
+    system_prompt = motor.generar_prompt_gemelo(perfil_otro)
+
+    mensajes = [{"role": "system", "content": system_prompt}]
+    for h in historial[-8:]:
+        if not isinstance(h, dict):
+            continue
+        role = h.get("role")
+        content = (h.get("content") or "").strip()[:2000]
+        if role in ("user", "assistant") and content:
+            mensajes.append({"role": role, "content": content})
+    mensajes.append({"role": "user", "content": mensaje})
+
+    try:
+        response = motor.client().chat.completions.create(
+            model="gpt-4o-mini",
+            messages=mensajes,
+        )
+    except Exception as e:
+        print(f"chatear_con_gemelo_match: error llamando a OpenAI: {e}")
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            "El gemelo no pudo responder en este momento. Probá de nuevo en un rato."
+        )
+
+    return {"respuesta": response.choices[0].message.content}
+
+
 # Firestore no incluye en un orderBy() los docs a los que les falta ese campo
 # -- por eso, cuando no hay distancia (a alguno de los dos le falta ubicación),
 # guardamos este número gigante en vez de None: así ese par igual entra en la
