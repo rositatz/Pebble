@@ -1165,6 +1165,22 @@ function calcularProgreso() {
 function actualizarBarraProgreso() {
   const fill = document.getElementById('prog-fill');
   if (fill) fill.style.width = calcularProgreso() + '%';
+  autoguardarEtapaActual();
+}
+
+// Antes, una respuesta solo quedaba guardada de verdad en Firestore al
+// tocar "Siguiente" o "Seguir después" -- si alguien contestaba varias
+// preguntas y actualizaba la página (F5) sin haber tocado ninguno de esos
+// dos botones, perdía lo que había puesto, porque nunca había llegado a
+// saveStage(). actualizarBarraProgreso() ya se llama después de CUALQUIER
+// cambio (pill, radio, binario, texto) en todas las etapas, así que es el
+// único lugar que hace falta tocar para que el autoguardado cubra todo. Se
+// debounca 900ms para no mandar un write a Firestore por cada tecla.
+let _autoguardarTimer = null;
+function autoguardarEtapaActual() {
+  if (!uid || !currentStage) return;
+  clearTimeout(_autoguardarTimer);
+  _autoguardarTimer = setTimeout(() => { saveStage(currentStage); }, 900);
 }
 
 /* ─── SELECTORS ─── */
@@ -1339,6 +1355,14 @@ function autoGrowTextarea(el) {
 }
 document.querySelectorAll('.txa, .gedit, textarea.inp').forEach(el => {
   el.addEventListener('input', () => { autoGrowTextarea(el); actualizarBarraProgreso(); });
+});
+// Campos <input> sueltos (edad, altura, rango de edad que busca, etc.) --
+// antes no tenían ningún listener propio, así que ni la barra de progreso
+// ni el autoguardado nuevo de arriba reaccionaban mientras se tipeaba en
+// ellos, solo cuando algo más disparaba actualizarBarraProgreso() por otro
+// lado.
+document.querySelectorAll('input[id]').forEach(el => {
+  el.addEventListener('input', () => actualizarBarraProgreso());
 });
 
 /* ─── COLLECT ─── */
