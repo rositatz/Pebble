@@ -564,13 +564,60 @@ def _construir_creencias(respuestas_raw):
     return creencias
 
 
+# Mismo orden y mismo texto que la constante FLAGS de gemelo-setup.html --
+# el juego solo guarda {índice: "green"|"red"} en Firestore, así que hace
+# falta esta copia acá para poder traducir cada índice de vuelta a qué
+# comportamiento representa. Si se edita una de las dos hay que editar la
+# otra.
+FLAGS_JUEGO = [
+    "Te escribe primero todos los días",
+    "Te dice «Te extraño» a la semana de conocerse",
+    "Te cuenta toda su vida en la primera cita",
+    "Te manda 5 audios seguidos",
+    "Te presenta a sus amigos después de dos citas",
+    "Te pone un apodo cariñoso al toque",
+    "Tarda en responder",
+    "No postea nada de la relación",
+    "Tiene opiniones fuertes en todo",
+    "Te deja ganar siempre",
+    "Es espontáneo/a",
+    "Vive el presente, no planea nada",
+    "Es adicto/a al trabajo o estudio",
+    "Llora en las películas",
+    "Sale de fiesta todos los fines de semana",
+    "No usa mucho el teléfono",
+]
+
+
 def _resumir_flags(e5):
+    """Además del conteo (para mostrar "marcaste X green flags"), guarda el
+    TEXTO de cada comportamiento marcado green/red -- antes solo se
+    contaba, así que el gemelo nunca podía saber CUÁLES eran esos green/red
+    flags, solo cuántos había de cada uno. Ver generar_prompt_gemelo
+    (simulador.py), que ahora sí usa green_textos/red_textos."""
     flags = e5.get("flags")
     if not isinstance(flags, dict) or not flags:
-        return {"green": 0, "red": 0, "total": 0}
-    votos = list(flags.values())
-    verdes = sum(1 for v in votos if v == "green")
-    return {"green": verdes, "red": len(votos) - verdes, "total": len(votos)}
+        return {"green": 0, "red": 0, "total": 0, "green_textos": [], "red_textos": []}
+
+    def _textos(votos_filtrados):
+        textos = []
+        for indice in votos_filtrados:
+            try:
+                textos.append(FLAGS_JUEGO[int(indice)])
+            except (ValueError, IndexError, TypeError):
+                continue
+        return textos
+
+    indices_verdes = [i for i, v in flags.items() if v == "green"]
+    indices_rojos = [i for i, v in flags.items() if v == "red"]
+
+    return {
+        "green": len(indices_verdes),
+        "red": len(indices_rojos),
+        "total": len(flags),
+        "green_textos": _textos(indices_verdes),
+        "red_textos": _textos(indices_rojos),
+    }
 
 
 def construir_perfil_gemelo(respuestas_raw):

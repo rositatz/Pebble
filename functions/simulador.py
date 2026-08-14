@@ -481,6 +481,22 @@ def generar_prompt_gemelo(perfil, memoria=None):
             + "\n"
         )
 
+    # Resultado del mini-juego de green/red flags (etapa5) -- antes se
+    # guardaba pero no se usaba en ningún lado, ni siquiera para mostrar de
+    # qué se trataba (solo un conteo). Ahora el gemelo sabe CUÁLES
+    # comportamientos considera green/red flag, así puede evitar los que le
+    # generan rechazo y acercarse a los que valora durante la simulación.
+    flags_prompt = ""
+    flags_resumen = perfil.get("flags_resumen") or {}
+    green_flags = flags_resumen.get("green_textos") or []
+    red_flags = flags_resumen.get("red_textos") or []
+    if green_flags or red_flags:
+        flags_prompt = "\n    QUÉ CONSIDERÁS GREEN FLAG Y RED FLAG EN UNA RELACIÓN:\n"
+        if green_flags:
+            flags_prompt += "    - Te gusta / lo ves bien: " + ", ".join(green_flags) + "\n"
+        if red_flags:
+            flags_prompt += "    - No te gusta / te genera dudas: " + ", ".join(red_flags) + "\n"
+
     # =====================================================
     # MEMORIA CONVERSACIONAL
     # =====================================================
@@ -552,6 +568,7 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     {valores_prompt}
     {conflictos_prompt}
+    {flags_prompt}
     {bio_prompt}
     {notas_prompt}
     =====================================================

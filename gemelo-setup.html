@@ -1452,10 +1452,29 @@ function repoblarFormulario() {
     });
   }
 
-  // Votos de green/red flags de la etapa 5 (el mini-juego arranca de nuevo
-  // visualmente, pero los votos ya dados no se pierden si no se retocan).
+  // Votos de green/red flags de la etapa 5. Antes esto solo restauraba
+  // flagVotes en memoria -- los votos SÍ quedaban guardados, pero la
+  // pantalla igual mostraba la tarjeta 1 desde cero con los botones
+  // activos, como si el juego nunca se hubiera jugado. Eso hacía parecer
+  // que los votos anteriores se habían perdido cuando en realidad seguían
+  // ahí. Ahora, si ya estaban las 16 votadas, se muestra directo el
+  // resultado ("¡Listo! ...") en vez de la tarjeta 1; si estaba a medio
+  // jugar, arranca en la tarjeta siguiente a la última votada.
   if (stageData.etapa5 && stageData.etapa5.flags) {
     flagVotes = { ...stageData.etapa5.flags };
+    flagIdx = Object.keys(flagVotes).length;
+    if (flagIdx >= FLAGS.length) {
+      document.getElementById('fcard').style.display = 'none';
+      document.querySelector('.fbtns').style.display = 'none';
+      document.getElementById('fp').style.display = 'none';
+      const greens = Object.values(flagVotes).filter(v => v === 'green').length;
+      const done = document.getElementById('fdone');
+      done.style.display = 'block';
+      done.textContent = '¡Listo! Marcaste ' + greens + ' green flags y ' + (FLAGS.length - greens) + ' red flags.';
+    } else if (flagIdx > 0) {
+      document.getElementById('fcard').textContent = FLAGS[flagIdx];
+      document.getElementById('fp').textContent = (flagIdx + 1) + ' / ' + FLAGS.length;
+    }
   }
 
   // Muestra "en qué nivel"/"en qué área" si ya había una respuesta guardada
