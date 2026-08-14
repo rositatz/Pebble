@@ -617,10 +617,6 @@ body {
 }
 .sheet-overlay.consent-overlay.open .sheet { transform: translateY(0) scale(1); opacity: 1; }
 .consent-overlay .sheet-handle { display: none; }
-.consent-eyebrow {
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--orange); margin: 0 0 4px;
-}
 /* .twin-learn-text/.twin-learn-check están pensados para la tarjeta oscura
    "Mi gemelo digital" (texto blanco translúcido) -- acá adentro del sheet,
    que es claro como el resto de la app, hay que pisar esos colores o el
@@ -1857,9 +1853,8 @@ body {
 <div class="sheet-overlay consent-overlay" id="twinConsentOverlay">
   <div class="sheet" id="twinConsent">
     <div class="sheet-handle"></div>
-    <div class="sheet-header" style="flex-direction:column;align-items:flex-start;gap:2px">
-      <p class="consent-eyebrow">Términos y condiciones</p>
-      <h3 class="sheet-title">Tu gemelo y tus conversaciones</h3>
+    <div class="sheet-header" style="justify-content:center">
+      <h3 class="sheet-title" style="text-transform:uppercase">Términos y condiciones</h3>
     </div>
     <div class="sheet-body">
       <p class="twin-learn-text">Dejá que tu gemelo aprenda de tus conversaciones (con vos mismo/a y con tus matches) para representarte mejor: tu estilo de escritura y tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad con otras personas, que siguen siendo los que contestaste en el onboarding. Podés cambiar esta decisión cuando quieras desde tu perfil.</p>
