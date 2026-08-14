@@ -79,7 +79,7 @@ REGLAS_PESOS = [
     # y no se reparte entre varios ejes como conexionPrimero/atraeMas.
     ("etapa6", "prioridadCompatibilidad", "Los valores que compartimos", {"valores": 0.10}),
     ("etapa6", "prioridadCompatibilidad", "Los intereses y gustos en común", {"intereses": 0.10}),
-    ("etapa6", "prioridadCompatibilidad", "Cómo nos llevamos hablando", {"conversacional": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "La química cuando charlamos", {"conversacional": 0.10}),
     ("etapa6", "prioridadCompatibilidad", "Nuestras personalidades", {"psicologico": 0.10}),
     ("etapa6", "prioridadCompatibilidad", "Cómo nos comunicamos", {"comunicacion": 0.10}),
     ("etapa6", "prioridadCompatibilidad", "Compartir creencias (política o religión)", {"creencias": 0.10}),
