@@ -1180,7 +1180,20 @@ let _autoguardarTimer = null;
 function autoguardarEtapaActual() {
   if (!uid || !currentStage) return;
   clearTimeout(_autoguardarTimer);
-  _autoguardarTimer = setTimeout(() => { saveStage(currentStage); }, 900);
+  _autoguardarTimer = setTimeout(async () => {
+    await saveStage(currentStage);
+    // Si ya se había terminado el onboarding antes (stageData.completed viene
+    // de gemelo_setup/data, cargado al abrir esta pantalla) y la persona
+    // volvió a "Editar gemelo" para cambiar una respuesta, gemelo/perfil --
+    // lo único que lee el matching, el chat con el gemelo y la tarjeta de
+    // perfil.html -- quedaba con los valores viejos hasta que se volvía a
+    // pasar por "Este soy yo ✓" al final. Se regenera acá mismo, en cada
+    // autoguardado, para que cualquier cambio se refleje enseguida. Es
+    // barato (construir_perfil_gemelo es cálculo puro, sin IA) e idempotente.
+    if (stageData.completed) {
+      try { await generarGemeloAhoraCallable(); } catch (e) { console.error('Error regenerando gemelo/perfil tras editar:', e); }
+    }
+  }, 900);
 }
 
 /* ─── SELECTORS ─── */

@@ -565,9 +565,11 @@ body {
 
 /* ── Banner de consentimiento para aprendizaje de chats ── */
 .twin-learn-banner {
-  padding: 14px 16px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-radius: var(--r-md);
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 20px;
+  font-size: 0.78rem; color: rgba(255,255,255,0.65);
 }
 .twin-learn-text {
   font-size: 0.78rem; line-height: 1.6; color: rgba(255,255,255,0.6);
@@ -590,6 +592,30 @@ body {
   background: none; border: none; color: var(--orange);
   font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
 }
+.twin-learn-declined {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-radius: var(--r-md);
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 20px;
+  font-size: 0.78rem; color: rgba(255,255,255,0.65);
+}
+.twin-learn-declined-cta {
+  background: none; border: none; color: var(--orange);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+
+/* ── Cartel de T&C: consentimiento de aprendizaje (modal, no se cierra
+   clickeando el fondo -- hay que elegir Aceptar o Rechazar) ── */
+.sheet-overlay.consent-overlay { align-items: center; }
+.consent-overlay .sheet {
+  border-radius: var(--r-lg); max-width: 420px;
+  transform: translateY(12px) scale(0.98); opacity: 0;
+  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s ease;
+}
+.sheet-overlay.consent-overlay.open .sheet { transform: translateY(0) scale(1); opacity: 1; }
+.consent-overlay .sheet-handle { display: none; }
+.twin-consent-actions { display: flex; gap: 10px; margin-top: 4px; }
+.twin-consent-actions .btn-cancel { padding: 11px 16px; }
 
 /* ── Plan card ── */
 .plan-section { padding: 24px; }
@@ -1429,20 +1455,21 @@ body {
       </div>
 
       <!-- Consentimiento para que el gemelo aprenda de los chats reales
-           (con el propio gemelo y con matches) -- ver
-           cargarGemeloDigitalCard() para cuál de los dos bloques se
-           muestra, y _db_saveConsentimientoAprendizaje más abajo. -->
+           (con el propio gemelo y con matches). El cartel de términos en sí
+           es el modal #twinConsentOverlay (aparece solo la primera vez, ver
+           cargarGemeloDigitalCard()); estas tres filas de acá son solo el
+           estado actual dentro de la tarjeta, nunca las tres a la vez. -->
       <div class="twin-learn-banner" id="twinLearnBanner" style="display:none">
-        <p class="twin-learn-text">Dejá que tu gemelo aprenda de tus conversaciones (con vos mismo/a y con tus matches) para representarte mejor: tu estilo de escritura y tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad con otras personas, que siguen siendo los que contestaste en el onboarding. Podés desactivarlo cuando quieras.</p>
-        <label class="twin-learn-check">
-          <input type="checkbox" id="twinLearnCheckbox" onchange="document.getElementById('twinLearnAcceptBtn').disabled = !this.checked">
-          He leído y acepto
-        </label>
-        <button type="button" class="twin-action-btn twin-action-primary" id="twinLearnAcceptBtn" disabled onclick="activarAprendizajeGemelo()">Activar</button>
+        <span>¿Dejás que tu gemelo aprenda de tus conversaciones?</span>
+        <button type="button" class="twin-learn-declined-cta" onclick="abrirConsentimientoGemelo()">Elegir</button>
       </div>
       <div class="twin-learn-active" id="twinLearnActive" style="display:none">
         <span>✓ Tu gemelo está aprendiendo de tus conversaciones</span>
         <button type="button" class="twin-learn-toggle-off" onclick="desactivarAprendizajeGemelo()">Desactivar</button>
+      </div>
+      <div class="twin-learn-declined" id="twinLearnDeclined" style="display:none">
+        <span>Tu gemelo no está aprendiendo de tus conversaciones</span>
+        <button type="button" class="twin-learn-declined-cta" onclick="abrirConsentimientoGemelo()">Activar</button>
       </div>
 
       <div class="twin-actions">
@@ -1804,6 +1831,31 @@ body {
         Escribinos a soporte
       </a>
       <p class="sheet-version">Pebble v0.9.1 — Beta privada · pebbleapp.co</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Cartel de términos: consentimiento de aprendizaje del gemelo ══
+     Aparece solo (sin click del usuario) la primera vez que el gemelo ya
+     existe y todavía no se decidió ni que sí ni que no -- como un cartel
+     típico de cookies/T&C. No se cierra clickeando el fondo: hay que elegir
+     Rechazar o Aceptar. Ver activarAprendizajeGemelo/declinarAprendizajeGemelo. -->
+<div class="sheet-overlay consent-overlay" id="twinConsentOverlay">
+  <div class="sheet" id="twinConsent">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Tu gemelo y tus conversaciones</h3>
+    </div>
+    <div class="sheet-body">
+      <p class="twin-learn-text">Dejá que tu gemelo aprenda de tus conversaciones (con vos mismo/a y con tus matches) para representarte mejor: tu estilo de escritura y tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad con otras personas, que siguen siendo los que contestaste en el onboarding. Podés cambiar esta decisión cuando quieras desde tu perfil.</p>
+      <label class="twin-learn-check">
+        <input type="checkbox" id="twinConsentCheckbox" onchange="document.getElementById('twinConsentAcceptBtn').disabled = !this.checked">
+        He leído y acepto
+      </label>
+      <div class="twin-consent-actions">
+        <button type="button" class="btn-cancel" id="twinConsentDeclineBtn" onclick="declinarAprendizajeGemelo()">Rechazar</button>
+        <button type="button" class="sheet-btn-save" id="twinConsentAcceptBtn" disabled onclick="activarAprendizajeGemelo()" style="flex:1">Aceptar y activar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2658,14 +2710,20 @@ async function cargarGemeloDigitalCard(uid, datosUsuario) {
     return;
   }
 
-  // Banner de consentimiento para el aprendizaje de chats -- solo tiene
-  // sentido mostrarlo una vez que el gemelo ya existe. Muestra uno de los
-  // dos bloques (pedir consentimiento / ya activado), nunca los dos.
+  // Estado del consentimiento para el aprendizaje de chats -- solo tiene
+  // sentido mostrarlo una vez que el gemelo ya existe. Tres estados
+  // posibles según consentimientoAprendizajeChats: true (activo),
+  // false (rechazado explícitamente), undefined (nunca se decidió --
+  // en este caso se muestra también el cartel modal de términos,
+  // como un cartel típico de cookies/T&C que aparece solo).
   const learnBanner = document.getElementById('twinLearnBanner');
   const learnActive = document.getElementById('twinLearnActive');
-  const yaConsintio = datosUsuario.consentimientoAprendizajeChats === true;
-  if (learnBanner) learnBanner.style.display = yaConsintio ? 'none' : 'block';
-  if (learnActive) learnActive.style.display = yaConsintio ? 'flex' : 'none';
+  const learnDeclined = document.getElementById('twinLearnDeclined');
+  const consentimiento = datosUsuario.consentimientoAprendizajeChats;
+  if (learnBanner)   learnBanner.style.display   = consentimiento === undefined ? 'flex' : 'none';
+  if (learnActive)   learnActive.style.display   = consentimiento === true      ? 'flex' : 'none';
+  if (learnDeclined) learnDeclined.style.display = consentimiento === false     ? 'flex' : 'none';
+  if (consentimiento === undefined) window.abrirConsentimientoGemelo();
   if (sinCompletarEl) sinCompletarEl.style.display = 'none';
 
   if (traitsEl) {
@@ -2795,42 +2853,39 @@ onAuthStateChanged(auth, async user => {
     // Nombre (si fue editado por el usuario)
     if (d.nombre) aplicarNombre(d.nombre);
 
-    // Información básica -- se usa !== undefined (no truthy) para que un campo
-    // opcional que el usuario dejó vacío a propósito se guarde vacío de verdad
-    // y no vuelva a mostrar el valor anterior al recargar.
-    //
-    // Género/orientación/busco/ciudad/rango de edad se contestan primero en
-    // el onboarding del gemelo (gemelo-setup.html), no acá -- si nunca se
-    // editaron desde esta pantalla, usuarios/{uid} no tiene esos campos
-    // (quedaban con el valor de ejemplo del HTML, tipo "Bisexual" o "Mujer",
-    // como si fuera un dato real). Como respaldo, si el campo de acá no
-    // está seteado, se usa el mismo valor normalizado que ya usa el
-    // matching real (gemelo/perfil, gemelo_perfil._construir_identidad).
+    // Información básica -- género/orientación/ciudad/rango de edad se
+    // contestan primero en el onboarding del gemelo (gemelo-setup.html), así
+    // que gemelo/perfil (recién regenerado en cada edición del onboarding,
+    // ver autoguardarEtapaActual en gemelo-setup.html) es la fuente más al
+    // día para esos campos y gana siempre que tenga un valor. Editarlos
+    // desde ESTA pantalla también los actualiza (ver _db_saveInfo más abajo,
+    // que además de guardar acá propaga el cambio al perfil real vía
+    // actualizar_preferencias_matching) -- por eso preferir gemelo/perfil acá
+    // no rompe la edición, solo evita mostrar una copia vieja en
+    // usuarios/{uid} que quedó pisada la última vez que se guardó este
+    // formulario. Busco/pronombres no se preguntan en el onboarding (no hay
+    // de dónde sacar un respaldo), así que esos siguen viniendo solo de acá.
     if (d.fechaNac)          document.getElementById('eFechaNac').value       = d.fechaNac;
-    if (d.ciudad      !== undefined) { document.getElementById('vCiudad').textContent      = d.ciudad      || '—'; document.getElementById('eCiudad').value      = d.ciudad; }
-    else if (perfilGemelo && perfilGemelo.ciudad) { document.getElementById('vCiudad').textContent = perfilGemelo.ciudad; document.getElementById('eCiudad').value = perfilGemelo.ciudad; }
+    if (perfilGemelo && perfilGemelo.ciudad) { document.getElementById('vCiudad').textContent = perfilGemelo.ciudad; document.getElementById('eCiudad').value = perfilGemelo.ciudad; }
+    else if (d.ciudad !== undefined) { document.getElementById('vCiudad').textContent = d.ciudad || '—'; document.getElementById('eCiudad').value = d.ciudad; }
 
-    if (d.genero      !== undefined) { document.getElementById('vGenero').textContent      = d.genero      || '—'; document.getElementById('eGenero').value      = d.genero; }
-    else if (perfilGemelo && perfilGemelo.genero) { document.getElementById('vGenero').textContent = perfilGemelo.genero; document.getElementById('eGenero').value = perfilGemelo.genero; }
+    if (perfilGemelo && perfilGemelo.genero) { document.getElementById('vGenero').textContent = perfilGemelo.genero; document.getElementById('eGenero').value = perfilGemelo.genero; }
+    else if (d.genero !== undefined) { document.getElementById('vGenero').textContent = d.genero || '—'; document.getElementById('eGenero').value = d.genero; }
 
     if (d.pronombres  !== undefined) { document.getElementById('vPronombres').textContent  = d.pronombres  || '—'; document.getElementById('ePronombres').value  = d.pronombres; }
     // Pronombres no se pregunta en el onboarding -- no hay de dónde sacar un respaldo.
 
-    if (d.orientacion !== undefined) { document.getElementById('vOrientacion').textContent = d.orientacion || '—'; document.getElementById('eOrientacion').value = d.orientacion; }
-    else if (perfilGemelo && perfilGemelo.orientacion) { document.getElementById('vOrientacion').textContent = perfilGemelo.orientacion; document.getElementById('eOrientacion').value = perfilGemelo.orientacion; }
+    if (perfilGemelo && perfilGemelo.orientacion) { document.getElementById('vOrientacion').textContent = perfilGemelo.orientacion; document.getElementById('eOrientacion').value = perfilGemelo.orientacion; }
+    else if (d.orientacion !== undefined) { document.getElementById('vOrientacion').textContent = d.orientacion || '—'; document.getElementById('eOrientacion').value = d.orientacion; }
 
+    // "Busco" se sacó del onboarding (ver comentario en gemelo-setup.html),
+    // así que gemelo/perfil.busco nunca tiene valor propio todavía -- queda
+    // como estaba, solo desde acá.
     if (d.busco       !== undefined) { document.getElementById('vBusco').textContent       = d.busco       || '—'; document.getElementById('eBusco').value       = d.busco; }
     else if (perfilGemelo && perfilGemelo.busco) { document.getElementById('vBusco').textContent = perfilGemelo.busco; document.getElementById('eBusco').value = perfilGemelo.busco; }
 
     // Rango de edad preferido
-    if (d.rangoEdadMin !== undefined && d.rangoEdadMax !== undefined) {
-      const rMinEl = document.getElementById('rangeMin');
-      const rMaxEl = document.getElementById('rangeMax');
-      rMinEl.value = d.rangoEdadMin;
-      rMaxEl.value = d.rangoEdadMax;
-      rMinEl.dispatchEvent(new Event('input')); // reposiciona el slider y actualiza sus labels
-      document.getElementById('vRangoEdad').textContent = `${d.rangoEdadMin} – ${d.rangoEdadMax} años`;
-    } else if (perfilGemelo && perfilGemelo.rango_edad_busco && (perfilGemelo.rango_edad_busco.min != null || perfilGemelo.rango_edad_busco.max != null)) {
+    if (perfilGemelo && perfilGemelo.rango_edad_busco && (perfilGemelo.rango_edad_busco.min != null || perfilGemelo.rango_edad_busco.max != null)) {
       const rMinEl = document.getElementById('rangeMin');
       const rMaxEl = document.getElementById('rangeMax');
       const rMin = perfilGemelo.rango_edad_busco.min ?? Number(rMinEl.min);
@@ -2839,6 +2894,13 @@ onAuthStateChanged(auth, async user => {
       rMaxEl.value = rMax;
       rMinEl.dispatchEvent(new Event('input'));
       document.getElementById('vRangoEdad').textContent = `${rMin} – ${rMax} años`;
+    } else if (d.rangoEdadMin !== undefined && d.rangoEdadMax !== undefined) {
+      const rMinEl = document.getElementById('rangeMin');
+      const rMaxEl = document.getElementById('rangeMax');
+      rMinEl.value = d.rangoEdadMin;
+      rMaxEl.value = d.rangoEdadMax;
+      rMinEl.dispatchEvent(new Event('input')); // reposiciona el slider y actualiza sus labels
+      document.getElementById('vRangoEdad').textContent = `${d.rangoEdadMin} – ${d.rangoEdadMax} años`;
     }
 
     // Edad -- normalmente sale de fechaNac (fecha de nacimiento), pero el
@@ -2849,16 +2911,29 @@ onAuthStateChanged(auth, async user => {
       document.getElementById('vEdad').textContent = `${perfilGemelo.edad} años`;
     }
 
-    // Bio
-    if (d.bio) {
-      document.getElementById('vBio').textContent     = d.bio;
+    // Bio -- igual que el resto de "Información básica": si nunca se editó
+    // manualmente desde esta pantalla, usuarios/{uid}.bio no existe y se
+    // quedaba con el texto de ejemplo del HTML como si fuera real. Respaldo:
+    // el resumen que ya generó el gemelo (gemelo/perfil.bio, el mismo texto
+    // que arma generar_resumen_gemelo y que se ve en la tarjeta "Mi gemelo
+    // digital").
+    if (d.bio !== undefined) {
+      document.getElementById('vBio').textContent     = d.bio || 'Todavía no escribiste nada sobre vos.';
       document.getElementById('eBio').value           = d.bio;
       document.getElementById('bioCount').textContent = d.bio.length;
+    } else if (perfilGemelo && perfilGemelo.bio) {
+      document.getElementById('vBio').textContent     = perfilGemelo.bio;
+      document.getElementById('eBio').value           = perfilGemelo.bio;
+      document.getElementById('bioCount').textContent = perfilGemelo.bio.length;
+    } else {
+      document.getElementById('vBio').textContent     = 'Todavía no escribiste nada sobre vos.';
+      document.getElementById('eBio').value           = '';
+      document.getElementById('bioCount').textContent = '0';
     }
 
-    // Hero meta: ciudad + edad (con el mismo respaldo de gemelo/perfil que
-    // el resto de "Información básica" si no se cargó desde acá todavía)
-    const ciudadMeta = d.ciudad || (perfilGemelo && perfilGemelo.ciudad) || '';
+    // Hero meta: ciudad + edad (misma prioridad que el resto de "Información
+    // básica": gemelo/perfil primero, ver más arriba)
+    const ciudadMeta = (perfilGemelo && perfilGemelo.ciudad) || d.ciudad || '';
     const edadMeta = d.fechaNac ? `${calcAge(d.fechaNac)} años` : (perfilGemelo && perfilGemelo.edad ? `${perfilGemelo.edad} años` : '');
     const metaParts = [];
     if (ciudadMeta) metaParts.push(ciudadMeta);
@@ -2980,6 +3055,7 @@ window._db_saveInfo = async (data) => {
       orientacion: data.orientacion,
       edadMinBusco: data.rangoEdadMin,
       edadMaxBusco: data.rangoEdadMax,
+      ciudad: data.ciudad,
     });
   } catch (e) {
     console.warn('No se pudieron sincronizar las preferencias con el matching:', e);
@@ -3049,32 +3125,67 @@ window._db_saveConsentimientoAprendizaje = async (valor) => {
   }, { merge: true });
 };
 
+// Abre el cartel modal de términos, siempre en blanco (checkbox destildado,
+// botón "Aceptar" deshabilitado) -- evita que quede el estado de una
+// apertura anterior si la persona ya lo había rechazado antes.
+window.abrirConsentimientoGemelo = function () {
+  const checkbox = document.getElementById('twinConsentCheckbox');
+  const acceptBtn = document.getElementById('twinConsentAcceptBtn');
+  if (checkbox) checkbox.checked = false;
+  if (acceptBtn) acceptBtn.disabled = true;
+  openSheet('twinConsent');
+};
+
+// Actualiza cuál de las tres filas de estado (pedir elección / activo /
+// rechazado) se ve dentro de la tarjeta "Mi gemelo digital".
+function _reflejarEstadoAprendizaje(consentimiento) {
+  const banner = document.getElementById('twinLearnBanner');
+  const activo = document.getElementById('twinLearnActive');
+  const declinado = document.getElementById('twinLearnDeclined');
+  if (banner)    banner.style.display    = consentimiento === undefined ? 'flex' : 'none';
+  if (activo)    activo.style.display    = consentimiento === true      ? 'flex' : 'none';
+  if (declinado) declinado.style.display = consentimiento === false     ? 'flex' : 'none';
+}
+
+// Aceptar (desde el cartel modal de términos): guarda el consentimiento y
+// cierra el modal. Se llama tanto la primera vez (cartel automático) como
+// después, si la persona lo había rechazado y ahora aprieta "Activar".
 window.activarAprendizajeGemelo = async function () {
-  const btn = document.getElementById('twinLearnAcceptBtn');
+  const btn = document.getElementById('twinConsentAcceptBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Activando…'; }
   try {
     await window._db_saveConsentimientoAprendizaje(true);
-    const banner = document.getElementById('twinLearnBanner');
-    const activo = document.getElementById('twinLearnActive');
-    if (banner) banner.style.display = 'none';
-    if (activo) activo.style.display = 'flex';
+    _reflejarEstadoAprendizaje(true);
+    closeSheet('twinConsent');
   } catch (e) {
     console.error('Error activando aprendizaje del gemelo:', e);
-    if (btn) { btn.disabled = false; btn.textContent = 'Activar'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Aceptar y activar'; }
+  }
+};
+
+// Rechazar (desde el cartel modal de términos): guarda el rechazo explícito
+// -- el gemelo nunca lee un solo mensaje si esto queda en false, ver
+// actualizar_aprendizaje_gemelo en el backend, que solo procesa usuarios
+// con consentimientoAprendizajeChats == true.
+window.declinarAprendizajeGemelo = async function () {
+  const btn = document.getElementById('twinConsentDeclineBtn');
+  if (btn) btn.disabled = true;
+  try {
+    await window._db_saveConsentimientoAprendizaje(false);
+    _reflejarEstadoAprendizaje(false);
+    closeSheet('twinConsent');
+  } catch (e) {
+    console.error('Error rechazando aprendizaje del gemelo:', e);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 };
 
 window.desactivarAprendizajeGemelo = async function () {
   try {
     await window._db_saveConsentimientoAprendizaje(false);
-    const banner = document.getElementById('twinLearnBanner');
-    const activo = document.getElementById('twinLearnActive');
-    const checkbox = document.getElementById('twinLearnCheckbox');
-    const acceptBtn = document.getElementById('twinLearnAcceptBtn');
-    if (activo) activo.style.display = 'none';
-    if (banner) banner.style.display = 'block';
-    if (checkbox) checkbox.checked = false;
-    if (acceptBtn) { acceptBtn.disabled = true; acceptBtn.textContent = 'Activar'; }
+    _reflejarEstadoAprendizaje(false);
   } catch (e) {
     console.error('Error desactivando aprendizaje del gemelo:', e);
   }

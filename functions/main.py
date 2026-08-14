@@ -208,6 +208,7 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
       - orientacion (opcional)
       - edadMinBusco (opcional)
       - edadMaxBusco (opcional)
+      - ciudad (opcional)
     """
 
     if request.auth is None:
@@ -250,6 +251,11 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
         if maximo is not None:
             maximo = max(EDAD_MIN_VALIDA, min(EDAD_MAX_VALIDA, maximo))
         cambios["rango_edad_busco"] = {"min": minimo, "max": maximo} if (minimo or maximo) else None
+
+    if "ciudad" in data:
+        valor = (data.get("ciudad") or "").strip()[:60]
+        if valor:
+            cambios["ciudad"] = valor
 
     if not cambios:
         return {"ok": True}
