@@ -606,14 +606,28 @@ body {
 
 /* ── Cartel de T&C: consentimiento de aprendizaje (modal, no se cierra
    clickeando el fondo -- hay que elegir Aceptar o Rechazar) ── */
-.sheet-overlay.consent-overlay { align-items: center; }
+.sheet-overlay.consent-overlay {
+  align-items: center; justify-content: center;
+  padding: 20px; box-sizing: border-box;
+}
 .consent-overlay .sheet {
-  border-radius: var(--r-lg); max-width: 420px;
+  border-radius: var(--r-lg); width: 100%; max-width: 420px; margin: 0 auto;
   transform: translateY(12px) scale(0.98); opacity: 0;
   transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s ease;
 }
 .sheet-overlay.consent-overlay.open .sheet { transform: translateY(0) scale(1); opacity: 1; }
 .consent-overlay .sheet-handle { display: none; }
+.consent-eyebrow {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--orange); margin: 0 0 4px;
+}
+/* .twin-learn-text/.twin-learn-check están pensados para la tarjeta oscura
+   "Mi gemelo digital" (texto blanco translúcido) -- acá adentro del sheet,
+   que es claro como el resto de la app, hay que pisar esos colores o el
+   texto queda invisible (blanco sobre blanco). */
+.consent-overlay .twin-learn-text { color: var(--text-secondary); }
+.consent-overlay .twin-learn-check { color: var(--text-primary); }
+.consent-overlay .twin-learn-check input { accent-color: var(--orange); }
 .twin-consent-actions { display: flex; gap: 10px; margin-top: 4px; }
 .twin-consent-actions .btn-cancel { padding: 11px 16px; }
 
@@ -1843,7 +1857,8 @@ body {
 <div class="sheet-overlay consent-overlay" id="twinConsentOverlay">
   <div class="sheet" id="twinConsent">
     <div class="sheet-handle"></div>
-    <div class="sheet-header">
+    <div class="sheet-header" style="flex-direction:column;align-items:flex-start;gap:2px">
+      <p class="consent-eyebrow">Términos y condiciones</p>
       <h3 class="sheet-title">Tu gemelo y tus conversaciones</h3>
     </div>
     <div class="sheet-body">
