@@ -70,6 +70,20 @@ REGLAS_PESOS = [
     ("etapa6", "atraeMas", "Ambicioso/a", {"valores": 0.06}),
     ("etapa6", "politicaImportancia", "Muy importante", {"creencias": 0.10}),
     ("etapa6", "religionImportancia", "Muy importante", {"creencias": 0.10}),
+
+    # "¿Qué es lo que más te importa para conectar de verdad con alguien?"
+    # (etapa6, prioridadCompatibilidad) -- a diferencia de todas las reglas
+    # de arriba (que INFIEREN el peso de otra respuesta), esta pregunta lo
+    # dice directamente, así que el empujón es más grande (0.10, el mismo
+    # que politica/religionImportancia, el máximo que se usa en esta tabla)
+    # y no se reparte entre varios ejes como conexionPrimero/atraeMas.
+    ("etapa6", "prioridadCompatibilidad", "Los valores que compartimos", {"valores": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "Los intereses y gustos en común", {"intereses": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "Cómo nos llevamos hablando", {"conversacional": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "Nuestras personalidades", {"psicologico": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "Cómo nos comunicamos", {"comunicacion": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "Compartir creencias (política o religión)", {"creencias": 0.10}),
+    ("etapa6", "prioridadCompatibilidad", "La atracción física", {"fisico": 0.10}),
 ]
 
 # (etapa, campo, respuesta_exacta, {"grupo.rasgo": delta})
@@ -613,6 +627,12 @@ def construir_perfil_gemelo(respuestas_raw):
         # personalidad.introversion vía REGLAS_NUMERICAS, es el dato crudo
         # que lee compatibilidad.compatibilidad_comunicacion() directamente.
         "prefCom": e4.get("prefCom", ""),
+        # Orden de prioridad tal cual lo eligió la persona (etapa6,
+        # "¿qué es lo que más te importa...?") -- ya alimenta los pesos de
+        # compatibilidad (_construir_pesos_compatibilidad, arriba); se
+        # guarda también tal cual para que generar_prompt_gemelo
+        # (simulador.py) pueda usarlo en las simulaciones de escenarios.
+        "prioridad_compatibilidad": _seleccion(e6, "prioridadCompatibilidad"),
         "pesos_compatibilidad": _construir_pesos_compatibilidad(respuestas_raw),
         "flags_resumen": _resumir_flags(e5),
         "bio": (respuestas_raw.get("gemelo_final") or e7.get("gedit") or "").strip(),

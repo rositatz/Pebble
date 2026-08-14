@@ -81,6 +81,7 @@ textarea.inp::-webkit-scrollbar-thumb:hover,.txa::-webkit-scrollbar-thumb:hover,
 .pill:active{transform:scale(.93)}
 .pill.sel{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 4px 16px rgba(255,117,31,.32);transform:scale(1.05)}
 .pill.sel:active{transform:scale(.98)}
+.pill-rank{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.3);color:#fff;font-size:.68rem;font-weight:800;margin-right:7px;flex-shrink:0}
 
 /* ── RADIO LIST ── */
 .rlist{display:flex;flex-direction:column;gap:10px}
@@ -884,6 +885,23 @@ body.is-upgrade .upgrade-banner{display:block}
   </div>
 
   <div class="sec">
+    <!-- Pregunta directa de prioridades -- a diferencia de las de arriba
+         (de las que se INFIERE qué pesa más), esta pregunta explícitamente
+         define cuánto pesa cada eje de compatibilidad para esta persona.
+         gemelo_perfil.REGLAS_PESOS le da un empujón directo y más grande
+         (0.10) a cada eje elegido acá, justamente porque es la señal más
+         clara de todas: la persona lo está diciendo directamente, no hay
+         que inferirlo de otra respuesta. -->
+    <div class="sec-title">⚖️ Qué priorizás</div>
+    <div class="q">
+      <div class="ql">De todo esto, ¿qué es lo que más te importa para conectar de verdad con alguien? Tocá en orden -- primero lo que más te importa, después lo siguiente, y así.</div>
+      <div class="pills multi ranked" data-field="prioridadCompatibilidad">
+        <button class="pill" onclick="selRanked(this)"><span class="pill-label">Los valores que compartimos</span></button><button class="pill" onclick="selRanked(this)"><span class="pill-label">Los intereses y gustos en común</span></button><button class="pill" onclick="selRanked(this)"><span class="pill-label">Cómo nos llevamos hablando</span></button><button class="pill" onclick="selRanked(this)"><span class="pill-label">Nuestras personalidades</span></button><button class="pill" onclick="selRanked(this)"><span class="pill-label">Cómo nos comunicamos</span></button><button class="pill" onclick="selRanked(this)"><span class="pill-label">Compartir creencias (política o religión)</span></button><button class="pill" onclick="selRanked(this)"><span class="pill-label">La atracción física</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
     <div class="sec-title">👀 Estética del crush</div>
     <div class="q prem-only">
       <div class="ql">¿Qué outfit te parece más atractivo? <span class="ptag">★ Premium</span></div>
@@ -1222,6 +1240,37 @@ window.selPill = function(btn) {
   actualizarBarraProgreso();
 };
 window.selMulti = function(btn) { btn.classList.toggle('sel'); actualizarBarraProgreso(); };
+
+// Igual que selMulti, pero además numera el orden en que se van tocando los
+// pills (data-rank + una medallita visible) -- para preguntas donde importa
+// no solo QUÉ se eligió sino en qué orden de prioridad (ver
+// data-field="prioridadCompatibilidad"). Sacar un pill ya elegido renumera
+// los que quedan para que el orden nunca tenga huecos (1, 2, 4 -> 1, 2, 3).
+window.selRanked = function(btn) {
+  const grupo = btn.closest('.pills');
+  if (btn.classList.contains('sel')) {
+    btn.classList.remove('sel');
+    btn.removeAttribute('data-rank');
+    const badge = btn.querySelector('.pill-rank');
+    if (badge) badge.remove();
+    [...grupo.querySelectorAll('.pill.sel')]
+      .sort((a, b) => Number(a.dataset.rank) - Number(b.dataset.rank))
+      .forEach((p, i) => {
+        p.dataset.rank = String(i + 1);
+        const b = p.querySelector('.pill-rank');
+        if (b) b.textContent = String(i + 1);
+      });
+  } else {
+    const rank = grupo.querySelectorAll('.pill.sel').length + 1;
+    btn.dataset.rank = String(rank);
+    btn.classList.add('sel');
+    const badge = document.createElement('span');
+    badge.className = 'pill-rank';
+    badge.textContent = String(rank);
+    btn.insertBefore(badge, btn.firstChild);
+  }
+  actualizarBarraProgreso();
+};
 window.selRadio = function(item) {
   item.closest('.rlist').querySelectorAll('.ritem').forEach(r => r.classList.remove('sel'));
   item.classList.add('sel');
@@ -1302,7 +1351,17 @@ function collectStage(n) {
     d[p.dataset.field] = sel ? sel.textContent.trim() : '';
   });
   stage.querySelectorAll('.pills.multi').forEach(p => {
-    d[p.dataset.field] = [...p.querySelectorAll('.pill.sel')].map(b => b.textContent.trim());
+    // ".ranked" (ej: prioridadCompatibilidad) guarda el ORDEN en que se
+    // tocaron los pills, no el orden en que aparecen en el HTML -- se
+    // ordena por data-rank y se lee el texto de .pill-label (no
+    // b.textContent, que ahora incluye la medallita numerada).
+    if (p.classList.contains('ranked')) {
+      d[p.dataset.field] = [...p.querySelectorAll('.pill.sel')]
+        .sort((a, b) => Number(a.dataset.rank) - Number(b.dataset.rank))
+        .map(b => b.querySelector('.pill-label').textContent.trim());
+    } else {
+      d[p.dataset.field] = [...p.querySelectorAll('.pill.sel')].map(b => b.textContent.trim());
+    }
   });
   stage.querySelectorAll('.rlist').forEach(r => {
     const sel = r.querySelector('.ritem.sel .rtext');
@@ -1351,9 +1410,28 @@ function repoblarFormulario() {
     stage.querySelectorAll('.pills.multi').forEach(p => {
       const vals = data[p.dataset.field];
       if (!Array.isArray(vals)) return;
-      p.querySelectorAll('.pill').forEach(btn => {
-        if (vals.includes(btn.textContent.trim())) btn.classList.add('sel');
-      });
+      if (p.classList.contains('ranked')) {
+        // "vals" ya viene en el orden de prioridad elegido -- se recorre en
+        // ESE orden (no el orden del HTML) para que las medallitas 1,2,3...
+        // se reconstruyan igual que como se dejaron.
+        vals.forEach((val, i) => {
+          const btn = [...p.querySelectorAll('.pill')].find(b => {
+            const label = b.querySelector('.pill-label');
+            return label && label.textContent.trim() === val;
+          });
+          if (!btn) return;
+          btn.classList.add('sel');
+          btn.dataset.rank = String(i + 1);
+          const badge = document.createElement('span');
+          badge.className = 'pill-rank';
+          badge.textContent = String(i + 1);
+          btn.insertBefore(badge, btn.firstChild);
+        });
+      } else {
+        p.querySelectorAll('.pill').forEach(btn => {
+          if (vals.includes(btn.textContent.trim())) btn.classList.add('sel');
+        });
+      }
     });
 
     stage.querySelectorAll('.rlist').forEach(r => {

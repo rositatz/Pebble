@@ -454,6 +454,33 @@ def generar_prompt_gemelo(perfil, memoria=None):
     if estilo_aprendido:
         estilo_aprendido_prompt = f"\n    CÓMO ESCRIBE/SE RELACIONA EN LA PRÁCTICA (aprendido de chats reales):\n    {estilo_aprendido}\n"
 
+    # Autodescripción física real (etapa6, "Sobre tu físico") -- para que el
+    # gemelo pueda responder con naturalidad si en la charla sale el tema,
+    # en vez de no saber nada de su propio aspecto.
+    fisico_prompt = ""
+    fisico = perfil.get("fisico_propio") or {}
+    fisico_partes = [v for v in (fisico.get("colorPelo"), fisico.get("estiloPelo"), fisico.get("contextura")) if v]
+    if fisico.get("altura_cm"):
+        fisico_partes.append(f"{fisico['altura_cm']}cm")
+    if fisico_partes:
+        fisico_prompt = f"\n    CÓMO ES FÍSICAMENTE (por si sale el tema en la charla):\n    {', '.join(fisico_partes)}\n"
+
+    # Orden de prioridad que la persona eligió a propósito ("¿qué es lo que
+    # más te importa para conectar de verdad con alguien?", etapa6) -- a
+    # diferencia de los rasgos de personalidad/valores (que describen CÓMO
+    # es), esto describe QUÉ le importa más buscar en la cita, así que
+    # influye en qué temas profundiza durante la simulación, no solo en el
+    # cálculo de compatibilidad (ver compatibilidad.calcular_compatibilidad).
+    prioridad_prompt = ""
+    prioridad = perfil.get("prioridad_compatibilidad") or []
+    if prioridad:
+        prioridad_prompt = (
+            "\n    LO QUE MÁS TE IMPORTA EN ESTA CITA (en orden, lo primero es lo más importante -- "
+            "priorizá naturalmente estos temas en la charla, sin anunciarlo):\n"
+            + "\n".join(f"    {i+1}. {p}" for i, p in enumerate(prioridad))
+            + "\n"
+        )
+
     # =====================================================
     # MEMORIA CONVERSACIONAL
     # =====================================================
@@ -503,7 +530,7 @@ def generar_prompt_gemelo(perfil, memoria=None):
 
     Intereses:
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
-
+    {fisico_prompt}
     {_instruccion_genero(perfil)}
 
     =====================================================
@@ -511,6 +538,7 @@ def generar_prompt_gemelo(perfil, memoria=None):
     =====================================================
 
     {personalidad_txt}
+    {prioridad_prompt}
 
     =====================================================
     ESTILO
@@ -702,30 +730,20 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
 
 def generar_resumen_gemelo(perfil):
     """Arma el párrafo de presentación del gemelo (lo que se ve/edita en la
-    última etapa del onboarding, gemelo-setup.html) con IA en vez de la
-    plantilla vieja de una sola oración armada a mano en el cliente
-    (concatenaba 4-5 campos sueltos: nombre, comoSoy, vibeAtrae, planIdeal,
-    artista). Reusa _directiva para las mismas frases de personalidad que ya
-    se usan en los otros dos prompts, así el tono es consistente."""
+    última etapa del onboarding, gemelo-setup.html) con IA.
+
+    A propósito NO le pasa a la IA una lista de frases de personalidad ya
+    traducidas (como hacen generar_prompt_gemelo/generar_prompt_gemelo_personal
+    con _directiva) -- acá se le dan los NÚMEROS crudos de personalidad y
+    valores para que tenga que analizarlos de verdad (¿hay una tensión entre
+    cómo se describe y sus rasgos? ¿qué combinación de datos es la más
+    distintiva de esta persona en particular?), en vez de simplemente elegir
+    qué oraciones pre-armadas mencionar. Es la diferencia entre un resumen
+    que "copia y pega" respuestas con el mismo esquema para todos, y uno que
+    realmente varía en estructura y enfoque según la persona."""
 
     personalidad = perfil.get("personalidad", {})
-    directivas = list(filter(None, [
-        _directiva(personalidad.get('introversion', 0.5),
-            "más reservado/a, de ir de a poco con la gente nueva",
-            "más extrovertido/a, sociable de entrada"),
-        _directiva(personalidad.get('apertura_mental', 0.5),
-            "curioso/a y abierto/a a cosas nuevas",
-            "de gustos más definidos, no tan de probar cosas nuevas"),
-        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
-            "sensible, las cosas le llegan y se le nota",
-            "bastante estable emocionalmente, no se lo ve alterarse fácil"),
-        _directiva(personalidad.get('independencia', 0.5),
-            "independiente, valora mucho su espacio propio",
-            "de disfrutar la cercanía y hacer las cosas en compañía"),
-        _directiva(perfil.get("valores", {}).get('aventura', 0.5),
-            "con ganas de aventura y planes nuevos",
-            "de valorar la estabilidad y lo conocido"),
-    ]))
+    valores = perfil.get("valores", {})
 
     nombre = perfil.get("nombre") or "esta persona"
     partes_datos = []
@@ -739,8 +757,19 @@ def generar_resumen_gemelo(perfil):
         partes_datos.append(f"Intereses: {', '.join(perfil['intereses'])}")
     if perfil.get("busco"):
         partes_datos.append(f"Busca: {perfil['busco']}")
-    if directivas:
-        partes_datos.append("Personalidad: " + "; ".join(directivas))
+    if personalidad:
+        partes_datos.append(
+            "Rasgos de personalidad (escala 0.0 a 1.0, 0.5 es neutro): "
+            + ", ".join(f"{k} {v}" for k, v in personalidad.items())
+        )
+    if valores:
+        partes_datos.append(
+            "Valores personales (escala 0.0 a 1.0, 0.5 es neutro): "
+            + ", ".join(f"{k} {v}" for k, v in valores.items())
+        )
+    conflictos = perfil.get("conflictos") or {}
+    if conflictos:
+        partes_datos.append("Cómo maneja los conflictos: " + "; ".join(conflictos.values()))
     if perfil.get("notas_personales"):
         partes_datos.append("En sus propias palabras:\n" + "\n".join(f"- {n}" for n in perfil["notas_personales"]))
     if _instruccion_genero(perfil):
@@ -749,14 +778,39 @@ def generar_resumen_gemelo(perfil):
     datos_txt = "\n".join(partes_datos) if partes_datos else "No hay datos suficientes todavía."
 
     prompt = f"""
-    Escribí, en primera persona y como si fuera {nombre} presentándose en una
-    app de citas, un párrafo de presentación natural y detallado (4 a 6
-    oraciones). Tiene que sonar como algo que escribiría una persona real,
-    no una IA ni una lista de datos -- tejé la información en frases
-    naturales, no repitas cada dato como si fuera una ficha.
+    Sos un psicólogo que conoce muy bien a esta persona y va a escribir su
+    presentación para una app de citas, en primera persona, como si fuera
+    ella misma escribiéndola.
 
-    DATOS REALES DE LA PERSONA (usalos todos los que puedas, no inventes
-    otros):
+    Antes de escribir, analizá los datos de verdad: ¿qué combinación de
+    rasgos es la más distintiva o menos obvia de ESTA persona en particular?
+    ¿hay alguna tensión real entre cómo se describe en sus propias palabras
+    y lo que muestran sus rasgos numéricos (ej: dice ser independiente pero
+    sus números muestran mucha necesidad de cercanía; es ambicioso/a pero
+    valora mucho la estabilidad; parece extrovertido/a pero le cuesta el
+    conflicto)? Si encontrás una tensión así, es más interesante que
+    mencionarla que ignorarla.
+
+    NO uses siempre el mismo orden ni la misma estructura (edad, trabajo,
+    intereses, personalidad, cierre) -- cada persona arranca por lo que más
+    la define a ELLA, no por una plantilla fija. No empieces siempre con
+    "Soy [nombre]" ni con la edad o el trabajo si no es lo más relevante de
+    esta persona.
+
+    Los números de personalidad/valores son SOLO para que vos entiendas a la
+    persona antes de escribir -- el párrafo final tiene que sonar como lo
+    escribiría alguien de carne y hueso describiéndose a sí misma, nunca como
+    un informe. Eso quiere decir: NINGÚN número, escala, porcentaje ni
+    palabra tipo "rasgo" o "valor" en el texto final -- todo tiene que
+    quedar traducido a lenguaje humano y natural (ej: no "introversión 0.8",
+    sino algo como "necesito mis tiempos a solas para recargar pilas").
+
+    Escribí un párrafo de 4 a 6 oraciones, natural, como algo que escribiría
+    una persona real -- nunca una lista ni una ficha de datos.
+
+    DATOS REALES DE LA PERSONA (para tu análisis interno -- no los repitas
+    tal cual en el párrafo final, son para que entiendas a la persona, no
+    para citarlos; no inventes datos que no estén acá):
     {datos_txt}
 
     Devolvé SOLO el párrafo final, sin comillas, sin encabezados, sin
@@ -766,6 +820,7 @@ def generar_resumen_gemelo(perfil):
     response = client().chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
+        temperature=1.0,
     )
     return response.choices[0].message.content.strip()
 
