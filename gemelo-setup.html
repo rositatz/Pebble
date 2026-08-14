@@ -1603,13 +1603,35 @@ window.guardarYSalir = async function() {
 window.addEventListener('popstate', e => { if (e.state?.stage) showStage(e.state.stage); });
 
 /* ─── GEMELO GENERATOR ─── */
+// Varias opciones de pills quedaron escritas con barra ("Tranquilo/a",
+// "El/la que tarda en abrirse") a propósito, para servir sin importar el
+// género de quien responde. Pero una vez que la persona YA dijo su género
+// (etapa1, generoIdentidad), mostrarle esa misma barra de vuelta en su
+// propio resumen se ve raro -- esto resuelve cada "base/a" y "el/la" a la
+// forma que corresponde. Sin género declarado (No binario/Otro/Prefiero no
+// decir/sin dato), se deja la forma masculina como neutra por default,
+// igual que ya hace el resto de la app en textos genéricos.
+function resolverGenero(texto, genero) {
+  if (!texto) return texto;
+  const femenino = genero === 'Mujer';
+  return texto
+    .replace(/(\p{L}+)\/a\b/gu, (m, base) => {
+      if (!femenino) return base;
+      return /o$/i.test(base) ? base.slice(0, -1) + 'a' : base + 'a';
+    })
+    .replace(/\bEl\/la\b/g, femenino ? 'La' : 'El')
+    .replace(/\bel\/la\b/g, femenino ? 'la' : 'el');
+}
+
 function buildGemelo() {
   const e1 = stageData.etapa1 || {}, e2 = stageData.etapa2 || {},
         e3 = stageData.etapa3 || {}, e5 = stageData.etapa5 || {},
         e6 = stageData.etapa6 || {};
+  const genero   = e1.generoIdentidad || '';
   const nombre   = e1.nombre || 'Vos';
-  const amor     = e5.enElAmor  || '';
-  const relacion = (e5.enRelacion || []).slice(0,3).join(', ') || 'auténtico/a';
+  const amor     = resolverGenero(e5.enElAmor || '', genero);
+  const relacion = (e5.enRelacion || []).slice(0,3).map(r => resolverGenero(r, genero)).join(', ')
+                    || resolverGenero('auténtico/a', genero);
   const vibe     = e6.vibeAtrae  || 'especial';
   const plan     = e2.planIdeal  || 'improvisar y ver qué surge';
   const artista  = e2.artista    || 'la música';
@@ -1629,7 +1651,7 @@ function buildGemelo() {
 
   const traits = [];
   if (amor) traits.push(amor);
-  if (e3.comoSoy) traits.push(...(e3.comoSoy || []).slice(0,3));
+  if (e3.comoSoy) traits.push(...(e3.comoSoy || []).slice(0,3).map(t => resolverGenero(t, genero)));
   if (estetica) traits.push(estetica);
   if (e6.conexionPrimero) traits.push('Conexión ' + e6.conexionPrimero.toLowerCase());
   function escHtml(s) {
@@ -1656,19 +1678,29 @@ window.generarResumenConIA = async function() {
   const plantillaPrevia = geditEl.value;
   textEl.textContent = 'Puliendo tu resumen con IA...';
 
-  try {
-    const res = await generarResumenGemeloCallable();
-    const texto = (res.data && res.data.texto || '').trim();
-    if (texto) {
-      textEl.textContent = texto;
-      geditEl.value = texto;
-      autoGrowTextarea(geditEl);
-      return;
+  // Un solo reintento antes de resignarse a la plantilla -- la primera
+  // llamada a una función que no se usó hace rato puede fallar por cold
+  // start o un hipo de red puntual, no porque el servicio esté realmente
+  // caído. Sin este reintento, cualquier hipo transitorio dejaba a la
+  // persona viendo la plantilla vieja (más corta y con barras tipo
+  // "Tranquilo/a") en vez del resumen real.
+  for (let intento = 0; intento < 2; intento++) {
+    try {
+      const res = await generarResumenGemeloCallable();
+      const texto = (res.data && res.data.texto || '').trim();
+      if (texto) {
+        textEl.textContent = texto;
+        geditEl.value = texto;
+        autoGrowTextarea(geditEl);
+        return;
+      }
+      break; // respuesta vacía sin error -- no vale la pena reintentar
+    } catch (e) {
+      console.error(`generar_resumen_gemelo_ia (intento ${intento + 1}):`, e);
     }
-  } catch (e) {
-    console.error('generar_resumen_gemelo_ia:', e);
   }
-  // Sin texto de la IA (falló o vino vacío): se deja la plantilla de siempre.
+  // Sin texto de la IA después del reintento: se deja la plantilla de
+  // siempre (ya con los géneros resueltos por buildGemelo() de arriba).
   textEl.textContent = plantillaPrevia;
 };
 

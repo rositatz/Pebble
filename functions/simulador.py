@@ -789,6 +789,24 @@ def generar_resumen_gemelo(perfil):
         partes_datos.append("Cómo maneja los conflictos: " + "; ".join(conflictos.values()))
     if perfil.get("notas_personales"):
         partes_datos.append("En sus propias palabras:\n" + "\n".join(f"- {n}" for n in perfil["notas_personales"]))
+    creencias = perfil.get("creencias") or {}
+    if creencias:
+        partes_datos.append("Postura frente a política/religión: " + "; ".join(f"{k}: {v}" for k, v in creencias.items()))
+    fisico = perfil.get("fisico_propio") or {}
+    fisico_partes = [v for v in (fisico.get("colorPelo"), fisico.get("estiloPelo"), fisico.get("contextura")) if v]
+    if fisico.get("altura_cm"):
+        fisico_partes.append(f"{fisico['altura_cm']}cm")
+    if fisico_partes:
+        partes_datos.append("Físico: " + ", ".join(fisico_partes))
+    prioridad = perfil.get("prioridad_compatibilidad") or []
+    if prioridad:
+        partes_datos.append("Lo que más le importa en una conexión, en orden: " + " > ".join(prioridad))
+    flags_resumen = perfil.get("flags_resumen") or {}
+    if flags_resumen.get("green_textos") or flags_resumen.get("red_textos"):
+        partes_datos.append(
+            "Green flags que valora: " + ", ".join(flags_resumen.get("green_textos") or ["ninguno marcado"])
+            + " | Red flags que le preocupan: " + ", ".join(flags_resumen.get("red_textos") or ["ninguno marcado"])
+        )
     if _instruccion_genero(perfil):
         partes_datos.append(_instruccion_genero(perfil))
 
@@ -797,16 +815,25 @@ def generar_resumen_gemelo(perfil):
     prompt = f"""
     Sos un psicólogo que conoce muy bien a esta persona y va a escribir su
     presentación para una app de citas, en primera persona, como si fuera
-    ella misma escribiéndola.
+    ella misma escribiéndola. Tenés MUCHOS datos reales sobre ella (más
+    abajo) -- usalos todos, no te quedes solo con edad/trabajo/intereses.
 
-    Antes de escribir, analizá los datos de verdad: ¿qué combinación de
-    rasgos es la más distintiva o menos obvia de ESTA persona en particular?
-    ¿hay alguna tensión real entre cómo se describe en sus propias palabras
-    y lo que muestran sus rasgos numéricos (ej: dice ser independiente pero
-    sus números muestran mucha necesidad de cercanía; es ambicioso/a pero
-    valora mucho la estabilidad; parece extrovertido/a pero le cuesta el
-    conflicto)? Si encontrás una tensión así, es más interesante que
-    mencionarla que ignorarla.
+    Antes de escribir, analizá los datos de verdad y encontrá AL MENOS DOS
+    de estas cosas (no una sola):
+    - Una tensión real entre cómo se describe en sus propias palabras y lo
+      que muestran sus rasgos numéricos (ej: dice ser independiente pero sus
+      números muestran mucha necesidad de cercanía; es ambicioso/a pero
+      valora mucho la estabilidad; parece extrovertido/a pero le cuesta el
+      conflicto).
+    - Qué combinación de prioridades, green/red flags, físico, creencias y
+      personalidad es la más distintiva o menos obvia de ESTA persona en
+      particular -- no la mencione todas por separado, conectalas entre sí.
+    - Qué es lo que probablemente busca de verdad en una relación, leyendo
+      entre líneas de lo que priorizó y de sus notas personales, no solo
+      repitiendo lo que puso.
+    Un resumen que solo reordena las respuestas con otras palabras NO
+    cumple con esto -- tiene que sonar a que alguien que la conoce bien
+    de verdad se dio cuenta de algo, no a una lista prolija.
 
     NO uses siempre el mismo orden ni la misma estructura (edad, trabajo,
     intereses, personalidad, cierre) -- cada persona arranca por lo que más
@@ -815,22 +842,23 @@ def generar_resumen_gemelo(perfil):
     esta persona.
 
     Los números de personalidad/valores son SOLO para que vos entiendas a la
-    persona antes de escribir -- el párrafo final tiene que sonar como lo
+    persona antes de escribir -- el texto final tiene que sonar como lo
     escribiría alguien de carne y hueso describiéndose a sí misma, nunca como
     un informe. Eso quiere decir: NINGÚN número, escala, porcentaje ni
     palabra tipo "rasgo" o "valor" en el texto final -- todo tiene que
     quedar traducido a lenguaje humano y natural (ej: no "introversión 0.8",
     sino algo como "necesito mis tiempos a solas para recargar pilas").
 
-    Escribí un párrafo de 4 a 6 oraciones, natural, como algo que escribiría
-    una persona real -- nunca una lista ni una ficha de datos.
+    Escribí 2 a 3 párrafos bien desarrollados (no un párrafo corto de 4
+    oraciones) -- tenés muchos datos reales, usalos para que se note. Que
+    suene natural y humano, nunca a lista ni a ficha de datos.
 
     DATOS REALES DE LA PERSONA (para tu análisis interno -- no los repitas
-    tal cual en el párrafo final, son para que entiendas a la persona, no
-    para citarlos; no inventes datos que no estén acá):
+    tal cual en el texto final, son para que entiendas a la persona, no
+    para citarlos uno por uno; no inventes datos que no estén acá):
     {datos_txt}
 
-    Devolvé SOLO el párrafo final, sin comillas, sin encabezados, sin
+    Devolvé SOLO el texto final, sin comillas, sin encabezados, sin
     explicaciones tuyas.
     """
 
