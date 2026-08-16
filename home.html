@@ -2000,12 +2000,25 @@
       // Actualiza el banner "Tu gemelo está activo" con datos reales: cuántos
       // de tus matches tuvieron una simulación nueva hoy (conexiones.data.
       // actualizado, que la Cloud Function pisa con la fecha de la última
-      // simulación) y cuál es tu mayor afinidad real.
-      function actualizarBannerGemelo(candidatos) {
+      // simulación), cuál es tu mayor afinidad real, y -- para que el
+      // banner no calle el trabajo que sí hizo el gemelo aunque no haya
+      // dado match -- cuántas simulaciones corrió en total (conexiones,
+      // supera_umbral true o false) y el mejor puntaje entre las que no
+      // llegaron al umbral. Nunca se muestra CON QUIÉN fueron esas
+      // simulaciones sin match, solo el número y el puntaje, para no
+      // exponer a la otra persona.
+      function actualizarBannerGemelo(candidatos, totalSimulaciones, mejorScoreSinMatch) {
         const el = document.getElementById("gemeloInfoSub");
         if (!el) return;
+        const sinMatch = (totalSimulaciones || 0) - candidatos.length;
+
         if (!candidatos.length) {
-          el.innerHTML = "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
+          if (!totalSimulaciones) {
+            el.innerHTML = "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
+          } else {
+            const pctMejor = Math.round((mejorScoreSinMatch || 0) * 100);
+            el.innerHTML = `Ya corrió <strong>${totalSimulaciones} simulaci${totalSimulaciones === 1 ? "ón" : "ones"}</strong>, pero ninguna llegó todavía al 75% necesario para hacer match (mejor intento: <strong>${pctMejor}%</strong>).`;
+          }
           return;
         }
         const hoy = new Date().toDateString();
@@ -2023,7 +2036,11 @@
             : mejor.data.usuario_2.nombre;
         const pctMejor = Math.round((mejor.data.ultimo_score || 0) * 100);
 
-        el.innerHTML = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
+        let texto = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
+        if (sinMatch > 0) {
+          texto += ` · ${sinMatch} simulaci${sinMatch === 1 ? "ón" : "ones"} sin llegar a match`;
+        }
+        el.innerHTML = texto;
       }
 
       // Arma la tira de "Matches recientes" (hasta 5, ordenados por mayor
@@ -2111,9 +2128,15 @@
               query(collection(db, "conexiones"), where("participantes", "array-contains", uid)),
             );
             const candidatos = [];
+            let totalSimulaciones = 0;
+            let mejorScoreSinMatch = 0;
             conexionesSnap.forEach((d) => {
               const cdata = d.data();
-              if (!cdata.supera_umbral) return;
+              totalSimulaciones++;
+              if (!cdata.supera_umbral) {
+                mejorScoreSinMatch = Math.max(mejorScoreSinMatch, cdata.ultimo_score || 0);
+                return;
+              }
               const otroId = cdata.usuario_1.uid === uid ? cdata.usuario_2.uid : cdata.usuario_1.uid;
               candidatos.push({ otroId, data: cdata });
             });
@@ -2131,7 +2154,7 @@
             }
 
             actualizarBadgesSecciones(data, candidatos, notifsSinLeer);
-            actualizarBannerGemelo(candidatos);
+            actualizarBannerGemelo(candidatos, totalSimulaciones, mejorScoreSinMatch);
             await cargarMatchesRecientes(user, data, candidatos);
           } catch (e) {
             console.warn("Error cargando matches/chats:", e);
