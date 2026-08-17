@@ -607,7 +607,7 @@ _SIN_UBICACION = 999999
 LOTE_NOCTURNO = 10
 
 
-@scheduler_fn.on_schedule(schedule="every 60 minutes", timezone="America/Argentina/Buenos_Aires")
+@scheduler_fn.on_schedule(schedule="every 2 minutes", timezone="America/Argentina/Buenos_Aires")
 def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     """Fase 1 (rápida, sin llamar a OpenAI): recorre todos los usuarios con
     gemelo generado, arma las parejas que todavía no se evaluaron ni están
@@ -617,7 +617,15 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
     Filtro acá es superficial (mismo "busco") a propósito -- es solo para no
     generar simulaciones inútiles entre gente que busca cosas incompatibles;
-    el filtro real de compatibilidad lo hace la simulación en sí."""
+    el filtro real de compatibilidad lo hace la simulación en sí.
+
+    "busco" ya no se pregunta en el onboarding (ver gemelo-setup.html), así
+    que la gran mayoría de los perfiles tienen ese campo vacío -- solo queda
+    seteado si alguien lo editó a mano desde perfil.html. Comparar "" contra
+    cualquier valor real (o dos valores reales distintos) descartaba casi
+    todos los pares por un campo que ni siquiera se le pregunta a nadie hoy.
+    Mismo criterio que compatible_por_genero/edad/hijos: sin dato de alguno
+    de los dos lados, no se puede evaluar esa mitad -- se deja pasar."""
 
     db = firestore.client()
 
@@ -629,29 +637,48 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
         usuarios.append((uid, doc.to_dict()))
 
     nuevas = 0
+    # Diagnóstico: por qué un par NO se encola, sin loguear ningún dato
+    # personal (solo conteos) -- para poder ver de un vistazo en los logs si
+    # "0 parejas nuevas" es porque hay un solo gemelo generado, o porque hay
+    # varios pero ninguno pasa alguno de los filtros.
+    descartes = {
+        "busco_distinto": 0,
+        "genero_incompatible": 0,
+        "edad_incompatible": 0,
+        "hijos_incompatible": 0,
+        "ya_en_cola_o_conectados": 0,
+    }
 
     for i in range(len(usuarios)):
         uid1, perfil1 = usuarios[i]
         for j in range(i + 1, len(usuarios)):
             uid2, perfil2 = usuarios[j]
 
-            if (perfil1.get("busco") or "") != (perfil2.get("busco") or ""):
+            busco1 = (perfil1.get("busco") or "").strip()
+            busco2 = (perfil2.get("busco") or "").strip()
+            if busco1 and busco2 and busco1 != busco2:
+                descartes["busco_distinto"] += 1
                 continue
 
             if not compatible_por_genero(perfil1, perfil2):
+                descartes["genero_incompatible"] += 1
                 continue
 
             if not compatible_por_edad(perfil1, perfil2):
+                descartes["edad_incompatible"] += 1
                 continue
 
             if not compatible_por_hijos(perfil1, perfil2):
+                descartes["hijos_incompatible"] += 1
                 continue
 
             par_id = motor._par_id(uid1, uid2)
 
             if db.collection("parejas_pendientes").document(par_id).get().exists:
+                descartes["ya_en_cola_o_conectados"] += 1
                 continue
             if db.collection("conexiones").document(par_id).get().exists:
+                descartes["ya_en_cola_o_conectados"] += 1
                 continue
 
             distancia = distancia_entre_perfiles(perfil1, perfil2)
@@ -666,7 +693,10 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             })
             nuevas += 1
 
-    print(f"buscar_parejas_pendientes: {nuevas} parejas nuevas encoladas.")
+    print(
+        f"buscar_parejas_pendientes: {nuevas} parejas nuevas encoladas "
+        f"(de {len(usuarios)} gemelos generados en total). Descartes: {descartes}"
+    )
 
 
 @scheduler_fn.on_schedule(
