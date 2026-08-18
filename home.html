@@ -403,10 +403,6 @@
         height: 36px;
         border-radius: 50%;
         overflow: hidden;
-        /* border-radius + overflow:hidden a veces no alcanza para recortar
-           un background-image en algunos motores móviles (deja un borde con
-           el fondo de respaldo asomando) -- clip-path fuerza el recorte
-           circular por otra vía, como refuerzo. */
         clip-path: circle(50%);
         -webkit-clip-path: circle(50%);
         background: var(--text-primary);
@@ -419,12 +415,18 @@
         font-weight: 700;
         color: var(--text-inv);
         cursor: pointer;
-        border: 2px solid transparent;
-        transition: border-color 0.2s;
+        /* Antes tenía "border: 2px solid transparent" para el hover en
+           naranja -- por default el fondo se dimensiona sobre el
+           padding-box (sin contar el borde), así que ese anillo de 2px
+           quedaba SIN la foto, mostrando el negro de acá abajo. Se notaba
+           menos en el hover porque el borde naranja pintaba justo encima de
+           ese anillo, tapándolo. Sacar el borde saca el anillo directamente
+           -- mismo enfoque que ya usaba chats.html, que nunca tuvo borde acá. */
+        transition: opacity 0.2s;
         touch-action: manipulation;
       }
       .nav-avatar:hover {
-        border-color: var(--orange);
+        opacity: 0.8;
       }
 
       /* ── Scroll area ── */
@@ -629,6 +631,12 @@
         clip-path: circle(50%);
         -webkit-clip-path: circle(50%);
         background-repeat: no-repeat;
+        /* Con "border" puesto, el fondo por default se dimensiona sobre el
+           padding-box (sin contar el borde) -- forzar border-box acá evita
+           que quede un anillo del ancho del borde sin foto (mismo bug que
+           tenía el nav-avatar). */
+        background-origin: border-box;
+        background-clip: border-box;
         display: flex;
         align-items: center;
         justify-content: center;
