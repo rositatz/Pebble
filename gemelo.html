@@ -1451,12 +1451,12 @@
       function replayChatLog(log) {
         replayingChat = true;
         (log || []).forEach((e) => {
-          if (e.tipo === "user") addUserMsg(e.text);
-          else if (e.tipo === "twin") addTwinMsg(e.text);
-          else if (e.tipo === "recom") addRecomCard(e.title, e.context, e.tips);
-          else if (e.tipo === "feedback") addFeedbackCard(e.question, e.options);
+          if (e.tipo === "user") addUserMsg(e.text, e.hora);
+          else if (e.tipo === "twin") addTwinMsg(e.text, e.hora);
+          else if (e.tipo === "recom") addRecomCard(e.title, e.context, e.tips, e.hora);
+          else if (e.tipo === "feedback") addFeedbackCard(e.question, e.options, e.hora);
           else if (e.tipo === "progress")
-            addProgressCard(e.name, e.initials, e.color, e.event, e.pct, e.unlockText);
+            addProgressCard(e.name, e.initials, e.color, e.event, e.pct, e.unlockText, e.hora);
           // "quickReplies" ya NO se reproduce -- son solo accesos rápidos de
           // la UI, no algo que haya pasado en la conversación. Reproducir
           // logs viejos (de antes del chat real) hacía que reaparecieran
@@ -1504,20 +1504,24 @@
 
       // Agrega un mensaje del usuario al chat (burbuja alineada a la derecha)
       // Escapa el HTML del texto para evitar inyección de código
-      function addUserMsg(text) {
-        const t = nowTime();
+      function addUserMsg(text, hora) {
+        const t = hora || nowTime();
         const div = document.createElement("div");
         div.className = "msg user";
         div.innerHTML = `<span class="msg-time">${t}</span><div class="bubble">${escHtml(text)}</div>`;
         messagesEl.appendChild(div);
         scrollBottom();
-        logChatEntry({ tipo: "user", text });
+        logChatEntry({ tipo: "user", text, hora: t });
       }
 
       // Agrega un mensaje del gemelo al chat (burbuja alineada a la izquierda con ícono)
       // Retorna el elemento creado por si se necesita modificar después
-      function addTwinMsg(text) {
-        const t = nowTime();
+      // "hora" es opcional: la pasa replayChatLog para reproducir la hora real
+      // guardada en vez de recalcular "ahora" -- si no, cada vez que se
+      // recargaba la página TODO el historial quedaba con la hora del
+      // momento de la carga, en vez de la hora real en que se mandó cada uno.
+      function addTwinMsg(text, hora) {
+        const t = hora || nowTime();
         const div = document.createElement("div");
         div.className = "msg twin";
         div.innerHTML = `
@@ -1526,7 +1530,7 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
-        logChatEntry({ tipo: "twin", text });
+        logChatEntry({ tipo: "twin", text, hora: t });
         return div;
       }
 
@@ -1550,8 +1554,8 @@
 
       // Agrega una tarjeta de recomendaciones en el chat
       // Muestra un título, contexto y una lista de tips personalizados sobre cómo hablarle a alguien
-      function addRecomCard(title, context, tips) {
-        const t = nowTime();
+      function addRecomCard(title, context, tips, hora) {
+        const t = hora || nowTime();
         const tipsHtml = tips
           .map(
             (tp) =>
@@ -1574,15 +1578,15 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
-        logChatEntry({ tipo: "recom", title, context, tips });
+        logChatEntry({ tipo: "recom", title, context, tips, hora: t });
       }
 
       // Agrega una tarjeta de feedback con botones clicables
       // El usuario puede elegir una opción para ajustar el comportamiento del gemelo
       // Cada tarjeta tiene un ID único basado en el timestamp para poder referenciarlo después
-      function addFeedbackCard(question, options) {
+      function addFeedbackCard(question, options, hora) {
         const id = "fb_" + Date.now();
-        const t = nowTime();
+        const t = hora || nowTime();
         const optsHtml = options
           .map(
             (o) =>
@@ -1602,13 +1606,13 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
-        logChatEntry({ tipo: "feedback", question, options });
+        logChatEntry({ tipo: "feedback", question, options, hora: t });
       }
 
       // Agrega una tarjeta de progreso de afinidad con un match
       // Muestra el nombre, avatar con iniciales, porcentaje de afinidad y un mensaje de desbloqueo si corresponde
-      function addProgressCard(name, initials, color, event, pct, unlockText) {
-        const t = nowTime();
+      function addProgressCard(name, initials, color, event, pct, unlockText, hora) {
+        const t = hora || nowTime();
         const div = document.createElement("div");
         div.className = "msg twin";
         const fill = `<div class="progress-bar-fill" style="width:${pct}%"></div>`;
@@ -1638,7 +1642,7 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
-        logChatEntry({ tipo: "progress", name, initials, color, event, pct, unlockText });
+        logChatEntry({ tipo: "progress", name, initials, color, event, pct, unlockText, hora: t });
       }
 
       // Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
