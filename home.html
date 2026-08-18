@@ -402,7 +402,9 @@
         width: 36px;
         height: 36px;
         border-radius: 50%;
+        overflow: hidden;
         background: var(--text-primary);
+        background-repeat: no-repeat;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -617,6 +619,8 @@
         width: 58px;
         height: 58px;
         border-radius: 50%;
+        overflow: hidden;
+        background-repeat: no-repeat;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2080,7 +2084,7 @@
           html += `
       <a href="#" class="match-item" onclick="goToMatch('${c.otroId}');return false;" role="listitem" aria-label="${esc(nombre)}, ${score}%">
         <div class="match-av-wrap" id="mav-${c.otroId}">
-          <div class="match-av" style="${foto ? `background-image:url('${foto}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}"></div>
+          <div class="match-av" style="${foto ? `background-image:url('${foto}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${foto ? "" : esc((nombre[0] || "?").toUpperCase())}</div>
         </div>
         <span class="match-score">${score}%</span>
         <span class="match-name">${esc(nombre)}</span>

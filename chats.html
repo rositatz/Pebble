@@ -1542,7 +1542,7 @@
           </svg>
           <span class="notif-pip"></span>
         </a>
-        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">M</a>
+        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">U</a>
       </div>
     </nav>
 
@@ -1801,9 +1801,10 @@
         curPerson = id;
         curMode = p.currentMode;
 
-        document.getElementById("panelAv").style.cssText =
-          `background-image:url(${p.photo});background-size:cover;background-position:center;cursor:pointer`;
-        document.getElementById("panelAv").textContent = "";
+        document.getElementById("panelAv").style.cssText = p.photo
+          ? `background-image:url('${p.photo}');background-size:cover;background-position:center;cursor:pointer`
+          : `background:linear-gradient(135deg,#888,#555);cursor:pointer`;
+        document.getElementById("panelAv").textContent = p.photo ? "" : (p.name[0] || "?").toUpperCase();
         document.getElementById("panelName").textContent = p.name;
         document.getElementById("panelMeta").textContent =
           [p.age ? `${p.age} años` : "", p.city, `${p.afinidad}% afinidad`]
@@ -1949,7 +1950,7 @@
       <span class="pmsg-time">${msg.time}</span>`;
         } else {
           div.innerHTML = `
-      <div class="pmsg-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
+      <div class="pmsg-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
       <div class="pbubble">${esc(msg.text)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
         }
@@ -2062,7 +2063,7 @@
         div.className = `pmsg them${isG ? " is-gemelo" : ""}`;
         const av = isG
           ? `<div class="pmsg-av pmsg-av-ai" style="background:${p.color}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>`
-          : `<div class="pmsg-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>`;
+          : `<div class="pmsg-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>`;
         div.innerHTML = `${av}<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
         con.appendChild(div);
         scrollBottom();
@@ -2143,7 +2144,7 @@
         el.className = "conv-item";
         el.id = `conv-${id}`;
         el.innerHTML = `
-    <div class="conv-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
+    <div class="conv-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
     <div class="conv-content">
       <div class="conv-top">
         <span class="conv-name">${esc(p.name)}</span>
@@ -2212,7 +2213,7 @@
 
         document.getElementById("poInner").innerHTML = `
     <div class="po-hero">
-      <div class="po-hero-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
+      <div class="po-hero-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
       <div class="po-hero-info">
         <div class="po-hero-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
         <div class="po-hero-meta">${esc(p.city)}</div>
@@ -2378,8 +2379,10 @@
       }
 
       // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
-      // ícono de arriba a la derecha en vez de la letra fija.
-      function renderNavAvatar(avatarFoto) {
+      // ícono de arriba a la derecha; si no, la inicial real de su nombre
+      // (antes quedaba la "M" fija del HTML sin importar quién estuviera
+      // logueado).
+      function renderNavAvatar(avatarFoto, nombre) {
         const el = document.getElementById("nav-avatar");
         if (!el) return;
         if (avatarFoto) {
@@ -2389,6 +2392,7 @@
           el.textContent = "";
         } else {
           el.style.backgroundImage = "";
+          el.textContent = ((nombre || "U")[0] || "U").toUpperCase();
         }
       }
 
@@ -2630,7 +2634,9 @@
         try {
           const snap = await getDoc(doc(db, "usuarios", uid));
           const mis = snap.exists() ? snap.data() : {};
-          renderNavAvatar(mis.avatarFoto);
+          const nombreNav =
+            mis.nombre || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Usuario";
+          renderNavAvatar(mis.avatarFoto, nombreNav);
 
           // Punto naranja del ícono de notificaciones: solo si hay
           // notificaciones reales sin leer (usuarios/{uid}/notificaciones,

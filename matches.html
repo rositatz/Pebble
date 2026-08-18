@@ -1149,7 +1149,7 @@
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </button>
-        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">M</a>
+        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">U</a>
       </div>
     </nav>
 
@@ -1438,7 +1438,7 @@
         // Header
         const scoreCol = scoreColor(p.score);
         document.getElementById("modal-header").innerHTML = `
-    <div class="modal-av" style="background-image:url(${p.photo});background-size:cover;background-position:center"></div>
+    <div class="modal-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
     <div class="modal-name-wrap">
       <div class="modal-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
       <div class="modal-meta">${esc(p.city)}</div>
@@ -1646,8 +1646,10 @@
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
-      // ícono de arriba a la derecha en vez de la letra fija.
-      function renderNavAvatar(avatarFoto) {
+      // ícono de arriba a la derecha; si no, la inicial real de su nombre
+      // (antes quedaba la "M" fija del HTML sin importar quién estuviera
+      // logueado).
+      function renderNavAvatar(avatarFoto, nombre) {
         const el = document.getElementById("nav-avatar");
         if (!el) return;
         if (avatarFoto) {
@@ -1657,6 +1659,7 @@
           el.textContent = "";
         } else {
           el.style.backgroundImage = "";
+          el.textContent = ((nombre || "U")[0] || "U").toUpperCase();
         }
       }
 
@@ -1776,7 +1779,7 @@
         return `
           <div class="match-card fu" data-id="${m.id}" data-score="${m.score}" data-new="${m.isNew}" data-active="${m.hasChat}">
             <div class="card-top" onclick="openProfile('${m.id}')" role="button" tabindex="0" aria-label="Ver perfil de ${esc(m.nombre)}">
-              <div class="card-av${m.isNew ? " card-av-new" : ""}" style="${avatarStyle}" aria-hidden="true"></div>
+              <div class="card-av${m.isNew ? " card-av-new" : ""}" style="${avatarStyle}" aria-hidden="true">${m.foto ? "" : esc((m.nombre[0] || "?").toUpperCase())}</div>
               <div class="card-info">
                 <div class="card-name">${esc(m.nombre)}${m.edad ? ", " + m.edad : ""}</div>
                 <div class="card-meta">${esc([m.ciudad, m.metaTexto].filter(Boolean).join(" · "))}</div>
@@ -1951,7 +1954,10 @@
         // Foto de perfil en el ícono de arriba a la derecha
         try {
           const userSnap = await getDoc(doc(db, "usuarios", user.uid));
-          renderNavAvatar(userSnap.exists() ? userSnap.data().avatarFoto : null);
+          const userData = userSnap.exists() ? userSnap.data() : {};
+          const nombreNav =
+            userData.nombre || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Usuario";
+          renderNavAvatar(userData.avatarFoto, nombreNav);
         } catch (e) {
           console.warn("Error cargando avatar:", e);
         }

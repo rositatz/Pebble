@@ -607,7 +607,7 @@ _SIN_UBICACION = 999999
 LOTE_NOCTURNO = 10
 
 
-@scheduler_fn.on_schedule(schedule="every 2 minutes", timezone="America/Argentina/Buenos_Aires")
+@scheduler_fn.on_schedule(schedule="every 60 minutes", timezone="America/Argentina/Buenos_Aires")
 def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     """Fase 1 (rápida, sin llamar a OpenAI): recorre todos los usuarios con
     gemelo generado, arma las parejas que todavía no se evaluaron ni están
