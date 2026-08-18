@@ -441,12 +441,20 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
 
     # Resumen liviano de los matches reales (solo nombre + score) para que
     # el gemelo pueda dar consejos concretos si le preguntan por alguno --
-    # no hace falta el perfil completo de cada uno acá.
+    # no hace falta el perfil completo de cada uno acá. También se cuentan
+    # las simulaciones que corrieron pero no llegaron al umbral de match
+    # (mismo dato que ya usa el cartel "Tu gemelo está activo" de home.html)
+    # -- si no se le pasa esto, el gemelo respondía "no corriste ninguna
+    # simulación" aunque sí hubieran corrido, solo que ninguna dio match.
     matches_resumen = []
+    total_simulaciones = 0
+    mejor_score_sin_match = 0
     try:
         for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
             cd = doc.to_dict()
+            total_simulaciones += 1
             if not cd.get("supera_umbral"):
+                mejor_score_sin_match = max(mejor_score_sin_match, cd.get("ultimo_score") or 0)
                 continue
             u1 = cd.get("usuario_1", {})
             u2 = cd.get("usuario_2", {})
@@ -458,7 +466,9 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
     except Exception as e:
         print(f"chatear_con_gemelo: error trayendo matches para el resumen: {e}")
 
-    system_prompt = motor.generar_prompt_gemelo_personal(perfil, matches_resumen)
+    system_prompt = motor.generar_prompt_gemelo_personal(
+        perfil, matches_resumen, total_simulaciones, round(mejor_score_sin_match * 100)
+    )
 
     mensajes = [{"role": "system", "content": system_prompt}]
     for h in historial[-8:]:

@@ -631,14 +631,21 @@ def generar_prompt_gemelo(perfil, memoria=None):
     return prompt
 
 
-def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
+def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulaciones=0, mejor_score_sin_match=0):
     """Prompt para el chat DIRECTO entre el usuario y su propio gemelo
     (gemelo.html) -- a diferencia de generar_prompt_gemelo (que arma un
     gemelo simulando una cita con el gemelo de OTRA persona), acá el gemelo
     le habla al propio usuario, en segunda persona, como su reflejo de
     confianza dentro de la app. Reusa la misma traducción de personalidad a
     directivas de comportamiento (_directiva) para que el tono sea
-    consistente con el que se ve en las simulaciones."""
+    consistente con el que se ve en las simulaciones.
+
+    total_simulaciones/mejor_score_sin_match: igual que el cartel "Tu gemelo
+    está activo" de home.html -- cuentan TODAS las conexiones (match o no),
+    no solo matches_resumen (que son solo las que superaron el umbral). Sin
+    esto, si preguntaban "con quién corriste simulaciones" el gemelo decía
+    que no había corrido ninguna aunque sí hubiera corrido, solo que ninguna
+    llegó al 75% necesario para hacer match."""
 
     personalidad = perfil.get("personalidad", {})
 
@@ -699,13 +706,28 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None):
     if _instruccion_genero(perfil):
         identidad_txt += f"    - {_instruccion_genero(perfil)}\n"
 
-    matches_txt = ""
+    sin_match = max(0, total_simulaciones - len(matches_resumen))
+    sin_match_txt = "1 simulación" if sin_match == 1 else f"{sin_match} simulaciones"
+    total_txt = "1 simulación" if total_simulaciones == 1 else f"{total_simulaciones} simulaciones"
+
     if matches_resumen:
         matches_txt = "\n    SUS MATCHES ACTUALES (para dar consejos concretos si te preguntan por alguno):\n"
         for m in matches_resumen:
             matches_txt += f"    - {m['nombre']}: {m['score']}% de afinidad\n"
+        if sin_match:
+            matches_txt += (
+                f"    Además corriste {sin_match_txt} con otras personas que no llegaron al 75% "
+                f"necesario para hacer match -- no digas nombres de esas, solo la cantidad si preguntan.\n"
+            )
+    elif total_simulaciones:
+        matches_txt = (
+            f"\n    Todavía no tiene matches, pero SÍ corriste {total_txt} con otras personas -- "
+            f"ninguna llegó al 75% necesario para hacer match todavía (la mejor dio "
+            f"{mejor_score_sin_match}%). Si te pregunta por esto, contestale con estos números "
+            f"reales -- NO digas que no corriste ninguna simulación, y no inventes nombres (no los tenés).\n"
+        )
     else:
-        matches_txt = "\n    Todavía no tiene matches -- si te pregunta por eso, decíselo tal cual, no inventes nombres.\n"
+        matches_txt = "\n    Todavía no corriste ninguna simulación con nadie -- si te pregunta por eso, decíselo tal cual, no inventes nombres.\n"
 
     prompt = f"""
     Sos el gemelo digital de {nombre} dentro de la app de citas Pebble.
