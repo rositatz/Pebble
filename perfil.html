@@ -766,7 +766,12 @@ body {
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   opacity: 0; transition: all 0.3s ease; z-index: 500;
   white-space: nowrap; pointer-events: none;
+  max-width: min(88vw, 420px);
 }
+/* Mensajes largos (ej. el aviso de HEIC) no entran en una sola línea sin
+   desbordar la pantalla -- esta variante deja que el pill crezca en alto
+   en vez de ancho. */
+.toast.toast-wrap { white-space: normal; text-align: center; border-radius: 16px; line-height: 1.4; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ── Misc ── */
@@ -1934,12 +1939,61 @@ let cropImgEl = null;     // Image natural cargada
 let cropScale = 1, cropBaseScale = 1, cropOffsetX = 0, cropOffsetY = 0;
 let cropDragging = false, cropDragStart = null, cropOffsetStart = null;
 
-function openCropModal(file, target) {
+// HEIC/HEIF (el formato que usan por default las fotos de iPhone/Mac) no lo
+// puede decodificar un <img> en la mayoría de los navegadores -- ni
+// siquiera Safari lo garantiza cuando la imagen viene como data URL en vez
+// de un archivo real. El resultado es que img.onerror dispara sin dar
+// ninguna pista de qué pasó. Esto detecta el caso (por MIME type y, como
+// respaldo, por extensión -- algunos sistemas no setean bien el MIME de
+// HEIC) para poder avisar algo accionable en vez de un genérico "no se
+// pudo procesar".
+function _pareceHeic(file) {
+  const tipo = (file.type || '').toLowerCase();
+  if (tipo.includes('heic') || tipo.includes('heif')) return true;
+  const nombre = (file.name || '').toLowerCase();
+  return nombre.endsWith('.heic') || nombre.endsWith('.heif');
+}
+
+// Carga heic2any (conversor HEIC -> JPG que corre en el navegador, via
+// WebAssembly) recién la primera vez que hace falta -- no tiene sentido
+// bajar ese peso extra en cada carga de la pantalla si nunca nadie sube un
+// HEIC. Una vez cargado queda en window.heic2any y las próximas llamadas
+// lo reusan directo.
+let _heic2anyCargando = null;
+function _cargarHeic2any() {
+  if (window.heic2any) return Promise.resolve();
+  if (_heic2anyCargando) return _heic2anyCargando;
+  _heic2anyCargando = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('No se pudo cargar el conversor de HEIC'));
+    document.head.appendChild(script);
+  });
+  return _heic2anyCargando;
+}
+
+async function openCropModal(file, target) {
+  let archivo = file;
+
+  if (_pareceHeic(file)) {
+    showToast('Convirtiendo imagen…');
+    try {
+      await _cargarHeic2any();
+      const resultado = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+      archivo = Array.isArray(resultado) ? resultado[0] : resultado;
+    } catch (e) {
+      console.error('Error convirtiendo HEIC:', e);
+      showToast('Esa foto está en formato HEIC (típico de iPhone/Mac) y no se pudo convertir automáticamente. Exportala como JPG o PNG desde Fotos y probá de nuevo.');
+      return;
+    }
+  }
+
   const reader = new FileReader();
   reader.onerror = () => showToast('No se pudo leer la imagen');
   reader.onload = () => {
     const img = new Image();
-    img.onerror = () => showToast('No se pudo procesar la imagen');
+    img.onerror = () => showToast('No se pudo procesar la imagen -- probá con otra foto (JPG o PNG)');
     img.onload = () => {
       cropImgEl = img;
       cropTarget = target;
@@ -1954,7 +2008,7 @@ function openCropModal(file, target) {
     };
     img.src = reader.result;
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(archivo);
 }
 
 function closeCropModal() {
@@ -2398,9 +2452,14 @@ let toastTimer;
 function showToast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
+  // Los mensajes cortos de siempre ("Foto actualizada", etc.) se quedan en
+  // una línea sin ancho fijo; uno largo como el aviso de HEIC necesita
+  // envolver en varias líneas y quedarse más tiempo para poder leerlo.
+  el.classList.toggle('toast-wrap', msg.length > 40);
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  const duracion = msg.length > 40 ? 5000 : 2400;
+  toastTimer = setTimeout(() => el.classList.remove('show'), duracion);
 }
 
 /* ══════════════════════════════
