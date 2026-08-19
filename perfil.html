@@ -2848,8 +2848,13 @@ onAuthStateChanged(auth, async user => {
   // ── Cargar datos guardados de Firestore ──
   try {
     const snap = await getDoc(doc(db, 'usuarios', uid));
-    if (!snap.exists()) return;
-    const d = snap.data();
+    // Antes esto hacía "return" si el doc todavía no existía (recién
+    // registrado, o el paso que lo crea no llegó a correr) -- como
+    // mostrarPagina() (la que saca el spinner de carga) está DESPUÉS de
+    // este try/catch, ese return se lo saltaba entero y la pantalla quedaba
+    // cargando para siempre. El resto de las pantallas (home/matches/chats)
+    // ya usan este mismo respaldo a {} en vez de abortar.
+    const d = snap.exists() ? snap.data() : {};
 
     // Plan (gratuito/premium) -- se chequea acá mismo, cada vez que carga el
     // perfil, si el pago mensual sigue vigente
@@ -3042,9 +3047,14 @@ onAuthStateChanged(auth, async user => {
       document.getElementById('gemeloBar').style.width = '0%';
     }
 
-  } catch(err) { console.warn('Error cargando perfil:', err); }
-
-  mostrarPagina();
+  } catch(err) {
+    console.warn('Error cargando perfil:', err);
+  } finally {
+    // finally (no solo "después del try") a propósito: así el spinner se
+    // saca pase lo que pase adentro del try -- un return temprano o una
+    // excepción no vuelven a dejar la pantalla trabada en "cargando".
+    mostrarPagina();
+  }
 });
 
 // ── Guardar en Firestore (llamados desde el script principal) ──
