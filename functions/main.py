@@ -816,6 +816,36 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error.")
 
 
+@scheduler_fn.on_schedule(schedule="0 1 1 * *", timezone="America/Argentina/Buenos_Aires")
+def resetear_no_compatibles_mensual(event: scheduler_fn.ScheduledEvent) -> None:
+    """Corre una sola vez, el día 1 de cada mes calendario (no 30 días desde
+    que se simuló cada par -- todos se revisan juntos el mismo día). Hoy,
+    una vez que dos personas se simulan, buscar_parejas_pendientes nunca las
+    vuelve a tocar (ve que ya existe conexiones/{par_id} y las descarta para
+    siempre) -- bien para ahorrar en OpenAI, pero significa que alguien
+    marcado "no compatible" se queda así para siempre aunque después edite
+    su gemelo. Esto le da una segunda oportunidad mensual sin volver a
+    simular todas las noches: borra la conexión (y su subcolección de
+    simulaciones, para no dejar basura huérfana) y la entrada en
+    parejas_pendientes de cada par SIN match, así vuelven a verse como
+    "nunca evaluados" -- buscar_parejas_pendientes los va a re-encolar en su
+    próxima corrida (cada hora) y procesar_parejas_pendientes los simula de
+    nuevo esta misma noche (corre a la 1am, antes de las 3am). Los pares que
+    SÍ hicieron match (supera_umbral == true) no se tocan -- ya desbloquearon
+    una conexión real, no hace falta re-evaluarlos."""
+    db = firestore.client()
+    reseteados = 0
+    for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
+        par_id = doc.id
+        for sim_doc in doc.reference.collection("simulaciones").stream():
+            sim_doc.reference.delete()
+        doc.reference.delete()
+        db.collection("parejas_pendientes").document(par_id).delete()
+        reseteados += 1
+
+    print(f"resetear_no_compatibles_mensual: {reseteados} pares no-compatibles reseteados para reevaluar este mes.")
+
+
 # Mismo umbral que usa matches.html para hacer desaparecer un match nuevo
 # sin empezar a hablar -- acá es "recordame retomar" en vez de "ocultalo",
 # pero es la misma ventana de tiempo conceptualmente.
