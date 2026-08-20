@@ -224,7 +224,7 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     # cualquier string, aunque el <select> de perfil.html solo mande estos
     # valores. Si viene algo fuera de esta lista, se ignora ese campo en vez
     # de guardar basura en el perfil que usa el matching.
-    GENEROS_VALIDOS = {"Mujer", "Hombre", "No binario", "Género fluido", "Prefiero no decir", "Otro"}
+    GENEROS_VALIDOS = {"Mujer", "Hombre", "No binario", "Otro"}
     ORIENTACIONES_VALIDAS = {
         "Heterosexual", "Bisexual", "Gay / Lesbiana", "Pansexual", "Asexual",
         "Prefiero no decir", "Otro",

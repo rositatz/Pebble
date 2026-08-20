@@ -156,15 +156,23 @@ _GENEROS_CONOCIDOS = {"Hombre", "Mujer", "No binario"}
 
 def _generos_aceptados(genero, orientacion):
     """A partir del género de una persona y su orientación sexual, arma el
-    conjunto de géneros con los que estaría dispuesta a matchear.
+    conjunto de géneros con los que estaría dispuesta a matchear -- o None
+    si no hay ninguna restricción real (acepta cualquier género).
 
-    Con datos faltantes o ambiguos (orientación "Prefiero no decir"/"Otro",
-    o una etiqueta pensada para binario -tipo "Heterosexual"- combinada con
-    un género no binario/"Otro"/sin dato) se deja ABIERTO a todos los
-    géneros en vez de excluir: con información incompleta preferimos
-    mostrar de más que ocultar matches por error."""
+    Antes "sin restricción" se representaba con una lista fija (TODOS =
+    Hombre/Mujer/No binario/Otro) que se usaba después como un simple "está
+    en la lista sí o no". Esa lista se quedaba corta apenas alguien elegía
+    una opción real del onboarding que no estuviera en ella -- "Prefiero no
+    decir" es una opción real de la pregunta de género (no solo de
+    orientación) y nunca estuvo en esa lista, así que cualquiera que la
+    eligiera quedaba excluido de TODOS los matches posibles, aunque la
+    orientación de la otra persona no impusiera ninguna restricción real.
+    Un "Otro" con texto libre tenía el mismo problema. Usar None como
+    sentinel de "sin restricción" (en vez de una lista finita que hay que
+    mantener sincronizada con cada opción nueva del onboarding) hace que
+    esto no se pueda repetir con la próxima opción que se agregue."""
 
-    TODOS = {"Hombre", "Mujer", "No binario", "Otro"}
+    SIN_RESTRICCION = None
 
     o = (orientacion or "").strip().casefold()
     g = (genero or "").strip()
@@ -174,14 +182,14 @@ def _generos_aceptados(genero, orientacion):
             return {"Mujer"}
         if g == "Mujer":
             return {"Hombre"}
-        return TODOS
+        return SIN_RESTRICCION
     if o in ("gay / lesbiana", "gay/lesbiana", "gay", "lesbiana"):
         if g in _GENEROS_CONOCIDOS:
             return {g}
-        return TODOS
+        return SIN_RESTRICCION
     # bisexual, pansexual, asexual, "prefiero no decir", "otro", vacío, o
     # cualquier valor no reconocido: no filtramos por género.
-    return TODOS
+    return SIN_RESTRICCION
 
 
 def compatible_por_genero(perfil1, perfil2):
@@ -196,8 +204,8 @@ def compatible_por_genero(perfil1, perfil2):
     acepta1 = _generos_aceptados(g1, perfil1.get("orientacion"))
     acepta2 = _generos_aceptados(g2, perfil2.get("orientacion"))
 
-    ok_1_acepta_2 = (not g2) or (g2 in acepta1)
-    ok_2_acepta_1 = (not g1) or (g1 in acepta2)
+    ok_1_acepta_2 = acepta1 is None or (not g2) or (g2 in acepta1)
+    ok_2_acepta_1 = acepta2 is None or (not g1) or (g1 in acepta2)
 
     return ok_1_acepta_2 and ok_2_acepta_1
 
