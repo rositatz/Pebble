@@ -5,7 +5,8 @@
 
 import os
 import json
-import datetime 
+import random
+import datetime
 
 from gemelo_perfil import construir_perfil_gemelo
 from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad
@@ -834,6 +835,23 @@ def generar_resumen_gemelo(perfil):
 
     datos_txt = "\n".join(partes_datos) if partes_datos else "No hay datos suficientes todavía."
 
+    # Con el mismo prompt-plantilla para todos, el modelo tiende a converger
+    # en las mismas aperturas/estructuras "seguras" (temperature=1.0 varía
+    # las palabras, pero no alcanza para variar la FORMA del texto). Elegir
+    # un ángulo de entrada al azar por persona fuerza estructuras distintas
+    # entre gemelos, en vez de dejar que el modelo elija siempre la más
+    # genérica.
+    angulo = random.choice([
+        "Arrancá con una anécdota chica o concreta (algo que haría en un día cualquiera), no con una descripción general.",
+        "Arrancá directamente con lo que busca en una conexión, antes de contar nada de sí misma.",
+        "Arrancá con una contradicción o tensión real de la persona, sin anunciarla como tal.",
+        "Arrancá con cómo la describirían las personas que la conocen bien, no con cómo se describe ella.",
+        "Arrancá con algo muy concreto y cotidiano (una costumbre, un objeto, un lugar) que la represente.",
+        "Arrancá con lo que NO es o lo que la gente asume mal de ella, antes de decir lo que sí es.",
+        "Arrancá con una pregunta o duda genuina que se hace sobre sí misma, no con una afirmación.",
+        "Arrancá contando algo de su día a día actual (estudio, proyecto, rutina) y de ahí derivá al resto.",
+    ])
+
     prompt = f"""
     Sos un psicólogo que conoce muy bien a esta persona y va a escribir su
     presentación para una app de citas, en primera persona, como si fuera
@@ -863,13 +881,32 @@ def generar_resumen_gemelo(perfil):
     "Soy [nombre]" ni con la edad o el trabajo si no es lo más relevante de
     esta persona.
 
+    Para este texto en particular, seguí este ángulo de entrada (es al azar,
+    para que no todos los resúmenes tengan la misma forma): {angulo}
+
+    Este resumen lo va a leer gente que ya vio otros resúmenes generados por
+    vos para otras personas -- si repetís las mismas muletillas o
+    aperturas, se nota y queda mal. Evitá especialmente estas frases hechas
+    (y cualquier variante muy parecida), aunque encajen bien:
+    - "Algo que quizás te sorprenda / que sorprendería a quienes me conocen..."
+    - "No soy de las personas que..." / "No soy la típica persona que..."
+    - "En mis tiempos libres / En mi tiempo libre, me encanta..."
+    - "Cuando algo me importa, se nota" / "se nota en todo lo que hago"
+    - "Detrás de mi lado [serio/reservado/tranquilo] hay..."
+    - "Busco a alguien que..." como primera frase
+    - Cerrar con una frase corta tipo eslogan ("Así soy yo", "Eso es lo que me define", etc.)
+    Si alguna de estas te resulta la forma más natural de decir algo, decilo
+    igual pero con palabras distintas y más específicas de ESTA persona.
+
     Los números de personalidad/valores son SOLO para que vos entiendas a la
     persona antes de escribir -- el texto final tiene que sonar como lo
     escribiría alguien de carne y hueso describiéndose a sí misma, nunca como
     un informe. Eso quiere decir: NINGÚN número, escala, porcentaje ni
     palabra tipo "rasgo" o "valor" en el texto final -- todo tiene que
-    quedar traducido a lenguaje humano y natural (ej: no "introversión 0.8",
-    sino algo como "necesito mis tiempos a solas para recargar pilas").
+    quedar traducido a lenguaje humano y natural, con tus propias palabras
+    cada vez (ej: "introversión 0.8" se convierte en una descripción de esa
+    persona en concreto, nunca en la misma frase hecha que usarías para
+    cualquier otra persona introvertida).
 
     Escribí 2 a 3 párrafos bien desarrollados (no un párrafo corto de 4
     oraciones) -- tenés muchos datos reales, usalos para que se note. Que
