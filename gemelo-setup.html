@@ -1415,10 +1415,13 @@ function collectStage(n) {
    Sin esto, si el usuario salía a mitad del onboarding y volvía, los campos
    aparecían vacíos -- y si avanzaba de etapa así, collectStage() pisaba lo ya
    guardado en Firestore con esos campos vacíos. Se llama una sola vez, apenas
-   se carga stageData desde Firestore, y rellena el DOM de las etapas 1 a 6
-   para que collectStage() vuelva a incluir las respuestas ya dadas. */
+   se carga stageData desde Firestore, y rellena el DOM de las etapas 1 a 7
+   para que collectStage() vuelva a incluir las respuestas ya dadas. Incluye
+   la 7 (antes se cortaba en 6) para que el resumen ya confirmado quede
+   cargado en #gedit desde el principio, en vez de que solo buildGemelo()
+   pueda llenarlo. */
 function repoblarFormulario() {
-  for (let n = 1; n <= 6; n++) {
+  for (let n = 1; n <= 7; n++) {
     const data = stageData['etapa' + n];
     const stage = document.getElementById('stage-' + n);
     if (!data || !stage) continue;
@@ -1656,9 +1659,17 @@ function buildGemelo() {
   // puntuación extra ni se pasa a minúscula.
   const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Mi plan ideal para una tarde libre: ${plan} Y no puede faltar ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
 
-  document.getElementById('gemelo-gen-text').textContent = text;
+  // Si ya hay un resumen guardado de una vuelta anterior (confirmado con
+  // "Este soy yo ✓"), se muestra ESE en vez de pisarlo con la plantilla --
+  // antes, cada vez que se volvía a pasar por esta etapa (aunque fuera solo
+  // para revisar otra respuesta) se perdía el resumen que la persona ya
+  // había elegido, con o sin ayuda de la IA.
+  const textoGuardado = (stageData.etapa7 && stageData.etapa7.gedit) || '';
+  const textoAMostrar = textoGuardado || text;
+
+  document.getElementById('gemelo-gen-text').textContent = textoAMostrar;
   const geditEl = document.getElementById('gedit');
-  geditEl.value = text;
+  geditEl.value = textoAMostrar;
   autoGrowTextarea(geditEl);
 
   const traits = [];
@@ -1685,6 +1696,16 @@ window.regenGemelo = function() { buildGemelo(); };
 // a la persona sin nada que editar.
 window.generarResumenConIA = async function() {
   buildGemelo();
+
+  // Si ya hay un resumen guardado (buildGemelo ya lo dejó cargado en
+  // #gedit), no hace falta pedirle uno nuevo a la IA -- antes esto se
+  // llamaba SIEMPRE que se llegaba a esta etapa, así que volver a "Editar
+  // gemelo" para tocar cualquier otra respuesta terminaba reemplazando el
+  // resumen ya elegido por uno nuevo, aunque la persona no hubiera pedido
+  // cambiarlo. Para forzar uno nuevo, hay que borrar el texto de #gedit a
+  // mano antes de llegar acá -- así sí se nota vacío y se regenera.
+  if (stageData.etapa7 && stageData.etapa7.gedit) return;
+
   const textEl = document.getElementById('gemelo-gen-text');
   const geditEl = document.getElementById('gedit');
   const plantillaPrevia = geditEl.value;
