@@ -1368,6 +1368,16 @@ function autoGrowTextarea(el) {
 document.querySelectorAll('.txa, .gedit, textarea.inp').forEach(el => {
   el.addEventListener('input', () => { autoGrowTextarea(el); actualizarBarraProgreso(); });
 });
+// El cuadro "Tu gemelo dice..." (#gemelo-gen-text) y la caja de edición
+// (#gedit) se llenaban una sola vez desde el mismo texto, pero no estaban
+// conectados entre sí después -- editar #gedit no movía la vista previa de
+// arriba hasta guardar y volver a entrar. Con esto se reflejan en vivo.
+const _geditPreviewEl = document.getElementById('gedit');
+if (_geditPreviewEl) {
+  _geditPreviewEl.addEventListener('input', () => {
+    document.getElementById('gemelo-gen-text').textContent = _geditPreviewEl.value;
+  });
+}
 // Campos <input> sueltos (edad, altura, rango de edad que busca, etc.) --
 // antes no tenían ningún listener propio, así que ni la barra de progreso
 // ni el autoguardado nuevo de arriba reaccionaban mientras se tipeaba en
