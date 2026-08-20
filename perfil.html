@@ -512,6 +512,7 @@ body {
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   background: rgba(255,255,255,0.04);
   margin-bottom: 20px;
+  white-space: pre-line;
 }
 .twin-stats {
   display: grid; grid-template-columns: repeat(3, 1fr);
@@ -1204,15 +1205,15 @@ body {
       </div>
 
       <div id="bioView">
-        <p id="vBio" style="font-size:0.9rem;line-height:1.65;color:var(--text-secondary)">
+        <p id="vBio" style="font-size:0.9rem;line-height:1.65;color:var(--text-secondary);white-space:pre-line">
           Me gusta la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Trabajo en comunicación y en mi tiempo libre pinto y voy a shows. Busco algo que valga la pena construir.
         </p>
       </div>
 
       <div id="bioEdit" class="hidden" style="margin-top:4px">
         <div class="form-group">
-          <textarea class="form-textarea" id="eBio" maxlength="500" oninput="updateCharCount(this,'bioCount')">Me gusta la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Trabajo en comunicación y en mi tiempo libre pinto y voy a shows. Busco algo que valga la pena construir.</textarea>
-          <div class="char-count"><span id="bioCount">207</span>/500</div>
+          <textarea class="form-textarea" id="eBio" maxlength="2000" oninput="updateCharCount(this,'bioCount')">Me gusta la música en vivo, los viajes con mochila y los libros que te cambian la forma de ver el mundo. Trabajo en comunicación y en mi tiempo libre pinto y voy a shows. Busco algo que valga la pena construir.</textarea>
+          <div class="char-count"><span id="bioCount">207</span>/2000</div>
         </div>
         <div class="edit-actions">
           <button class="btn-cancel" onclick="cancelEdit('bio')">Cancelar</button>

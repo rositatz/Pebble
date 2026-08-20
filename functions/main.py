@@ -1,5 +1,7 @@
 import random
 import datetime
+import hashlib
+import json
 
 import firebase_admin
 from firebase_admin import firestore
@@ -180,6 +182,25 @@ def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
 
     perfil = construir_perfil_gemelo(doc_setup.to_dict())
 
+    # generar_resumen_gemelo usa temperature=1.0 a propósito (para que el
+    # resumen de dos personas distintas no suene siempre igual de
+    # "plantilla") -- pero eso mismo hacía que, si volvías a "Editar gemelo"
+    # SIN cambiar ninguna respuesta, salía un texto distinto cada vez, lo
+    # cual se siente como un bug aunque no lo sea. En vez de bajar la
+    # temperatura (eso sí volvería a todos los resúmenes más parecidos entre
+    # sí), se guarda un hash de los datos que realmente alimentan el prompt
+    # -- si no cambiaron desde la última vez, se reusa el mismo texto ya
+    # generado en vez de volver a llamar a OpenAI (ahorra la llamada Y
+    # garantiza el mismo resultado).
+    datos_para_hash = {k: v for k, v in perfil.items() if k != "bio"}
+    hash_actual = hashlib.sha256(
+        json.dumps(datos_para_hash, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
+    ).hexdigest()
+
+    datos_setup = doc_setup.to_dict()
+    if datos_setup.get("resumen_ia_hash") == hash_actual and datos_setup.get("resumen_ia_texto"):
+        return {"texto": datos_setup["resumen_ia_texto"]}
+
     try:
         texto = motor.generar_resumen_gemelo(perfil)
     except Exception as e:
@@ -188,6 +209,10 @@ def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
             https_fn.FunctionsErrorCode.UNAVAILABLE,
             "No se pudo generar el resumen en este momento. Probá de nuevo en un rato."
         )
+
+    doc_setup.reference.set(
+        {"resumen_ia_hash": hash_actual, "resumen_ia_texto": texto}, merge=True
+    )
 
     return {"texto": texto}
 

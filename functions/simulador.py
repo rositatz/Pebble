@@ -873,7 +873,9 @@ def generar_resumen_gemelo(perfil):
 
     Escribí 2 a 3 párrafos bien desarrollados (no un párrafo corto de 4
     oraciones) -- tenés muchos datos reales, usalos para que se note. Que
-    suene natural y humano, nunca a lista ni a ficha de datos.
+    suene natural y humano, nunca a lista ni a ficha de datos. IMPORTANTE:
+    separá cada párrafo con una línea en blanco de verdad (un salto de línea
+    doble) -- no los pegues todos en un solo bloque de texto corrido.
 
     DATOS REALES DE LA PERSONA (para tu análisis interno -- no los repitas
     tal cual en el texto final, son para que entiendas a la persona, no
