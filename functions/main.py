@@ -62,7 +62,7 @@ def _obtener_o_generar_perfil(db, uid):
         return snap.to_dict()
 
     doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
-    if not doc_setup.exists or not doc_setup.get("completed"):
+    if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
         return None
 
     perfil = construir_perfil_gemelo(doc_setup.to_dict())
@@ -92,14 +92,18 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     despues = event.data.after
     # despues es None si este evento es un borrado del doc (on_document_written
     # dispara en create/update/delete) -- no hay nada que generar en ese caso.
-    if despues is None or not despues.exists or not despues.get("completed"):
+    # OJO: snapshot.get("completed") (a diferencia de dict.get) tira KeyError
+    # si el campo todavía no existe -- y no existe en ningún autoguardado
+    # antes de terminar el onboarding, así que este trigger explotaba en cada
+    # merge intermedio. Por eso se usa to_dict().get(), que sí devuelve None.
+    if despues is None or not despues.exists or not despues.to_dict().get("completed"):
         return
 
     antes = event.data.before
     # antes es None (no un snapshot con exists=False) cuando este es el
     # primer write de todos sobre este doc -- pasa siempre en el onboarding
     # de un usuario nuevo, así que hay que contemplarlo.
-    if antes is not None and antes.exists and antes.get("completed"):
+    if antes is not None and antes.exists and antes.to_dict().get("completed"):
         return  # ya se había generado, no lo repetimos en cada merge posterior
 
     uid = event.params["uid"]
@@ -140,7 +144,7 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     # este endpoint se llama justo al terminar el onboarding, cuando
     # gemelo_setup/data tiene la versión más nueva de las respuestas.
     doc_setup = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
-    if not doc_setup.exists or not doc_setup.get("completed"):
+    if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no completaste el onboarding de tu gemelo."

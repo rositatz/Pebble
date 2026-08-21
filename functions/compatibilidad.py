@@ -21,67 +21,9 @@ def client():
         _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
-# MAPA_PREFERENCIAS = {
-
-#     "atraeMas": {
-
-#         "Seguro/a": {
-#             "tipo": "objetivo",
-#             "rasgos": {
-#                 "personalidad.independencia": 0.8,
-#                 "personalidad.tolerancia_conflicto": 0.8
-#             }
-#         },
-
-#         "Sensible": {
-#             "tipo": "objetivo",
-#             "rasgos": {
-#                 "personalidad.sensibilidad_emocional": 0.85,
-#                 "personalidad.empatia": 0.85
-#             }
-#         },
-
-#         "Inteligente": {
-#             "tipo": "objetivo",
-#             "rasgos": {
-#                 "personalidad.apertura_mental": 0.9
-#             }
-#         },
-
-#         "Creativo/a": {
-#             "tipo": "objetivo",
-#             "rasgos": {
-#                 "personalidad.apertura_mental": 0.9
-#             }
-#         }
-#     },
-
-#     "similitud": {
-
-#         "Muy parecido/a a vos": {
-#             "tipo": "similaridad",
-#             "ejes": [
-#                 "personalidad",
-#                 "valores"
-#             ]
-#         },
-
-#         "Algo parecido/a": {
-#             "tipo": "similaridad",
-#             "ejes": [
-#                 "personalidad"
-#             ]
-#         },
-
-#         "Completamente diferente": {
-#             "tipo": "diferencia",
-#             "ejes": [
-#                 "personalidad",
-#                 "valores"
-#             ]
-#         }
-#     }
-# }
+# El mapeo atraeMas/persEngancha -> objetivo numérico de personalidad vive
+# en gemelo_perfil.MAPA_PREFERENCIAS_PERSONALIDAD (se arma junto con el
+# resto del perfil, no acá).
 def analizar_conversacion(historial_chat):
 
     prompt_analisis = f"""
@@ -618,42 +560,34 @@ def pesos_compatibilidad_pareja(perfil1, perfil2):
     return {eje: v / total for eje, v in combinados.items()}
 
 def compatibilidad_preferencias_unidireccional(preferidor, candidato):
+    """Qué tan bien encaja candidato con lo que preferidor busca: físico
+    (preferencias_pareja vs fisico_propio) y personalidad
+    (preferencias_pareja_personalidad vs personalidad, ambos 0.0-1.0). Usa
+    los pesos propios del preferidor -- sin datos declarados, neutro (0.5)
+    en vez de romper."""
 
-    preferencias = preferidor.get("preferencias_pareja_personalidad", {})
-    pesos_com= preferidor.get("pesos_compatibilida", {})
-    personalidad = candidato.get("personalidad", {})
-    valores = candidato.get("valores", {})
+    from gemelo_perfil import PESOS_DEFAULT
+
+    pesos_com = preferidor.get("pesos_compatibilidad") or PESOS_DEFAULT
+    objetivo_personalidad = preferidor.get("preferencias_pareja_personalidad") or {}
+    personalidad_candidato = candidato.get("personalidad") or {}
 
     scores = []
     pesos = []
-    
 
-    scores.append(_satisfaccion_fisica_direccion(preferidor, candidato))
-    pesos.append(pesos_com["fisico"])
+    s_fisico = _satisfaccion_fisica_direccion(preferidor, candidato)
+    scores.append(0.5 if s_fisico is None else s_fisico)
+    pesos.append(pesos_com.get("fisico", PESOS_DEFAULT["fisico"]))
 
-    personalidad_scores  = []
-    for campo, valor in personalidad.items():
-        valor_deseado = preferencias[valor]
-        valor_candidato = personalidad[valor]
-        fit = 1 - abs(valor_deseado - valor_candidato)
-        personalidad_scores.append(fit)
+    rasgos_comparables = set(objetivo_personalidad) & set(personalidad_candidato)
+    if rasgos_comparables:
+        fits = [1 - abs(objetivo_personalidad[r] - personalidad_candidato[r]) for r in rasgos_comparables]
+        scores.append(sum(fits) / len(fits))
+    else:
+        scores.append(0.5)
+    pesos.append(pesos_com.get("psicologico", PESOS_DEFAULT["psicologico"]))
 
-    personalidad_score =sum(
-        score 
-        for score in personalidad_scores
-    ) / len(personalidad_scores)
-    scores.append(personalidad_score)
-
-
-    pesos.append(pesos_com["psicologico"])
-    
-
-   
-
-    return sum(
-        score * peso
-        for score, peso in zip(scores, pesos)
-    ) / sum(pesos)
+    return sum(s * p for s, p in zip(scores, pesos)) / sum(pesos)
 
 def calcular_compatibilidad(perfil1, perfil2, analisis=None):
 

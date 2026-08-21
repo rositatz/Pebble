@@ -536,6 +536,33 @@ def _construir_preferencias_pareja(respuestas_raw):
     return prefs
 
 
+# Traduce atraeMas/persEngancha a un objetivo NUMÉRICO por rasgo (misma
+# escala 0.0-1.0 y misma clave que BASE_PERSONALIDAD), para poder comparar
+# contra la personalidad real del candidato en compatibilidad_preferencias_
+# unidireccional. Son valores objetivo, no deltas -- si dos reglas tocan el
+# mismo rasgo, gana la última que matchee.
+MAPA_PREFERENCIAS_PERSONALIDAD = [
+    ("etapa6", "atraeMas", "Seguro/a", {"independencia": 0.75, "tolerancia_conflicto": 0.75}),
+    ("etapa6", "atraeMas", "Sensible", {"sensibilidad_emocional": 0.8, "empatia": 0.8}),
+    ("etapa6", "atraeMas", "Inteligente", {"apertura_mental": 0.85}),
+    ("etapa6", "atraeMas", "Creativo/a", {"apertura_mental": 0.85}),
+    ("etapa3", "persEngancha", "Súper expresiva, habladora y con mucha onda", {"introversion": 0.15}),
+    ("etapa3", "persEngancha", "Tranquila, que sabe escuchar y transmite paz", {"introversion": 0.55, "empatia": 0.75}),
+    ("etapa3", "persEngancha", "Intensa o hiperactiva", {"introversion": 0.15, "sensibilidad_emocional": 0.7}),
+    ("etapa3", "persEngancha", "Muy cerrada, de las que cuesta remarles la conversación", {"introversion": 0.85}),
+]
+
+
+def _construir_preferencias_pareja_personalidad(respuestas_raw):
+    objetivo = {}
+    for etapa, campo, respuesta_esperada, rasgos in MAPA_PREFERENCIAS_PERSONALIDAD:
+        datos_etapa = respuestas_raw.get(etapa) or {}
+        seleccionadas = {str(v).strip().casefold() for v in _seleccion(datos_etapa, campo)}
+        if respuesta_esperada.strip().casefold() in seleccionadas:
+            objetivo.update(rasgos)
+    return objetivo
+
+
 def _construir_creencias(respuestas_raw):
     creencias = {}
     for etapa, campo in CAMPOS_CREENCIAS:
@@ -648,6 +675,7 @@ def construir_perfil_gemelo(respuestas_raw):
         "conflictos": _construir_conflictos(e4),
         "notas_personales": _construir_notas(respuestas_raw),
         "preferencias_pareja": _construir_preferencias_pareja(respuestas_raw),
+        "preferencias_pareja_personalidad": _construir_preferencias_pareja_personalidad(respuestas_raw),
         "fisico_propio": _construir_fisico_propio(e6),
         "creencias": _construir_creencias(respuestas_raw),
         # Preferencia de medio de comunicación ("Mensajes de texto"/"Audios"/
