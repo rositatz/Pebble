@@ -785,6 +785,10 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 "usuario_2": data["usuario_2"],
                 "participantes": [uid1, uid2],
                 "ultimo_score": resultado["compatibilidad_promedio"],
+                "ultimo_sim": resultado["similitud"],
+                "ultimo_pref_a_b":resultado["pref_a_b"],
+                "ultimo_pref_b_a":resultado["pref_b_a"],
+                "ultimo_conv": resultado["score_conversacional"],
                 "supera_umbral": resultado["supera_umbral"],
                 "distancia_km": data.get("distancia_km"),
                 "actualizado": (

@@ -1146,7 +1146,7 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=2, umbral=0.7
     registros para que quien llame (main.py) decida cómo guardarlos en
     Firestore."""
 
-    promedio = calcular_compatibilidad(perfil1, perfil2)
+    promedio, s, pref_a_b, pref_b_a, score_conversacional = calcular_compatibilidad(perfil1, perfil2)
     supera = promedio >= umbral
 
     simulaciones = []
@@ -1160,6 +1160,10 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=2, umbral=0.7
 
     return {
         "compatibilidad_promedio": round(promedio, 2),
+        "similitud": s,
+        "pref_a_b": pref_a_b,
+        "pref_b_a": pref_b_a,
+        "score_conversacional":score_conversacional,
         "supera_umbral": supera,
         "simulaciones": simulaciones,
     }

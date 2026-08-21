@@ -602,11 +602,11 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
     score_comunicacion = compatibilidad_comunicacion(perfil1, perfil2)
 
     pesos_s = {
-        "psicologico": 0.20,
-        "valores": 0.25,
-        "intereses": 0.20,
-        "creencias": 0.15,
-        "comunicacion": 0.20
+        "psicologico": 0.16,
+        "valores": 0.35,
+        "intereses": 0.09,
+        "creencias": 0.25,
+        "comunicacion": 0.15
     }
 
     S = (
@@ -653,10 +653,11 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
     if score_conversacional is not None:
 
         # Ejemplo
-        alpha = 0.25
-        beta = 0.30
-        gamma = 0.30
-        delta = 0.15
+        alpha = 0.20
+        beta = 0.35
+        gamma = 0.35
+        delta = 0.10
+
 
         total = (
             alpha * S +
@@ -677,4 +678,4 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
             gamma * pref_b_a
         )
 
-    return total
+    return total, S, pref_a_b, pref_b_a, score_conversacional
