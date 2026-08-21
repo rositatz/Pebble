@@ -14,25 +14,6 @@ BASE_PERSONALIDAD = (
 )
 BASE_VALORES = ("familia", "ambicion", "aventura", "estabilidad")
 
-# Pesos por default para combinar los 7 ejes de calcular_compatibilidad.
-# Informados por la investigación que pasó la usuaria (Investigacion de
-# pareja.pdf): conversacional queda primero porque los patrones de
-# interacción P×O son, según esos papers, el factor con más probabilidad de
-# generar compatibilidad inicial -- más que la similitud estática sola.
-# Entre las similitudes estáticas, el orden de preferencia que reportan los
-# estudios es valores > intereses > habilidades sociales/comunicación >
-# origen, por eso valores > intereses > comunicacion en esta tabla.
-# psicologico baja de 0.35 (el valor original, antes de esta investigación)
-# a 0.12 porque el mismo estudio de parejas reales (assortative mating)
-# encontró correlación débil/inconsistente en rasgos de personalidad
-# tomados solos -- sigue pesando, pero bastante menos que antes.
-# fisico es nuevo: ese mismo estudio encontró correlación FUERTE en
-# atractivo físico entre parejas reales (a la par de edad/educación/ocio),
-# así que le toca un peso comparable al de intereses -- pero como los datos
-# que hay para medirlo son categorías gruesas (color de pelo, contextura,
-# etc.), no se le da más peso que a valores/intereses, que están mejor
-# respaldados. creencias sigue siendo lo más bajo porque la correlación
-# real en actitudes políticas/religiosas fue moderada, no fuerte.
 PESOS_DEFAULT = {
     "conversacional": 0.26,
     "valores": 0.20,

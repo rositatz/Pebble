@@ -139,7 +139,7 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     # Se fuerza la regeneración (no simplemente reusar si ya existe) porque
     # este endpoint se llama justo al terminar el onboarding, cuando
     # gemelo_setup/data tiene la versión más nueva de las respuestas.
-    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
     if not doc_setup.exists or not doc_setup.get("completed"):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
@@ -173,7 +173,7 @@ def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
     uid = request.auth.uid
     db = firestore.client()
 
-    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
     if not doc_setup.exists:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
@@ -789,8 +789,6 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             }
             payload = _con_creado(par_ref, payload)
 
-            for registro in resultado["simulaciones"]:
-                par_ref.collection("simulaciones").add(registro)
             par_ref.set(payload, merge=True)
 
             # Como cada pareja llega acá una sola vez (buscar_parejas_pendientes

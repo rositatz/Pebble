@@ -21,6 +21,67 @@ def client():
         _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
+# MAPA_PREFERENCIAS = {
+
+#     "atraeMas": {
+
+#         "Seguro/a": {
+#             "tipo": "objetivo",
+#             "rasgos": {
+#                 "personalidad.independencia": 0.8,
+#                 "personalidad.tolerancia_conflicto": 0.8
+#             }
+#         },
+
+#         "Sensible": {
+#             "tipo": "objetivo",
+#             "rasgos": {
+#                 "personalidad.sensibilidad_emocional": 0.85,
+#                 "personalidad.empatia": 0.85
+#             }
+#         },
+
+#         "Inteligente": {
+#             "tipo": "objetivo",
+#             "rasgos": {
+#                 "personalidad.apertura_mental": 0.9
+#             }
+#         },
+
+#         "Creativo/a": {
+#             "tipo": "objetivo",
+#             "rasgos": {
+#                 "personalidad.apertura_mental": 0.9
+#             }
+#         }
+#     },
+
+#     "similitud": {
+
+#         "Muy parecido/a a vos": {
+#             "tipo": "similaridad",
+#             "ejes": [
+#                 "personalidad",
+#                 "valores"
+#             ]
+#         },
+
+#         "Algo parecido/a": {
+#             "tipo": "similaridad",
+#             "ejes": [
+#                 "personalidad"
+#             ]
+#         },
+
+#         "Completamente diferente": {
+#             "tipo": "diferencia",
+#             "ejes": [
+#                 "personalidad",
+#                 "valores"
+#             ]
+#         }
+#     }
+# }
 def analizar_conversacion(historial_chat):
 
     prompt_analisis = f"""
@@ -556,40 +617,130 @@ def pesos_compatibilidad_pareja(perfil1, perfil2):
     total = sum(combinados.values()) or 1.0
     return {eje: v / total for eje, v in combinados.items()}
 
+def compatibilidad_preferencias_unidireccional(preferidor, candidato):
 
-def calcular_compatibilidad(perfil1, perfil2, analisis):
+    preferencias = preferidor.get("preferencias_pareja_personalidad", {})
+    pesos_com= preferidor.get("pesos_compatibilida", {})
+    personalidad = candidato.get("personalidad", {})
+    valores = candidato.get("valores", {})
+
+    scores = []
+    pesos = []
+    
+
+    scores.append(_satisfaccion_fisica_direccion(preferidor, candidato))
+    pesos.append(pesos_com["fisico"])
+
+    personalidad_scores  = []
+    for campo, valor in personalidad.items():
+        valor_deseado = preferencias[valor]
+        valor_candidato = personalidad[valor]
+        fit = 1 - abs(valor_deseado - valor_candidato)
+        personalidad_scores.append(fit)
+
+    personalidad_score =sum(
+        score 
+        for score in personalidad_scores
+    ) / len(personalidad_scores)
+    scores.append(personalidad_score)
+
+
+    pesos.append(pesos_com["psicologico"])
+    
+
+   
+
+    return sum(
+        score * peso
+        for score, peso in zip(scores, pesos)
+    ) / sum(pesos)
+
+def calcular_compatibilidad(perfil1, perfil2, analisis=None):
+
+    # --------------------------------
+    # 1. SIMILITUD PURA
+    # --------------------------------
 
     score_psicologico = compatibilidad_psicologica(perfil1, perfil2)
     score_valores = compatibilidad_valores(perfil1, perfil2)
-    score_conversacional = compatibilidad_conversacional(analisis)
     score_intereses = compatibilidad_intereses(perfil1, perfil2)
-    score_comunicacion = compatibilidad_comunicacion(perfil1, perfil2)
     score_creencias = compatibilidad_creencias(perfil1, perfil2)
-    score_fisico = compatibilidad_fisica(perfil1, perfil2)
+    score_comunicacion = compatibilidad_comunicacion(perfil1, perfil2)
 
-    pesos = pesos_compatibilidad_pareja(perfil1, perfil2)
-
-    compatibilidad_total = (
-        score_psicologico * pesos["psicologico"] +
-        score_conversacional * pesos["conversacional"] +
-        score_valores * pesos["valores"] +
-        score_intereses * pesos["intereses"] +
-        score_comunicacion * pesos["comunicacion"] +
-        score_creencias * pesos["creencias"] +
-        score_fisico * pesos["fisico"]
-    )
-
-    return {
-        "compatibilidad_total": round(compatibilidad_total, 2),
-        "score_psicologico": round(score_psicologico, 2),
-        "score_conversacional": round(score_conversacional, 2),
-        "score_valores": round(score_valores, 2),
-        "score_intereses": round(score_intereses, 2),
-        "score_comunicacion": round(score_comunicacion, 2),
-        "score_creencias": round(score_creencias, 2),
-        "score_fisico": round(score_fisico, 2),
-        "pesos_usados": {
-            eje: round(v, 2) for eje, v in pesos.items()
-        }
+    pesos_s = {
+        "psicologico": 0.20,
+        "valores": 0.25,
+        "intereses": 0.20,
+        "creencias": 0.15,
+        "comunicacion": 0.20
     }
 
+    S = (
+        score_psicologico * pesos_s["psicologico"] +
+        score_valores * pesos_s["valores"] +
+        score_intereses * pesos_s["intereses"] +
+        score_creencias * pesos_s["creencias"] +
+        score_comunicacion * pesos_s["comunicacion"]
+    )
+
+    # --------------------------------
+    # 2. PREFERENCIA A → B
+    # Usa pesos de A
+    # --------------------------------
+
+    pref_a_b = compatibilidad_preferencias_unidireccional(
+        perfil1,
+        perfil2
+    )
+
+    # --------------------------------
+    # 3. PREFERENCIA B → A
+    # Usa pesos de B
+    # --------------------------------
+
+    pref_b_a = compatibilidad_preferencias_unidireccional(
+        perfil2,
+        perfil1
+    )
+
+    # --------------------------------
+    # 4. INTERACCIÓN
+    # --------------------------------
+
+    if analisis is not None:
+        score_conversacional = compatibilidad_conversacional(analisis)
+    else:
+        score_conversacional = None
+
+    # --------------------------------
+    # 5. SCORE FINAL
+    # --------------------------------
+
+    if score_conversacional is not None:
+
+        # Ejemplo
+        alpha = 0.25
+        beta = 0.30
+        gamma = 0.30
+        delta = 0.15
+
+        total = (
+            alpha * S +
+            beta * pref_a_b +
+            gamma * pref_b_a +
+            delta * score_conversacional
+        )
+
+    else:
+
+        alpha = 0.30
+        beta = 0.35
+        gamma = 0.35
+
+        total = (
+            alpha * S +
+            beta * pref_a_b +
+            gamma * pref_b_a
+        )
+
+    return total

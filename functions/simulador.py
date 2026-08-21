@@ -24,14 +24,6 @@ def client():
         _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
-
-# Por ahora solo se prueba con "Algo serio" -- se sacaron los escenarios que
-# eran exclusivos de "Algo casual"/"Nuevas amistades" (planes de finde, humor
-# y coqueteo, hobbies para compartir, buena onda en grupo) y se dejó
-# "tipos_relacion" en ["Algo serio"] en todos. El mecanismo de filtrado
-# (escenarios_para_tipo, más abajo) queda igual -- cuando se vuelva a testear
-# con otros tipos de relación, alcanza con agregar escenarios nuevos con su
-# tipo correspondiente, no hace falta tocar la lógica.
 escenarios_db = [
 
     {
@@ -1159,32 +1151,14 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, 
     Firestore. La memoria de cada gemelo se acumula escenario a escenario."""
 
     tipo = tipo_relacion or perfil1.get("busco") or perfil2.get("busco") or ""
-    indices = escenarios_para_tipo(tipo)
 
-    memoria1, memoria2 = None, None
-    registros = []
+    promedio = calcular_compatibilidad(perfil1, perfil2)
 
-    for idx in indices:
-        historial_chat, analisis, score = simular_cita(
-            perfil1, perfil2, turnos=turnos, escenario=idx,
-            memoria1=memoria1, memoria2=memoria2,
-        )
-
-        memoria1 = actualizar_memoria(memoria1, analisis)
-        memoria2 = actualizar_memoria(memoria2, analisis)
-
-        registros.append(registro_simulacion(
-            uid1, perfil1, uid2, perfil2, idx, historial_chat, analisis, score, umbral
-        ))
-
-    promedio = sum(r["score"]["compatibilidad_total"] for r in registros) / len(registros)
 
     return {
         "tipo_relacion": tipo or "Sin definir",
-        "escenarios_corridos": len(registros),
         "compatibilidad_promedio": round(promedio, 2),
         "supera_umbral": promedio >= umbral,
-        "simulaciones": registros,
     }
 
 
