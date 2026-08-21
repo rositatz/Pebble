@@ -361,24 +361,18 @@ def simular_situacion(request: https_fn.CallableRequest):
     # Este endpoint se llama con cualquier otroUid que mande el cliente --
     # normalmente viene del picker de "Consejo para un match" (que solo
     # ofrece matches reales), pero como Cloud Function nada impide llamarlo
-    # directo con cualquier uid. Sin este chequeo, alguien podría usarlo para
-    # esquivar los mismos filtros de género/orientación/edad que aplica la
-    # cola automática (buscar_parejas_pendientes) y forzar una conexión real
-    # con alguien que nunca hubiera sido un candidato válido.
-    if not compatible_por_genero(perfil1, perfil2):
+    # directo con cualquier uid. Por eso se exige un match confirmado
+    # (conexiones/{par_id} con supera_umbral=true) en vez de solo repetir
+    # los filtros de género/edad/hijos: ese documento no existe salvo que
+    # buscar_parejas_pendientes ya haya filtrado por esos criterios Y
+    # procesar_parejas_pendientes ya haya calculado >=75% de compatibilidad
+    # con las respuestas del onboarding -- sin esto, cualquiera podría
+    # gastar en OpenAI simulando con alguien con quien ni siquiera hay match.
+    par_doc = db.collection("conexiones").document(motor._par_id(uid1, uid2)).get()
+    if not par_doc.exists or not par_doc.to_dict().get("supera_umbral"):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
-            "Esa persona no es un candidato válido según género/orientación."
-        )
-    if not compatible_por_edad(perfil1, perfil2):
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
-            "Esa persona no es un candidato válido según el rango de edad."
-        )
-    if not compatible_por_hijos(perfil1, perfil2):
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
-            "Esa persona no es un candidato válido según hijos."
+            "Todavía no sos match con esa persona."
         )
 
     if situacion:
@@ -779,6 +773,10 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             if not doc1.exists or not doc2.exists:
                 raise ValueError("A alguno de los dos ya no le existe el perfil de gemelo.")
 
+            # simular_relacion_completa calcula compatibilidad solo con el
+            # onboarding (gratis) y, únicamente si supera 0.75, corre los
+            # escenarios preestablecidos de verdad (con OpenAI) -- por eso
+            # "simulaciones" puede venir vacía (par no compatible).
             resultado = motor.simular_relacion_completa(uid1, doc1.to_dict(), uid2, doc2.to_dict())
 
             par_ref = db.collection("conexiones").document(data["par_id"])
@@ -789,11 +787,16 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 "ultimo_score": resultado["compatibilidad_promedio"],
                 "supera_umbral": resultado["supera_umbral"],
                 "distancia_km": data.get("distancia_km"),
-                "actualizado": resultado["simulaciones"][-1]["fecha"],
+                "actualizado": (
+                    resultado["simulaciones"][-1]["fecha"]
+                    if resultado["simulaciones"] else firestore.SERVER_TIMESTAMP
+                ),
             }
             payload = _con_creado(par_ref, payload)
 
             par_ref.set(payload, merge=True)
+            for registro in resultado["simulaciones"]:
+                par_ref.collection("simulaciones").add(registro)
 
             # Como cada pareja llega acá una sola vez (buscar_parejas_pendientes
             # ya descarta pares que ya tienen conexión), supera_umbral==True acá

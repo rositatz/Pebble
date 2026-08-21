@@ -434,9 +434,8 @@ def _construir_identidad(e1):
         "signo": e1.get("signo", ""),
         "genero": genero,
         "orientacion": orientacion,
-        # Qué tipo de relación busca ("Algo serio"/"Algo casual"/"Nuevas
-        # amistades"/"Sin definir") -- lo usa escenarios_para_tipo() para
-        # decidir qué escenarios correr con simular_relacion_completa().
+        # Ya no se pregunta en el onboarding (la app es solo para "Algo
+        # serio") -- queda por perfiles viejos/editados a mano en perfil.html.
         "busco": e1.get("busco", ""),
     }
 

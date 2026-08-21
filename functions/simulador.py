@@ -255,16 +255,6 @@ escenarios_db = [
 ]
 
 
-def escenarios_para_tipo(tipo_relacion):
-    """Devuelve los índices de escenarios_db relevantes para el tipo de
-    relación buscado (perfil.get('busco'): "Algo serio" / "Algo casual" /
-    "Nuevas amistades" / "Sin definir"). Si no matchea nada corre todos."""
-
-    tipo = (tipo_relacion or "").strip()
-    indices = [i for i, e in enumerate(escenarios_db) if tipo in e.get("tipos_relacion", [])]
-    return indices if indices else list(range(len(escenarios_db)))
-
-
 def armar_escenario_personalizado(texto):
     """El usuario pidió simular algo puntual (ej: "simulá que discutimos por
     plata") -- se arma un escenario al vuelo con ese texto en vez de usar uno
@@ -1141,24 +1131,37 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
     return registro
 
 
-def simular_relacion_completa(uid1, perfil1, uid2, perfil2, tipo_relacion=None, turnos=2, umbral=0.75):
-    """Corre TODOS los escenarios que correspondan al tipo de relación que se
-    busca -- no solo uno. tipo_relacion: "Algo serio" / "Algo casual" /
-    "Nuevas amistades" / None (usa perfil1/perfil2["busco"] si no se pasa).
+def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=2, umbral=0.75):
+    """Primero calcula compatibilidad SOLO con las respuestas del onboarding
+    (calcular_compatibilidad sin analisis, sin costo) -- si no supera el
+    umbral, no corre nada más: así el gasto real en OpenAI (una simulación
+    por escenario) queda reservado para pares que ya se probó que son
+    compatibles, nunca para explorar candidatos al voleo.
+
+    Si supera el umbral, corre TODOS los escenarios preestablecidos de
+    escenarios_db (hoy la app solo es para "Algo serio", así que no hace
+    falta filtrar por tipo de relación -- son todos igual de válidos).
 
     Igual que simular_y_registrar, no persiste nada -- devuelve la lista de
     registros para que quien llame (main.py) decida cómo guardarlos en
-    Firestore. La memoria de cada gemelo se acumula escenario a escenario."""
-
-    tipo = tipo_relacion or perfil1.get("busco") or perfil2.get("busco") or ""
+    Firestore."""
 
     promedio = calcular_compatibilidad(perfil1, perfil2)
+    supera = promedio >= umbral
 
+    simulaciones = []
+    if supera:
+        for indice_escenario in range(len(escenarios_db)):
+            registro = simular_y_registrar(
+                uid1, perfil1, uid2, perfil2,
+                turnos=turnos, escenario=indice_escenario, umbral=umbral, guardar=None,
+            )
+            simulaciones.append(registro)
 
     return {
-        "tipo_relacion": tipo or "Sin definir",
         "compatibilidad_promedio": round(promedio, 2),
-        "supera_umbral": promedio >= umbral,
+        "supera_umbral": supera,
+        "simulaciones": simulaciones,
     }
 
 
