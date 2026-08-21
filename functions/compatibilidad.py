@@ -559,35 +559,45 @@ def pesos_compatibilidad_pareja(perfil1, perfil2):
     total = sum(combinados.values()) or 1.0
     return {eje: v / total for eje, v in combinados.items()}
 
-def compatibilidad_preferencias_unidireccional(preferidor, candidato):
-    """Qué tan bien encaja candidato con lo que preferidor busca: físico
-    (preferencias_pareja vs fisico_propio) y personalidad
-    (preferencias_pareja_personalidad vs personalidad, ambos 0.0-1.0). Usa
-    los pesos propios del preferidor -- sin datos declarados, neutro (0.5)
-    en vez de romper."""
+def _fit_psicologico_direccion(preferidor, candidato):
+    objetivo = preferidor.get("preferencias_pareja_personalidad") or {}
+    real = candidato.get("personalidad") or {}
+    rasgos = set(objetivo) & set(real)
+    if not rasgos:
+        return 0.5
+    return sum(1 - abs(objetivo[r] - real[r]) for r in rasgos) / len(rasgos)
+
+
+def compatibilidad_preferencias_unidireccional(preferidor, candidato, analisis=None):
+    """Qué tan bien encaja candidato con lo que preferidor busca, pesado con
+    los pesos PROPIOS de preferidor (pesos_compatibilidad) -- llamar esto en
+    las dos direcciones puede dar números distintos aunque el eje sea el
+    mismo, porque lo que cambia es cuánto le importa ese eje a cada uno.
+
+    fisico/psicologico comparan preferencia declarada vs. candidato real;
+    valores/intereses/creencias/comunicacion son similitud (no hay
+    "objetivo" declarado para esos ejes); conversacional necesita el
+    análisis de una charla real -- sin `analisis` (fase de precálculo,
+    antes de simular nada), neutro. Sin pesos propios, PESOS_DEFAULT."""
 
     from gemelo_perfil import PESOS_DEFAULT
 
     pesos_com = preferidor.get("pesos_compatibilidad") or PESOS_DEFAULT
-    objetivo_personalidad = preferidor.get("preferencias_pareja_personalidad") or {}
-    personalidad_candidato = candidato.get("personalidad") or {}
-
-    scores = []
-    pesos = []
 
     s_fisico = _satisfaccion_fisica_direccion(preferidor, candidato)
-    scores.append(0.5 if s_fisico is None else s_fisico)
-    pesos.append(pesos_com.get("fisico", PESOS_DEFAULT["fisico"]))
 
-    rasgos_comparables = set(objetivo_personalidad) & set(personalidad_candidato)
-    if rasgos_comparables:
-        fits = [1 - abs(objetivo_personalidad[r] - personalidad_candidato[r]) for r in rasgos_comparables]
-        scores.append(sum(fits) / len(fits))
-    else:
-        scores.append(0.5)
-    pesos.append(pesos_com.get("psicologico", PESOS_DEFAULT["psicologico"]))
+    ejes = {
+        "fisico": 0.5 if s_fisico is None else s_fisico,
+        "psicologico": _fit_psicologico_direccion(preferidor, candidato),
+        "valores": compatibilidad_valores(preferidor, candidato),
+        "intereses": compatibilidad_intereses(preferidor, candidato),
+        "creencias": compatibilidad_creencias(preferidor, candidato),
+        "comunicacion": compatibilidad_comunicacion(preferidor, candidato),
+        "conversacional": compatibilidad_conversacional(analisis) if analisis is not None else 0.5,
+    }
+    pesos = {eje: pesos_com.get(eje, PESOS_DEFAULT[eje]) for eje in ejes}
 
-    return sum(s * p for s, p in zip(scores, pesos)) / sum(pesos)
+    return sum(ejes[e] * pesos[e] for e in ejes) / sum(pesos.values())
 
 def calcular_compatibilidad(perfil1, perfil2, analisis=None):
 
@@ -624,7 +634,8 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
 
     pref_a_b = compatibilidad_preferencias_unidireccional(
         perfil1,
-        perfil2
+        perfil2,
+        analisis
     )
 
     # --------------------------------
@@ -634,7 +645,8 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
 
     pref_b_a = compatibilidad_preferencias_unidireccional(
         perfil2,
-        perfil1
+        perfil1,
+        analisis
     )
 
     # --------------------------------

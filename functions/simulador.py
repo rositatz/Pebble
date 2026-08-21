@@ -1057,7 +1057,14 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
         vista_2.append({"role": "user", "content": msg_1})
 
     analisis = analizar_conversacion(historial_chat)
-    score = calcular_compatibilidad(perfil1, perfil2, analisis)
+    promedio, similitud, pref_a_b, pref_b_a, score_conversacional = calcular_compatibilidad(perfil1, perfil2, analisis)
+    score = {
+        "compatibilidad_total": promedio,
+        "similitud": similitud,
+        "pref_a_b": pref_a_b,
+        "pref_b_a": pref_b_a,
+        "score_conversacional": score_conversacional,
+    }
 
     return historial_chat, analisis, score
 
