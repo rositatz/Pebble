@@ -10,6 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="icon" href="./images/logo_pebble_transparente.png" />
     <style>
       *,
       *::before,
@@ -1011,7 +1012,6 @@
         *,
         *::before,
         *::after {
-          animation-duration: 0.01ms !important;
           transition-duration: 0.01ms !important;
         }
       }
@@ -1166,7 +1166,6 @@
           </div>
           <span class="msg-time">10:14</span>
         </div>
-
       </div>
     </div>
 
@@ -1453,10 +1452,20 @@
         (log || []).forEach((e) => {
           if (e.tipo === "user") addUserMsg(e.text, e.hora);
           else if (e.tipo === "twin") addTwinMsg(e.text, e.hora);
-          else if (e.tipo === "recom") addRecomCard(e.title, e.context, e.tips, e.hora);
-          else if (e.tipo === "feedback") addFeedbackCard(e.question, e.options, e.hora);
+          else if (e.tipo === "recom")
+            addRecomCard(e.title, e.context, e.tips, e.hora);
+          else if (e.tipo === "feedback")
+            addFeedbackCard(e.question, e.options, e.hora);
           else if (e.tipo === "progress")
-            addProgressCard(e.name, e.initials, e.color, e.event, e.pct, e.unlockText, e.hora);
+            addProgressCard(
+              e.name,
+              e.initials,
+              e.color,
+              e.event,
+              e.pct,
+              e.unlockText,
+              e.hora,
+            );
           // "quickReplies" ya NO se reproduce -- son solo accesos rápidos de
           // la UI, no algo que haya pasado en la conversación. Reproducir
           // logs viejos (de antes del chat real) hacía que reaparecieran
@@ -1611,7 +1620,15 @@
 
       // Agrega una tarjeta de progreso de afinidad con un match
       // Muestra el nombre, avatar con iniciales, porcentaje de afinidad y un mensaje de desbloqueo si corresponde
-      function addProgressCard(name, initials, color, event, pct, unlockText, hora) {
+      function addProgressCard(
+        name,
+        initials,
+        color,
+        event,
+        pct,
+        unlockText,
+        hora,
+      ) {
         const t = hora || nowTime();
         const div = document.createElement("div");
         div.className = "msg twin";
@@ -1642,7 +1659,16 @@
     <span class="msg-time">${t}</span>`;
         messagesEl.appendChild(div);
         scrollBottom();
-        logChatEntry({ tipo: "progress", name, initials, color, event, pct, unlockText, hora: t });
+        logChatEntry({
+          tipo: "progress",
+          name,
+          initials,
+          color,
+          event,
+          pct,
+          unlockText,
+          hora: t,
+        });
       }
 
       // Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
@@ -1716,7 +1742,10 @@
           const historial = chatLog
             .filter((e) => e.tipo === "user" || e.tipo === "twin")
             .slice(-8)
-            .map((e) => ({ role: e.tipo === "user" ? "user" : "assistant", content: e.text }));
+            .map((e) => ({
+              role: e.tipo === "user" ? "user" : "assistant",
+              content: e.text,
+            }));
           window
             ._llamarChatGemelo(text, historial)
             .then((respuesta) => {
@@ -1776,26 +1805,38 @@
           addTyping();
           if (typeof window._llamarSimularSituacion !== "function") {
             removeTyping();
-            addTwinMsg("Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.");
+            addTwinMsg(
+              "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
+            );
             return;
           }
           window
             ._llamarSimularSituacion(otroUid)
             .then((res) => {
               removeTyping();
-              const pct = Math.round(((res.score && res.score.compatibilidad_total) || 0) * 100);
-              const resumen = escHtml(res.resumen || "No hubo un resumen para esta simulación.");
+              const pct = Math.round(
+                ((res.score && res.score.compatibilidad_total) || 0) * 100,
+              );
+              const resumen = escHtml(
+                res.resumen || "No hubo un resumen para esta simulación.",
+              );
               const escenario = escHtml(res.escenario || "");
               const nombreSafe = escHtml(nombre);
               addTwinMsg(
                 `Simulé una situación con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}`,
               );
-              setQuickReplies(["¿Cómo van mis matches?", "Dame un consejo", "Quiero darte feedback"]);
+              setQuickReplies([
+                "¿Cómo van mis matches?",
+                "Dame un consejo",
+                "Quiero darte feedback",
+              ]);
             })
             .catch((err) => {
               removeTyping();
               console.error("Error en simular_situacion:", err);
-              addTwinMsg(`No pude correr la simulación: ${mensajeErrorGemelo(err)}`);
+              addTwinMsg(
+                `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
+              );
             });
         }, 300);
       }
@@ -1894,15 +1935,24 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
       const functionsInstance = getFunctions(app);
-      const simularSituacionCallable = httpsCallable(functionsInstance, "simular_situacion");
-      const chatearConGemeloCallable = httpsCallable(functionsInstance, "chatear_con_gemelo");
+      const simularSituacionCallable = httpsCallable(
+        functionsInstance,
+        "simular_situacion",
+      );
+      const chatearConGemeloCallable = httpsCallable(
+        functionsInstance,
+        "chatear_con_gemelo",
+      );
 
       // Bridge para el script clásico de más abajo (elegirMatchParaConsejo):
       // llama a la Cloud Function real simular_situacion, que corre una
       // simulación nueva entre tu gemelo y el de "otroUid" (con la situación
       // en texto libre si se pasa una) y devuelve resumen + score reales.
       window._llamarSimularSituacion = async function (otroUid, situacion) {
-        const res = await simularSituacionCallable({ otroUid, situacion: situacion || "" });
+        const res = await simularSituacionCallable({
+          otroUid,
+          situacion: situacion || "",
+        });
         return res.data;
       };
 
@@ -1911,7 +1961,10 @@
       // mano. "historial" son los últimos mensajes de la conversación, para
       // que tenga contexto de lo que ya se habló.
       window._llamarChatGemelo = async function (mensaje, historial) {
-        const res = await chatearConGemeloCallable({ mensaje, historial: historial || [] });
+        const res = await chatearConGemeloCallable({
+          mensaje,
+          historial: historial || [],
+        });
         return res.data.respuesta;
       };
 
@@ -1926,7 +1979,9 @@
         if (!user) return;
         setDoc(doc(db, "usuarios", user.uid, "chats", "gemelo_propio"), {
           log,
-        }).catch((err) => console.error("Error guardando chat del gemelo:", err));
+        }).catch((err) =>
+          console.error("Error guardando chat del gemelo:", err),
+        );
       };
 
       onAuthStateChanged(auth, async (user) => {
@@ -1957,8 +2012,12 @@
         const nombreCuenta = user.displayName || user.email.split("@")[0];
         let nombreParaMostrar = nombreCuenta.trim().split(/\s+/)[0];
         try {
-          const perfilSnap = await getDoc(doc(db, "usuarios", user.uid, "gemelo", "perfil"));
-          const apodo = perfilSnap.exists() ? (perfilSnap.data().apodo || "").trim() : "";
+          const perfilSnap = await getDoc(
+            doc(db, "usuarios", user.uid, "gemelo", "perfil"),
+          );
+          const apodo = perfilSnap.exists()
+            ? (perfilSnap.data().apodo || "").trim()
+            : "";
           if (apodo) nombreParaMostrar = apodo.split(/\s+/)[0];
         } catch (err) {
           console.error("Error cargando apodo del gemelo:", err);
@@ -1974,14 +2033,23 @@
         // conexión, así que no hace falta traer el perfil de cada uno.
         try {
           const conexionesSnap = await getDocs(
-            query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+            query(
+              collection(db, "conexiones"),
+              where("participantes", "array-contains", user.uid),
+            ),
           );
           const reales = [];
           conexionesSnap.forEach((d) => {
             const data = d.data();
             if (!data.supera_umbral) return;
-            const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
-            const otroNombre = data.usuario_1.uid === user.uid ? data.usuario_2.nombre : data.usuario_1.nombre;
+            const otroId =
+              data.usuario_1.uid === user.uid
+                ? data.usuario_2.uid
+                : data.usuario_1.uid;
+            const otroNombre =
+              data.usuario_1.uid === user.uid
+                ? data.usuario_2.nombre
+                : data.usuario_1.nombre;
             reales.push({ uid: otroId, nombre: otroNombre || "Usuario" });
           });
           window.matchesReales = reales;
@@ -2000,7 +2068,9 @@
         // Si ya había conversación guardada, se reconstruye encima del
         // mensaje de bienvenida fijo (que sigue siendo el mismo de siempre).
         try {
-          const snap = await getDoc(doc(db, "usuarios", user.uid, "chats", "gemelo_propio"));
+          const snap = await getDoc(
+            doc(db, "usuarios", user.uid, "chats", "gemelo_propio"),
+          );
           if (snap.exists() && Array.isArray(snap.data().log)) {
             chatLog = snap.data().log;
             replayChatLog(chatLog);

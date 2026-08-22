@@ -10,6 +10,8 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="icon" href="./images/logo_pebble_transparente.png" />
+
     <style>
       *,
       *::before,
@@ -1468,7 +1470,6 @@
         *,
         *::before,
         *::after {
-          animation-duration: 0.01ms !important;
           transition-duration: 0.01ms !important;
         }
       }
@@ -1562,7 +1563,13 @@
           </svg>
           <span class="notif-pip"></span>
         </a>
-        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">U</a>
+        <a
+          href="./perfil.html"
+          class="nav-avatar"
+          id="nav-avatar"
+          aria-label="Mi perfil"
+          >U</a
+        >
       </div>
     </nav>
 
@@ -1824,12 +1831,17 @@
         document.getElementById("panelAv").style.cssText = p.photo
           ? `background-image:url('${p.photo}');background-size:cover;background-position:center;cursor:pointer`
           : `background:linear-gradient(135deg,#888,#555);cursor:pointer`;
-        document.getElementById("panelAv").textContent = p.photo ? "" : (p.name[0] || "?").toUpperCase();
+        document.getElementById("panelAv").textContent = p.photo
+          ? ""
+          : (p.name[0] || "?").toUpperCase();
         document.getElementById("panelName").textContent = p.name;
-        document.getElementById("panelMeta").textContent =
-          [p.age ? `${p.age} años` : "", p.city, `${p.afinidad}% afinidad`]
-            .filter(Boolean)
-            .join(" · ");
+        document.getElementById("panelMeta").textContent = [
+          p.age ? `${p.age} años` : "",
+          p.city,
+          `${p.afinidad}% afinidad`,
+        ]
+          .filter(Boolean)
+          .join(" · ");
 
         const realBtn = document.getElementById("pmBtnReal");
         realBtn.classList.toggle("locked", !p.realUnlocked);
@@ -2041,11 +2053,19 @@
               const historial = md.msgs
                 .slice(0, -1)
                 .slice(-8)
-                .map((m) => ({ role: m.from === "me" ? "user" : "assistant", content: m.text }));
-              reply = await window._llamarChatGemeloMatch(persona, text, historial);
+                .map((m) => ({
+                  role: m.from === "me" ? "user" : "assistant",
+                  content: m.text,
+                }));
+              reply = await window._llamarChatGemeloMatch(
+                persona,
+                text,
+                historial,
+              );
             } catch (err) {
               console.error("Error en chatear_con_gemelo_match:", err);
-              reply = "No pude responder ahora mismo. Probá de nuevo en un rato.";
+              reply =
+                "No pude responder ahora mismo. Probá de nuevo en un rato.";
             }
             removeTyping();
             md.msgs.push({ from: "them", text: reply, time: nowTime() });
@@ -2390,7 +2410,10 @@
         serverTimestamp,
         arrayUnion,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+      import {
+        getFunctions,
+        httpsCallable,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
       // Mismo esquema de id que usa el backend (motor._par_id en Python):
       // un solo id por pareja, sin importar quién de los dos lo calcula.
@@ -2437,14 +2460,25 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
       const functionsInstance = getFunctions(app);
-      const chatearConGemeloMatchCallable = httpsCallable(functionsInstance, "chatear_con_gemelo_match");
+      const chatearConGemeloMatchCallable = httpsCallable(
+        functionsInstance,
+        "chatear_con_gemelo_match",
+      );
 
       // Bridge para el script clásico (sendPanelMsg) -- reemplaza el
       // autoReply() enlatado del modo "gemelo": esto llama de verdad al
       // gemelo del match (chatear_con_gemelo_match), con su personalidad
       // real, en vez de una respuesta fija con nombres de demo.
-      window._llamarChatGemeloMatch = async function (otroUid, mensaje, historial) {
-        const res = await chatearConGemeloMatchCallable({ otroUid, mensaje, historial: historial || [] });
+      window._llamarChatGemeloMatch = async function (
+        otroUid,
+        mensaje,
+        historial,
+      ) {
+        const res = await chatearConGemeloMatchCallable({
+          otroUid,
+          mensaje,
+          historial: historial || [],
+        });
         return res.data.respuesta;
       };
 
@@ -2471,20 +2505,29 @@
       function cargarChatsReales(user, mis) {
         return new Promise((resolveInicial) => {
           onSnapshot(
-            query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+            query(
+              collection(db, "conexiones"),
+              where("participantes", "array-contains", user.uid),
+            ),
             async (conexionesSnap) => {
               const candidatos = [];
               conexionesSnap.forEach((d) => {
                 const data = d.data();
                 if (!data.supera_umbral) return;
-                const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
+                const otroId =
+                  data.usuario_1.uid === user.uid
+                    ? data.usuario_2.uid
+                    : data.usuario_1.uid;
                 candidatos.push({ parId: d.id, otroId, data });
               });
 
               if (!candidatos.length) {
                 const emptyEl = document.getElementById("chatsEmpty");
                 if (emptyEl) emptyEl.style.display = "flex";
-                if (_primeraCargaChats) { _primeraCargaChats = false; resolveInicial(); }
+                if (_primeraCargaChats) {
+                  _primeraCargaChats = false;
+                  resolveInicial();
+                }
                 return;
               }
 
@@ -2513,7 +2556,10 @@
                   } catch (e) {
                     c.ultimaSim = null;
                   }
-                  _perfilesCache[c.otroId] = { otro: c.otro, ultimaSim: c.ultimaSim };
+                  _perfilesCache[c.otroId] = {
+                    otro: c.otro,
+                    ultimaSim: c.ultimaSim,
+                  };
                 }),
               );
 
@@ -2523,7 +2569,9 @@
               candidatos.forEach((c) => {
                 const id = c.otroId;
                 const nombreGuardado =
-                  c.data.usuario_1.uid === id ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+                  c.data.usuario_1.uid === id
+                    ? c.data.usuario_1.nombre
+                    : c.data.usuario_2.nombre;
                 const nombre = c.otro.nombre || nombreGuardado || "Usuario";
                 const susIntereses = c.otro.intereses || [];
 
@@ -2536,7 +2584,10 @@
                       })
                     : "";
                   simulacion = c.ultimaSim.historial_chat.map((msg) => ({
-                    from: msg.name && mis.nombre && msg.name === mis.nombre ? "mi-gemelo" : "su-gemelo",
+                    from:
+                      msg.name && mis.nombre && msg.name === mis.nombre
+                        ? "mi-gemelo"
+                        : "su-gemelo",
                     text: msg.content || "",
                     time: horaSim,
                   }));
@@ -2545,7 +2596,9 @@
                 const real = c.data.real || {};
                 const gemelo = c.data.gemelo || {};
                 const realMsgs = Array.isArray(real.msgs) ? real.msgs : [];
-                const gemeloMsgs = Array.isArray(gemelo.msgs) ? gemelo.msgs : [];
+                const gemeloMsgs = Array.isArray(gemelo.msgs)
+                  ? gemelo.msgs
+                  : [];
                 // "real" es un doc compartido por dos cuentas -- vistoHasta
                 // tiene que ser por usuario (real.vistoHasta = {uid: cant})
                 // porque si fuera un solo número, cualquiera de los dos lo
@@ -2568,26 +2621,37 @@
                 people[id] = {
                   name: nombre,
                   color: "linear-gradient(135deg,#FF9700,#FF751F)",
-                  photo: c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "",
+                  photo:
+                    c.otro.avatarFoto ||
+                    (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) ||
+                    "",
                   age: calcAge(c.otro.fechaNac),
                   city: c.otro.ciudad || "",
                   afinidad: Math.round((c.data.ultimo_score || 0) * 100),
                   bio: c.otro.bio || "",
                   interests: susIntereses,
-                  sharedInterests: misIntereses.filter((i) => susIntereses.includes(i)),
+                  sharedInterests: misIntereses.filter((i) =>
+                    susIntereses.includes(i),
+                  ),
                   photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).map(
                     (url) => `url('${url}') center/cover no-repeat`,
                   ),
                   realUnlocked: true,
-                  currentMode: (people[id] && people[id].currentMode) || (realMsgs.length ? "real" : "gemelo"),
+                  currentMode:
+                    (people[id] && people[id].currentMode) ||
+                    (realMsgs.length ? "real" : "gemelo"),
                   simulacion,
                   gemelo: {
-                    lastTime: gemeloMsgs.length ? gemeloMsgs[gemeloMsgs.length - 1].time || "" : "",
+                    lastTime: gemeloMsgs.length
+                      ? gemeloMsgs[gemeloMsgs.length - 1].time || ""
+                      : "",
                     unread: gemeloUnread,
                     msgs: gemeloMsgs,
                   },
                   real: {
-                    lastTime: realMsgs.length ? realMsgs[realMsgs.length - 1].time || "" : "",
+                    lastTime: realMsgs.length
+                      ? realMsgs[realMsgs.length - 1].time || ""
+                      : "",
                     unread: realUnread,
                     msgs: realMsgs,
                   },
@@ -2600,7 +2664,8 @@
               });
 
               const emptyEl = document.getElementById("chatsEmpty");
-              if (emptyEl) emptyEl.style.display = hayConversaciones ? "none" : "flex";
+              if (emptyEl)
+                emptyEl.style.display = hayConversaciones ? "none" : "flex";
 
               // El chat que esté abierto se re-renderiza con los datos
               // frescos de este snapshot -- así, si es un mensaje nuevo de
@@ -2655,7 +2720,10 @@
           const snap = await getDoc(doc(db, "usuarios", uid));
           const mis = snap.exists() ? snap.data() : {};
           const nombreNav =
-            mis.nombre || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Usuario";
+            mis.nombre ||
+            user.displayName ||
+            (user.email ? user.email.split("@")[0] : "") ||
+            "Usuario";
           renderNavAvatar(mis.avatarFoto, nombreNav);
 
           // Punto naranja del ícono de notificaciones: solo si hay
@@ -2663,7 +2731,10 @@
           // leida=false) -- ver notificaciones.html / main.py.
           try {
             const notifsSnap = await getDocs(
-              query(collection(db, "usuarios", uid, "notificaciones"), where("leida", "==", false)),
+              query(
+                collection(db, "usuarios", uid, "notificaciones"),
+                where("leida", "==", false),
+              ),
             );
             const pip = document.querySelector(".nav-icon-btn .notif-pip");
             if (pip) pip.style.display = notifsSnap.size > 0 ? "" : "none";
@@ -2691,9 +2762,10 @@
       // dos usuarios está escribiendo, que es lo que espera el backend.
       // "participantes" es lo que usan las reglas y la query de carga.
       function parUsuarios(personaId) {
-        const base = String(uid) < String(personaId)
-          ? { usuario_1: { uid }, usuario_2: { uid: personaId } }
-          : { usuario_1: { uid: personaId }, usuario_2: { uid } };
+        const base =
+          String(uid) < String(personaId)
+            ? { usuario_1: { uid }, usuario_2: { uid: personaId } }
+            : { usuario_1: { uid: personaId }, usuario_2: { uid } };
         return { ...base, participantes: [uid, personaId] };
       }
 
@@ -2751,8 +2823,15 @@
           await updateDoc(ref, campos);
         } catch (e) {
           // El documento todavía no existe (primer mensaje con esta persona)
-          const modoData = mode === "real" ? { msgs, ultimaActividad: serverTimestamp() } : { msgs };
-          await setDoc(ref, { ...parUsuarios(personaId), [mode]: modoData }, { merge: true });
+          const modoData =
+            mode === "real"
+              ? { msgs, ultimaActividad: serverTimestamp() }
+              : { msgs };
+          await setDoc(
+            ref,
+            { ...parUsuarios(personaId), [mode]: modoData },
+            { merge: true },
+          );
         }
       };
 
@@ -2775,7 +2854,10 @@
           // El documento todavía no existe (primer mensaje real con esta persona)
           await setDoc(
             ref,
-            { ...parUsuarios(personaId), real: { msgs: [mensaje], ultimaActividad: serverTimestamp() } },
+            {
+              ...parUsuarios(personaId),
+              real: { msgs: [mensaje], ultimaActividad: serverTimestamp() },
+            },
             { merge: true },
           );
         }

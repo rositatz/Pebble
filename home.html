@@ -10,6 +10,8 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="icon" href="./images/logo_pebble_transparente.png" />
+
     <style>
       *,
       *::before,
@@ -985,7 +987,6 @@
         *,
         *::before,
         *::after {
-          animation-duration: 0.01ms !important;
           transition-duration: 0.01ms !important;
         }
       }
@@ -1814,9 +1815,8 @@
           el.textContent = "";
         } else {
           el.style.backgroundImage = "";
-          el.textContent = (
-            document.getElementById("user-name").textContent || "U"
-          )[0].toUpperCase();
+          el.textContent = (document.getElementById("user-name").textContent ||
+            "U")[0].toUpperCase();
         }
       }
       function switchTab(tab) {
@@ -2027,14 +2027,19 @@
       // llegaron al umbral. Nunca se muestra CON QUIÉN fueron esas
       // simulaciones sin match, solo el número y el puntaje, para no
       // exponer a la otra persona.
-      function actualizarBannerGemelo(candidatos, totalSimulaciones, mejorScoreSinMatch) {
+      function actualizarBannerGemelo(
+        candidatos,
+        totalSimulaciones,
+        mejorScoreSinMatch,
+      ) {
         const el = document.getElementById("gemeloInfoSub");
         if (!el) return;
         const sinMatch = (totalSimulaciones || 0) - candidatos.length;
 
         if (!candidatos.length) {
           if (!totalSimulaciones) {
-            el.innerHTML = "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
+            el.innerHTML =
+              "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
           } else {
             const pctMejor = Math.round((mejorScoreSinMatch || 0) * 100);
             el.innerHTML = `Ya corrió <strong>${totalSimulaciones} simulaci${totalSimulaciones === 1 ? "ón" : "ones"}</strong>, pero ninguna llegó todavía al 75% necesario para hacer match (mejor intento: <strong>${pctMejor}%</strong>).`;
@@ -2076,7 +2081,9 @@
         if (emptyEl) emptyEl.style.display = "none";
 
         const top = [...candidatos]
-          .sort((a, b) => (b.data.ultimo_score || 0) - (a.data.ultimo_score || 0))
+          .sort(
+            (a, b) => (b.data.ultimo_score || 0) - (a.data.ultimo_score || 0),
+          )
           .slice(0, 5);
 
         await Promise.all(
@@ -2093,9 +2100,14 @@
         let html = "";
         top.forEach((c) => {
           const nombreGuardado =
-            c.data.usuario_1.uid === c.otroId ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+            c.data.usuario_1.uid === c.otroId
+              ? c.data.usuario_1.nombre
+              : c.data.usuario_2.nombre;
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
-          const foto = c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "";
+          const foto =
+            c.otro.avatarFoto ||
+            (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) ||
+            "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           html += `
       <a href="#" class="match-item" onclick="goToMatch('${c.otroId}');return false;" role="listitem" aria-label="${esc(nombre)}, ${score}%">
@@ -2145,7 +2157,10 @@
             // Firestore (probado con el emulador), aunque los datos estén
             // bien.
             const conexionesSnap = await getDocs(
-              query(collection(db, "conexiones"), where("participantes", "array-contains", uid)),
+              query(
+                collection(db, "conexiones"),
+                where("participantes", "array-contains", uid),
+              ),
             );
             const candidatos = [];
             let totalSimulaciones = 0;
@@ -2154,10 +2169,16 @@
               const cdata = d.data();
               totalSimulaciones++;
               if (!cdata.supera_umbral) {
-                mejorScoreSinMatch = Math.max(mejorScoreSinMatch, cdata.ultimo_score || 0);
+                mejorScoreSinMatch = Math.max(
+                  mejorScoreSinMatch,
+                  cdata.ultimo_score || 0,
+                );
                 return;
               }
-              const otroId = cdata.usuario_1.uid === uid ? cdata.usuario_2.uid : cdata.usuario_1.uid;
+              const otroId =
+                cdata.usuario_1.uid === uid
+                  ? cdata.usuario_2.uid
+                  : cdata.usuario_1.uid;
               candidatos.push({ otroId, data: cdata });
             });
 
@@ -2166,7 +2187,10 @@
             let notifsSinLeer = 0;
             try {
               const notifsSnap = await getDocs(
-                query(collection(db, "usuarios", uid, "notificaciones"), where("leida", "==", false)),
+                query(
+                  collection(db, "usuarios", uid, "notificaciones"),
+                  where("leida", "==", false),
+                ),
               );
               notifsSinLeer = notifsSnap.size;
             } catch (e) {
@@ -2174,7 +2198,11 @@
             }
 
             actualizarBadgesSecciones(data, candidatos, notifsSinLeer);
-            actualizarBannerGemelo(candidatos, totalSimulaciones, mejorScoreSinMatch);
+            actualizarBannerGemelo(
+              candidatos,
+              totalSimulaciones,
+              mejorScoreSinMatch,
+            );
             await cargarMatchesRecientes(user, data, candidatos);
           } catch (e) {
             console.warn("Error cargando matches/chats:", e);

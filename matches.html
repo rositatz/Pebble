@@ -10,6 +10,8 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="icon" href="./images/logo_pebble_transparente.png" />
+
     <style>
       *,
       *::before,
@@ -1029,7 +1031,6 @@
         *,
         *::before,
         *::after {
-          animation-duration: 0.01ms !important;
           transition-duration: 0.01ms !important;
         }
       }
@@ -1168,7 +1169,13 @@
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </button>
-        <a href="./perfil.html" class="nav-avatar" id="nav-avatar" aria-label="Mi perfil">U</a>
+        <a
+          href="./perfil.html"
+          class="nav-avatar"
+          id="nav-avatar"
+          aria-label="Mi perfil"
+          >U</a
+        >
       </div>
     </nav>
 
@@ -1728,7 +1735,9 @@
 
       function construirEjes(sim) {
         if (!sim || !sim.score) return [];
-        return EJES_COMPAT.filter((e) => typeof sim.score[e.key] === "number").map((e) => ({
+        return EJES_COMPAT.filter(
+          (e) => typeof sim.score[e.key] === "number",
+        ).map((e) => ({
           label: e.label,
           pct: Math.round(sim.score[e.key] * 100),
         }));
@@ -1846,7 +1855,10 @@
         const misIntereses = mis.intereses || [];
 
         const conexionesSnap = await getDocs(
-          query(collection(db, "conexiones"), where("participantes", "array-contains", user.uid)),
+          query(
+            collection(db, "conexiones"),
+            where("participantes", "array-contains", user.uid),
+          ),
         );
 
         const ahora = Date.now();
@@ -1854,13 +1866,20 @@
         conexionesSnap.forEach((d) => {
           const data = d.data();
           if (!data.supera_umbral) return;
-          const otroId = data.usuario_1.uid === user.uid ? data.usuario_2.uid : data.usuario_1.uid;
-          const tieneChatReal = Array.isArray(data.real?.msgs) && data.real.msgs.length > 0;
+          const otroId =
+            data.usuario_1.uid === user.uid
+              ? data.usuario_2.uid
+              : data.usuario_1.uid;
+          const tieneChatReal =
+            Array.isArray(data.real?.msgs) && data.real.msgs.length > 0;
           const hasChat =
-            tieneChatReal || (Array.isArray(data.gemelo?.msgs) && data.gemelo.msgs.length > 0);
-          const creadoMs = data.creado && data.creado.toMillis ? data.creado.toMillis() : null;
+            tieneChatReal ||
+            (Array.isArray(data.gemelo?.msgs) && data.gemelo.msgs.length > 0);
+          const creadoMs =
+            data.creado && data.creado.toMillis ? data.creado.toMillis() : null;
           // Match nueva sin chat real hace más de una semana: desaparece.
-          if (creadoMs && !tieneChatReal && ahora - creadoMs > SEMANA_MS) return;
+          if (creadoMs && !tieneChatReal && ahora - creadoMs > SEMANA_MS)
+            return;
           candidatos.push({ parId: d.id, otroId, data, hasChat, creadoMs });
         });
 
@@ -1902,17 +1921,25 @@
         let html = "";
         candidatos.forEach((c) => {
           const nombreGuardado =
-            c.data.usuario_1.uid === c.otroId ? c.data.usuario_1.nombre : c.data.usuario_2.nombre;
+            c.data.usuario_1.uid === c.otroId
+              ? c.data.usuario_1.nombre
+              : c.data.usuario_2.nombre;
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
-          const edad = typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null;
+          const edad =
+            typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null;
           const ciudad = c.otro.ciudad || "";
-          const foto = c.otro.avatarFoto || (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) || "";
+          const foto =
+            c.otro.avatarFoto ||
+            (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) ||
+            "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           const isNew = !mis[`match_visto_${c.otroId}`];
           const tags = interesesCompartidos(misIntereses, c.otro.intereses);
           const ejes = construirEjes(c.ultimaSim);
           const historial =
-            c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat) ? c.ultimaSim.historial_chat : [];
+            c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)
+              ? c.ultimaSim.historial_chat
+              : [];
 
           profiles[c.otroId] = {
             name: nombre,
@@ -1926,7 +1953,10 @@
             interests: (c.otro.intereses || []).slice(0, 10),
             shared: tags,
             preview: historial.slice(-3).map((msg) => ({
-              side: msg.name && mis.nombre && msg.name === mis.nombre ? "right" : "left",
+              side:
+                msg.name && mis.nombre && msg.name === mis.nombre
+                  ? "right"
+                  : "left",
               text: msg.content || "",
             })),
           };
@@ -1975,7 +2005,10 @@
           const userSnap = await getDoc(doc(db, "usuarios", user.uid));
           const userData = userSnap.exists() ? userSnap.data() : {};
           const nombreNav =
-            userData.nombre || user.displayName || (user.email ? user.email.split("@")[0] : "") || "Usuario";
+            userData.nombre ||
+            user.displayName ||
+            (user.email ? user.email.split("@")[0] : "") ||
+            "Usuario";
           renderNavAvatar(userData.avatarFoto, nombreNav);
         } catch (e) {
           console.warn("Error cargando avatar:", e);

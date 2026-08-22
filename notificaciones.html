@@ -1,511 +1,999 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pebble — Notificaciones</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --orange:        #FF751F;
-  --orange-mid:    #FF9700;
-  --orange-light:  #FFBB30;
-  --bg:            #EEEDEC;
-  --surf-1:        #FFFFFF;
-  --surf-2:        #F5F4F3;
-  --border:        rgba(0,0,0,0.08);
-  --border2:       rgba(0,0,0,0.13);
-  --text-primary:  #000000;
-  --text-secondary:#4D4D4D;
-  --text-muted:    rgba(0,0,0,0.35);
-  --font-display:  'Bricolage Grotesque', sans-serif;
-  --font-serif:    'Inria Serif', serif;
-  --font-body:     'Open Sans', sans-serif;
-  --nav-top: 62px;
-  --nav-bot: 68px;
-  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
-}
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 16px; line-height: 1.5;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — Notificaciones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inria+Serif:ital,wght@0,300;1,300&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./images/logo_pebble_transparente.png" />
 
-/* ── Top nav ── */
-.app-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-top);
-  background: var(--surf-1);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px;
-}
-.nav-left { display: flex; align-items: center; gap: 12px; }
-.nav-back {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary);
-  transition: background 0.2s, color 0.2s;
-  touch-action: manipulation;
-  text-decoration: none;
-}
-.nav-back:hover { background: var(--surf-2); color: var(--text-primary); }
-.nav-title {
-  font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
-  letter-spacing: -0.01em; color: var(--text-primary);
-}
-.nav-logo {
-  font-family: var(--font-display); font-size: 1.35rem; font-weight: 800;
-  letter-spacing: -0.02em; text-decoration: none;
-}
-.nav-logo .bb  { color: var(--orange); }
-.nav-logo .rest{ color: var(--text-primary); }
-.nav-mark-btn {
-  background: none; border: none; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.75rem; font-weight: 600;
-  color: var(--orange); letter-spacing: 0.04em;
-  padding: 8px 12px; border-radius: var(--r-sm);
-  transition: background 0.2s;
-  touch-action: manipulation;
-}
-.nav-mark-btn:hover { background: rgba(255,117,31,0.08); }
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --orange: #ff751f;
+        --orange-mid: #ff9700;
+        --orange-light: #ffbb30;
+        --bg: #eeedec;
+        --surf-1: #ffffff;
+        --surf-2: #f5f4f3;
+        --border: rgba(0, 0, 0, 0.08);
+        --border2: rgba(0, 0, 0, 0.13);
+        --text-primary: #000000;
+        --text-secondary: #4d4d4d;
+        --text-muted: rgba(0, 0, 0, 0.35);
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-serif: "Inria Serif", serif;
+        --font-body: "Open Sans", sans-serif;
+        --nav-top: 62px;
+        --nav-bot: 68px;
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+        --r-xl: 18px;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.5;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
 
-/* ── Main ── */
-.app-main {
-  margin-top: var(--nav-top);
-  margin-bottom: var(--nav-bot);
-  max-width: 780px; width: 100%;
-  margin-left: auto; margin-right: auto;
-  padding: 32px 24px;
-  display: flex; flex-direction: column; gap: 0;
-}
+      /* ── Top nav ── */
+      .app-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-top);
+        background: var(--surf-1);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+      }
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition:
+          background 0.2s,
+          color 0.2s;
+        touch-action: manipulation;
+        text-decoration: none;
+      }
+      .nav-back:hover {
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
+      .nav-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+      }
+      .nav-logo {
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      .nav-logo .bb {
+        color: var(--orange);
+      }
+      .nav-logo .rest {
+        color: var(--text-primary);
+      }
+      .nav-mark-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--orange);
+        letter-spacing: 0.04em;
+        padding: 8px 12px;
+        border-radius: var(--r-sm);
+        transition: background 0.2s;
+        touch-action: manipulation;
+      }
+      .nav-mark-btn:hover {
+        background: rgba(255, 117, 31, 0.08);
+      }
 
-/* ── Filter tabs ── */
-.filter-bar {
-  display: flex; gap: 8px; margin-bottom: 28px;
-  overflow-x: auto; padding-bottom: 2px;
-  scrollbar-width: none;
-}
-.filter-bar::-webkit-scrollbar { display: none; }
-.filter-chip {
-  flex-shrink: 0;
-  padding: 7px 14px;
-  background: var(--surf-1); border: 1px solid var(--border2);
-  border-radius: 20px; cursor: pointer;
-  font-family: var(--font-body); font-size: 0.78rem; font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.2s;
-  touch-action: manipulation; white-space: nowrap;
-}
-.filter-chip:hover { border-color: var(--orange); color: var(--text-primary); }
-.filter-chip.active {
-  background: var(--text-primary); border-color: var(--text-primary);
-  color: #fff;
-}
+      /* ── Main ── */
+      .app-main {
+        margin-top: var(--nav-top);
+        margin-bottom: var(--nav-bot);
+        max-width: 780px;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 32px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
 
-/* ── Day group ── */
-.day-group { margin-bottom: 32px; }
-.day-label {
-  font-family: var(--font-body); font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 0 4px; margin-bottom: 10px;
-}
-.notif-list { display: flex; flex-direction: column; gap: 2px; }
+      /* ── Filter tabs ── */
+      .filter-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 28px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+      }
+      .filter-bar::-webkit-scrollbar {
+        display: none;
+      }
+      .filter-chip {
+        flex-shrink: 0;
+        padding: 7px 14px;
+        background: var(--surf-1);
+        border: 1px solid var(--border2);
+        border-radius: 20px;
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+      .filter-chip:hover {
+        border-color: var(--orange);
+        color: var(--text-primary);
+      }
+      .filter-chip.active {
+        background: var(--text-primary);
+        border-color: var(--text-primary);
+        color: #fff;
+      }
 
-/* ── Notif card ── */
-.notif-card {
-  background: var(--surf-1);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 16px 18px;
-  display: flex; align-items: flex-start; gap: 14px;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-  touch-action: manipulation; position: relative;
-  text-decoration: none; color: inherit;
-}
-.notif-card:hover {
-  border-color: rgba(255,117,31,0.3);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  transform: translateY(-1px);
-}
-.notif-card:active { transform: translateY(0); }
-.notif-card.unread { background: #fff; border-color: rgba(255,117,31,0.18); }
-.notif-card.unread::before {
-  content: '';
-  position: absolute; left: -1px; top: 20%; bottom: 20%;
-  width: 3px; border-radius: 0 2px 2px 0;
-  background: var(--orange);
-}
+      /* ── Day group ── */
+      .day-group {
+        margin-bottom: 32px;
+      }
+      .day-label {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding: 0 4px;
+        margin-bottom: 10px;
+      }
+      .notif-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
 
-/* Icon */
-.notif-icon {
-  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.notif-icon svg { width: 20px; height: 20px; }
-.ni-match      { background: rgba(255,187,48,0.13); color: var(--orange-light); }
-.ni-gemelo     { background: rgba(255,117,31,0.1);  color: var(--orange); }
-.ni-afinidad   { background: rgba(255,151,0,0.1);   color: var(--orange-mid); }
-.ni-evento     { background: rgba(74,222,128,0.1);  color: #22c55e; }
-.ni-retomar    { background: rgba(96,165,250,0.1);  color: #60a5fa; }
-.ni-resumen    { background: rgba(167,139,250,0.1); color: #a78bfa; }
-.ni-insight    { background: rgba(251,191,36,0.1);  color: #f59e0b; }
-.ni-inactivo   { background: rgba(0,0,0,0.05);      color: var(--text-muted); }
+      /* ── Notif card ── */
+      .notif-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 16px 18px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          transform 0.2s;
+        touch-action: manipulation;
+        position: relative;
+        text-decoration: none;
+        color: inherit;
+      }
+      .notif-card:hover {
+        border-color: rgba(255, 117, 31, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        transform: translateY(-1px);
+      }
+      .notif-card:active {
+        transform: translateY(0);
+      }
+      .notif-card.unread {
+        background: #fff;
+        border-color: rgba(255, 117, 31, 0.18);
+      }
+      .notif-card.unread::before {
+        content: "";
+        position: absolute;
+        left: -1px;
+        top: 20%;
+        bottom: 20%;
+        width: 3px;
+        border-radius: 0 2px 2px 0;
+        background: var(--orange);
+      }
 
-/* Body */
-.notif-body { flex: 1; min-width: 0; }
-.notif-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
-.notif-title {
-  font-family: var(--font-display); font-size: 0.9rem; font-weight: 700;
-  color: var(--text-primary); line-height: 1.3;
-}
-.notif-card:not(.unread) .notif-title { font-weight: 600; color: var(--text-secondary); }
-.notif-time {
-  font-family: var(--font-body); font-size: 0.68rem; font-weight: 500;
-  color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
-  margin-top: 2px;
-}
-.notif-desc {
-  font-family: var(--font-body); font-size: 0.8rem;
-  color: var(--text-secondary); line-height: 1.5;
-}
-.notif-card:not(.unread) .notif-desc { color: var(--text-muted); }
+      /* Icon */
+      .notif-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .notif-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+      .ni-match {
+        background: rgba(255, 187, 48, 0.13);
+        color: var(--orange-light);
+      }
+      .ni-gemelo {
+        background: rgba(255, 117, 31, 0.1);
+        color: var(--orange);
+      }
+      .ni-afinidad {
+        background: rgba(255, 151, 0, 0.1);
+        color: var(--orange-mid);
+      }
+      .ni-evento {
+        background: rgba(74, 222, 128, 0.1);
+        color: #22c55e;
+      }
+      .ni-retomar {
+        background: rgba(96, 165, 250, 0.1);
+        color: #60a5fa;
+      }
+      .ni-resumen {
+        background: rgba(167, 139, 250, 0.1);
+        color: #a78bfa;
+      }
+      .ni-insight {
+        background: rgba(251, 191, 36, 0.1);
+        color: #f59e0b;
+      }
+      .ni-inactivo {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-muted);
+      }
 
-/* CTA chip inside notif */
-.notif-cta {
-  display: inline-flex; align-items: center; gap: 5px;
-  margin-top: 10px;
-  background: var(--text-primary); color: #fff;
-  font-family: var(--font-body); font-size: 0.72rem; font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  padding: 5px 12px; border-radius: 20px;
-  transition: background 0.2s;
-  border: none; cursor: pointer; touch-action: manipulation;
-}
-.notif-cta:hover { background: var(--orange); }
-.notif-cta.secondary {
-  background: transparent; color: var(--orange);
-  border: 1px solid rgba(255,117,31,0.3);
-}
-.notif-cta.secondary:hover { background: rgba(255,117,31,0.08); }
+      /* Body */
+      .notif-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .notif-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+      .notif-title {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.3;
+      }
+      .notif-card:not(.unread) .notif-title {
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+      .notif-time {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .notif-desc {
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+      .notif-card:not(.unread) .notif-desc {
+        color: var(--text-muted);
+      }
 
-/* Unread dot */
-.unread-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--orange);
-  flex-shrink: 0; margin-top: 6px;
-  box-shadow: 0 0 6px rgba(255,117,31,0.45);
-}
+      /* CTA chip inside notif */
+      .notif-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 10px;
+        background: var(--text-primary);
+        color: #fff;
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 5px 12px;
+        border-radius: 20px;
+        transition: background 0.2s;
+        border: none;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .notif-cta:hover {
+        background: var(--orange);
+      }
+      .notif-cta.secondary {
+        background: transparent;
+        color: var(--orange);
+        border: 1px solid rgba(255, 117, 31, 0.3);
+      }
+      .notif-cta.secondary:hover {
+        background: rgba(255, 117, 31, 0.08);
+      }
 
-/* Borrar notificación -- siempre visible (no solo al pasar el mouse) para
+      /* Unread dot */
+      .unread-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        flex-shrink: 0;
+        margin-top: 6px;
+        box-shadow: 0 0 6px rgba(255, 117, 31, 0.45);
+      }
+
+      /* Borrar notificación -- siempre visible (no solo al pasar el mouse) para
    que también se pueda usar con touch, no solo con mouse. */
-.notif-delete {
-  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted);
-  transition: background 0.15s, color 0.15s;
-  touch-action: manipulation;
-}
-.notif-delete:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); }
+      .notif-delete {
+        flex-shrink: 0;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition:
+          background 0.15s,
+          color 0.15s;
+        touch-action: manipulation;
+      }
+      .notif-delete:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text-primary);
+      }
 
-/* ── Empty state ── */
-.empty-state {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px; padding: 64px 24px; text-align: center;
-}
-.empty-icon {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: var(--surf-2); display: flex; align-items: center; justify-content: center;
-}
-.empty-icon svg { width: 28px; height: 28px; color: var(--text-muted); }
-.empty-title {
-  font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--text-primary);
-}
-.empty-sub { font-family: var(--font-body); font-size: 0.82rem; color: var(--text-muted); }
+      /* ── Empty state ── */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 64px 24px;
+        text-align: center;
+      }
+      .empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--surf-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .empty-icon svg {
+        width: 28px;
+        height: 28px;
+        color: var(--text-muted);
+      }
+      .empty-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .empty-sub {
+        font-family: var(--font-body);
+        font-size: 0.82rem;
+        color: var(--text-muted);
+      }
 
-/* ── Bottom nav ── */
-.app-bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-  height: var(--nav-bot);
-  background: var(--surf-1); border-top: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 16px;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-.bnav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; padding: 8px;
-  background: none; border: none; cursor: pointer;
-  color: var(--text-muted); text-decoration: none;
-  transition: color 0.2s; touch-action: manipulation; min-height: 48px;
-}
-.bnav-item:hover { color: var(--text-secondary); }
-.bnav-item.active { color: var(--orange); }
-.bnav-icon { position: relative; line-height: 1; }
-.bnav-icon svg { width: 22px; height: 22px; display: block; }
-.bnav-pip {
-  position: absolute; top: -3px; right: -5px;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--orange); border: 2px solid var(--surf-1);
-}
-.bnav-label {
-  font-family: var(--font-body); font-size: 0.58rem;
-  font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-}
-.bnav-center {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; padding: 8px;
-  background: none; border: none; cursor: pointer;
-  text-decoration: none; touch-action: manipulation; min-height: 48px;
-}
-.bnav-center-orb {
-  width: 50px; height: 50px; border-radius: 50%;
-  background: var(--text-primary);
-  display: flex; align-items: center; justify-content: center;
-  margin-top: -20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  border: 3px solid var(--bg);
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-}
-.bnav-center:hover .bnav-center-orb { transform: scale(1.08); background: var(--orange); box-shadow: 0 6px 28px rgba(255,117,31,0.4); }
-.bnav-center-orb svg { width: 22px; height: 22px; }
-.bnav-center-label {
-  font-family: var(--font-body); font-size: 0.58rem;
-  font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.bnav-center:hover .bnav-center-label { color: var(--orange); }
+      /* ── Bottom nav ── */
+      .app-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        height: var(--nav-bot);
+        background: var(--surf-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
+      .bnav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-item:hover {
+        color: var(--text-secondary);
+      }
+      .bnav-item.active {
+        color: var(--orange);
+      }
+      .bnav-icon {
+        position: relative;
+        line-height: 1;
+      }
+      .bnav-icon svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
+      .bnav-pip {
+        position: absolute;
+        top: -3px;
+        right: -5px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        border: 2px solid var(--surf-1);
+      }
+      .bnav-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .bnav-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        touch-action: manipulation;
+        min-height: 48px;
+      }
+      .bnav-center-orb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        border: 3px solid var(--bg);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+      }
+      .bnav-center:hover .bnav-center-orb {
+        transform: scale(1.08);
+        background: var(--orange);
+        box-shadow: 0 6px 28px rgba(255, 117, 31, 0.4);
+      }
+      .bnav-center-orb svg {
+        width: 22px;
+        height: 22px;
+      }
+      .bnav-center-label {
+        font-family: var(--font-body);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+      }
+      .bnav-center:hover .bnav-center-label {
+        color: var(--orange);
+      }
 
-/* ── Animations ── */
-@keyframes fade-up {
-  from { opacity:0; transform:translateY(12px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-.fu { opacity:0; animation: fade-up 0.38s ease forwards; }
-.fu:nth-child(1){animation-delay:0.04s}
-.fu:nth-child(2){animation-delay:0.08s}
-.fu:nth-child(3){animation-delay:0.12s}
-.fu:nth-child(4){animation-delay:0.16s}
-.fu:nth-child(5){animation-delay:0.20s}
-.fu:nth-child(6){animation-delay:0.24s}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}
-}
-#loadingOverlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease}
-#loadingOverlay.hide{opacity:0;pointer-events:none}
-.loading-spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(0,0,0,0.1);border-top-color:var(--orange);animation:spin 0.7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-</style>
-</head>
-<body>
-<div id="loadingOverlay"><div class="loading-spinner"></div></div>
+      /* ── Animations ── */
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .fu {
+        opacity: 0;
+        animation: fade-up 0.38s ease forwards;
+      }
+      .fu:nth-child(1) {
+        animation-delay: 0.04s;
+      }
+      .fu:nth-child(2) {
+        animation-delay: 0.08s;
+      }
+      .fu:nth-child(3) {
+        animation-delay: 0.12s;
+      }
+      .fu:nth-child(4) {
+        animation-delay: 0.16s;
+      }
+      .fu:nth-child(5) {
+        animation-delay: 0.2s;
+      }
+      .fu:nth-child(6) {
+        animation-delay: 0.24s;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+      #loadingOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+      }
+      #loadingOverlay.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-spinner {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: var(--orange);
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loadingOverlay"><div class="loading-spinner"></div></div>
 
-<!-- Top nav -->
-<nav class="app-nav" aria-label="Navegación">
-  <div class="nav-left">
-    <a href="./home.html" class="nav-back" aria-label="Volver al inicio">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-    </a>
-    <span class="nav-title">Notificaciones</span>
-  </div>
-  <a href="./home.html" class="nav-logo" aria-label="Pebble">
-    <span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span>
-  </a>
-  <button class="nav-mark-btn" onclick="markAllRead()" aria-label="Marcar todo como leído">
-    Marcar todo
-  </button>
-</nav>
+    <!-- Top nav -->
+    <nav class="app-nav" aria-label="Navegación">
+      <div class="nav-left">
+        <a href="./home.html" class="nav-back" aria-label="Volver al inicio">
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <span class="nav-title">Notificaciones</span>
+      </div>
+      <a href="./home.html" class="nav-logo" aria-label="Pebble">
+        <span class="rest">PE</span><span class="bb">BB</span
+        ><span class="rest">LE</span>
+      </a>
+      <button
+        class="nav-mark-btn"
+        onclick="markAllRead()"
+        aria-label="Marcar todo como leído"
+      >
+        Marcar todo
+      </button>
+    </nav>
 
-<!-- Main -->
-<main class="app-main" id="main-content" aria-label="Notificaciones">
+    <!-- Main -->
+    <main class="app-main" id="main-content" aria-label="Notificaciones">
+      <!-- Filter tabs -->
+      <div
+        class="filter-bar fu"
+        role="tablist"
+        aria-label="Filtrar notificaciones"
+      >
+        <button
+          class="filter-chip active"
+          role="tab"
+          aria-selected="true"
+          onclick="filterNotifs('todas', this)"
+        >
+          Todas
+        </button>
+        <button
+          class="filter-chip"
+          role="tab"
+          aria-selected="false"
+          onclick="filterNotifs('matches', this)"
+        >
+          Matches
+        </button>
+        <button
+          class="filter-chip"
+          role="tab"
+          aria-selected="false"
+          onclick="filterNotifs('gemelo', this)"
+        >
+          Gemelo
+        </button>
+      </div>
 
-  <!-- Filter tabs -->
-  <div class="filter-bar fu" role="tablist" aria-label="Filtrar notificaciones">
-    <button class="filter-chip active" role="tab" aria-selected="true"  onclick="filterNotifs('todas', this)">Todas</button>
-    <button class="filter-chip"        role="tab" aria-selected="false" onclick="filterNotifs('matches', this)">Matches</button>
-    <button class="filter-chip"        role="tab" aria-selected="false" onclick="filterNotifs('gemelo', this)">Gemelo</button>
-  </div>
-
-  <!-- Se arma dinámicamente desde Firestore (usuarios/{uid}/notificaciones) --
+      <!-- Se arma dinámicamente desde Firestore (usuarios/{uid}/notificaciones) --
        ver cargarNotificaciones() en el script de más abajo. -->
-  <div id="notifGroups"></div>
+      <div id="notifGroups"></div>
 
-  <div id="notifEmpty" class="empty-state" style="display:none">
-    <div class="empty-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    </div>
-    <p class="empty-title">No tenés notificaciones</p>
-    <p class="empty-sub">Cuando tu gemelo encuentre un match o tengas algo pendiente, va a aparecer acá.</p>
-  </div>
+      <div id="notifEmpty" class="empty-state" style="display: none">
+        <div class="empty-icon" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </div>
+        <p class="empty-title">No tenés notificaciones</p>
+        <p class="empty-sub">
+          Cuando tu gemelo encuentre un match o tengas algo pendiente, va a
+          aparecer acá.
+        </p>
+      </div>
+    </main>
 
-</main>
+    <!-- Bottom nav -->
+    <nav class="app-bottom-nav" aria-label="Navegación inferior">
+      <a href="./home.html" class="bnav-item" aria-label="Inicio">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" /></svg
+        ></span>
+        <span class="bnav-label">Inicio</span>
+      </a>
+      <a href="./matches.html" class="bnav-item" aria-label="Matches">
+        <span class="bnav-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            />
+          </svg>
+        </span>
+        <span class="bnav-label">Matches</span>
+      </a>
+      <a
+        href="./gemelo.html"
+        class="bnav-center"
+        aria-label="Chat con tu gemelo"
+      >
+        <div class="bnav-center-orb" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4l3 3" />
+          </svg>
+        </div>
+        <span class="bnav-center-label">Gemelo</span>
+      </a>
+      <a href="./chats.html" class="bnav-item" aria-label="Chats">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            /></svg
+        ></span>
+        <span class="bnav-label">Chats</span>
+      </a>
+      <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
+        <span class="bnav-icon"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" /></svg
+        ></span>
+        <span class="bnav-label">Perfil</span>
+      </a>
+    </nav>
 
-<!-- Bottom nav -->
-<nav class="app-bottom-nav" aria-label="Navegación inferior">
-  <a href="./home.html" class="bnav-item" aria-label="Inicio">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-    <span class="bnav-label">Inicio</span>
-  </a>
-  <a href="./matches.html" class="bnav-item" aria-label="Matches">
-    <span class="bnav-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-    </span>
-    <span class="bnav-label">Matches</span>
-  </a>
-  <a href="./gemelo.html" class="bnav-center" aria-label="Chat con tu gemelo">
-    <div class="bnav-center-orb" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-    </div>
-    <span class="bnav-center-label">Gemelo</span>
-  </a>
-  <a href="./chats.html" class="bnav-item" aria-label="Chats">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
-    <span class="bnav-label">Chats</span>
-  </a>
-  <a href="./perfil.html" class="bnav-item" aria-label="Mi perfil">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-    <span class="bnav-label">Perfil</span>
-  </a>
-</nav>
+    <script>
+      // Navega a otra pantalla de la app según el nombre de la página
+      function goTo(page) {
+        const map = {
+          matches: "./matches.html",
+          chats: "./chats.html",
+          gemelo: "./gemelo.html",
+          perfil: "./perfil.html",
+        };
+        const url = map[page];
+        if (url) window.location.href = url;
+      }
 
-<script>
-// Navega a otra pantalla de la app según el nombre de la página
-function goTo(page) {
-  const map = {
-    matches: './matches.html',
-    chats:   './chats.html',
-    gemelo:  './gemelo.html',
-    perfil:  './perfil.html',
-  };
-  const url = map[page];
-  if (url) window.location.href = url;
-}
+      // Marca todas las notificaciones no leídas como leídas -- visual al toque,
+      // y persistido de verdad en Firestore vía el bridge del script de módulo.
+      function markAllRead() {
+        document.querySelectorAll(".notif-card.unread").forEach((card) => {
+          card.classList.remove("unread");
+          const dot = card.querySelector(".unread-dot");
+          if (dot) dot.remove();
+        });
+        if (typeof window._db_marcarTodasNotifsLeidas === "function") {
+          window._db_marcarTodasNotifsLeidas();
+        }
+      }
 
-// Marca todas las notificaciones no leídas como leídas -- visual al toque,
-// y persistido de verdad en Firestore vía el bridge del script de módulo.
-function markAllRead() {
-  document.querySelectorAll('.notif-card.unread').forEach(card => {
-    card.classList.remove('unread');
-    const dot = card.querySelector('.unread-dot');
-    if (dot) dot.remove();
-  });
-  if (typeof window._db_marcarTodasNotifsLeidas === 'function') {
-    window._db_marcarTodasNotifsLeidas();
-  }
-}
+      // Filtra las notificaciones por tipo (todas, matches, mensajes, sistema, etc.)
+      // Oculta los grupos del día que quedan vacíos después del filtrado
+      function filterNotifs(type, btn) {
+        // Actualizar chip activo
+        document.querySelectorAll(".filter-chip").forEach((c) => {
+          c.classList.remove("active");
+          c.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
 
-// Filtra las notificaciones por tipo (todas, matches, mensajes, sistema, etc.)
-// Oculta los grupos del día que quedan vacíos después del filtrado
-function filterNotifs(type, btn) {
-  // Actualizar chip activo
-  document.querySelectorAll('.filter-chip').forEach(c => {
-    c.classList.remove('active');
-    c.setAttribute('aria-selected', 'false');
-  });
-  btn.classList.add('active');
-  btn.setAttribute('aria-selected', 'true');
+        // Show/hide cards
+        document.querySelectorAll(".notif-card").forEach((card) => {
+          if (type === "todas") {
+            card.style.display = "";
+          } else {
+            card.style.display = card.dataset.type === type ? "" : "none";
+          }
+        });
 
-  // Show/hide cards
-  document.querySelectorAll('.notif-card').forEach(card => {
-    if (type === 'todas') {
-      card.style.display = '';
-    } else {
-      card.style.display = card.dataset.type === type ? '' : 'none';
-    }
-  });
+        // Show/hide empty day groups
+        document.querySelectorAll("[data-group]").forEach((group) => {
+          const visible = [...group.querySelectorAll(".notif-card")].some(
+            (c) => c.style.display !== "none",
+          );
+          group.style.display = visible ? "" : "none";
+        });
+      }
+    </script>
 
-  // Show/hide empty day groups
-  document.querySelectorAll('[data-group]').forEach(group => {
-    const visible = [...group.querySelectorAll('.notif-card')]
-      .some(c => c.style.display !== 'none');
-    group.style.display = visible ? '' : 'none';
-  });
-}
-</script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        query,
+        orderBy,
+        limit,
+        doc,
+        updateDoc,
+        deleteDoc,
+        writeBatch,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, collection, getDocs, query, orderBy, limit,
-  doc, updateDoc, deleteDoc, writeBatch,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      const app = initializeApp({
+        apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
+        authDomain: "pebble-78e95.firebaseapp.com",
+        projectId: "pebble-78e95",
+        storageBucket: "pebble-78e95.firebasestorage.app",
+        messagingSenderId: "56434257024",
+        appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
+      });
+      const auth = getAuth(app);
+      const db = getFirestore(app);
 
-const app  = initializeApp({ apiKey:"AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0", authDomain:"pebble-78e95.firebaseapp.com", projectId:"pebble-78e95", storageBucket:"pebble-78e95.firebasestorage.app", messagingSenderId:"56434257024", appId:"1:56434257024:web:3e2625f73bad3d4c004a65" });
-const auth = getAuth(app);
-const db   = getFirestore(app);
+      let uid = null;
+      // id -> notificación real (creada por el backend: procesar_parejas_pendientes
+      // / generar_recordatorios_diarios -- ver main.py). Se guarda acá para no
+      // tener que interpolar título/cuerpo/otroUid dentro de atributos onclick.
+      const notifsPorId = {};
 
-let uid = null;
-// id -> notificación real (creada por el backend: procesar_parejas_pendientes
-// / generar_recordatorios_diarios -- ver main.py). Se guarda acá para no
-// tener que interpolar título/cuerpo/otroUid dentro de atributos onclick.
-const notifsPorId = {};
+      function escHtml(t) {
+        return String(t)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
 
-function escHtml(t) {
-  return String(t)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+      const TIPO_ICONO = {
+        match: {
+          cls: "ni-match",
+          svg: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+        },
+        interes: {
+          cls: "ni-insight",
+          svg: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+        },
+        retomar: {
+          cls: "ni-retomar",
+          svg: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        },
+        inactivo: {
+          cls: "ni-inactivo",
+          svg: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+        },
+      };
+      // Los 3 filtros de la barra son "todas / matches / gemelo" -- match,
+      // interés y retomar son todos sobre una conexión con otra persona, así que
+      // caen en "matches"; inactivo es sobre el gemelo propio.
+      const TIPO_FILTRO = {
+        match: "matches",
+        interes: "matches",
+        retomar: "matches",
+        inactivo: "gemelo",
+      };
+      const ACCION_CTA = {
+        matches: "Ver match",
+        chats: "Escribirle",
+        gemelo: "Ajustar gemelo",
+      };
 
-const TIPO_ICONO = {
-  match:    { cls: 'ni-match',    svg: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' },
-  interes:  { cls: 'ni-insight',  svg: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>' },
-  retomar:  { cls: 'ni-retomar',  svg: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' },
-  inactivo: { cls: 'ni-inactivo', svg: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
-};
-// Los 3 filtros de la barra son "todas / matches / gemelo" -- match,
-// interés y retomar son todos sobre una conexión con otra persona, así que
-// caen en "matches"; inactivo es sobre el gemelo propio.
-const TIPO_FILTRO = { match: 'matches', interes: 'matches', retomar: 'matches', inactivo: 'gemelo' };
-const ACCION_CTA = { matches: 'Ver match', chats: 'Escribirle', gemelo: 'Ajustar gemelo' };
+      function bucketDia(fecha) {
+        const ahora = new Date();
+        const hoy0 = new Date(
+          ahora.getFullYear(),
+          ahora.getMonth(),
+          ahora.getDate(),
+        );
+        const fecha0 = new Date(
+          fecha.getFullYear(),
+          fecha.getMonth(),
+          fecha.getDate(),
+        );
+        const dias = Math.round((hoy0 - fecha0) / 86400000);
+        if (dias <= 0) return "Hoy";
+        if (dias === 1) return "Ayer";
+        if (dias <= 7) return "Esta semana";
+        return "Más viejas";
+      }
 
-function bucketDia(fecha) {
-  const ahora = new Date();
-  const hoy0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-  const fecha0 = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
-  const dias = Math.round((hoy0 - fecha0) / 86400000);
-  if (dias <= 0) return 'Hoy';
-  if (dias === 1) return 'Ayer';
-  if (dias <= 7) return 'Esta semana';
-  return 'Más viejas';
-}
+      function formatearHora(fecha, esHoy) {
+        if (esHoy) {
+          const diffMin = Math.floor((Date.now() - fecha.getTime()) / 60000);
+          if (diffMin < 1) return "recién";
+          if (diffMin < 60) return `hace ${diffMin} min`;
+          const diffH = Math.floor(diffMin / 60);
+          if (diffH < 24) return `hace ${diffH} h`;
+        }
+        const dias = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+        const hh = fecha.toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return `${dias[fecha.getDay()]}, ${hh}`;
+      }
 
-function formatearHora(fecha, esHoy) {
-  if (esHoy) {
-    const diffMin = Math.floor((Date.now() - fecha.getTime()) / 60000);
-    if (diffMin < 1) return 'recién';
-    if (diffMin < 60) return `hace ${diffMin} min`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `hace ${diffH} h`;
-  }
-  const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
-  const hh = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  return `${dias[fecha.getDay()]}, ${hh}`;
-}
+      function buildNotifCardHTML(n, esHoy) {
+        const icono = TIPO_ICONO[n.tipo] || TIPO_ICONO.match;
+        const dataType = TIPO_FILTRO[n.tipo] || "matches";
+        const unread = !n.leida;
+        const ctaLabel = n.accion
+          ? n.accion === "chats" && n.otroNombre
+            ? `Escribirle a ${escHtml(n.otroNombre)}`
+            : ACCION_CTA[n.accion]
+          : null;
+        const hora = formatearHora(n.fecha, esHoy);
 
-function buildNotifCardHTML(n, esHoy) {
-  const icono = TIPO_ICONO[n.tipo] || TIPO_ICONO.match;
-  const dataType = TIPO_FILTRO[n.tipo] || 'matches';
-  const unread = !n.leida;
-  const ctaLabel = n.accion
-    ? (n.accion === 'chats' && n.otroNombre ? `Escribirle a ${escHtml(n.otroNombre)}` : ACCION_CTA[n.accion])
-    : null;
-  const hora = formatearHora(n.fecha, esHoy);
-
-  return `
-    <div class="notif-card${unread ? ' unread' : ''}" data-type="${dataType}" data-id="${n.id}"
+        return `
+    <div class="notif-card${unread ? " unread" : ""}" data-type="${dataType}" data-id="${n.id}"
          role="button" tabindex="0" onclick="abrirNotificacion('${n.id}')"
          onkeydown="if(event.key==='Enter')abrirNotificacion('${n.id}')">
       <div class="notif-icon ${icono.cls}" aria-hidden="true">
@@ -517,166 +1005,208 @@ function buildNotifCardHTML(n, esHoy) {
           <span class="notif-time">${hora}</span>
         </div>
         <p class="notif-desc">${escHtml(n.cuerpo)}</p>
-        ${ctaLabel ? `<button class="notif-cta" onclick="event.stopPropagation(); abrirNotificacion('${n.id}')">${escHtml(ctaLabel)}</button>` : ''}
+        ${ctaLabel ? `<button class="notif-cta" onclick="event.stopPropagation(); abrirNotificacion('${n.id}')">${escHtml(ctaLabel)}</button>` : ""}
       </div>
       <button class="notif-delete" onclick="event.stopPropagation(); borrarNotificacion('${n.id}')" aria-label="Borrar notificación">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      ${unread ? '<span class="unread-dot" aria-hidden="true"></span>' : ''}
+      ${unread ? '<span class="unread-dot" aria-hidden="true"></span>' : ""}
     </div>`;
-}
+      }
 
-function renderizarNotificaciones() {
-  const notifs = Object.values(notifsPorId).sort((a, b) => b.fecha - a.fecha);
-  const groupsEl = document.getElementById('notifGroups');
-  const emptyEl = document.getElementById('notifEmpty');
-  if (!groupsEl) return;
+      function renderizarNotificaciones() {
+        const notifs = Object.values(notifsPorId).sort(
+          (a, b) => b.fecha - a.fecha,
+        );
+        const groupsEl = document.getElementById("notifGroups");
+        const emptyEl = document.getElementById("notifEmpty");
+        if (!groupsEl) return;
 
-  if (!notifs.length) {
-    groupsEl.innerHTML = '';
-    if (emptyEl) emptyEl.style.display = 'flex';
-    return;
-  }
-  if (emptyEl) emptyEl.style.display = 'none';
+        if (!notifs.length) {
+          groupsEl.innerHTML = "";
+          if (emptyEl) emptyEl.style.display = "flex";
+          return;
+        }
+        if (emptyEl) emptyEl.style.display = "none";
 
-  const buckets = new Map();
-  notifs.forEach(n => {
-    const b = bucketDia(n.fecha);
-    if (!buckets.has(b)) buckets.set(b, []);
-    buckets.get(b).push(n);
-  });
+        const buckets = new Map();
+        notifs.forEach((n) => {
+          const b = bucketDia(n.fecha);
+          if (!buckets.has(b)) buckets.set(b, []);
+          buckets.get(b).push(n);
+        });
 
-  const orden = ['Hoy', 'Ayer', 'Esta semana', 'Más viejas'];
-  groupsEl.innerHTML = orden
-    .filter(b => buckets.has(b))
-    .map(b => `
+        const orden = ["Hoy", "Ayer", "Esta semana", "Más viejas"];
+        groupsEl.innerHTML = orden
+          .filter((b) => buckets.has(b))
+          .map(
+            (b) => `
       <div class="day-group fu" data-group>
         <p class="day-label">${b}</p>
         <div class="notif-list">
-          ${buckets.get(b).map(n => buildNotifCardHTML(n, b === 'Hoy')).join('')}
+          ${buckets
+            .get(b)
+            .map((n) => buildNotifCardHTML(n, b === "Hoy"))
+            .join("")}
         </div>
-      </div>`)
-    .join('');
+      </div>`,
+          )
+          .join("");
 
-  // Reaplica el filtro activo (si el usuario ya había elegido uno antes de
-  // que esto terminara de cargar).
-  const chipActivo = document.querySelector('.filter-chip.active');
-  if (chipActivo && typeof filterNotifs === 'function') {
-    const tipo = chipActivo.textContent.trim() === 'Todas' ? 'todas'
-      : chipActivo.textContent.trim() === 'Matches' ? 'matches' : 'gemelo';
-    filterNotifs(tipo, chipActivo);
-  }
-}
+        // Reaplica el filtro activo (si el usuario ya había elegido uno antes de
+        // que esto terminara de cargar).
+        const chipActivo = document.querySelector(".filter-chip.active");
+        if (chipActivo && typeof filterNotifs === "function") {
+          const tipo =
+            chipActivo.textContent.trim() === "Todas"
+              ? "todas"
+              : chipActivo.textContent.trim() === "Matches"
+                ? "matches"
+                : "gemelo";
+          filterNotifs(tipo, chipActivo);
+        }
+      }
 
-async function cargarNotificaciones() {
-  if (!uid) return;
-  try {
-    const snap = await getDocs(
-      query(collection(db, 'usuarios', uid, 'notificaciones'), orderBy('creado', 'desc'), limit(100)),
-    );
-    snap.forEach(d => {
-      const data = d.data();
-      notifsPorId[d.id] = {
-        id: d.id,
-        tipo: data.tipo || 'match',
-        titulo: data.titulo || '',
-        cuerpo: data.cuerpo || '',
-        otroUid: data.otroUid || null,
-        otroNombre: data.otroNombre || null,
-        accion: data.accion || null,
-        leida: !!data.leida,
-        fecha: data.creado && data.creado.toDate ? data.creado.toDate() : new Date(),
+      async function cargarNotificaciones() {
+        if (!uid) return;
+        try {
+          const snap = await getDocs(
+            query(
+              collection(db, "usuarios", uid, "notificaciones"),
+              orderBy("creado", "desc"),
+              limit(100),
+            ),
+          );
+          snap.forEach((d) => {
+            const data = d.data();
+            notifsPorId[d.id] = {
+              id: d.id,
+              tipo: data.tipo || "match",
+              titulo: data.titulo || "",
+              cuerpo: data.cuerpo || "",
+              otroUid: data.otroUid || null,
+              otroNombre: data.otroNombre || null,
+              accion: data.accion || null,
+              leida: !!data.leida,
+              fecha:
+                data.creado && data.creado.toDate
+                  ? data.creado.toDate()
+                  : new Date(),
+            };
+          });
+        } catch (e) {
+          console.warn("Error cargando notificaciones:", e);
+        }
+        renderizarNotificaciones();
+      }
+
+      // Marca como leída (local + Firestore) y navega según la acción de la
+      // notificación -- si tiene otroUid, va directo a esa conversación/perfil en
+      // vez de a la pantalla genérica.
+      window.abrirNotificacion = async function (id) {
+        const n = notifsPorId[id];
+        if (!n) return;
+
+        if (!n.leida) {
+          n.leida = true;
+          const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+          if (card) {
+            card.classList.remove("unread");
+            const dot = card.querySelector(".unread-dot");
+            if (dot) dot.remove();
+          }
+          try {
+            await updateDoc(doc(db, "usuarios", uid, "notificaciones", id), {
+              leida: true,
+            });
+          } catch (e) {
+            console.warn("Error marcando notificación leída:", e);
+          }
+        }
+
+        const destinos = {
+          matches: n.otroUid
+            ? `./matches.html?persona=${n.otroUid}`
+            : "./matches.html",
+          chats: n.otroUid
+            ? `./chats.html?persona=${n.otroUid}`
+            : "./chats.html",
+          gemelo: "./gemelo.html",
+        };
+        const url = destinos[n.accion];
+        if (url) window.location.href = url;
       };
-    });
-  } catch (e) {
-    console.warn('Error cargando notificaciones:', e);
-  }
-  renderizarNotificaciones();
-}
 
-// Marca como leída (local + Firestore) y navega según la acción de la
-// notificación -- si tiene otroUid, va directo a esa conversación/perfil en
-// vez de a la pantalla genérica.
-window.abrirNotificacion = async function (id) {
-  const n = notifsPorId[id];
-  if (!n) return;
+      window.borrarNotificacion = async function (id) {
+        delete notifsPorId[id];
+        const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+        if (card) card.remove();
+        // Si el grupo del día se quedó sin cards, sacarlo para no dejar un
+        // encabezado "Hoy"/"Ayer" vacío colgando.
+        document.querySelectorAll("[data-group]").forEach((g) => {
+          if (!g.querySelector(".notif-card")) g.remove();
+        });
+        if (!Object.keys(notifsPorId).length) {
+          const emptyEl = document.getElementById("notifEmpty");
+          if (emptyEl) emptyEl.style.display = "flex";
+        }
+        try {
+          await deleteDoc(doc(db, "usuarios", uid, "notificaciones", id));
+        } catch (e) {
+          console.warn("Error borrando notificación:", e);
+        }
+      };
 
-  if (!n.leida) {
-    n.leida = true;
-    const card = document.querySelector(`.notif-card[data-id="${id}"]`);
-    if (card) {
-      card.classList.remove('unread');
-      const dot = card.querySelector('.unread-dot');
-      if (dot) dot.remove();
-    }
-    try {
-      await updateDoc(doc(db, 'usuarios', uid, 'notificaciones', id), { leida: true });
-    } catch (e) {
-      console.warn('Error marcando notificación leída:', e);
-    }
-  }
+      // Bridge para markAllRead() (script clásico de más arriba).
+      window._db_marcarTodasNotifsLeidas = async function () {
+        const idsNoLeidos = Object.values(notifsPorId)
+          .filter((n) => !n.leida)
+          .map((n) => n.id);
+        idsNoLeidos.forEach((id) => {
+          if (notifsPorId[id]) notifsPorId[id].leida = true;
+        });
+        if (!idsNoLeidos.length) return;
+        try {
+          const batch = writeBatch(db);
+          idsNoLeidos.forEach((id) =>
+            batch.update(doc(db, "usuarios", uid, "notificaciones", id), {
+              leida: true,
+            }),
+          );
+          await batch.commit();
+        } catch (e) {
+          console.warn("Error marcando todas las notificaciones leídas:", e);
+        }
+      };
 
-  const destinos = {
-    matches: n.otroUid ? `./matches.html?persona=${n.otroUid}` : './matches.html',
-    chats:   n.otroUid ? `./chats.html?persona=${n.otroUid}` : './chats.html',
-    gemelo:  './gemelo.html',
-  };
-  const url = destinos[n.accion];
-  if (url) window.location.href = url;
-};
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = "./home.html";
+          return;
+        }
+        // Expiración de sesión (24h)
+        const _SESSION_MS = 24 * 60 * 60 * 1000;
+        const _loginTime = parseInt(
+          localStorage.getItem("pebble_login_time") || "0",
+        );
+        if (!_loginTime) {
+          localStorage.setItem("pebble_login_time", Date.now().toString());
+        } else if (Date.now() - _loginTime > _SESSION_MS) {
+          localStorage.removeItem("pebble_login_time");
+          await signOut(auth);
+          window.location.href = "./home.html";
+          return;
+        }
 
-window.borrarNotificacion = async function (id) {
-  delete notifsPorId[id];
-  const card = document.querySelector(`.notif-card[data-id="${id}"]`);
-  if (card) card.remove();
-  // Si el grupo del día se quedó sin cards, sacarlo para no dejar un
-  // encabezado "Hoy"/"Ayer" vacío colgando.
-  document.querySelectorAll('[data-group]').forEach(g => {
-    if (!g.querySelector('.notif-card')) g.remove();
-  });
-  if (!Object.keys(notifsPorId).length) {
-    const emptyEl = document.getElementById('notifEmpty');
-    if (emptyEl) emptyEl.style.display = 'flex';
-  }
-  try {
-    await deleteDoc(doc(db, 'usuarios', uid, 'notificaciones', id));
-  } catch (e) {
-    console.warn('Error borrando notificación:', e);
-  }
-};
+        uid = user.uid;
+        await cargarNotificaciones();
 
-// Bridge para markAllRead() (script clásico de más arriba).
-window._db_marcarTodasNotifsLeidas = async function () {
-  const idsNoLeidos = Object.values(notifsPorId).filter(n => !n.leida).map(n => n.id);
-  idsNoLeidos.forEach(id => { if (notifsPorId[id]) notifsPorId[id].leida = true; });
-  if (!idsNoLeidos.length) return;
-  try {
-    const batch = writeBatch(db);
-    idsNoLeidos.forEach(id => batch.update(doc(db, 'usuarios', uid, 'notificaciones', id), { leida: true }));
-    await batch.commit();
-  } catch (e) {
-    console.warn('Error marcando todas las notificaciones leídas:', e);
-  }
-};
-
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = './home.html'; return; }
-  // Expiración de sesión (24h)
-  const _SESSION_MS = 24 * 60 * 60 * 1000;
-  const _loginTime = parseInt(localStorage.getItem('pebble_login_time') || '0');
-  if (!_loginTime) { localStorage.setItem('pebble_login_time', Date.now().toString()); }
-  else if (Date.now() - _loginTime > _SESSION_MS) {
-    localStorage.removeItem('pebble_login_time');
-    await signOut(auth);
-    window.location.href = './home.html'; return;
-  }
-
-  uid = user.uid;
-  await cargarNotificaciones();
-
-  const el = document.getElementById('loadingOverlay');
-  if (el) { el.classList.add('hide'); setTimeout(() => el.remove(), 350); }
-});
-</script>
-</body>
+        const el = document.getElementById("loadingOverlay");
+        if (el) {
+          el.classList.add("hide");
+          setTimeout(() => el.remove(), 350);
+        }
+      });
+    </script>
+  </body>
 </html>
