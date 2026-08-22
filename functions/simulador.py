@@ -24,6 +24,13 @@ def client():
         _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
+
+# Bajado temporalmente de 0.75 a 0.50 para ver cómo vienen dando los matches
+# con el cálculo nuevo -- volver a 0.75 (o el valor que se decida) antes de
+# ir a producción de verdad. Un solo lugar para no tener que cambiarlo en
+# cada función por separado.
+UMBRAL_MATCH = 0.50
+
 escenarios_db = [
 
     {
@@ -1090,7 +1097,7 @@ def _par_id(uid1, uid2):
     return f"{str(uid1)}_{str(uid2)}"if str(uid1) < str(uid2) else f"{str(uid2)}_{str(uid1)}"
 
 
-def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral=0.75):
+def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral=UMBRAL_MATCH):
 
     escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
@@ -1120,7 +1127,7 @@ def guardar_simulacion_local(registro, carpeta="simulaciones_guardadas"):
     return ruta
 
 
-def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umbral=0.75, guardar=guardar_simulacion_local):
+def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umbral=UMBRAL_MATCH, guardar=guardar_simulacion_local):
     """Corre la simulación completa y devuelve el registro listo para guardar
     (y ya guardado, salvo que se pase guardar=None). `guardar` recibe el
     registro y decide dónde persistirlo -- local por default, pero se le puede
@@ -1138,7 +1145,7 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
     return registro
 
 
-def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=2, umbral=0.75):
+def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=2, umbral=UMBRAL_MATCH):
     """Primero calcula compatibilidad SOLO con las respuestas del onboarding
     (calcular_compatibilidad sin analisis, sin costo) -- si no supera el
     umbral, no corre nada más: así el gasto real en OpenAI (una simulación

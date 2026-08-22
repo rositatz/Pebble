@@ -774,9 +774,9 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 raise ValueError("A alguno de los dos ya no le existe el perfil de gemelo.")
 
             # simular_relacion_completa calcula compatibilidad solo con el
-            # onboarding (gratis) y, únicamente si supera 0.75, corre los
-            # escenarios preestablecidos de verdad (con OpenAI) -- por eso
-            # "simulaciones" puede venir vacía (par no compatible).
+            # onboarding (gratis) y, únicamente si supera motor.UMBRAL_MATCH,
+            # corre los escenarios preestablecidos de verdad (con OpenAI) --
+            # por eso "simulaciones" puede venir vacía (par no compatible).
             resultado = motor.simular_relacion_completa(uid1, doc1.to_dict(), uid2, doc2.to_dict())
 
             par_ref = db.collection("conexiones").document(data["par_id"])
@@ -805,7 +805,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             # Como cada pareja llega acá una sola vez (buscar_parejas_pendientes
             # ya descarta pares que ya tienen conexión), supera_umbral==True acá
             # siempre significa "match nuevo" -- no hace falta comparar contra
-            # un score anterior. El umbral (0.75) lo define
+            # un score anterior. El umbral (motor.UMBRAL_MATCH) lo define
             # simular_relacion_completa/registro_simulacion, no algo hardcodeado
             # acá: supera_umbral ya viene calculado con ese piso.
             if resultado["supera_umbral"]:
