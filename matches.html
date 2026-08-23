@@ -606,6 +606,33 @@
         opacity: 1;
         pointer-events: all;
       }
+      .lightbox-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 700;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .lightbox-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .lightbox-img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: var(--r-md);
+        object-fit: contain;
+      }
+      .modal-av,
+      .profile-photo-thumb {
+        cursor: pointer;
+      }
       .modal-sheet {
         background: var(--surf-1);
 
@@ -1294,6 +1321,18 @@
       </div>
     </div>
 
+    <!-- Lightbox: agranda la foto de perfil o de la grilla al tocarla -->
+    <div
+      class="lightbox-overlay"
+      id="lightboxOverlay"
+      onclick="closeLightbox()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Foto ampliada"
+    >
+      <img class="lightbox-img" id="lightboxImg" src="" alt="Foto ampliada" />
+    </div>
+
     <!-- Bottom nav -->
     <nav class="app-bottom-nav" aria-label="Navegación inferior">
       <a href="./home.html" class="bnav-item" aria-label="Inicio"
@@ -1464,7 +1503,7 @@
         // Header
         const scoreCol = scoreColor(p.score);
         document.getElementById("modal-header").innerHTML = `
-    <div class="modal-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
+    <div class="modal-av" ${p.photo ? `onclick="openLightbox('${p.photo}')"` : ""} style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
     <div class="modal-name-wrap">
       <div class="modal-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
       <div class="modal-meta">${esc(p.city)}</div>
@@ -1532,8 +1571,8 @@
           html += `<div>
       <p class="modal-section-title">Fotos</p>
       <div class="profile-photos-grid">`;
-          p.photos.forEach((bg) => {
-            html += `<div class="profile-photo-thumb" style="background:${bg}"></div>`;
+          p.photos.forEach((url) => {
+            html += `<div class="profile-photo-thumb" onclick="openLightbox('${url}')" style="background:url('${url}') center/cover no-repeat"></div>`;
           });
           html += `</div></div>`;
         }
@@ -1581,6 +1620,22 @@
       // Cierra el modal al presionar la tecla Escape
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") closeModal();
+      });
+
+      // Agranda una foto (la de perfil o cualquiera de la grilla) a pantalla
+      // completa. `url` es la foto tal cual (data URL o http), no el string
+      // de background CSS -- por eso los onclick que llaman a esto extraen
+      // la URL antes de armar el estilo, no le pasan el `bg` completo.
+      window.openLightbox = function (url) {
+        if (!url) return;
+        document.getElementById("lightboxImg").src = url;
+        document.getElementById("lightboxOverlay").classList.add("open");
+      };
+      window.closeLightbox = function () {
+        document.getElementById("lightboxOverlay").classList.remove("open");
+      };
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLightbox();
       });
 
       // Si la página fue abierta con ?persona=ID (desde home/chats), abre ese
@@ -1930,7 +1985,7 @@
           const ciudad = c.otro.ciudad || "";
           const foto =
             c.otro.avatarFoto ||
-            (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) ||
+            (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
             "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           const isNew = !mis[`match_visto_${c.otroId}`];
@@ -1947,7 +2002,9 @@
             city: ciudad,
             score,
             photo: foto,
-            photos: Array.isArray(c.otro.fotos) ? c.otro.fotos : [],
+            photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
+              Boolean,
+            ),
             bio: c.otro.bio || "",
             compat: ejes,
             interests: (c.otro.intereses || []).slice(0, 10),

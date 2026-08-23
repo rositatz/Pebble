@@ -2106,7 +2106,7 @@
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
           const foto =
             c.otro.avatarFoto ||
-            (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) ||
+            (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
             "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           html += `

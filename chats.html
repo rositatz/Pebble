@@ -1023,9 +1023,36 @@
       }
       .po-photo {
         border-radius: var(--r-md);
+        cursor: pointer;
       }
       .po-photo:first-child {
         grid-row: 1 / 3;
+      }
+      .po-hero-av {
+        cursor: pointer;
+      }
+      .lightbox-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 800;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .lightbox-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .lightbox-img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: var(--r-md);
+        object-fit: contain;
       }
 
       /* Lock toast */
@@ -1717,6 +1744,18 @@
       </div>
     </div>
 
+    <!-- Lightbox: agranda la foto de perfil o de la grilla al tocarla -->
+    <div
+      class="lightbox-overlay"
+      id="lightboxOverlay"
+      onclick="closeLightbox()"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Foto ampliada"
+    >
+      <img class="lightbox-img" id="lightboxImg" src="" alt="Foto ampliada" />
+    </div>
+
     <!-- Simulation overlay -->
     <div class="sim-overlay" id="simOverlay">
       <div class="sim-nav">
@@ -2248,12 +2287,15 @@
           .join("");
 
         const photosHtml = (p.photos || [])
-          .map((bg) => `<div class="po-photo" style="background:${bg}"></div>`)
+          .map(
+            (url) =>
+              `<div class="po-photo" onclick="openLightbox('${url}')" style="background:url('${url}') center/cover no-repeat"></div>`,
+          )
           .join("");
 
         document.getElementById("poInner").innerHTML = `
     <div class="po-hero">
-      <div class="po-hero-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
+      <div class="po-hero-av" ${p.photo ? `onclick="openLightbox('${p.photo}')"` : ""} style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
       <div class="po-hero-info">
         <div class="po-hero-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
         <div class="po-hero-meta">${esc(p.city)}</div>
@@ -2272,6 +2314,21 @@
       function closePersonProfile() {
         document.getElementById("profileOverlay").classList.remove("open");
       }
+
+      // Agranda una foto (la de perfil o cualquiera de la grilla) a pantalla
+      // completa -- `url` es la foto tal cual (data URL o http), no el
+      // string de background CSS.
+      window.openLightbox = function (url) {
+        if (!url) return;
+        document.getElementById("lightboxImg").src = url;
+        document.getElementById("lightboxOverlay").classList.add("open");
+      };
+      window.closeLightbox = function () {
+        document.getElementById("lightboxOverlay").classList.remove("open");
+      };
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLightbox();
+      });
 
       /* ── Lock toast ── */
       // Muestra un mensaje temporal ("Chat bloqueado") cuando el usuario intenta acceder al chat real sin haberlo desbloqueado
@@ -2623,7 +2680,7 @@
                   color: "linear-gradient(135deg,#FF9700,#FF751F)",
                   photo:
                     c.otro.avatarFoto ||
-                    (Array.isArray(c.otro.fotos) && c.otro.fotos[0]) ||
+                    (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
                     "",
                   age: calcAge(c.otro.fechaNac),
                   city: c.otro.ciudad || "",
@@ -2633,8 +2690,8 @@
                   sharedInterests: misIntereses.filter((i) =>
                     susIntereses.includes(i),
                   ),
-                  photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).map(
-                    (url) => `url('${url}') center/cover no-repeat`,
+                  photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
+                    Boolean,
                   ),
                   realUnlocked: true,
                   currentMode:
