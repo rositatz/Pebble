@@ -1010,7 +1010,11 @@ def _mensajes_propios_recientes(db, uid, limite=VENTANA_MENSAJES_APRENDIZAJE):
         for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
             real_msgs = (doc.to_dict().get("real") or {}).get("msgs") or []
             for m in real_msgs:
-                if isinstance(m, dict) and m.get("from") == "me" and m.get("text"):
+                # En modo "real" el campo "from" tiene el uid real de quien
+                # escribió (no el string "me" -- eso es solo la convención
+                # del modo "gemelo") -- comparar contra "me" acá nunca
+                # matcheaba nada, así que esto nunca aportaba mensajes reales.
+                if isinstance(m, dict) and m.get("from") == uid and m.get("text"):
                     mensajes.append(m["text"])
     except Exception as e:
         print(f"_mensajes_propios_recientes: error leyendo conexiones de {uid}: {e}")
