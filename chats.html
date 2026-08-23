@@ -652,6 +652,19 @@
       .pmsg.them.is-gemelo .pbubble {
         border-left: 3px solid var(--orange);
       }
+      .pmsg.has-photo .pbubble {
+        padding: 4px;
+        background: transparent;
+        border: none;
+      }
+      .pbubble-photo {
+        display: block;
+        max-width: 220px;
+        max-height: 280px;
+        border-radius: 14px;
+        cursor: pointer;
+        object-fit: cover;
+      }
       .pmsg-time {
         font-size: 0.6rem;
         color: var(--text-muted);
@@ -758,6 +771,29 @@
       }
       .panel-send-btn:hover {
         background: var(--orange);
+      }
+      .panel-photo-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: transparent;
+        border: 1.5px solid var(--border2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        touch-action: manipulation;
+        color: var(--text-secondary);
+      }
+      .panel-photo-btn:hover {
+        border-color: var(--orange);
+        color: var(--orange);
+      }
+      .panel-photo-btn svg {
+        width: 18px;
+        height: 18px;
       }
       .panel-send-btn svg {
         width: 18px;
@@ -1703,6 +1739,28 @@
       </div>
 
       <div class="panel-input-wrap">
+        <!-- Mandar fotos solo tiene sentido en modo "Real" (a la persona,
+        no al gemelo) -- se oculta/muestra desde switchPanelMode(). -->
+        <button
+          class="panel-photo-btn"
+          id="panelPhotoBtn"
+          onclick="document.getElementById('panelPhotoInput').click()"
+          aria-label="Mandar una foto"
+          style="display: none"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        </button>
+        <input
+          type="file"
+          id="panelPhotoInput"
+          accept="image/*"
+          style="display: none"
+          onchange="handlePanelPhotoSelected(event)"
+        />
         <textarea
           class="panel-input"
           id="panelInput"
@@ -1934,6 +1992,9 @@
         document
           .getElementById("pmBtnReal")
           .classList.toggle("active", curMode === "real");
+        // Mandar fotos es solo para la persona real, nunca para el gemelo.
+        document.getElementById("panelPhotoBtn").style.display =
+          curMode === "real" ? "flex" : "none";
       }
 
       // Actualiza la barra de contexto del panel según el modo activo
@@ -2000,6 +2061,16 @@
         (md.msgs || []).forEach((msg) => addMsgEl(con, msg, p, isG));
       }
 
+      // Contenido de una burbuja: si el mensaje trae foto (solo pasa en modo
+      // "real", nunca con el gemelo) se muestra la imagen en vez del texto,
+      // tocable para agrandarla (mismo lightbox que el perfil).
+      function _bubbleContent(msg) {
+        if (msg.photo) {
+          return `<img class="pbubble-photo" src="${msg.photo}" onclick="openLightbox('${msg.photo}')" alt="Foto" />`;
+        }
+        return esc(msg.text);
+      }
+
       // Crea y agrega un elemento de mensaje al contenedor del chat
       // El estilo varía según si es mensaje propio (me), del gemelo IA (isG) o de la persona real (them)
       function addMsgEl(container, msg, p, isG) {
@@ -2008,21 +2079,21 @@
         // lo leen las dos cuentas y "me" no tiene sentido ahí.
         const isMe = isG ? msg.from === "me" : msg.from === window._uid;
         const div = document.createElement("div");
-        div.className = `pmsg ${isMe ? "me" : "them"}${!isMe && isG ? " is-gemelo" : ""}`;
+        div.className = `pmsg ${isMe ? "me" : "them"}${!isMe && isG ? " is-gemelo" : ""}${msg.photo ? " has-photo" : ""}`;
 
         if (isMe) {
-          div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${esc(msg.text)}</div>`;
+          div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${_bubbleContent(msg)}</div>`;
         } else if (isG) {
           div.innerHTML = `
       <div class="pmsg-av pmsg-av-ai" style="background:${p.color}">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       </div>
-      <div class="pbubble"><span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
+      <div class="pbubble"><span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>${_bubbleContent(msg)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
         } else {
           div.innerHTML = `
       <div class="pmsg-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
-      <div class="pbubble">${esc(msg.text)}</div>
+      <div class="pbubble">${_bubbleContent(msg)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
         }
         container.appendChild(div);
@@ -2132,6 +2203,123 @@
         }, 300);
       }
 
+      /* ── Send photo (solo chat real, nunca al gemelo) ── */
+
+      // HEIC/HEIF (formato típico de fotos de iPhone/Mac) no lo puede
+      // decodificar un <img> -- mismo problema y mismo arreglo que ya se
+      // hizo en perfil.html para subir fotos de perfil.
+      function _pareceHeicChat(file) {
+        const tipo = (file.type || "").toLowerCase();
+        if (tipo.includes("heic") || tipo.includes("heif")) return true;
+        const nombre = (file.name || "").toLowerCase();
+        return nombre.endsWith(".heic") || nombre.endsWith(".heif");
+      }
+
+      let _heic2anyCargandoChat = null;
+      function _cargarHeic2anyChat() {
+        if (window.heic2any) return Promise.resolve();
+        if (_heic2anyCargandoChat) return _heic2anyCargandoChat;
+        _heic2anyCargandoChat = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src =
+            "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js";
+          script.onload = () => resolve();
+          script.onerror = () =>
+            reject(new Error("No se pudo cargar el conversor de HEIC"));
+          document.head.appendChild(script);
+        });
+        return _heic2anyCargandoChat;
+      }
+
+      // El chat entero (todos los mensajes de la pareja) vive en un solo
+      // documento de Firestore con un techo de 1MB -- cada foto tiene que
+      // pesar lo menos posible sin quedar ilegible. Arranca en calidad alta
+      // y solo la baja de a pasos si hace falta (mismo criterio que
+      // canvasToCompressedDataUrl en perfil.html).
+      function _comprimirFotoChat(
+        img,
+        { maxLado = 1000, targetBytes = 150000, minQuality = 0.5 } = {},
+      ) {
+        const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * escala);
+        canvas.height = Math.round(img.height * escala);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        let quality = 0.85;
+        let dataUrl = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length > targetBytes && quality > minQuality) {
+          quality = Math.round((quality - 0.1) * 10) / 10;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+        return dataUrl;
+      }
+
+      // Handler del <input type="file"> del botón de adjuntar foto.
+      async function handlePanelPhotoSelected(event) {
+        const file = event.target.files && event.target.files[0];
+        event.target.value = ""; // permite elegir la misma foto de nuevo después
+        if (!file || !curPerson || curMode !== "real") return;
+
+        let archivo = file;
+        if (_pareceHeicChat(file)) {
+          try {
+            await _cargarHeic2anyChat();
+            const resultado = await window.heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.9,
+            });
+            archivo = Array.isArray(resultado) ? resultado[0] : resultado;
+          } catch (e) {
+            console.error("Error convirtiendo HEIC:", e);
+            alert(
+              "Esa foto está en formato HEIC (típico de iPhone/Mac) y no se pudo convertir automáticamente. Exportala como JPG o PNG desde Fotos y probá de nuevo.",
+            );
+            return;
+          }
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => alert("No se pudo leer la imagen");
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () =>
+            alert("No se pudo procesar la imagen -- probá con otra (JPG o PNG)");
+          img.onload = () => sendPanelPhoto(_comprimirFotoChat(img));
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(archivo);
+      }
+
+      // Agrega el mensaje-foto al chat real y lo persiste -- mismo flujo que
+      // la rama "real" de sendPanelMsg, sin respuesta automática (eso solo
+      // pasa en modo gemelo).
+      function sendPanelPhoto(dataUrl) {
+        if (!curPerson || curMode !== "real") return;
+        const p = people[curPerson];
+        const md = p.real;
+        const persona = curPerson;
+        const t = nowTime();
+        const msg = {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          from: window._uid,
+          text: "",
+          photo: dataUrl,
+          time: t,
+        };
+        md.msgs.push(msg);
+        md.lastTime = t;
+        if (md.msgs.length === 1) {
+          injectConvItem(persona);
+        }
+        renderMessages();
+        refreshListItem(persona);
+        setTimeout(scrollBottom, 40);
+        if (typeof window._db_agregarMensajeReal === "function") {
+          window._db_agregarMensajeReal(persona, msg);
+        }
+      }
+
       // Muestra el indicador de "escribiendo..." con el avatar correcto según el modo (gemelo o real)
       function addTyping() {
         const p = people[curPerson];
@@ -2190,11 +2378,13 @@
         if (previewEl) {
           const msgs = md.msgs || [];
           const last = msgs.length ? msgs[msgs.length - 1] : null;
-          previewEl.textContent = last
-            ? last.text.length > 55
-              ? last.text.slice(0, 55) + "…"
-              : last.text
-            : "Sin mensajes";
+          previewEl.textContent = !last
+            ? "Sin mensajes"
+            : last.photo
+              ? "📷 Foto"
+              : last.text.length > 55
+                ? last.text.slice(0, 55) + "…"
+                : last.text;
           previewEl.className = "conv-preview" + (md.unread > 0 ? " bold" : "");
         }
         if (timeEl) timeEl.textContent = md.lastTime || "";
