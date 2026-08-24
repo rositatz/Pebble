@@ -1452,6 +1452,42 @@
         color: rgba(255, 255, 255, 0.17);
         white-space: nowrap;
       }
+      /* Separador de ESCENARIO (distinto del de inicio/fin de toda la
+      simulación, arriba) -- mucho más visible, para que se note claro
+      dónde termina una charla y arranca la siguiente. */
+      .sim-scenario-sep {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 30px 0 16px;
+      }
+      .sim-scenario-sep:first-of-type {
+        margin-top: 14px;
+      }
+      .sim-scenario-sep-line {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 117, 31, 0.25);
+      }
+      .sim-scenario-sep-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: var(--orange);
+        background: rgba(255, 117, 31, 0.12);
+        border: 1px solid rgba(255, 117, 31, 0.35);
+        border-radius: 20px;
+        padding: 6px 14px;
+        white-space: nowrap;
+      }
+      .sim-scenario-sep-badge svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+      }
       /* Simulation bubbles */
       .smsg {
         display: flex;
@@ -2556,7 +2592,14 @@
 
         escenarios.forEach((sim, i) => {
           const titulo = sim.escenario || `Escenario ${i + 1}`;
-          html += `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">${esc(titulo)}</span><div class="sim-sep-line"></div></div>`;
+          html += `<div class="sim-scenario-sep">
+      <div class="sim-scenario-sep-line"></div>
+      <span class="sim-scenario-sep-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+        ${esc(titulo)}
+      </span>
+      <div class="sim-scenario-sep-line"></div>
+    </div>`;
 
           sim.mensajes.forEach((msg) => {
             const isMe = msg.from === "mi-gemelo";

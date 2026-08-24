@@ -25,11 +25,11 @@ def client():
     return _client
 
 
-# Bajado temporalmente de 0.75 a 0.50 para ver cómo vienen dando los matches
-# con el cálculo nuevo -- volver a 0.75 (o el valor que se decida) antes de
-# ir a producción de verdad. Un solo lugar para no tener que cambiarlo en
-# cada función por separado.
-UMBRAL_MATCH = 0.50
+# Vuelto a 0.75 antes de sembrar los 20 usuarios sintéticos de prueba --
+# con 0.50, casi todos los pares hombre/mujer matcheaban y disparaban
+# escenarios reales con OpenAI de más. Un solo lugar para no tener que
+# cambiarlo en cada función por separado.
+UMBRAL_MATCH = 0.75
 
 escenarios_db = [
 
@@ -583,19 +583,36 @@ def generar_prompt_gemelo(perfil, memoria=None):
     5. Tus respuestas deben tener entre
     1 y 3 oraciones normalmente.
 
-    6. NUNCA inventes gustos culturales concretos (series, películas,
-    canciones, libros, artistas puntuales) que no estén escritos arriba
-    (en Intereses, notas o bio). Tu personalidad te puede dar una forma
-    de SER (introvertido/a, aventurero/a, etc.), pero no te inventa
-    gustos que la persona real nunca dijo tener. Si el tema sale y no
-    tenés un dato concreto para eso, hablá en general (el género, la
-    onda, cómo te enganchás con eso) sin nombrar un título específico
-    que no esté en tu perfil.
+    6. REGLA ABSOLUTA, la más importante de todas: JAMÁS nombres un título
+    concreto (serie, película, libro, canción, artista, banda) que no
+    esté escrito TAL CUAL en "Intereses" arriba. Esto vale incluso si el
+    escenario de la charla es justo sobre películas/series/música y "hace
+    falta" un ejemplo para que la charla fluya -- en ESE caso, especialmente
+    en ese caso, tenés que resolverlo SIN inventar un título:
+    - Hablá en general: el género que te gusta, qué tipo de historias te
+      enganchan, qué buscás cuando ves algo -- nunca un nombre propio que
+      no esté en tu perfil.
+    - O directamente decí que hace tiempo no ves/escuchás nada que te haya
+      marcado, o que no sos de esas cosas -- es una respuesta real y
+      válida, no hace falta tener un ejemplo para todo.
+    - Si en Intereses SÍ tenés un título cargado, usá ESE (no inventes uno
+      "más piola" o que combine mejor con la charla).
+    Un gemelo que inventa un título que su persona real nunca escribió
+    está mintiendo sobre ella -- es el error más grave que podés cometer acá.
 
-    7. Si no sabes algo, responde de forma
+    7. No estés de acuerdo ni digas que te gusta algo solo porque el otro
+    gemelo lo dijo primero o porque "queda bien" en la charla. Respondé
+    según TUS datos reales (arriba), no según lo que el otro acaba de
+    compartir. Si tus datos no dicen nada sobre ese tema puntual, no te
+    inventes que también te encanta -- date el permiso de tener otro
+    gusto, no tener opinión, o directamente no coincidir. Dos personas
+    recién conociéndose casi nunca tienen exactamente los mismos gustos en
+    todo, y sonar así de "calcado" se nota falso.
+
+    8. Si no sabes algo, responde de forma
     natural sin romper personaje.
 
-    8. Tu personalidad debe influir
+    9. Tu personalidad debe influir
     constantemente en:
         - tono,
         - humor,
@@ -605,25 +622,25 @@ def generar_prompt_gemelo(perfil, memoria=None):
         - coqueteo,
         - empatía.
 
-    9. No intentes agradar siempre.
+    10. No intentes agradar siempre.
     Puedes estar en desacuerdo si encaja
     con tu personalidad.
 
-    10. La conversación debe sentirse
+    11. La conversación debe sentirse
     espontánea y no perfecta.
 
-    11. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
+    12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
     (algo concreto que mencionó, no una reacción genérica tipo "qué
     interesante" que serviría para cualquier mensaje). Mostrá que
     escuchaste de verdad antes de agregar algo tuyo.
 
-    12. No te quedes dando vueltas sobre la misma pregunta muchos turnos
+    13. No te quedes dando vueltas sobre la misma pregunta muchos turnos
     seguidos. Si ya charlaron un par de intercambios sobre el mismo punto
     puntual, sumá un ángulo nuevo relacionado al escenario en vez de
     repreguntar "¿y vos?" de nuevo -- una conversación real avanza, no gira
     en el mismo lugar.
 
-    13. Hablá como se escribe de verdad en un chat, no como si estuvieras
+    14. Hablá como se escribe de verdad en un chat, no como si estuvieras
     narrando o escribiendo algo lindo. NADA de metáforas, frases poéticas
     ni imágenes tipo "mi corazón se abre como..." -- nada de eso. Frases
     cortas, directas, con las mismas muletillas y desprolijidad de un
@@ -933,6 +950,18 @@ def generar_resumen_gemelo(perfil):
     return response.choices[0].message.content.strip()
 
 
+# Formas distintas de arrancar una charla -- sin esto, con el mismo prompt
+# todas las simulaciones tienden a abrir igual ("¡Hola! qué interesante
+# tal cosa..."). Se elige una al azar por simulación.
+_ANGULOS_APERTURA = [
+    "Arrancá directo con algo puntual del escenario, sin saludo largo -- como quien ya está a mitad de un pensamiento.",
+    "Arrancá con una pregunta corta y concreta sobre el tema del escenario, sin preámbulo.",
+    "Arrancá con un comentario u observación (no una pregunta) sobre el escenario, como pensando en voz alta.",
+    "Arrancá con un saludo bien corto (una sola palabra, tipo 'Hola' o 'Ey') y de ahí directo al tema, sin relleno.",
+    "Arrancá contando algo tuyo puntual relacionado al escenario, antes de preguntarle nada al otro.",
+]
+
+
 def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
     """escenario puede ser un índice de escenarios_db o un dict
     {"titulo","contexto","tension","tono"} armado al vuelo para una simulación
@@ -983,7 +1012,15 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
     # turno le toca arrancar la charla. No hace falta una función aparte:
     # es el mismo generar_prompt_gemelo, solo que este primer llamado no
     # tiene mensajes previos a los que responder.
-    instruccion_inicio = "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba. Mandá un primer mensaje corto y natural, como si le escribieras por primera vez a alguien que recién conociste."
+    instruccion_inicio = (
+        "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
+        " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
+        " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
+        " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
+        " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
+        " natural, como si le escribieras por primera vez a alguien que recién"
+        f" conociste. {random.choice(_ANGULOS_APERTURA)}"
+    )
 
     response_inicio = client().chat.completions.create(
         model="gpt-4o-mini",
@@ -1016,7 +1053,23 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
     vista_1 = []
     vista_2 = [{"role": "user", "content": ultimo_mensaje}]
 
-    for _ in range(turnos):
+    # Instrucción extra SOLO para el último mensaje del escenario (la
+    # respuesta final de perfil1, que es donde siempre corta la charla) --
+    # sin esto, el modelo casi siempre termina con una pregunta nueva
+    # (rol 12 lo empuja a mantener la charla viva), y como no hay más
+    # turnos después, queda una pregunta colgada sin responder. Acá se le
+    # avisa que ESTA charla puntual se corta acá, para que cierre con un
+    # comentario/reacción en vez de abrir algo nuevo.
+    instruccion_cierre = (
+        "\n\n    Esta es tu ÚLTIMA respuesta de esta charla puntual (se corta acá,"
+        " no por decisión tuya, simplemente termina). Cerrala de forma natural --"
+        " un comentario, una reacción, algo que redondee lo que se venía hablando."
+        " NO termines con una pregunta nueva ni le pidas algo al otro que quedaría"
+        " sin respuesta."
+    )
+
+    for turno_idx in range(turnos):
+        es_ultimo_turno = turno_idx == turnos - 1
 
         # =================================================
         # PERFIL 2 RESPONDE
@@ -1067,7 +1120,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
                     "role": "system",
                     "content":
                         contexto_escenario +
-                        prompt_1
+                        prompt_1 +
+                        (instruccion_cierre if es_ultimo_turno else "")
                 },
 
                 *vista_1
