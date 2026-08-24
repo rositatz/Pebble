@@ -2900,6 +2900,13 @@
             id="gedit"
             placeholder="Editá tu descripción..."
           ></textarea>
+          <!-- Guarda una "foto" de las respuestas profundas/emocionales al
+          momento de generar el resumen -- así, al volver a esta etapa, se
+          puede saber si de verdad cambió algo que amerite un resumen nuevo
+          (ver _snapshotRespuestasImportantes en el script). Oculto, pero con
+          id para que collectStage/repoblarFormulario lo guarden y restauren
+          igual que cualquier otro campo. -->
+          <input type="hidden" id="resumenSnapshot" />
         </div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 32px">
@@ -3753,17 +3760,60 @@
       // (no los traits) por la versión más detallada. Si falla -- sin red, OpenAI
       // caído -- queda la plantilla de buildGemelo() como respaldo, nunca se deja
       // a la persona sin nada que editar.
+      // Preguntas "profundas" (psicología, conflictos, green/red flags) --
+      // si CUALQUIERA de estas cambió desde la última vez que se generó el
+      // resumen, amerita uno nuevo. Preguntas más de superficie (serie,
+      // música, deporte favorito, etc.) quedan afuera a propósito: cambiar
+      // la serie favorita no tendría que reescribir el resumen entero.
+      const _CAMPOS_IMPORTANTES_RESUMEN = [
+        ["etapa3", "cuestaMostrar"],
+        ["etapa3", "malinterp"],
+        ["etapa3", "ansiedadSeg"],
+        ["etapa4", "pelea"],
+        ["etapa4", "cuandoMolesta"],
+        ["etapa6", "psi1"],
+        ["etapa6", "perdonar"],
+        ["etapa6", "psi3"],
+        ["etapa6", "psi4"],
+        ["etapa6", "psi5"],
+      ];
+
+      function _snapshotRespuestasImportantes() {
+        const snap = {};
+        for (const [etapa, campo] of _CAMPOS_IMPORTANTES_RESUMEN) {
+          snap[`${etapa}.${campo}`] =
+            (stageData[etapa] && stageData[etapa][campo]) || "";
+        }
+        snap["etapa5.flags"] = JSON.stringify(
+          (stageData.etapa5 && stageData.etapa5.flags) || {},
+        );
+        return JSON.stringify(snap);
+      }
+
       window.generarResumenConIA = async function () {
         buildGemelo();
 
-        // Si ya hay un resumen guardado (buildGemelo ya lo dejó cargado en
-        // #gedit), no hace falta pedirle uno nuevo a la IA -- antes esto se
-        // llamaba SIEMPRE que se llegaba a esta etapa, así que volver a "Editar
-        // gemelo" para tocar cualquier otra respuesta terminaba reemplazando el
-        // resumen ya elegido por uno nuevo, aunque la persona no hubiera pedido
-        // cambiarlo. Para forzar uno nuevo, hay que borrar el texto de #gedit a
-        // mano antes de llegar acá -- así sí se nota vacío y se regenera.
-        if (stageData.etapa7 && stageData.etapa7.gedit) return;
+        const snapshotActual = _snapshotRespuestasImportantes();
+        const yaTieneResumenGuardado = !!(
+          stageData.etapa7 && stageData.etapa7.gedit
+        );
+        const snapshotGuardado =
+          stageData.etapa7 && stageData.etapa7.resumenSnapshot;
+
+        if (yaTieneResumenGuardado) {
+          if (!snapshotGuardado) {
+            // Resumen de antes de este cambio, todavía sin snapshot guardado
+            // -- se adopta el estado actual como línea de base sin gastar una
+            // llamada a la IA (si no, la primera visita de cada persona
+            // después de este cambio dispararía una regeneración "gratis").
+            document.getElementById("resumenSnapshot").value = snapshotActual;
+            return;
+          }
+          // Ninguna respuesta profunda cambió desde que se generó -- se
+          // mantiene tal cual (buildGemelo ya lo dejó mostrado). Si sí
+          // cambió algo profundo, se regenera solo, más abajo.
+          if (snapshotGuardado === snapshotActual) return;
+        }
 
         const textEl = document.getElementById("gemelo-gen-text");
         const geditEl = document.getElementById("gedit");
@@ -3784,6 +3834,8 @@
               textEl.textContent = texto;
               geditEl.value = texto;
               autoGrowTextarea(geditEl);
+              document.getElementById("resumenSnapshot").value =
+                snapshotActual;
               return;
             }
             break; // respuesta vacía sin error -- no vale la pena reintentar
