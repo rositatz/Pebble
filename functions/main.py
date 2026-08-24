@@ -44,15 +44,19 @@ def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombr
     })
 
 
-def _quiere_notif_match(db, uid):
-    """Privacidad avanzada > 'No recibir notificaciones de nuevos matches'
-    -- el match se crea igual, esto solo decide si se le avisa. Ante
-    cualquier duda (error de lectura, campo no seteado) se avisa igual."""
+def _quiere_notif(db, uid, campo):
+    """Preferencias de notificaciones (perfil.html, sheet 'Notificaciones')
+    -- usuarios/{uid}.notificaciones.{campo}, campo en "matches"/"mensajes"/
+    "gemelo"/"novedades". El evento real (match, mensaje, etc.) se crea
+    siempre; esto solo decide si se le avisa a esta persona en particular.
+    Ante cualquier duda (error de lectura, nunca guardó preferencias) se
+    avisa igual -- los toggles nacen todos tildados en el sheet."""
     try:
         data = db.collection("usuarios").document(uid).get().to_dict() or {}
-        return not (data.get("privacidadAvanzada") or {}).get("silenciarNotifsMatch")
+        valor = (data.get("notificaciones") or {}).get(campo)
+        return valor is not False
     except Exception as e:
-        print(f"_quiere_notif_match: error leyendo preferencia de {uid}: {e}")
+        print(f"_quiere_notif: error leyendo preferencia de {uid}: {e}")
         return True
 
 
@@ -124,6 +128,52 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
 
     db = firestore.client()
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+
+
+@firestore_fn.on_document_written(document="conexiones/{parId}")
+def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
+    """Se dispara en cada escritura de conexiones/{parId} (el doc de chat
+    compartido por las dos cuentas -- ver chats.html _db_agregarMensajeReal).
+    Solo actúa cuando real.msgs creció, para no generar notificaciones por
+    escrituras no relacionadas a un mensaje real (marcarLeido, el chat con
+    el gemelo, o el registro de una simulación tocan el mismo doc)."""
+    despues = event.data.after
+    if despues is None or not despues.exists:
+        return
+    despues_dict = despues.to_dict()
+    msgs_despues = (despues_dict.get("real") or {}).get("msgs") or []
+
+    antes = event.data.before
+    msgs_antes = []
+    if antes is not None and antes.exists:
+        msgs_antes = (antes.to_dict().get("real") or {}).get("msgs") or []
+
+    if len(msgs_despues) <= len(msgs_antes):
+        return  # no se agregó ningún mensaje real nuevo
+
+    uid1 = (despues_dict.get("usuario_1") or {}).get("uid")
+    uid2 = (despues_dict.get("usuario_2") or {}).get("uid")
+    nombre1 = (despues_dict.get("usuario_1") or {}).get("nombre") or "Usuario"
+    nombre2 = (despues_dict.get("usuario_2") or {}).get("nombre") or "Usuario"
+    if not uid1 or not uid2:
+        return
+
+    db = firestore.client()
+    for msg in msgs_despues[len(msgs_antes):]:
+        remitente = msg.get("from") if isinstance(msg, dict) else None
+        if remitente not in (uid1, uid2):
+            continue  # mensaje mal formado, no debería pasar
+        destinatario = uid2 if remitente == uid1 else uid1
+        nombre_remitente = nombre1 if remitente == uid1 else nombre2
+        if not _quiere_notif(db, destinatario, "mensajes"):
+            continue
+        texto = (msg.get("text") or "").strip()
+        preview = texto if len(texto) <= 80 else texto[:77] + "..."
+        _crear_notificacion(
+            db, destinatario, "mensaje", f"Nuevo mensaje de {nombre_remitente}",
+            preview or "Te escribió en Pebble.",
+            otro_uid=remitente, otro_nombre=nombre_remitente, accion="chats",
+        )
 
 
 @https_fn.on_call()
@@ -835,15 +885,14 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 pct = round(resultado["compatibilidad_promedio"] * 100)
 
                 # El match en sí siempre se crea -- lo que se puede silenciar
-                # es solo el aviso (Privacidad avanzada > No recibir
-                # notificaciones de nuevos matches).
-                if _quiere_notif_match(db, uid1):
+                # es solo el aviso (Notificaciones > Nuevos matches).
+                if _quiere_notif(db, uid1, "matches"):
                     _crear_notificacion(
                         db, uid1, "match", f"¡Nuevo match con {nombre2}!",
                         f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
                         otro_uid=uid2, otro_nombre=nombre2, accion="matches",
                     )
-                if _quiere_notif_match(db, uid2):
+                if _quiere_notif(db, uid2, "matches"):
                     _crear_notificacion(
                         db, uid2, "match", f"¡Nuevo match con {nombre1}!",
                         f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
@@ -851,20 +900,23 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                     )
 
                 # Interés real en común (no un evento inventado) -- solo si
-                # ambos perfiles comparten al menos uno de verdad.
+                # ambos perfiles comparten al menos uno de verdad. Es parte
+                # del aviso de match, así que respeta la misma preferencia.
                 comunes = set(doc1.to_dict().get("intereses") or []) & set(doc2.to_dict().get("intereses") or [])
                 if comunes:
                     interes = sorted(comunes)[0]
-                    _crear_notificacion(
-                        db, uid1, "interes", f"Vos y {nombre2} tienen algo en común",
-                        f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
-                        otro_uid=uid2, otro_nombre=nombre2, accion="chats",
-                    )
-                    _crear_notificacion(
-                        db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
-                        f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
-                        otro_uid=uid1, otro_nombre=nombre1, accion="chats",
-                    )
+                    if _quiere_notif(db, uid1, "matches"):
+                        _crear_notificacion(
+                            db, uid1, "interes", f"Vos y {nombre2} tienen algo en común",
+                            f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                            otro_uid=uid2, otro_nombre=nombre2, accion="chats",
+                        )
+                    if _quiere_notif(db, uid2, "matches"):
+                        _crear_notificacion(
+                            db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
+                            f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                            otro_uid=uid1, otro_nombre=nombre1, accion="chats",
+                        )
 
             doc.reference.update({"estado": "COMPLETADO"})
             procesadas += 1
@@ -973,16 +1025,20 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
             recordado_en = real.get("recordatorioRetomarEn")
             ya_avisado = recordado_en and (ahora - recordado_en).days < DIAS_RETOMAR_CHAT
             if dias_inactivo >= DIAS_RETOMAR_CHAT and not ya_avisado:
-                _crear_notificacion(
-                    db, uid1, "retomar", f"¿Retomás con {nombre2}?",
-                    f"La conversación quedó abierta hace {dias_inactivo} días.",
-                    otro_uid=uid2, otro_nombre=nombre2, accion="chats",
-                )
-                _crear_notificacion(
-                    db, uid2, "retomar", f"¿Retomás con {nombre1}?",
-                    f"La conversación quedó abierta hace {dias_inactivo} días.",
-                    otro_uid=uid1, otro_nombre=nombre1, accion="chats",
-                )
+                # "¿Retomás con X?" es un recordatorio sobre la conversación --
+                # respeta la preferencia de Notificaciones > Mensajes nuevos.
+                if _quiere_notif(db, uid1, "mensajes"):
+                    _crear_notificacion(
+                        db, uid1, "retomar", f"¿Retomás con {nombre2}?",
+                        f"La conversación quedó abierta hace {dias_inactivo} días.",
+                        otro_uid=uid2, otro_nombre=nombre2, accion="chats",
+                    )
+                if _quiere_notif(db, uid2, "mensajes"):
+                    _crear_notificacion(
+                        db, uid2, "retomar", f"¿Retomás con {nombre1}?",
+                        f"La conversación quedó abierta hace {dias_inactivo} días.",
+                        otro_uid=uid1, otro_nombre=nombre1, accion="chats",
+                    )
                 doc.reference.update({"real.recordatorioRetomarEn": firestore.SERVER_TIMESTAMP})
                 avisos_retomar += 2
 
@@ -998,11 +1054,12 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
         if recordado_en and (ahora - recordado_en).days < DIAS_INACTIVIDAD_GEMELO:
             continue
 
-        _crear_notificacion(
-            db, uid, "inactivo", f"Tu gemelo lleva {dias_inactivo} días sin interacciones",
-            "Ajustar su personalidad o tus preferencias puede mejorar los resultados.",
-            accion="gemelo",
-        )
+        if _quiere_notif(db, uid, "gemelo"):
+            _crear_notificacion(
+                db, uid, "inactivo", f"Tu gemelo lleva {dias_inactivo} días sin interacciones",
+                "Ajustar su personalidad o tus preferencias puede mejorar los resultados.",
+                accion="gemelo",
+            )
         ref_usuario.set({"recordatorioInactivoEn": firestore.SERVER_TIMESTAMP}, merge=True)
         avisos_inactivo += 1
 
