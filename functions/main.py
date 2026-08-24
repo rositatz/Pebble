@@ -4,7 +4,7 @@ import hashlib
 import json
 
 import firebase_admin
-from firebase_admin import firestore
+from firebase_admin import firestore, auth
 from firebase_functions import firestore_fn, https_fn, scheduler_fn
 from firebase_functions.options import set_global_options, MemoryOption
 
@@ -42,6 +42,18 @@ def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombr
         "leida": False,
         "creado": firestore.SERVER_TIMESTAMP,
     })
+
+
+def _quiere_notif_match(db, uid):
+    """Privacidad avanzada > 'No recibir notificaciones de nuevos matches'
+    -- el match se crea igual, esto solo decide si se le avisa. Ante
+    cualquier duda (error de lectura, campo no seteado) se avisa igual."""
+    try:
+        data = db.collection("usuarios").document(uid).get().to_dict() or {}
+        return not (data.get("privacidadAvanzada") or {}).get("silenciarNotifsMatch")
+    except Exception as e:
+        print(f"_quiere_notif_match: error leyendo preferencia de {uid}: {e}")
+        return True
 
 
 def _obtener_o_generar_perfil(db, uid):
@@ -662,11 +674,20 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
     db = firestore.client()
 
+    # Cuentas pausadas (Privacidad avanzada > Pausar mi cuenta) no entran a
+    # buscar pareja nueva -- ni como origen ni como candidato para nadie más.
+    pausados = {
+        doc.id
+        for doc in db.collection("usuarios").where("privacidadAvanzada.pausada", "==", True).stream()
+    }
+
     usuarios = []
     for doc in db.collection_group("gemelo").stream():
         if doc.id != "perfil":
             continue
         uid = doc.reference.parent.parent.id
+        if uid in pausados:
+            continue
         usuarios.append((uid, doc.to_dict()))
 
     nuevas = 0
@@ -813,16 +834,21 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 nombre2 = data["usuario_2"]["nombre"] or "Usuario"
                 pct = round(resultado["compatibilidad_promedio"] * 100)
 
-                _crear_notificacion(
-                    db, uid1, "match", f"¡Nuevo match con {nombre2}!",
-                    f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
-                    otro_uid=uid2, otro_nombre=nombre2, accion="matches",
-                )
-                _crear_notificacion(
-                    db, uid2, "match", f"¡Nuevo match con {nombre1}!",
-                    f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
-                    otro_uid=uid1, otro_nombre=nombre1, accion="matches",
-                )
+                # El match en sí siempre se crea -- lo que se puede silenciar
+                # es solo el aviso (Privacidad avanzada > No recibir
+                # notificaciones de nuevos matches).
+                if _quiere_notif_match(db, uid1):
+                    _crear_notificacion(
+                        db, uid1, "match", f"¡Nuevo match con {nombre2}!",
+                        f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
+                        otro_uid=uid2, otro_nombre=nombre2, accion="matches",
+                    )
+                if _quiere_notif_match(db, uid2):
+                    _crear_notificacion(
+                        db, uid2, "match", f"¡Nuevo match con {nombre1}!",
+                        f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
+                        otro_uid=uid1, otro_nombre=nombre1, accion="matches",
+                    )
 
                 # Interés real en común (no un evento inventado) -- solo si
                 # ambos perfiles comparten al menos uno de verdad.
@@ -1090,3 +1116,55 @@ def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
         f"{sin_perfil_generado} sin perfil generado todavía, "
         f"{sin_mensajes_suficientes} sin mensajes suficientes, {con_error} con error."
     )
+
+
+def _borrar_coleccion(ref):
+    for doc in ref.stream():
+        doc.reference.delete()
+
+
+@https_fn.on_call(timeout_sec=120, memory=MemoryOption.MB_512)
+def eliminar_cuenta(request: https_fn.CallableRequest):
+    """Borra la cuenta y TODOS los datos de Pebble asociados -- perfil,
+    respuestas del onboarding, chats, notificaciones, conexiones/matches
+    (con sus simulaciones) y la cuenta de Firebase Auth. Irreversible: no
+    hay forma de recuperar nada de esto después de llamado. Antes 'Eliminar
+    mi cuenta' en perfil.html solo mostraba un toast pidiendo escribir a
+    soporte -- no borraba nada de verdad."""
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado."
+        )
+
+    uid = request.auth.uid
+    db = firestore.client()
+
+    ref_usuario = db.collection("usuarios").document(uid)
+    _borrar_coleccion(ref_usuario.collection("gemelo"))
+    _borrar_coleccion(ref_usuario.collection("gemelo_setup"))
+    _borrar_coleccion(ref_usuario.collection("chats"))
+    _borrar_coleccion(ref_usuario.collection("notificaciones"))
+    ref_usuario.delete()
+
+    for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
+        _borrar_coleccion(doc.reference.collection("simulaciones"))
+        doc.reference.delete()
+
+    # parejas_pendientes no tiene un campo "participantes" (array) como
+    # conexiones -- son pocos docs y de corta vida (se consumen en el batch
+    # nocturno), así que un escaneo completo acá es aceptable.
+    for doc in db.collection("parejas_pendientes").stream():
+        data = doc.to_dict()
+        u1 = (data.get("usuario_1") or {}).get("uid")
+        u2 = (data.get("usuario_2") or {}).get("uid")
+        if uid in (u1, u2):
+            doc.reference.delete()
+
+    try:
+        auth.delete_user(uid)
+    except Exception as e:
+        print(f"eliminar_cuenta: error borrando la cuenta de Auth {uid}: {e}")
+
+    return {"ok": True}

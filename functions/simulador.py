@@ -447,7 +447,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     # mensaje antes de mostrarlo -- se vería "[FIN]" como texto literal.
     instruccion_cierre_natural = (
         f"""
-    16. Si sentís que esta charla puntual llegó a un cierre natural (ya se
+    17. Si sentís que esta charla puntual llegó a un cierre natural (ya se
     dijeron lo que tenían para decir por ahora, se despidieron, quedó todo
     resuelto) -- y SOLO en ese caso -- terminá tu mensaje con la marca
     exacta {_MARCA_CIERRE} al final, en su propia línea, después de tu
@@ -797,6 +797,11 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     algo tuyo, que sea específico (un detalle, un momento concreto), no un
     resumen vago tipo "me pasan cosas parecidas". Una charla real tiene
     detalles puntuales, no generalidades que le calzarían a cualquiera.
+
+    16. NUNCA uses etiquetas HTML (nada de <strong>, <br>, <b>, <i>, <li>,
+    etc.) -- se ven como texto suelto, no se renderizan. Para remarcar algo
+    usá **así** (doble asterisco), y para separar ideas, saltos de línea
+    simples nomás.
     {instruccion_cierre_natural}
     """
 
@@ -947,6 +952,11 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     7. Si te pregunta la hora, el día, o algo que dependa de eso (ej: si algo
        está abierto ahora), usá el dato de "AHORA MISMO ES" de arriba -- es
        la hora real, no la adivines ni la inventes.
+    8. NUNCA uses etiquetas HTML en tu respuesta (nada de <strong>, <br>,
+       <b>, <i>, listas con <li>, etc.) -- el chat no las renderiza, se ven
+       como texto suelto. Si querés remarcar algo, usá **así** (doble
+       asterisco a cada lado), nunca HTML. Para separar ideas o puntos de
+       una lista, usá saltos de línea simples, no ninguna etiqueta.
     """
 
     return prompt

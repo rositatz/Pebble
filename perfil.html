@@ -3713,48 +3713,17 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         </div>
         <div class="sheet-body">
           <div class="sheet-note">
-            Estas configuraciones afectan tu visibilidad dentro de Pebble. Podés
-            cambiarlas en cualquier momento.
+            Estas configuraciones afectan cómo Pebble te sigue buscando pareja y
+            avisándote. Podés cambiarlas en cualquier momento.
           </div>
           <div style="display: flex; flex-direction: column">
             <div class="sheet-row">
               <div class="sheet-row-info">
-                <span class="sheet-row-label">Modo invisible</span>
-                <span class="sheet-row-desc"
-                  >Tu perfil no aparece en el feed de descubrimiento de otros
-                  usuarios</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privInvisible"
-                />
-                <label class="toggle-label" for="privInvisible"></label>
-              </div>
-            </div>
-            <div class="sheet-row">
-              <div class="sheet-row-info">
-                <span class="sheet-row-label"
-                  >Solo mostrarme a compatibles (+70%)</span
-                >
-                <span class="sheet-row-desc"
-                  >Solo ven tu perfil personas con las que tenés alta
-                  afinidad</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input type="checkbox" class="toggle-input" id="privSoloComp" />
-                <label class="toggle-label" for="privSoloComp"></label>
-              </div>
-            </div>
-            <div class="sheet-row">
-              <div class="sheet-row-info">
                 <span class="sheet-row-label">Pausar mi cuenta</span>
                 <span class="sheet-row-desc"
-                  >Ocultá temporalmente tu perfil sin perder tus datos ni
-                  matches</span
+                  >Tu gemelo deja de buscar matches nuevos hasta que la
+                  reactivés -- no perdés tus datos ni los matches que ya
+                  tenés</span
                 >
               </div>
               <div class="toggle-wrap">
@@ -3762,14 +3731,30 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
                 <label class="toggle-label" for="privPausar"></label>
               </div>
             </div>
+            <div class="sheet-row">
+              <div class="sheet-row-info">
+                <span class="sheet-row-label"
+                  >No recibir notificaciones de nuevos matches</span
+                >
+                <span class="sheet-row-desc"
+                  >Los matches se siguen generando igual, pero no te llega el
+                  aviso -- los vas a ver igual entrando a la app</span
+                >
+              </div>
+              <div class="toggle-wrap">
+                <input
+                  type="checkbox"
+                  class="toggle-input"
+                  id="privSilenciarNotifs"
+                />
+                <label class="toggle-label" for="privSilenciarNotifs"></label>
+              </div>
+            </div>
           </div>
           <button class="sheet-btn-save" onclick="savePrivacidadAvanzada()">
             Guardar configuración
           </button>
-          <button
-            class="sheet-btn-danger"
-            onclick="showToast('Para eliminar tu cuenta contactá a soporte')"
-          >
+          <button class="sheet-btn-danger" onclick="confirmarEliminarCuenta()">
             Eliminar mi cuenta
           </button>
         </div>
@@ -4743,18 +4728,45 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         showToast("Preferencias guardadas ✓");
       }
 
-      // Guarda la configuración de privacidad avanzada (invisible, solo compatibles, cuenta pausada)
-      // Lee los toggles del sheet de privacidad y los persiste en Firestore
+      // Guarda la configuración de privacidad avanzada (cuenta pausada,
+      // notificaciones de match silenciadas) -- lee los toggles del sheet y
+      // los persiste en Firestore. El backend (buscar_parejas_pendientes /
+      // procesar_parejas_pendientes) ya respeta estos dos campos.
       function savePrivacidadAvanzada() {
         const data = {
-          invisible: document.getElementById("privInvisible").checked,
-          soloComp: document.getElementById("privSoloComp").checked,
           pausada: document.getElementById("privPausar").checked,
+          silenciarNotifsMatch: document.getElementById("privSilenciarNotifs")
+            .checked,
         };
         if (typeof window._db_savePrivacidadAvanzada === "function")
           window._db_savePrivacidadAvanzada(data);
         closeSheet("sheetPriv");
         showToast("Configuración guardada ✓");
+      }
+
+      // Pide confirmación (doble, porque es irreversible) antes de borrar la
+      // cuenta y todos los datos asociados de verdad.
+      async function confirmarEliminarCuenta() {
+        const ok1 = confirm(
+          "¿Seguro que querés eliminar tu cuenta? Se borran tu perfil, tu gemelo, tus chats, tus matches y todos tus datos de Pebble para siempre -- esto NO se puede deshacer.",
+        );
+        if (!ok1) return;
+        const ok2 = confirm(
+          "Última confirmación: esto borra todo de forma permanente. ¿Eliminar la cuenta ahora?",
+        );
+        if (!ok2) return;
+
+        if (typeof window._eliminarCuenta !== "function") {
+          showToast("Todavía se está terminando de cargar -- probá de nuevo en un segundo.");
+          return;
+        }
+        try {
+          showToast("Eliminando tu cuenta…");
+          await window._eliminarCuenta();
+        } catch (err) {
+          console.error("Error eliminando la cuenta:", err);
+          showToast("No se pudo eliminar la cuenta. Probá de nuevo en un rato.");
+        }
       }
 
       // Abre o cierra una pregunta del FAQ (acordeón)
@@ -4871,6 +4883,10 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       const generarGemeloAhoraCallable = httpsCallable(
         functionsInstance,
         "generar_gemelo_ahora",
+      );
+      const eliminarCuentaCallable = httpsCallable(
+        functionsInstance,
+        "eliminar_cuenta",
       );
 
       let uid = null;
@@ -5398,12 +5414,11 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           // Privacidad avanzada guardada
           if (d.privacidadAvanzada) {
             const p = d.privacidadAvanzada;
-            if (p.invisible !== undefined)
-              document.getElementById("privInvisible").checked = p.invisible;
-            if (p.soloComp !== undefined)
-              document.getElementById("privSoloComp").checked = p.soloComp;
             if (p.pausada !== undefined)
               document.getElementById("privPausar").checked = p.pausada;
+            if (p.silenciarNotifsMatch !== undefined)
+              document.getElementById("privSilenciarNotifs").checked =
+                p.silenciarNotifsMatch;
           }
 
           // Privacidad de campos del perfil (mostrar nombre/edad/ciudad/fotos/bio/género/orientación/pronombres)
@@ -5564,6 +5579,21 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           { privacidadAvanzada: data },
           { merge: true },
         );
+      };
+
+      // Borra la cuenta y todos los datos de verdad (Cloud Function
+      // eliminar_cuenta) -- antes esto solo mostraba un toast pidiendo
+      // escribir a soporte, no borraba nada. Es irreversible.
+      window._eliminarCuenta = async () => {
+        await eliminarCuentaCallable();
+        localStorage.removeItem("pebble_login_time");
+        try {
+          await signOut(auth);
+        } catch (e) {
+          // La cuenta ya se borró del lado del servidor -- si signOut()
+          // falla igual redirigimos, no tiene sentido bloquear acá.
+        }
+        window.location.href = "./index.html";
       };
 
       // Guardar privacidad de campos del perfil (nombre/edad/ciudad/fotos/bio/género/orientación)
