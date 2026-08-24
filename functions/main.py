@@ -143,7 +143,7 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     # Se fuerza la regeneración (no simplemente reusar si ya existe) porque
     # este endpoint se llama justo al terminar el onboarding, cuando
     # gemelo_setup/data tiene la versión más nueva de las respuestas.
-    doc_setup = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
     if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
@@ -177,7 +177,7 @@ def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
     uid = request.auth.uid
     db = firestore.client()
 
-    doc_setup = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
+    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
     if not doc_setup.exists:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,

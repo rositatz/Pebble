@@ -3534,8 +3534,13 @@
         const data = collectStage(n);
         stageData["etapa" + n] = data;
         try {
+          // Las respuestas crudas van en gemelo_setup/data -- gemelo/perfil
+          // es el perfil YA PROCESADO y las reglas de Firestore bloquean
+          // cualquier escritura del cliente ahí (allow write: if false, lo
+          // arma solo la Cloud Function). Escribir ahí tiraba permission-
+          // denied en cada autoguardado, atrapado en silencio por el catch.
           await setDoc(
-            doc(db, "usuarios", uid, "gemelo", "perfil"),
+            doc(db, "usuarios", uid, "gemelo_setup", "data"),
             { ["etapa" + n]: data },
             { merge: true },
           );
@@ -3810,8 +3815,11 @@
 
         try {
           await saveStage(7);
+          // completed:true acá (en gemelo_setup/data, no en gemelo/perfil --
+          // mismo motivo que en saveStage) es lo que dispara el trigger
+          // generar_perfil_gemelo en el backend.
           await setDoc(
-            doc(db, "usuarios", uid, "gemelo", "perfil"),
+            doc(db, "usuarios", uid, "gemelo_setup", "data"),
             {
               gemelo_final: finalText,
               completed: true,
@@ -3873,8 +3881,13 @@
         } catch (e) {}
 
         try {
+          // Las respuestas crudas del onboarding (etapa1..etapa7, completed)
+          // viven en gemelo_setup/data -- gemelo/perfil es el perfil YA
+          // PROCESADO (personalidad, valores, etc.), nunca tiene esas claves,
+          // así que repoblarFormulario() no encontraba nada para restaurar y
+          // la pantalla se veía como si no se hubiera contestado nada.
           const snap = await getDoc(
-            doc(db, "usuarios", uid, "gemelo", "perfil"),
+            doc(db, "usuarios", uid, "gemelo_setup", "data"),
           );
           if (snap.exists()) {
             const d = snap.data();
