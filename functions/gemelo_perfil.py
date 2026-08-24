@@ -538,8 +538,7 @@ def _construir_preferencias_pareja(respuestas_raw):
 # Traduce atraeMas/persEngancha a un objetivo NUMÉRICO por rasgo (misma
 # escala 0.0-1.0 y misma clave que BASE_PERSONALIDAD), para poder comparar
 # contra la personalidad real del candidato en compatibilidad_preferencias_
-# unidireccional. Son valores objetivo, no deltas -- si dos reglas tocan el
-# mismo rasgo, gana la última que matchee.
+# unidireccional. Son valores objetivo, no deltas.
 MAPA_PREFERENCIAS_PERSONALIDAD = [
     ("etapa6", "atraeMas", "Seguro/a", {"independencia": 0.75, "tolerancia_conflicto": 0.75}),
     ("etapa6", "atraeMas", "Sensible", {"sensibilidad_emocional": 0.8, "empatia": 0.8}),
@@ -551,15 +550,58 @@ MAPA_PREFERENCIAS_PERSONALIDAD = [
     ("etapa3", "persEngancha", "Muy cerrada, de las que cuesta remarles la conversación", {"introversion": 0.85}),
 ]
 
+# Cada green/red flag del mini-juego (etapa5, ver FLAGS_JUEGO más abajo)
+# también implica algo sobre qué rasgo se busca en una pareja -- votarlo
+# GREEN empuja el objetivo hacia el valor de acá; votarlo RED empuja hacia
+# el opuesto (1 - ese valor). Índice = posición en FLAGS_JUEGO.
+MAPA_FLAGS_RASGOS = [
+    {"necesidad_afecto": 0.75},                          # 0  Te escribe primero todos los días
+    {"necesidad_afecto": 0.8, "independencia": 0.25},    # 1  Te dice «Te extraño» a la semana de conocerse
+    {"introversion": 0.2},                               # 2  Te cuenta toda su vida en la primera cita
+    {"introversion": 0.2, "necesidad_afecto": 0.7},      # 3  Te manda 5 audios seguidos
+    {"necesidad_afecto": 0.7, "independencia": 0.3},     # 4  Te presenta a sus amigos después de dos citas
+    {"necesidad_afecto": 0.75},                          # 5  Te pone un apodo cariñoso al toque
+    {"introversion": 0.75, "independencia": 0.7},        # 6  Tarda en responder
+    {"independencia": 0.75},                             # 7  No postea nada de la relación
+    {"tolerancia_conflicto": 0.75},                      # 8  Tiene opiniones fuertes en todo
+    {"tolerancia_conflicto": 0.25, "empatia": 0.7},      # 9  Te deja ganar siempre
+    {"apertura_mental": 0.8},                            # 10 Es espontáneo/a
+    {"apertura_mental": 0.6, "ambicion": 0.25},          # 11 Vive el presente, no planea nada
+    {"ambicion": 0.8},                                   # 12 Es adicto/a al trabajo o estudio
+    {"sensibilidad_emocional": 0.8},                     # 13 Llora en las películas
+    {"introversion": 0.25},                              # 14 Sale de fiesta todos los fines de semana
+    {"independencia": 0.7, "introversion": 0.6},         # 15 No usa mucho el teléfono
+]
+
 
 def _construir_preferencias_pareja_personalidad(respuestas_raw):
-    objetivo = {}
+    """Objetivo de personalidad para una pareja, combinando atraeMas/
+    persEngancha y los green/red flags -- si varias señales tocan el mismo
+    rasgo, se promedian en vez de que la última pise a las anteriores."""
+    acumulado = {}
+
+    def _sumar(rasgos):
+        for rasgo, valor in rasgos.items():
+            acumulado.setdefault(rasgo, []).append(valor)
+
     for etapa, campo, respuesta_esperada, rasgos in MAPA_PREFERENCIAS_PERSONALIDAD:
         datos_etapa = respuestas_raw.get(etapa) or {}
         seleccionadas = {str(v).strip().casefold() for v in _seleccion(datos_etapa, campo)}
         if respuesta_esperada.strip().casefold() in seleccionadas:
-            objetivo.update(rasgos)
-    return objetivo
+            _sumar(rasgos)
+
+    flags = (respuestas_raw.get("etapa5") or {}).get("flags")
+    if isinstance(flags, dict):
+        for indice, voto in flags.items():
+            if voto not in ("green", "red"):
+                continue
+            try:
+                rasgos_flag = MAPA_FLAGS_RASGOS[int(indice)]
+            except (ValueError, IndexError, TypeError):
+                continue
+            _sumar({r: (v if voto == "green" else round(1 - v, 2)) for r, v in rasgos_flag.items()})
+
+    return {rasgo: round(sum(vals) / len(vals), 2) for rasgo, vals in acumulado.items()}
 
 
 def _construir_creencias(respuestas_raw):

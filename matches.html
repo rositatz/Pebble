@@ -2009,9 +2009,17 @@
             compat: ejes,
             interests: (c.otro.intereses || []).slice(0, 10),
             shared: tags,
+            // msg.uid es lo confiable (agregado hace poco); msg.name
+            // comparado contra mis.nombre podía no coincidir nunca (el
+            // nombre del perfil del gemelo, de la etapa1 del onboarding, no
+            // es necesariamente el mismo que el nombre de la cuenta), lo que
+            // atribuía TODOS los mensajes al lado ajeno.
             preview: historial.slice(-3).map((msg) => ({
-              side:
-                msg.name && mis.nombre && msg.name === mis.nombre
+              side: msg.uid
+                ? msg.uid === user.uid
+                  ? "right"
+                  : "left"
+                : msg.name && mis.nombre && msg.name === mis.nombre
                   ? "right"
                   : "left",
               text: msg.content || "",

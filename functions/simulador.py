@@ -933,7 +933,7 @@ def generar_resumen_gemelo(perfil):
     return response.choices[0].message.content.strip()
 
 
-def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
+def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
     """escenario puede ser un índice de escenarios_db o un dict
     {"titulo","contexto","tension","tono"} armado al vuelo para una simulación
     a pedido del usuario (ej: "simulá que discutimos por plata").
@@ -941,7 +941,16 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
     memoria1/memoria2 son lo que cada gemelo recuerda de interacciones previas
     con el otro (ver compatibilidad.actualizar_memoria) -- se usan en
     simular_relacion_completa para que, al correr varios escenarios seguidos,
-    la charla se sienta continuada en vez de arrancar de cero cada vez."""
+    la charla se sienta continuada en vez de arrancar de cero cada vez.
+
+    uid1/uid2 se guardan en cada mensaje de historial_chat (además de "name")
+    -- el frontend (chats.html/matches.html) decide "es mi gemelo o el del
+    otro" comparando contra el uid real de quien está mirando. Antes solo
+    comparaba nombres (perfil.nombre, de la etapa1 del onboarding) contra
+    usuarios/{uid}.nombre (el nombre de cuenta) -- son dos campos distintos
+    que pueden no coincidir (apodo vs. nombre real, mayúsculas, etc.), y
+    cuando no coincidían TODOS los mensajes quedaban atribuidos al gemelo
+    ajeno."""
 
     print("Iniciando simulación...\n")
 
@@ -990,6 +999,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
 
         "role": "user",
         "name": nombre1,
+        "uid": uid1,
         "content": ultimo_mensaje
     })
 
@@ -1037,6 +1047,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
 
             "role": "assistant",
             "name": nombre2,
+            "uid": uid2,
             "content": msg_2
         })
         vista_2.append({"role": "assistant", "content": msg_2})
@@ -1071,6 +1082,7 @@ def simular_cita(perfil1, perfil2, turnos=3, escenario=0, memoria1=None, memoria
 
             "role": "assistant",
             "name": nombre1,
+            "uid": uid1,
             "content": msg_1
         })
         vista_1.append({"role": "assistant", "content": msg_1})
@@ -1146,7 +1158,7 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
     registro y decide dónde persistirlo -- local por default, pero se le puede
     pasar cualquier función que escriba a Firestore u otro lado."""
 
-    historial_chat, analisis, score = simular_cita(perfil1, perfil2, turnos=turnos, escenario=escenario)
+    historial_chat, analisis, score = simular_cita(uid1, perfil1, uid2, perfil2, turnos=turnos, escenario=escenario)
 
     registro = registro_simulacion(
         uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral

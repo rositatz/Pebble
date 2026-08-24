@@ -2537,7 +2537,10 @@
       function openSimulation() {
         if (!curPerson) return;
         const p = people[curPerson];
-        const sims = p.simulacion || [];
+        // p.simulacion es un array por ESCENARIO (no un solo chat) -- antes
+        // solo se guardaba/mostraba el último escenario simulado con esta
+        // persona; ahora se muestran todos, uno atrás del otro.
+        const escenarios = p.simulacion || [];
 
         document.getElementById("simNavTitle").textContent =
           `Tu gemelo × ${p.name}`;
@@ -2547,29 +2550,35 @@
         let html = `<div class="sim-intro">
     <div class="sim-intro-label">¿Qué es esto?</div>
     <div class="sim-intro-text">
-      Antes de conectarte con ${esc(p.name)}, los gemelos digitales de ambos exploraron su compatibilidad de forma autónoma. Esta es esa conversación — privada, tuya, generada solo para vos.
+      Antes de conectarte con ${esc(p.name)}, los gemelos digitales de ambos exploraron su compatibilidad de forma autónoma en varios escenarios distintos. Estas son esas conversaciones — privadas, tuyas, generadas solo para vos.
     </div>
-  </div>
-  <div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Inicio de la simulación</span><div class="sim-sep-line"></div></div>`;
+  </div>`;
 
-        sims.forEach((msg) => {
-          const isMe = msg.from === "mi-gemelo";
-          if (isMe) {
-            html += `<div class="smsg me">
+        escenarios.forEach((sim, i) => {
+          const titulo = sim.escenario || `Escenario ${i + 1}`;
+          html += `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">${esc(titulo)}</span><div class="sim-sep-line"></div></div>`;
+
+          sim.mensajes.forEach((msg) => {
+            const isMe = msg.from === "mi-gemelo";
+            if (isMe) {
+              html += `<div class="smsg me">
         <span class="smsg-time">${msg.time}</span>
         <div class="sbubble"><span class="smsg-label">Tu gemelo</span>${esc(msg.text)}</div>
         <div class="smsg-av" style="background:#2a2a2a;outline:2px solid rgba(255,160,60,0.45);outline-offset:1px">G</div>
       </div>`;
-          } else {
-            html += `<div class="smsg them">
+            } else {
+              html += `<div class="smsg them">
         <div class="smsg-av" style="background:${p.color};outline:2px solid var(--orange);outline-offset:1px">G</div>
         <div class="sbubble"><span class="smsg-label">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
         <span class="smsg-time">${msg.time}</span>
       </div>`;
-          }
+            }
+          });
         });
 
-        html += `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Fin de la simulación</span><div class="sim-sep-line"></div></div>`;
+        html += escenarios.length
+          ? `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Fin de las simulaciones</span><div class="sim-sep-line"></div></div>`
+          : `<div class="sim-sep"><div class="sim-sep-line"></div><span class="sim-sep-text">Todavía no hay escenarios simulados</span><div class="sim-sep-line"></div></div>`;
 
         inner.innerHTML = html;
         document.getElementById("simOverlay").classList.add("open");
@@ -2782,7 +2791,7 @@
                 candidatos.map(async (c) => {
                   if (_perfilesCache[c.otroId]) {
                     c.otro = _perfilesCache[c.otroId].otro;
-                    c.ultimaSim = _perfilesCache[c.otroId].ultimaSim;
+                    c.simulaciones = _perfilesCache[c.otroId].simulaciones;
                     return;
                   }
                   try {
@@ -2792,20 +2801,23 @@
                     c.otro = {};
                   }
                   try {
+                    // TODOS los escenarios simulados con esta persona -- antes
+                    // limit(1) solo traía el último, así que si el match
+                    // corrió varios escenarios preestablecidos se perdían
+                    // todos menos uno.
                     const simSnap = await getDocs(
                       query(
                         collection(db, "conexiones", c.parId, "simulaciones"),
-                        orderBy("fecha", "desc"),
-                        limit(1),
+                        orderBy("fecha", "asc"),
                       ),
                     );
-                    c.ultimaSim = simSnap.empty ? null : simSnap.docs[0].data();
+                    c.simulaciones = simSnap.docs.map((d) => d.data());
                   } catch (e) {
-                    c.ultimaSim = null;
+                    c.simulaciones = [];
                   }
                   _perfilesCache[c.otroId] = {
                     otro: c.otro,
-                    ultimaSim: c.ultimaSim,
+                    simulaciones: c.simulaciones,
                   };
                 }),
               );
@@ -2822,23 +2834,39 @@
                 const nombre = c.otro.nombre || nombreGuardado || "Usuario";
                 const susIntereses = c.otro.intereses || [];
 
-                let simulacion = [];
-                if (c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)) {
-                  const horaSim = c.ultimaSim.fecha
-                    ? new Date(c.ultimaSim.fecha).toLocaleTimeString("es-AR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "";
-                  simulacion = c.ultimaSim.historial_chat.map((msg) => ({
-                    from:
-                      msg.name && mis.nombre && msg.name === mis.nombre
-                        ? "mi-gemelo"
-                        : "su-gemelo",
-                    text: msg.content || "",
-                    time: horaSim,
-                  }));
-                }
+                // Un elemento por escenario simulado (no un solo chat) -- así
+                // se pueden mostrar TODOS los que se corrieron con esta
+                // persona, no solo el último.
+                const simulacion = (c.simulaciones || [])
+                  .filter((sim) => Array.isArray(sim.historial_chat))
+                  .map((sim) => {
+                    const horaSim = sim.fecha
+                      ? new Date(sim.fecha).toLocaleTimeString("es-AR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "";
+                    return {
+                      escenario: (sim.escenario && sim.escenario.titulo) || "",
+                      mensajes: sim.historial_chat.map((msg) => ({
+                        // msg.uid es lo confiable (agregado hace poco) -- antes
+                        // solo estaba msg.name comparado contra mis.nombre, y
+                        // esos dos campos pueden no coincidir (el nombre del
+                        // perfil del gemelo, de la etapa1 del onboarding, no
+                        // es necesariamente el mismo que el nombre de cuenta),
+                        // lo que atribuía TODOS los mensajes al gemelo ajeno.
+                        from: msg.uid
+                          ? msg.uid === user.uid
+                            ? "mi-gemelo"
+                            : "su-gemelo"
+                          : msg.name && mis.nombre && msg.name === mis.nombre
+                            ? "mi-gemelo"
+                            : "su-gemelo",
+                        text: msg.content || "",
+                        time: horaSim,
+                      })),
+                    };
+                  });
 
                 const real = c.data.real || {};
                 const gemelo = c.data.gemelo || {};
