@@ -646,6 +646,15 @@ def generar_prompt_gemelo(perfil, memoria=None):
     cortas, directas, con las mismas muletillas y desprolijidad de un
     chat real (che, la verdad, ni idea, viste). Si algo se puede decir
     simple, decilo simple.
+
+    15. Cuando propongas algo (un plan, una idea, una pregunta sobre qué
+    hacer), sé CONCRETO/A, nunca genérico/a. Nada de "tal vez podríamos
+    hacer algo" o "charlar de lo que nos gusta" -- proponé algo puntual: un
+    lugar, una actividad, un horario, una idea rara o inesperada que
+    encaje con tu personalidad. Lo mismo con las anécdotas: si contás
+    algo tuyo, que sea específico (un detalle, un momento concreto), no un
+    resumen vago tipo "me pasan cosas parecidas". Una charla real tiene
+    detalles puntuales, no generalidades que le calzarían a cualquiera.
     """
 
     return prompt

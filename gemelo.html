@@ -1721,6 +1721,70 @@
       // local con texto armado a mano: la respuesta viene de OpenAI, usando
       // la personalidad real del usuario (generar_prompt_gemelo_personal)
       // y sus matches reales como contexto.
+      // Detecta si el mensaje libre es en realidad un pedido de simular una
+      // situación con un match real (ej: "Haceme un escenario con Luciana",
+      // "Simulá una cita con Franco") -- antes esto cualquier pedido así iba
+      // al chat normal con el gemelo (chatear_con_gemelo), que solo puede
+      // NARRAR una escena inventada (le habla al usuario, no simula nada de
+      // verdad). Si detecta nombre real + palabra de disparo, se corre la
+      // simulación real (simular_situacion) en vez de narrar.
+      function detectarPedidoDeSimulacion(text) {
+        const reales = window.matchesReales || [];
+        if (!reales.length) return null;
+        const normal = text.toLowerCase();
+        if (!/\b(escenario|simul\w*|situaci[oó]n|cita|salida)\b/.test(normal))
+          return null;
+        return (
+          reales.find((m) => normal.includes(m.nombre.toLowerCase())) || null
+        );
+      }
+
+      // Corre la simulación real con el match detectado, usando el mensaje
+      // tal cual como "situación" en texto libre (armar_escenario_
+      // personalizado la convierte en un escenario). Mismo resultado que
+      // elegirMatchParaConsejo (picker de "Consejo para un match"), pero
+      // disparado desde texto libre en vez del picker.
+      function correrSimulacionDesdeChat(otroUid, nombre, situacionTexto) {
+        setTimeout(() => {
+          addTyping();
+          if (typeof window._llamarSimularSituacion !== "function") {
+            removeTyping();
+            addTwinMsg(
+              "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
+            );
+            return;
+          }
+          window
+            ._llamarSimularSituacion(otroUid, situacionTexto)
+            .then((res) => {
+              removeTyping();
+              const pct = Math.round(
+                ((res.score && res.score.compatibilidad_total) || 0) * 100,
+              );
+              const resumen = escHtml(
+                res.resumen || "No hubo un resumen para esta simulación.",
+              );
+              const escenario = escHtml(res.escenario || "");
+              const nombreSafe = escHtml(nombre);
+              addTwinMsg(
+                `Corrí una simulación real con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}<br><br>La conversación completa (todo lo que se dijeron de verdad, no un resumen) la podés ver en el chat con ${nombreSafe}.`,
+              );
+              setQuickReplies([
+                "¿Cómo van mis matches?",
+                "Dame un consejo",
+                "Quiero darte feedback",
+              ]);
+            })
+            .catch((err) => {
+              removeTyping();
+              console.error("Error en simular_situacion:", err);
+              addTwinMsg(
+                `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
+              );
+            });
+        }, 300);
+      }
+
       function sendMessage() {
         const text = inputEl.value.trim();
         if (!text) return; // no hace nada si el input está vacío
@@ -1728,6 +1792,13 @@
         autoResize(inputEl);
         addUserMsg(text);
         closePlusMenu();
+
+        const matchPedido = detectarPedidoDeSimulacion(text);
+        if (matchPedido) {
+          correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, text);
+          return;
+        }
+
         setTimeout(() => {
           addTyping();
           if (typeof window._llamarChatGemelo !== "function") {
