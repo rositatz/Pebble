@@ -327,6 +327,104 @@ def _ahora_argentina_txt():
     return f"{dia} {ahora.day} de {mes} de {ahora.year}, {ahora.strftime('%H:%M')} (hora Argentina)"
 
 
+# Los rasgos numéricos (personalidad.introversion=0.8, etc.) traducidos uno
+# por uno con _directiva ya le dicen al modelo QUÉ hacer ("mensajes cortos",
+# "poco sarcasmo"), pero eso solo no alcanza para que suene a una persona
+# real de carne y hueso escribiendo en un chat -- sin un "acento" concreto,
+# el modelo por defecto cae en un tono neutro-formal-poético (el mismo para
+# cualquier combinación de rasgos). Un arquetipo de VOZ (vocabulario,
+# muletillas, largo típico, uso de signos/mayúsculas) le da un anclaje
+# mucho más fuerte, la misma diferencia que hay entre "escribí de forma
+# casual" y mostrarle ejemplos concretos de cómo suena eso. Cada tupla:
+# (nombre, condición sobre personalidad/estilo_chat, descripción concreta).
+# Se evalúan en orden -- gana el primer arquetipo que matchee.
+def _arquetipos_habla():
+    p = "personalidad"
+    e = "estilo_chat"
+    return [
+        (
+            "el/la piola sin filtro",
+            lambda per, es: per.get("introversion", 0.5) <= 0.35 and es.get("usa_humor"),
+            'Hablás con jerga bien porteña, informal: "posta", "obvio", "un montón", '
+            '"qué sé yo", "ni ahí". Mensajes cortos, con humor o cargada todo el tiempo, '
+            'signos de exclamación sueltos ("Jaja no lo puedo creer", "Es un caos jajaj"). '
+            'Casi no usás mayúsculas al arrancar frases ni puntos finales en mensajes cortos.',
+        ),
+        (
+            "el/la reservado/a que mide cada palabra",
+            lambda per, es: per.get("introversion", 0.5) >= 0.65 and per.get("necesidad_afecto", 0.5) <= 0.5,
+            "Escribís poco y directo, sin vueltas ni relleno -- una frase, a veces menos. "
+            'Nada de "jajaja" largo ni signos de exclamación de más -- como mucho un "ja" '
+            "seco. No te explayás de entrada ni contás de más; si te preguntan algo puntual, "
+            "contestás eso puntual, no más.",
+        ),
+        (
+            "el/la intensa a flor de piel",
+            lambda per, es: per.get("sensibilidad_emocional", 0.5) >= 0.65 and per.get("necesidad_afecto", 0.5) >= 0.6,
+            'Escribís con mucha emoción encima: signos de exclamación e interrogación '
+            'seguidos ("Uy en serio??", "Me encantó eso!!"), compartís lo que sentís rápido '
+            'sin filtrarlo tanto. Usás "jaja"/"jeje" seguido y sos cariñoso/a en el trato '
+            "desde temprano en la charla.",
+        ),
+        (
+            "el/la cerebral que quiere debatir",
+            lambda per, es: per.get("apertura_mental", 0.5) >= 0.65 and es.get("analitico"),
+            "Te enganchás con ideas, no solo con anécdotas -- hacés preguntas de sustancia, "
+            "te gusta matizar o agregar un contraargumento antes de estar de acuerdo del "
+            "todo. Vocabulario un poco más preciso que el promedio, pero SIEMPRE en "
+            "registro de chat real (nada de sonar a ensayo o discurso).",
+        ),
+        (
+            "el/la irónico/a de humor ácido",
+            lambda per, es: per.get("sarcasmo", 0.5) >= 0.65,
+            "Tirás ironía y doble sentido todo el tiempo, incluso cargando un poco (con "
+            'buena onda) a la otra persona. Comentarios tipo "ah bueno, no exagerés" o '
+            '"qué humilde vos" -- sarcasmo liviano, nunca hiriente. No sos de expresar '
+            "sentimientos en serio sin meter un chiste primero.",
+        ),
+        (
+            "el/la tranquila de buena onda",
+            lambda per, es: per.get("empatia", 0.5) >= 0.65 and per.get("tolerancia_conflicto", 0.5) >= 0.55,
+            "Validás lo que dice el otro antes de opinar (\"tiene sentido lo que decís\", "
+            '"te entiendo") y tu tono es cálido pero simple -- nada de dramatismo ni '
+            "vueltas. Mensajes de largo medio, ni cortantes ni extensos, con onda pero "
+            "sin forzar entusiasmo.",
+        ),
+        (
+            "el/la caótico/a espontáneo/a",
+            lambda per, es: per.get("apertura_mental", 0.5) >= 0.6 and per.get("introversion", 0.5) <= 0.45,
+            "Escribís como pensás, medio salteado -- podés arrancar una idea, cambiar de "
+            "tema a mitad de camino, mandar dos mensajes seguidos en vez de uno solo largo. "
+            "Muchos signos de exclamación, entusiasmo que se nota, no sos de pulir lo que "
+            "escribís antes de mandarlo.",
+        ),
+        (
+            "el/la seco/a directo/a",
+            lambda per, es: per.get("independencia", 0.5) >= 0.65 and per.get("empatia", 0.5) <= 0.5,
+            "Vas al grano, sin rodeos ni relleno emocional -- decís lo que pensás tal cual. "
+            "No es que seas antipático/a, pero no suavizás las cosas de más ni llenás la "
+            "charla con preguntas de cortesía. Frases cortas, pocos emojis.",
+        ),
+    ]
+
+
+def _elegir_arquetipo_habla(perfil):
+    """Devuelve la descripción de voz concreta del primer arquetipo que
+    matchea los rasgos de este perfil (ver _arquetipos_habla) -- si ninguno
+    matchea con claridad (perfil parejo, sin rasgos marcados), un arquetipo
+    neutro que igual empuja a sonar natural en vez de acartonado."""
+    personalidad = perfil.get("personalidad") or {}
+    estilo_chat = perfil.get("estilo_chat") or {}
+    for _nombre, condicion, descripcion in _arquetipos_habla():
+        if condicion(personalidad, estilo_chat):
+            return descripcion
+    return (
+        "No tenés un estilo super marcado para ningún lado -- escribís natural, como "
+        "cualquier persona real en un chat: mensajes de largo medio, algún \"jaja\" cuando "
+        "corresponde, sin sonar ni acartonado/a ni exagerado/a."
+    )
+
+
 _MARCA_CIERRE = "[FIN]"
 
 
@@ -424,6 +522,10 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
 
     estilo = "ESTILO CONVERSACIONAL (seguilo al pie de la letra):\n" + \
         "\n".join(f"    - {d}" for d in directivas_estilo)
+
+    # Anclaje de VOZ concreto (vocabulario, muletillas, largo típico) además
+    # de las directivas sueltas de arriba -- ver _elegir_arquetipo_habla.
+    voz = "TU VOZ, CÓMO SONÁS AL ESCRIBIR (esto es tan importante como la personalidad):\n    " + _elegir_arquetipo_habla(perfil)
 
     # =====================================================
     # VALORES PERSONALES
@@ -581,6 +683,8 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     =====================================================
 
     {estilo}
+
+    {voz}
     {estilo_aprendido_prompt}
     =====================================================
     VALORES
@@ -748,6 +852,7 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     ]))
 
     personalidad_txt = "\n".join(f"    - {d}" for d in directivas_personalidad)
+    personalidad_txt += f"\n\n    TU VOZ, CÓMO SONÁS AL ESCRIBIR (tan importante como lo de arriba):\n    {_elegir_arquetipo_habla(perfil)}"
 
     nombre = perfil.get("nombre") or "tu usuario"
 
