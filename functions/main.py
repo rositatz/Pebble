@@ -381,7 +381,7 @@ def simular_situacion(request: https_fn.CallableRequest):
         escenario = random.randrange(len(motor.escenarios_db))
 
     try:
-        registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=2, escenario=escenario)
+        registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=5, escenario=escenario)
     except Exception as e:
         # Igual que en chatear_con_gemelo: sin este try/except una falla de
         # OpenAI acá (red, cuota, etc.) llegaba al cliente como "INTERNAL"

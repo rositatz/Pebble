@@ -266,6 +266,7 @@
         font-size: 0.875rem;
         line-height: 1.6;
         word-wrap: break-word;
+        white-space: pre-line;
       }
       .msg.twin .bubble {
         background: var(--surf-1);
@@ -1682,18 +1683,17 @@
           .replace(/'/g, "&#39;");
       }
 
-      // El modelo devuelve texto con Markdown liviano (negrita **así**,
-      // saltos de línea entre puntos de una lista) pero la burbuja del chat
-      // no lo interpreta -- sin este paso se veían los asteriscos literales
-      // y todo el texto pegado en una sola línea. Recibe el texto YA
-      // escapado por escHtml (los < > & " ' del usuario/modelo ya están
-      // convertidos a entidades), así que insertar el resultado como HTML
-      // es seguro: acá solo se agregan <strong> y <br> propios, nunca
-      // contenido sin escapar.
+      // El modelo devuelve texto con Markdown liviano (negrita **así**) pero
+      // la burbuja del chat no lo interpreta -- sin este paso se veían los
+      // asteriscos literales. Los saltos de línea NO se convierten acá a
+      // <br> (eso generaba "<br>" visible como texto en vez de un salto real
+      // -- ver .bubble { white-space: pre-line } en el CSS, que ya respeta
+      // los \n tal cual sin necesidad de insertar HTML). Recibe el texto YA
+      // escapado por escHtml, así que insertar el resultado como HTML es
+      // seguro: acá solo se agrega <strong> propio, nunca contenido sin
+      // escapar.
       function formatearMarkdownLite(textoEscapado) {
-        return textoEscapado
-          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\n/g, "<br>");
+        return textoEscapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
       }
 
       // Los callables de Firebase exponen el código del error en err.code

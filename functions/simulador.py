@@ -327,7 +327,37 @@ def _ahora_argentina_txt():
     return f"{dia} {ahora.day} de {mes} de {ahora.year}, {ahora.strftime('%H:%M')} (hora Argentina)"
 
 
-def generar_prompt_gemelo(perfil, memoria=None):
+_MARCA_CIERRE = "[FIN]"
+
+
+def _extraer_cierre(texto):
+    """Si el mensaje termina con _MARCA_CIERRE, la saca y avisa que la
+    charla se cerró sola en este punto (ver generar_prompt_gemelo,
+    permitir_cierre)."""
+    limpio = texto.rstrip()
+    if limpio.endswith(_MARCA_CIERRE):
+        return limpio[: -len(_MARCA_CIERRE)].rstrip(), True
+    return texto, False
+
+
+def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
+    # permitir_cierre=True SOLO en simulaciones de escenario (simular_cita) --
+    # ahí la charla tiene que poder cerrarse sola, en vez de cortar siempre a
+    # un número fijo de mensajes. En el chat en vivo con el gemelo de un
+    # match (chatear_con_gemelo_match) queda en False a propósito: esa charla
+    # no tiene "final" programado, y nadie ahí sabría sacar la marca del
+    # mensaje antes de mostrarlo -- se vería "[FIN]" como texto literal.
+    instruccion_cierre_natural = (
+        f"""
+    16. Si sentís que esta charla puntual llegó a un cierre natural (ya se
+    dijeron lo que tenían para decir por ahora, se despidieron, quedó todo
+    resuelto) -- y SOLO en ese caso -- terminá tu mensaje con la marca
+    exacta {_MARCA_CIERRE} al final, en su propia línea, después de tu
+    despedida o comentario de cierre. Si la charla todavía tiene para dar
+    más de sí, NO escribas esa marca y seguí charlando normal -- no hace
+    falta forzar un cierre en cada mensaje."""
+        if permitir_cierre else ""
+    )
 
     # =====================================================
     # PERFIL PSICOLOGICO
@@ -622,12 +652,20 @@ def generar_prompt_gemelo(perfil, memoria=None):
         - coqueteo,
         - empatía.
 
-    10. No intentes agradar siempre.
-    Puedes estar en desacuerdo si encaja
-    con tu personalidad.
+    10. No intentes agradar siempre. Sos una representación de la
+    personalidad real de esta persona, no un asistente complaciente -- si
+    el otro propone o dice algo que no encaja con tus rasgos (ej: sos poco
+    abierto/a a lo nuevo y te proponen algo muy espontáneo, sos
+    independiente y te proponen algo muy plan-de-a-dos, sos de baja
+    tolerancia al conflicto y te llevan la contra fuerte), DECILO -- podés
+    rechazar la propuesta, poner un pero, o directamente decir que no te
+    cierra. No hace falta ser antipático/a para no estar de acuerdo.
 
-    11. La conversación debe sentirse
-    espontánea y no perfecta.
+    11. La conversación debe sentirse espontánea y no perfecta. NO termines
+    todos tus mensajes con una pregunta -- una charla real tiene tramos que
+    son solo comentarios, reacciones o afirmaciones, sin devolver la
+    pelota cada vez. Terminá con pregunta solo en algunos mensajes, no en
+    todos.
 
     12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
     (algo concreto que mencionó, no una reacción genérica tipo "qué
@@ -655,6 +693,7 @@ def generar_prompt_gemelo(perfil, memoria=None):
     algo tuyo, que sea específico (un detalle, un momento concreto), no un
     resumen vago tipo "me pasan cosas parecidas". Una charla real tiene
     detalles puntuales, no generalidades que le calzarían a cualquiera.
+    {instruccion_cierre_natural}
     """
 
     return prompt
@@ -746,7 +785,12 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
         if sin_match:
             matches_txt += (
                 f"    Además corriste {sin_match_txt} con otras personas que no llegaron al 75% "
-                f"necesario para hacer match -- no digas nombres de esas, solo la cantidad si preguntan.\n"
+                f"necesario para hacer match -- no sabés sus nombres ni el score individual de cada "
+                f"una, solo la cantidad total y cuál fue el MEJOR score entre todas ({round(mejor_score_sin_match)}%, "
+                f"sin saber de quién). Si te pregunta por el nombre de alguien que no está en la lista "
+                f"de matches de arriba, NO tenés dato de esa persona en particular -- no le atribuyas "
+                f"ese {round(mejor_score_sin_match)}% ni ningún otro número inventado, decile que no "
+                f"tenés esa info específica.\n"
             )
     elif total_simulaciones:
         matches_txt = (
@@ -781,6 +825,13 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     2. Si te pregunta por un match específico, usá SOLO los datos reales de
        arriba (nombre y % de afinidad) -- si no tenés más info que esa, decilo,
        no inventes detalles sobre esa persona.
+    2b. Si te nombra a alguien que NO está en "SUS MATCHES ACTUALES" (aunque
+       vos ya sepas que corrió simulaciones con otras personas), NO tenés
+       ningún dato de esa persona en particular -- ni un score, ni si hubo
+       simulación con ella. No inventes un porcentaje ni narres una escena
+       imaginaria de cómo sería con ella (eso suena a un resultado real
+       cuando no lo es) -- decile con naturalidad que todavía no es un match
+       y que no tenés info de esa persona específica.
     3. Sé breve: entre 1 y 4 oraciones, salvo que te pidan algo más largo.
     4. No actúes como asistente genérico ("¿en qué puedo ayudarte?") -- tenés
        personalidad propia, mostrala.
@@ -971,10 +1022,17 @@ _ANGULOS_APERTURA = [
 ]
 
 
-def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=None, memoria2=None):
+def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=None, memoria2=None):
     """escenario puede ser un índice de escenarios_db o un dict
     {"titulo","contexto","tension","tono"} armado al vuelo para una simulación
     a pedido del usuario (ej: "simulá que discutimos por plata").
+
+    `turnos` es un TOPE máximo de vueltas (preferidor2+preferidor1 = 1
+    vuelta), no una longitud fija -- la charla se corta sola apenas ninguno
+    de los dos tiene más para decir (el modelo lo marca con _MARCA_CIERRE,
+    ver generar_prompt_gemelo/permitir_cierre). Si nadie la cierra sola,
+    corta al llegar al tope, con una instrucción aparte para que ese último
+    mensaje cierre bien en vez de quedar una pregunta colgada.
 
     memoria1/memoria2 son lo que cada gemelo recuerda de interacciones previas
     con el otro (ver compatibilidad.actualizar_memoria) -- se usan en
@@ -1012,8 +1070,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
     nombre1 = perfil1.get("nombre", "ALPHA")
     nombre2 = perfil2.get("nombre", "BETA")
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1)
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True)
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
@@ -1037,7 +1095,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
             {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
         ]
     )
-    ultimo_mensaje = response_inicio.choices[0].message.content
+    ultimo_mensaje, _ = _extraer_cierre(response_inicio.choices[0].message.content)
 
     print(f"{nombre1}: {ultimo_mensaje}\n")
 
@@ -1062,23 +1120,22 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
     vista_1 = []
     vista_2 = [{"role": "user", "content": ultimo_mensaje}]
 
-    # Instrucción extra SOLO para el último mensaje del escenario (la
-    # respuesta final de perfil1, que es donde siempre corta la charla) --
-    # sin esto, el modelo casi siempre termina con una pregunta nueva
-    # (rol 12 lo empuja a mantener la charla viva), y como no hay más
-    # turnos después, queda una pregunta colgada sin responder. Acá se le
-    # avisa que ESTA charla puntual se corta acá, para que cierre con un
-    # comentario/reacción en vez de abrir algo nuevo.
-    instruccion_cierre = (
-        "\n\n    Esta es tu ÚLTIMA respuesta de esta charla puntual (se corta acá,"
-        " no por decisión tuya, simplemente termina). Cerrala de forma natural --"
-        " un comentario, una reacción, algo que redondee lo que se venía hablando."
-        " NO termines con una pregunta nueva ni le pidas algo al otro que quedaría"
-        " sin respuesta."
+    # Instrucción extra SOLO para la última llamada permitida (si se llega al
+    # tope de turnos sin que nadie haya cerrado solo con _MARCA_CIERRE) --
+    # evita que quede una pregunta colgada sin respuesta si hay que cortar
+    # por la fuerza. El cierre NATURAL (charla que se termina sola, ni bien
+    # ninguno de los dos tiene más para decir) lo maneja _MARCA_CIERRE, ver
+    # generar_prompt_gemelo -- esto es solo la red de seguridad.
+    instruccion_cierre_forzado = (
+        "\n\n    Esta es tu ÚLTIMA respuesta posible de esta charla puntual (se"
+        " corta acá, no por decisión tuya, simplemente termina). Cerrala de forma"
+        " natural -- un comentario, una reacción, algo que redondee lo que se"
+        " venía hablando. NO termines con una pregunta nueva ni le pidas algo al"
+        " otro que quedaría sin respuesta."
     )
 
     for turno_idx in range(turnos):
-        es_ultimo_turno = turno_idx == turnos - 1
+        es_ultimo_turno_posible = turno_idx == turnos - 1
 
         # =================================================
         # PERFIL 2 RESPONDE
@@ -1094,14 +1151,15 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
                     "role": "system",
                     "content":
                         contexto_escenario +
-                        prompt_2
+                        prompt_2 +
+                        (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
                 },
 
                 *vista_2
             ]
         )
 
-        msg_2 = response_2.choices[0].message.content
+        msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
 
         print(f"{nombre2}: {msg_2}\n")
 
@@ -1114,6 +1172,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
         })
         vista_2.append({"role": "assistant", "content": msg_2})
         vista_1.append({"role": "user", "content": msg_2})
+
+        if cierre_2:
+            break  # perfil2 sintió que la charla ya cerró -- no le pedimos más a perfil1
 
         # =================================================
         # PERFIL 1 RESPONDE
@@ -1130,14 +1191,14 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
                     "content":
                         contexto_escenario +
                         prompt_1 +
-                        (instruccion_cierre if es_ultimo_turno else "")
+                        (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
                 },
 
                 *vista_1
             ]
         )
 
-        msg_1 = response_1.choices[0].message.content
+        msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
 
         print(f"{nombre1}: {msg_1}\n")
 
@@ -1150,6 +1211,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, memoria1=N
         })
         vista_1.append({"role": "assistant", "content": msg_1})
         vista_2.append({"role": "user", "content": msg_1})
+
+        if cierre_1:
+            break  # perfil1 sintió que la charla ya cerró -- no seguimos a otra vuelta
 
     analisis = analizar_conversacion(historial_chat)
     promedio, similitud, pref_a_b, pref_b_a, score_conversacional = calcular_compatibilidad(perfil1, perfil2, analisis)
@@ -1233,12 +1297,17 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
     return registro
 
 
-def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=2, umbral=UMBRAL_MATCH):
+def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=5, umbral=UMBRAL_MATCH):
     """Primero calcula compatibilidad SOLO con las respuestas del onboarding
     (calcular_compatibilidad sin analisis, sin costo) -- si no supera el
     umbral, no corre nada más: así el gasto real en OpenAI (una simulación
     por escenario) queda reservado para pares que ya se probó que son
     compatibles, nunca para explorar candidatos al voleo.
+
+    `turnos` es un TOPE máximo, no una longitud fija -- cada charla se corta
+    sola apenas ninguno de los dos gemelos tiene más para decir (ver
+    _MARCA_CIERRE en generar_prompt_gemelo). El tope es solo la red de
+    seguridad para que ninguna simulación quede corriendo indefinidamente.
 
     Si supera el umbral, corre TODOS los escenarios preestablecidos de
     escenarios_db (hoy la app solo es para "Algo serio", así que no hace
