@@ -2355,22 +2355,6 @@
               </span>
             </div>
             <div class="field-row">
-              <span class="field-label">Busco</span>
-              <span class="field-value" id="vBusco">Algo serio</span>
-              <span class="field-lock visible" id="lockBusco">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Visible
-              </span>
-            </div>
-            <div class="field-row">
               <span class="field-label">Rango de edad</span>
               <span class="field-value" id="vRangoEdad">18 – 35 años</span>
             </div>
@@ -2443,15 +2427,6 @@
                   <option>Asexual</option>
                   <option>Prefiero no decir</option>
                   <option>Otro</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Busco</label>
-                <select class="form-select" id="eBusco">
-                  <option selected>Algo serio</option>
-                  <option>Algo casual</option>
-                  <option>Nuevas amistades</option>
-                  <option>Sin definir</option>
                 </select>
               </div>
             </div>
@@ -4336,7 +4311,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         const genero = document.getElementById("eGenero").value;
         const pronomb = document.getElementById("ePronombres").value.trim();
         const orient = document.getElementById("eOrientacion").value;
-        const busco = document.getElementById("eBusco").value;
 
         // Calculate age
         const age = fechaNac
@@ -4362,7 +4336,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         document.getElementById("vGenero").textContent = genero || "—";
         document.getElementById("vPronombres").textContent = pronomb || "—";
         document.getElementById("vOrientacion").textContent = orient || "—";
-        document.getElementById("vBusco").textContent = busco || "—";
         document.getElementById("vRangoEdad").textContent =
           `${rMin} – ${rMax} años`;
 
@@ -4382,7 +4355,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             genero,
             pronombres: pronomb,
             orientacion: orient,
-            busco,
             rangoEdadMin: parseInt(rMin, 10),
             rangoEdadMax: parseInt(rMax, 10),
           });
@@ -5164,8 +5136,8 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           // actualizar_preferencias_matching) -- por eso preferir gemelo/perfil acá
           // no rompe la edición, solo evita mostrar una copia vieja en
           // usuarios/{uid} que quedó pisada la última vez que se guardó este
-          // formulario. Busco/pronombres no se preguntan en el onboarding (no hay
-          // de dónde sacar un respaldo), así que esos siguen viniendo solo de acá.
+          // formulario. Pronombres no se pregunta en el onboarding (no hay de
+          // dónde sacar un respaldo), así que sigue viniendo solo de acá.
           if (d.fechaNac)
             document.getElementById("eFechaNac").value = d.fechaNac;
           if (perfilGemelo && perfilGemelo.ciudad) {
@@ -5202,17 +5174,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             document.getElementById("vOrientacion").textContent =
               d.orientacion || "—";
             document.getElementById("eOrientacion").value = d.orientacion;
-          }
-
-          // "Busco" se sacó del onboarding (ver comentario en gemelo-setup.html),
-          // así que gemelo/perfil.busco nunca tiene valor propio todavía -- queda
-          // como estaba, solo desde acá.
-          if (d.busco !== undefined) {
-            document.getElementById("vBusco").textContent = d.busco || "—";
-            document.getElementById("eBusco").value = d.busco;
-          } else if (perfilGemelo && perfilGemelo.busco) {
-            document.getElementById("vBusco").textContent = perfilGemelo.busco;
-            document.getElementById("eBusco").value = perfilGemelo.busco;
           }
 
           // Rango de edad preferido
