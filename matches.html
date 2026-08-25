@@ -1506,7 +1506,7 @@
     <div class="modal-av" ${p.photo ? `onclick="openLightbox('${p.photo}')"` : ""} style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
     <div class="modal-name-wrap">
       <div class="modal-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
-      <div class="modal-meta">${esc(p.city)}</div>
+      <div class="modal-meta">${esc([p.city, p.identidad].filter(Boolean).join(" · "))}</div>
     </div>
     <div style="text-align:center">
       <div class="modal-score-big" style="color:${scoreCol}">${p.score}%</div>
@@ -1982,11 +1982,18 @@
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
           const edad =
             typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null;
-          const ciudad = c.otro.ciudad || "";
-          const foto =
-            c.otro.avatarFoto ||
-            (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
-            "";
+          // Nombre y edad siempre se muestran -- el resto respeta lo que la
+          // otra persona eligió en Privacidad (perfil.html). Ciudad/fotos/bio
+          // nacen visibles (solo se ocultan si puso === false); género y
+          // orientación nacen ocultos (solo se muestran si puso === true).
+          const priv = c.otro.privacidad || {};
+          const ciudad = priv.ciudad === false ? "" : c.otro.ciudad || "";
+          const fotosVisibles = priv.fotos !== false;
+          const foto = fotosVisibles
+            ? c.otro.avatarFoto ||
+              (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
+              ""
+            : "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           const isNew = !mis[`match_visto_${c.otroId}`];
           const tags = interesesCompartidos(misIntereses, c.otro.intereses);
@@ -1995,17 +2002,26 @@
             c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)
               ? c.ultimaSim.historial_chat
               : [];
+          const identidadTxt = [
+            priv.genero === true ? c.otro.genero : "",
+            priv.orientacion === true ? c.otro.orientacion : "",
+          ]
+            .filter(Boolean)
+            .join(" · ");
 
           profiles[c.otroId] = {
             name: nombre,
             age: edad,
             city: ciudad,
+            identidad: identidadTxt,
             score,
             photo: foto,
-            photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
-              Boolean,
-            ),
-            bio: c.otro.bio || "",
+            photos: fotosVisibles
+              ? (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
+                  Boolean,
+                )
+              : [],
+            bio: priv.bio === false ? "" : c.otro.bio || "",
             compat: ejes,
             interests: (c.otro.intereses || []).slice(0, 10),
             shared: tags,

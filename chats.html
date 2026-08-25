@@ -2525,7 +2525,7 @@
       <div class="po-hero-av" ${p.photo ? `onclick="openLightbox('${p.photo}')"` : ""} style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
       <div class="po-hero-info">
         <div class="po-hero-name">${esc(p.name)}${p.age ? ", " + p.age : ""}</div>
-        <div class="po-hero-meta">${esc(p.city)}</div>
+        <div class="po-hero-meta">${esc([p.city, p.identidad].filter(Boolean).join(" · "))}</div>
       </div>
       <div class="po-hero-score">${p.afinidad}%<span>Afinidad</span></div>
     </div>
@@ -2937,24 +2937,42 @@
                   .slice(gemelo.vistoHasta || 0)
                   .filter((m) => m.from === "them").length;
 
+                // Nombre y edad siempre se muestran -- el resto respeta lo
+                // que la otra persona eligió en Privacidad (perfil.html).
+                // Ciudad/fotos/bio nacen visibles (solo se ocultan si puso
+                // === false); género/orientación nacen ocultos (solo se
+                // muestran si puso === true).
+                const privOtro = c.otro.privacidad || {};
+                const fotosVisiblesOtro = privOtro.fotos !== false;
+                const identidadOtro = [
+                  privOtro.genero === true ? c.otro.genero : "",
+                  privOtro.orientacion === true ? c.otro.orientacion : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+
                 people[id] = {
                   name: nombre,
                   color: "linear-gradient(135deg,#FF9700,#FF751F)",
-                  photo:
-                    c.otro.avatarFoto ||
-                    (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
-                    "",
+                  photo: fotosVisiblesOtro
+                    ? c.otro.avatarFoto ||
+                      (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
+                      ""
+                    : "",
                   age: calcAge(c.otro.fechaNac),
-                  city: c.otro.ciudad || "",
+                  city: privOtro.ciudad === false ? "" : c.otro.ciudad || "",
+                  identidad: identidadOtro,
                   afinidad: Math.round((c.data.ultimo_score || 0) * 100),
-                  bio: c.otro.bio || "",
+                  bio: privOtro.bio === false ? "" : c.otro.bio || "",
                   interests: susIntereses,
                   sharedInterests: misIntereses.filter((i) =>
                     susIntereses.includes(i),
                   ),
-                  photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
-                    Boolean,
-                  ),
+                  photos: fotosVisiblesOtro
+                    ? (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
+                        Boolean,
+                      )
+                    : [],
                   realUnlocked: true,
                   currentMode:
                     (people[id] && people[id].currentMode) ||

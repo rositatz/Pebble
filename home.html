@@ -2104,10 +2104,14 @@
               ? c.data.usuario_1.nombre
               : c.data.usuario_2.nombre;
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
+          // Fotos nacen visibles -- solo se ocultan si la otra persona puso
+          // === false en Privacidad (perfil.html).
           const foto =
-            c.otro.avatarFoto ||
-            (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
-            "";
+            (c.otro.privacidad || {}).fotos !== false
+              ? c.otro.avatarFoto ||
+                (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
+                ""
+              : "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           html += `
       <a href="#" class="match-item" onclick="goToMatch('${c.otroId}');return false;" role="listitem" aria-label="${esc(nombre)}, ${score}%">

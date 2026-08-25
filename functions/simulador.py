@@ -307,6 +307,32 @@ def _instruccion_genero(perfil):
     return _GENERO_INSTRUCCION.get((perfil.get("genero") or "").strip(), "")
 
 
+def _instruccion_privacidad(perfil):
+    """Género y orientación quedan ocultos por default (perfil.html,
+    sección Privacidad -- el toggle nace destildado para los dos) hasta que
+    la persona real decide mostrarlos. perfil["_privacidad"] lo agrega
+    main._con_privacidad justo antes de armar el prompt -- si no está (ej.
+    algún llamado viejo que no pasó por ahí), se trata como "todo oculto",
+    la opción más conservadora."""
+    privacidad = perfil.get("_privacidad") or {}
+    ocultos = []
+    if privacidad.get("genero") is not True:
+        ocultos.append("tu género / identidad de género")
+    if privacidad.get("orientacion") is not True:
+        ocultos.append("tu orientación sexual")
+    if not ocultos:
+        return ""
+    return (
+        "\n    IMPORTANTE -- PRIVACIDAD: " + " y ".join(ocultos) + " todavía no "
+        "los compartís (así lo eligió la persona real en Privacidad). Si te "
+        "preguntan directamente por eso, no lo reveles ni te lo inventes -- "
+        "esquivalo con algo natural (\"eso lo cuento más adelante\", \"prefiero "
+        "que nos conozcamos un poco más primero\") y seguí la charla por otro "
+        "lado, sin sonar evasivo/a de más ni mencionar que es \"privado\" o la "
+        "app.\n"
+    )
+
+
 _DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 _MESES_ES = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -456,6 +482,8 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     falta forzar un cierre en cada mensaje."""
         if permitir_cierre else ""
     )
+
+    instruccion_privacidad = _instruccion_privacidad(perfil)
 
     # =====================================================
     # PERFIL PSICOLOGICO
@@ -669,7 +697,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     Intereses:
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
     {fisico_prompt}
-    {_instruccion_genero(perfil)}
+    {_instruccion_genero(perfil) if (perfil.get("_privacidad") or {}).get("genero") is True else ""}
 
     =====================================================
     PERSONALIDAD
@@ -802,6 +830,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     etc.) -- se ven como texto suelto, no se renderizan. Para remarcar algo
     usá **así** (doble asterisco), y para separar ideas, saltos de línea
     simples nomás.
+    {instruccion_privacidad}
     {instruccion_cierre_natural}
     """
 

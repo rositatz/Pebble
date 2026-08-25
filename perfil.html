@@ -2785,42 +2785,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           <div class="privacy-list">
             <div class="privacy-row">
               <div class="privacy-info">
-                <span class="privacy-label">Mostrar mi nombre</span>
-                <span class="privacy-desc"
-                  >Tu nombre real aparece en tu tarjeta antes de conectar</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privNombre"
-                  checked
-                  onchange="handlePrivacyToggle('Nombre', this)"
-                />
-                <label class="toggle-label" for="privNombre"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar mi edad</span>
-                <span class="privacy-desc"
-                  >Tu edad es visible en el feed de descubrimiento</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privEdad"
-                  checked
-                  onchange="handlePrivacyToggle('Edad', this)"
-                />
-                <label class="toggle-label" for="privEdad"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
                 <span class="privacy-label">Mostrar mi ciudad</span>
                 <span class="privacy-desc"
                   >Tu ciudad aparece en tu tarjeta en el feed</span
@@ -4523,8 +4487,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
    PRIVACY BADGES
 ══════════════════════════════ */
       const privacyFieldMap = {
-        Nombre: "lockNombre",
-        Edad: "lockEdad",
         Ciudad: "lockCiudad",
         Genero: "lockGenero",
         Orientacion: "lockOrientacion",
@@ -4544,9 +4506,10 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         lock.lastChild.textContent = isVisible ? " Visible" : " Al conectar";
       }
 
-      // Se llama al tocar cualquiera de los 7 toggles de "Privacidad" (nombre, edad,
-      // ciudad, fotos, bio, género, orientación): actualiza el badge visual (si ese
-      // campo tiene uno) y persiste el estado de los 7 en Firestore
+      // Se llama al tocar cualquiera de los 6 toggles de "Privacidad" (ciudad,
+      // fotos, bio, género, orientación, pronombres): actualiza el badge visual
+      // (si ese campo tiene uno) y persiste el estado en Firestore. Nombre y
+      // edad no tienen toggle -- siempre son visibles, no hay nada que ocultar.
       function handlePrivacyToggle(field, checkbox) {
         updatePrivacyBadge(field, checkbox.checked);
         savePrivacidad();
@@ -4554,8 +4517,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
 
       function savePrivacidad() {
         const data = {
-          nombre: document.getElementById("privNombre").checked,
-          edad: document.getElementById("privEdad").checked,
           ciudad: document.getElementById("privCiudad").checked,
           fotos: document.getElementById("privFotos").checked,
           bio: document.getElementById("privBio").checked,
@@ -5398,12 +5359,10 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               document.getElementById("privPausar").checked = p.pausada;
           }
 
-          // Privacidad de campos del perfil (mostrar nombre/edad/ciudad/fotos/bio/género/orientación/pronombres)
+          // Privacidad de campos del perfil (mostrar ciudad/fotos/bio/género/orientación/pronombres)
           if (d.privacidad) {
             const pr = d.privacidad;
             const campos = {
-              nombre: "privNombre",
-              edad: "privEdad",
               ciudad: "privCiudad",
               fotos: "privFotos",
               bio: "privBio",
@@ -5415,14 +5374,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               if (pr[key] !== undefined)
                 document.getElementById(elId).checked = pr[key];
             });
-            updatePrivacyBadge(
-              "Nombre",
-              document.getElementById("privNombre").checked,
-            );
-            updatePrivacyBadge(
-              "Edad",
-              document.getElementById("privEdad").checked,
-            );
             updatePrivacyBadge(
               "Ciudad",
               document.getElementById("privCiudad").checked,

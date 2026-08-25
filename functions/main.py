@@ -60,6 +60,24 @@ def _quiere_notif(db, uid, campo):
         return True
 
 
+def _con_privacidad(db, uid, perfil):
+    """Agrega las preferencias de 'Privacidad' (perfil.html -- qué campos
+    del perfil real, no del gemelo, dejó visibles) al perfil que arma el
+    prompt del gemelo, como perfil["_privacidad"]. Es lo único que le
+    permite a generar_prompt_gemelo saber qué NO tiene que revelar en una
+    conversación aunque se lo pregunten directamente (género, orientación).
+    No se persiste -- se recalcula cada vez que se arma un prompt."""
+    if perfil is None:
+        return perfil
+    try:
+        datos = db.collection("usuarios").document(uid).get().to_dict() or {}
+        perfil["_privacidad"] = datos.get("privacidad") or {}
+    except Exception as e:
+        print(f"_con_privacidad: error leyendo privacidad de {uid}: {e}")
+        perfil["_privacidad"] = {}
+    return perfil
+
+
 def _obtener_o_generar_perfil(db, uid):
     """Lee usuarios/{uid}/gemelo/perfil -- si todavía no existe pero el
     onboarding ya está completed:true, lo genera ahí mismo en vez de
@@ -75,7 +93,7 @@ def _obtener_o_generar_perfil(db, uid):
     ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
     snap = ref.get()
     if snap.exists:
-        return snap.to_dict()
+        return _con_privacidad(db, uid, snap.to_dict())
 
     doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
     if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
@@ -83,7 +101,7 @@ def _obtener_o_generar_perfil(db, uid):
 
     perfil = construir_perfil_gemelo(doc_setup.to_dict())
     ref.set(perfil)
-    return perfil
+    return _con_privacidad(db, uid, perfil)
 
 
 def _parse_fecha(valor):
@@ -848,7 +866,10 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             # onboarding (gratis) y, únicamente si supera motor.UMBRAL_MATCH,
             # corre los escenarios preestablecidos de verdad (con OpenAI) --
             # por eso "simulaciones" puede venir vacía (par no compatible).
-            resultado = motor.simular_relacion_completa(uid1, doc1.to_dict(), uid2, doc2.to_dict())
+            resultado = motor.simular_relacion_completa(
+                uid1, _con_privacidad(db, uid1, doc1.to_dict()),
+                uid2, _con_privacidad(db, uid2, doc2.to_dict()),
+            )
 
             par_ref = db.collection("conexiones").document(data["par_id"])
             payload = {
