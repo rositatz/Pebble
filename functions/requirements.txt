@@ -1,2 +1,8 @@
 firebase_functions~=0.5.0
 openai
+# google-api-core<2.34.0 tiene un bug real: codifica mal el "(default)" del
+# nombre de la base de datos de Firestore ("Invalid database id %28default%29"
+# en cualquier llamada) -- confirmado reproduciendo path_template.expand()
+# directamente. Sin este piso, pip instala la versión vieja rota.
+google-api-core>=2.34.0
+google-cloud-firestore>=2.29.0
