@@ -34,78 +34,217 @@ UMBRAL_MATCH = 0.75
 escenarios_db = [
 
     {
-        "titulo": "Arte y tecnología",
+        "titulo": "Primera cita",
 
         "contexto": """
-        Ambos coinciden en una cafetería virtual moderna.
-        La conversación comienza hablando sobre inteligencia artificial,
-        creatividad y herramientas digitales utilizadas en arte,
-        música o diseño.
+        Es el primer encuentro real entre los dos, después de todo lo que
+        el gemelo intuyó del otro. Hay nervios genuinos y ganas de que
+        salga bien, pero cada uno tiene su propio ritmo para abrirse: a
+        algunos les sale ir directo a algo real, a otros les cuesta y
+        arrancan con humor o cosas livianas antes de soltarse.
         """,
 
         "objetivo": [
-            "Evaluar creatividad",
-            "Detectar curiosidad intelectual",
-            "Medir apertura a nuevas ideas",
-            "Analizar capacidad de debate"
+            "Ver el ritmo real de apertura de cada uno (no el que dicen tener)",
+            "Detectar si el estilo de coqueteo/humor de uno choca con el del otro",
+            "Evaluar si hay energía o si la charla se siente forzada",
+            "Medir compatibilidad de primera impresión, más allá del % calculado"
         ],
 
         "tension": """
-        El tema puede derivar en opiniones distintas sobre tecnología,
-        autenticidad creativa y cambios culturales.
+        Uno puede querer profundizar rápido y el otro sentirlo demasiado
+        intenso para un primer encuentro -- o al revés, uno puede sentir
+        que el otro se queda en la superficie y no compromete nada real.
         """,
 
-        "tono": "Intelectual, relajado y curioso.",
+        "tono": "Con nervios reales, expectativa y algo de incertidumbre.",
         "tipos_relacion": ["Algo serio"]
     },
 
     {
-        "titulo": "Finanzas y estilo de vida",
+        "titulo": "Convivencia de los primeros meses",
 
         "contexto": """
-        La conversación deriva hacia hábitos financieros,
-        prioridades personales y formas de organizar la vida adulta.
-        Hablan sobre trabajo, gastos, metas y estabilidad.
+        Surge la idea de imaginarse viviendo juntos más adelante -- no como
+        planazo romántico abstracto, sino los detalles concretos: espacio
+        propio, orden, ruido, rutinas, plata compartida en el día a día.
         """,
 
         "objetivo": [
-            "Evaluar responsabilidad",
-            "Detectar prioridades personales",
-            "Analizar compatibilidad de estilo de vida",
-            "Medir madurez emocional"
+            "Evaluar compatibilidad real de hábitos cotidianos, no solo declarada",
+            "Detectar necesidad de espacio propio vs. necesidad de cercanía constante",
+            "Medir flexibilidad ante formas distintas de organizarse",
+            "Ver si aparecen expectativas no dichas (quién hace qué, cómo se reparte)"
         ],
 
         "tension": """
-        Pueden aparecer diferencias sobre dinero,
-        planificación, consumo o visión del futuro.
+        Uno puede ser mucho más ordenado/estructurado que el otro, o tener
+        una necesidad de espacio propio que el otro interpreta como
+        distancia -- acá tienen que negociarlo en concreto, no en teoría.
         """,
 
-        "tono": "Maduro, honesto y relajado.",
+        "tono": "Cotidiano pero con peso real, no liviano.",
         "tipos_relacion": ["Algo serio"]
     },
 
     {
-        "titulo": "Relación con la familia",
+        "titulo": "Mostrar vulnerabilidad",
 
         "contexto": """
-        La conversación evoluciona hacia vínculos familiares,
-        costumbres, límites personales y relaciones importantes
-        dentro de sus vidas.
+        En medio de la charla, uno de los dos decide compartir algo que
+        genuinamente le cuesta mostrar -- algo real de sí mismo/a, no un
+        dato trivial. No lo hace como prueba ni como estrategia, es un
+        momento genuino de bajar la guardia.
         """,
 
         "objetivo": [
-            "Entender valores personales",
-            "Detectar madurez emocional",
-            "Evaluar independencia emocional",
-            "Analizar empatía"
+            "Evaluar si el otro responde con empatía real o lo minimiza",
+            "Detectar si sabe sostener un momento así sin incomodarse",
+            "Medir si la vulnerabilidad genera cercanía o hace que el otro se cierre",
+            "Ver si quien se abrió se arrepiente o se siente escuchado/a"
         ],
 
         "tension": """
-        Pueden surgir diferencias en la forma de ver la familia,
-        privacidad, apoyo emocional o independencia.
+        El otro puede no saber bien cómo reaccionar (minimizarlo sin
+        querer, cambiar de tema, o sí sostenerlo bien) -- y eso dice mucho
+        más que cualquier respuesta genérica de "te banco".
         """,
 
-        "tono": "Personal, emocional y reflexivo.",
+        "tono": "Íntimo, un poco tenso, genuino.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Celos o inseguridad",
+
+        "contexto": """
+        Pasa algo ambiguo -- uno tardó mucho en responder, o contó que
+        salió con amigos/as sin dar muchos detalles -- y el otro tiene que
+        decidir cómo reacciona: lo deja pasar, pregunta directo, se pone
+        incómodo/a, o finge que no le importa cuando sí le importa.
+        """,
+
+        "objetivo": [
+            "Evaluar tolerancia real al conflicto (no la declarada)",
+            "Detectar si la inseguridad se comunica directo o se actúa pasivo-agresivo",
+            "Medir necesidad de afecto/validación bajo presión",
+            "Ver cómo el otro responde a que le planteen una inseguridad"
+        ],
+
+        "tension": """
+        Uno puede sentir que está exagerando y el otro puede sentir que
+        no le están dando explicaciones -- ninguno de los dos tiene
+        necesariamente la razón, lo importante es cómo lo manejan.
+        """,
+
+        "tono": "Un poco incómodo, con tensión contenida.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Desacuerdo real en el momento",
+
+        "contexto": """
+        En la charla sale un tema (puede ser político, social, una forma
+        de ver el mundo) en el que genuinamente no piensan igual -- no es
+        un desacuerdo forzado, es real según lo que cada uno cree.
+        """,
+
+        "objetivo": [
+            "Evaluar tolerancia al conflicto de verdad, no evitación disfrazada",
+            "Detectar si pueden discrepar sin que se rompa la conversación",
+            "Medir apertura mental ante una postura distinta a la propia",
+            "Ver si alguno cede solo por no incomodar (calcado falso) o sostiene lo suyo"
+        ],
+
+        "tension": """
+        Uno puede sentir que el otro no lo entiende o no respeta su
+        postura -- la prueba real es si logran seguir la charla sin que
+        uno se calle solo para que no haya fricción.
+        """,
+
+        "tono": "Directo, con algo de tensión, pero no agresivo.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Presupuesto compartido para una salida cara",
+
+        "contexto": """
+        Surge la idea de un plan que cuesta bastante más de lo que
+        cualquiera de los dos gastaría en un día común -- una escapada,
+        una cena puntual, algo así. Hay que decidir en la charla si vale
+        la pena, cómo se divide, o si a alguno le genera incomodidad.
+        """,
+
+        "objetivo": [
+            "Evaluar hábitos y prioridades financieras reales",
+            "Detectar si hablar de plata genera incomodidad o se maneja con naturalidad",
+            "Medir compatibilidad de estilo de vida (ahorro vs. gasto, planificación)",
+            "Ver si hay honestidad directa o se evita el tema"
+        ],
+
+        "tension": """
+        Uno puede priorizar disfrutar el momento y al otro el gasto le
+        genera ansiedad o desacuerdo con cómo se reparte -- plata siempre
+        revela algo más profundo que solo plata.
+        """,
+
+        "tono": "Práctico pero con carga emocional real detrás.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Pedir perdón / repararla",
+
+        "contexto": """
+        Después de una pequeña tensión o malentendido en la charla (puede
+        salir de un comentario que cayó mal), alguno de los dos tiene que
+        decidir si da el primer paso para destrabarlo, cómo lo hace, y el
+        otro tiene que decidir cómo recibe ese intento.
+        """,
+
+        "objetivo": [
+            "Evaluar cómo maneja de verdad un conflicto chico (no en teoría)",
+            "Detectar quién suele dar el primer paso y cómo lo hace",
+            "Medir orgullo vs. capacidad de reparar el vínculo",
+            "Ver si el otro lo recibe bien o sigue con la guardia alta"
+        ],
+
+        "tension": """
+        Puede que a ninguno de los dos le salga natural pedir perdón, o
+        que uno lo haga de forma poco genuina -- lo interesante es ver si
+        de verdad se destraba o queda ahí sin resolver.
+        """,
+
+        "tono": "Tenso al principio, buscando resolución.",
+        "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Hijos, sí o no",
+
+        "contexto": """
+        La charla deriva naturalmente hacia el tema de si quieren formar
+        una familia en algún momento, cuándo, y qué tan central es eso en
+        sus planes de vida -- no como pregunta de trámite, sino como algo
+        que de verdad les importa definir.
+        """,
+
+        "objetivo": [
+            "Evaluar alineación real en algo no negociable (no una preferencia blanda)",
+            "Detectar si hay presión o incomodidad al hablarlo tan directo",
+            "Medir honestidad sobre planes de vida a futuro",
+            "Ver si una diferencia acá se maneja con madurez o se esquiva"
+        ],
+
+        "tension": """
+        Si no coinciden, es una diferencia de fondo que no se resuelve
+        charlando -- lo que importa es si pueden ser honestos al respecto
+        en vez de evitar el tema por miedo a que se rompa la conexión.
+        """,
+
+        "tono": "Serio, directo, con peso real.",
         "tipos_relacion": ["Algo serio"]
     },
 
@@ -136,56 +275,6 @@ escenarios_db = [
     },
 
     {
-        "titulo": "Tareas del hogar y convivencia",
-
-        "contexto": """
-        La charla deriva hacia hábitos cotidianos,
-        organización personal y experiencias viviendo solos,
-        con amigos o con familia.
-        """,
-
-        "objetivo": [
-            "Evaluar hábitos de convivencia",
-            "Detectar nivel de responsabilidad",
-            "Analizar compatibilidad cotidiana",
-            "Medir flexibilidad"
-        ],
-
-        "tension": """
-        Pueden aparecer diferencias sobre orden,
-        limpieza, rutina o formas de compartir responsabilidades.
-        """,
-
-        "tono": "Liviano, cotidiano y natural.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Carrera profesional y ambiciones",
-
-        "contexto": """
-        La conversación gira hacia estudios,
-        objetivos laborales, motivaciones personales
-        y expectativas de crecimiento profesional.
-        """,
-
-        "objetivo": [
-            "Evaluar ambición",
-            "Detectar motivaciones personales",
-            "Analizar visión de futuro",
-            "Medir compatibilidad de objetivos"
-        ],
-
-        "tension": """
-        Pueden surgir diferencias en prioridades,
-        ritmo de vida, éxito profesional o balance personal.
-        """,
-
-        "tono": "Motivador, reflexivo y maduro.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
         "titulo": "Expectativas en una relación",
 
         "contexto": """
@@ -207,56 +296,6 @@ escenarios_db = [
         """,
 
         "tono": "Emocional, abierto y sincero.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Música y emociones",
-
-        "contexto": """
-        La conversación comienza hablando sobre música,
-        artistas favoritos y canciones asociadas
-        a momentos importantes de sus vidas.
-        """,
-
-        "objetivo": [
-            "Detectar sensibilidad emocional",
-            "Evaluar gustos culturales",
-            "Analizar conexión emocional",
-            "Medir espontaneidad"
-        ],
-
-        "tension": """
-        Las diferencias de gustos o significado emocional
-        pueden generar debates interesantes o conexión profunda.
-        """,
-
-        "tono": "Relajado, emocional y espontáneo.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Películas y experiencias personales",
-
-        "contexto": """
-        Ambos empiezan hablando sobre películas,
-        series o historias que los hayan marcado emocionalmente
-        o cambiado su forma de pensar.
-        """,
-
-        "objetivo": [
-            "Evaluar profundidad emocional",
-            "Detectar intereses culturales",
-            "Analizar empatía",
-            "Medir capacidad reflexiva"
-        ],
-
-        "tension": """
-        Pueden surgir diferencias en sensibilidad,
-        humor o interpretación emocional de las historias.
-        """,
-
-        "tono": "Reflexivo, relajado y cercano.",
         "tipos_relacion": ["Algo serio"]
     }
 ]
