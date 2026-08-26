@@ -720,7 +720,14 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
             "El gemelo no pudo responder en este momento. Probá de nuevo en un rato."
         )
 
-    return {"respuesta": response.choices[0].message.content}
+    # generar_prompt_gemelo (motor.py) le permite al modelo partir su turno
+    # en varios mensajitos cortos separados con motor._MARCA_MULTIMENSAJE --
+    # simular_cita los desarma en mensajes de chat separados, pero acá se
+    # devuelve un solo string al front, así que si el modelo la usa se
+    # reemplaza por un salto de línea doble en vez de dejarla como texto
+    # literal visible.
+    respuesta = response.choices[0].message.content.replace(motor._MARCA_MULTIMENSAJE, "\n\n")
+    return {"respuesta": respuesta}
 
 
 # Firestore no incluye en un orderBy() los docs a los que les falta ese campo

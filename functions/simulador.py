@@ -307,6 +307,23 @@ def _extraer_cierre(texto):
     return texto, False
 
 
+# Gente real manda 2-3 mensajes cortos seguidos en vez de un solo bloque
+# largo -- sin esto, cada "turno" del modelo era SIEMPRE un único mensaje,
+# por más ideas distintas que tuviera para decir, lo que empujaba a
+# mensajes largos y armados en vez de la desprolijidad real de un chat.
+_MARCA_MULTIMENSAJE = "[MSG]"
+
+
+def _dividir_mensajes(texto):
+    """Parte un mensaje en varios si el modelo usó _MARCA_MULTIMENSAJE
+    para separarlos (ver regla de mensajes múltiples en
+    generar_prompt_gemelo) -- devuelve SIEMPRE una lista con al menos un
+    elemento. Se llama DESPUÉS de _extraer_cierre (la marca de cierre va
+    al final de todo el texto, no le importan los [MSG] del medio)."""
+    partes = [p.strip() for p in texto.split(_MARCA_MULTIMENSAJE)]
+    return [p for p in partes if p] or [texto.strip()]
+
+
 def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_otro=None):
     # nombre_otro: nombre real de la persona con la que está hablando este
     # gemelo -- ni los mensajes que se mandan a OpenAI ni el resto del
@@ -577,6 +594,15 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     Eres el gemelo digital de un usuario real
     dentro de una aplicación de citas.
 
+    LO MÁS IMPORTANTE DE TODO ESTE PROMPT, leelo antes que nada: NUNCA
+    digas que hiciste, viviste o tenés algo (una anécdota, un concierto,
+    un viaje, un detalle de tu trabajo o proyecto, un título de peli/
+    serie/canción) que no esté escrito tal cual más abajo en tus datos
+    reales. Ni un solo dato de más. Esto se repite en detalle más abajo
+    (reglas 6 y 6b) porque es el error más grave y más frecuente que
+    podés cometer -- inventar aunque sea un detalle chico sobre la
+    persona real que representás es mentir sobre ella.
+
     Tu objetivo real no es "actuar" una charla ni cumplir un guion --
     arrancá siempre desde un punto neutral (recién se están conociendo) e
     intentá GENUINAMENTE ganarte la confianza del otro a medida que avanza
@@ -660,8 +686,19 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
 
     4. No expliques tus decisiones internas.
 
-    5. Tus respuestas deben tener entre
-    1 y 3 oraciones normalmente.
+    5. Tus mensajes tienen que ser CORTOS -- 1 oración, a veces 2, casi
+    nunca más. Nada de párrafos largos ni de meter varias ideas en un solo
+    mensaje armado.
+
+    5b. Si tenés más de una idea corta para decir (pasa seguido en un chat
+    real: alguien manda 2 o 3 mensajitos seguidos en vez de uno solo
+    largo), separalos así: escribí cada mensaje corto en su propia línea,
+    y entre uno y el siguiente poné la marca exacta {_MARCA_MULTIMENSAJE}
+    sola en una línea. Cada parte tiene que poder pararse sola como un
+    mensaje real de 1-2 oraciones -- esto NO es para dividir un párrafo
+    largo en pedazos, es para cuando de verdad tenés dos cosas separadas
+    para decir. No abuses: la mayoría de las veces alcanza con un solo
+    mensaje corto, usá esto solo cuando de verdad corresponda.
 
     6. REGLA ABSOLUTA, la más importante de todas: JAMÁS nombres un título
     concreto (serie, película, libro, canción, artista, banda) que no
@@ -752,9 +789,14 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     a una charla real entre dos personas conociéndose -- y es el error
     más repetido que cometés, prestale atención especial.
     Igual, aunque el mensaje anterior NO terminara en pregunta, no abuses:
-    como máximo 1 de cada 3 mensajes tuyos en total puede terminar en
-    pregunta. La conversación tiene que sentirse espontánea, con tramos
-    que son solo comentarios o reacciones, sin devolver la pelota siempre.
+    como máximo 1 de cada 4 mensajes tuyos en total puede terminar en
+    pregunta. NO uses una pregunta como mecanismo automático para "seguir
+    la conversación" o "no dejarla morir" -- una charla real avanza sola,
+    con comentarios, reacciones y afirmaciones, sin que cada mensaje tenga
+    que devolverle la posta al otro. Si no tenés una pregunta genuina que
+    te nazca hacer, simplemente NO preguntes -- dejar un silencio o un
+    comentario sin pregunta es más real que forzar una para no cortar el
+    ida y vuelta.
 
     12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
     (algo concreto que mencionó, no una reacción genérica tipo "qué
@@ -767,6 +809,17 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     repreguntar "¿y vos?" de nuevo -- una conversación real avanza, no gira
     en el mismo lugar.
 
+    13b. Esto aplica también a nivel TEMA, no solo pregunta por pregunta:
+    si la charla lleva 2-3 intercambios sobre el mismo interés puntual
+    (música, una peli, un hobby), es momento de avanzar a otra cosa -- no
+    te quedes ahí toda la charla ni lo conviertas en el tema central. Un
+    interés compartido es UN dato más entre muchos (personalidad, valores,
+    forma de vincularse), no el eje de la compatibilidad -- de hecho,
+    hablar mucho de gustos culturales dice poco sobre si compaginan de
+    verdad. Priorizá derivar hacia algo más revelador (cómo son, qué
+    buscan, cómo reaccionan a algo) en vez de seguir ahondando en el mismo
+    interés.
+
     14. Hablá como se escribe de verdad en un chat, no como si estuvieras
     narrando, dando una charla motivacional o escribiendo un ensayo. NADA
     de metáforas, frases poéticas ni imágenes tipo "mi corazón se abre
@@ -777,8 +830,14 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     transformar la relación", "cultivar el vínculo", "construir algo
     significativo juntos", "tener esa conexión/vulnerabilidad es
     increíble", "me alegra mucho que sientas eso", "entiendo
-    completamente" -- si te sale una frase parecida a esas, pará y
-    reescribila más simple y menos impostada.
+    completamente", "hay algo mágico/especial en...", "eso es hermoso",
+    "compartir X con otros/as" como cierre poético -- si te sale una frase
+    parecida a esas, pará y reescribila más simple y menos impostada.
+    El registro objetivo es CANCHERO Y RELAJADO -- como le escribirías a
+    alguien que te gusta pero recién estás conociendo, sin impostar
+    romanticismo de más ni sonar a carta de amor. Nada de "esa conexión",
+    "compartir algo tan especial", "vivir esa experiencia juntos" -- eso
+    es forzar intimidad que todavía no existe a esta altura de la charla.
     Tampoco encadenes 3 o 4 ideas seguidas conectadas con "además",
     "también", "por otro lado" como si fuera una lista prolija -- una
     persona real en un chat dice UNA cosa por mensaje, no un resumen
@@ -1281,16 +1340,18 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         ]
     )
     ultimo_mensaje, _ = _extraer_cierre(response_inicio.choices[0].message.content)
+    partes_inicio = _dividir_mensajes(ultimo_mensaje)
 
     print(f"{nombre1}: {ultimo_mensaje}\n")
 
-    historial_chat.append({
+    for parte in partes_inicio:
+        historial_chat.append({
 
-        "role": "user",
-        "name": nombre1,
-        "uid": uid1,
-        "content": ultimo_mensaje
-    })
+            "role": "user",
+            "name": nombre1,
+            "uid": uid1,
+            "content": parte
+        })
 
     # historial_chat (arriba) es la versión "para humanos" -- la que se
     # guarda y se le pasa a analizar_conversacion, con roles fijos y el
@@ -1302,8 +1363,12 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     # "assistant" sin ningún "user" nuevo en el medio -- ahí el modelo tiende
     # a continuar/repetir ese mismo turno en vez de responder como otra
     # persona (así se producía la repetición literal del mensaje anterior).
+    # Cuando un turno vino partido en varios mensajitos (_dividir_mensajes),
+    # cada parte entra como su propio mensaje "user"/"assistant" separado --
+    # así el modelo ve la misma sucesión de mensajitos que vería una persona
+    # real, no un solo bloque pegado.
     vista_1 = []
-    vista_2 = [{"role": "user", "content": ultimo_mensaje}]
+    vista_2 = [{"role": "user", "content": parte} for parte in partes_inicio]
 
     # Instrucción extra SOLO para la última llamada permitida (si se llega al
     # tope de turnos sin que nadie haya cerrado solo con _MARCA_CIERRE) --
@@ -1345,18 +1410,20 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         )
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
+        partes_2 = _dividir_mensajes(msg_2)
 
         print(f"{nombre2}: {msg_2}\n")
 
-        historial_chat.append({
+        for parte in partes_2:
+            historial_chat.append({
 
-            "role": "assistant",
-            "name": nombre2,
-            "uid": uid2,
-            "content": msg_2
-        })
-        vista_2.append({"role": "assistant", "content": msg_2})
-        vista_1.append({"role": "user", "content": msg_2})
+                "role": "assistant",
+                "name": nombre2,
+                "uid": uid2,
+                "content": parte
+            })
+            vista_2.append({"role": "assistant", "content": parte})
+            vista_1.append({"role": "user", "content": parte})
 
         if cierre_2:
             break  # perfil2 sintió que la charla ya cerró -- no le pedimos más a perfil1
@@ -1384,18 +1451,20 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         )
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
+        partes_1 = _dividir_mensajes(msg_1)
 
         print(f"{nombre1}: {msg_1}\n")
 
-        historial_chat.append({
+        for parte in partes_1:
+            historial_chat.append({
 
-            "role": "assistant",
-            "name": nombre1,
-            "uid": uid1,
-            "content": msg_1
-        })
-        vista_1.append({"role": "assistant", "content": msg_1})
-        vista_2.append({"role": "user", "content": msg_1})
+                "role": "assistant",
+                "name": nombre1,
+                "uid": uid1,
+                "content": parte
+            })
+            vista_1.append({"role": "assistant", "content": parte})
+            vista_2.append({"role": "user", "content": parte})
 
         if cierre_1:
             break  # perfil1 sintió que la charla ya cerró -- no seguimos a otra vuelta
