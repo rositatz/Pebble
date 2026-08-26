@@ -682,7 +682,13 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
             "Esa persona todavía no tiene su gemelo generado."
         )
 
-    system_prompt = motor.generar_prompt_gemelo(perfil_otro)
+    # Nombre real de quien está chateando -- sin esto, el gemelo de otro_uid
+    # no tiene forma de saber cómo se llama la persona real que le está
+    # escribiendo (ver nombre_otro en generar_prompt_gemelo).
+    perfil_propio = _obtener_o_generar_perfil(db, uid)
+    nombre_propio = (perfil_propio or {}).get("nombre")
+
+    system_prompt = motor.generar_prompt_gemelo(perfil_otro, nombre_otro=nombre_propio)
 
     mensajes = [{"role": "system", "content": system_prompt}]
     for h in historial[-8:]:

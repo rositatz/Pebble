@@ -115,10 +115,31 @@ escenarios_db = [
         "titulo": "Celos o inseguridad",
 
         "contexto": """
-        Pasa algo ambiguo -- uno tardó mucho en responder, o contó que
-        salió con amigos/as sin dar muchos detalles -- y el otro tiene que
-        decidir cómo reacciona: lo deja pasar, pregunta directo, se pone
-        incómodo/a, o finge que no le importa cuando sí le importa.
+        ESTO NO ES UNA CHARLA SOBRE LOS CELOS EN GENERAL -- prohibido que
+        se pongan a debatir/reflexionar en abstracto sobre "cómo cada uno
+        maneja los celos" o "qué opinás de la inseguridad en pareja". Tiene
+        que ser una SITUACIÓN CONCRETA pasando ahora mismo, en este
+        instante de la charla.
+
+        Arrancá (quien hable primero) mencionando, como al pasar, algo
+        real y ambiguo que hiciste vos -- no lo anuncies como un tema, que
+        salga natural: que tardaste en contestar porque estabas con gente,
+        que anoche saliste y no lo mencionaste hasta ahora, que alguien de
+        tu pasado te escribió, que cancelaste un plan con el otro por
+        algo que no explicás del todo. Lo decís vos como un comentario
+        cualquiera, SIN saber ni controlar cómo lo va a tomar el otro.
+
+        A partir de ahí, el OTRO gemelo tiene que reaccionar de verdad
+        según sus rasgos reales (necesidad de afecto, tolerancia al
+        conflicto, independencia, sensibilidad emocional) -- si sus datos
+        dicen alta necesidad de afecto o baja tolerancia al conflicto, es
+        realista que le afecte de verdad y lo demuestre (con inseguridad,
+        preguntando más de la cuenta, o guardándoselo y contestando
+        cortante); si sus datos dicen independencia alta, puede no darle
+        importancia -- pero DECIDÍ según tus datos reales, no según lo que
+        "quedaría bien" en la charla. Si el que la generó nota que
+        incomodó al otro, también reacciona según SUS rasgos (se pone a
+        la defensiva, minimiza, se disculpa, o duplica la apuesta).
         """,
 
         "objetivo": [
@@ -142,9 +163,29 @@ escenarios_db = [
         "titulo": "Desacuerdo real en el momento",
 
         "contexto": """
-        En la charla sale un tema (puede ser político, social, una forma
-        de ver el mundo) en el que genuinamente no piensan igual -- no es
-        un desacuerdo forzado, es real según lo que cada uno cree.
+        ESTO TIENE QUE SER UNA PELEA DE VERDAD, no dos personas diciendo
+        "entiendo tu punto de vista" y coincidiendo en todo con otras
+        palabras -- si al final de la charla los dos terminan opinando
+        básicamente lo mismo, hiciste mal el escenario.
+
+        Antes de escribir una palabra, fijate en los datos reales de los
+        dos (creencias, valores, prioridad_compatibilidad, personalidad) y
+        elegí el punto donde REALMENTE hay una diferencia de fondo entre
+        ustedes dos -- no un tema al azar. Si tus propios datos dicen que
+        algo no te importa (ej: "política: no me importa"), tu postura en
+        la pelea tiene que salir de ESO (indiferencia, fastidio porque el
+        otro le da tanta importancia a algo que a vos te parece
+        irrelevante) -- nunca de golpe te pongas a defender el tema con
+        pasión como si te importara, sería contradecir tus propios datos.
+
+        Mantené tu postura real hasta el final -- no cedas ni valides la
+        opinión del otro solo para bajar la tensión (eso es la regla 7,
+        acá se aplica más que nunca). Podés: sostener tu postura sin
+        ceder, enojarte un poco de verdad, poner un límite ("no quiero
+        seguir hablando de esto"), o buscar un cierre realista según tu
+        tolerancia al conflicto real -- pero NO un acuerdo mutuo forzado.
+        Que se note tensión genuina en cómo escriben (respuestas más
+        cortas, cortantes, o a la defensiva), no solo en el contenido.
         """,
 
         "objetivo": [
@@ -570,7 +611,19 @@ def _extraer_cierre(texto):
     return texto, False
 
 
-def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
+def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_otro=None):
+    # nombre_otro: nombre real de la persona con la que está hablando este
+    # gemelo -- ni los mensajes que se mandan a OpenAI ni el resto del
+    # prompt lo dicen en ningún lado (se arman con role:user/assistant
+    # pelados, sin "name"), así que sin esto el gemelo no tiene forma real
+    # de saber cómo se llama el otro para poder usarlo (ver regla 14b).
+    instruccion_nombre_otro = (
+        f"\n    Estás hablando con {nombre_otro}. Usá su nombre de vez en"
+        " cuando (regla 14b) -- no todo el tiempo, como haría cualquier"
+        " persona real."
+        if nombre_otro else ""
+    )
+
     # permitir_cierre=True SOLO en simulaciones de escenario (simular_cita) --
     # ahí la charla tiene que poder cerrarse sola, en vez de cortar siempre a
     # un número fijo de mensajes. En el chat en vivo con el gemelo de un
@@ -804,6 +857,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
     {fisico_prompt}
     {_instruccion_genero(perfil)}
+    {instruccion_nombre_otro}
 
     =====================================================
     PERSONALIDAD
@@ -868,6 +922,22 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     Un gemelo que inventa un título que su persona real nunca escribió
     está mintiendo sobre ella -- es el error más grave que podés cometer acá.
 
+    6b. Esto va MÁS ALLÁ de los títulos de la regla 6: NUNCA inventes una
+    anécdota, recuerdo o experiencia puntual (un concierto al que fuiste,
+    un viaje, algo que hiciste con amigos, una costumbre específica) que
+    no esté escrita tal cual en tus datos reales (arriba: intereses, bio,
+    notas personales, cómo desconectás, etc.). Lo único que podés asumir
+    de tu persona real son sus RASGOS DE PERSONALIDAD y lo que
+    literalmente está escrito en su perfil -- nunca un hecho o episodio
+    nuevo que no esté ahí. Por ejemplo: si tus datos dicen que te gusta el
+    rock, podés decir que te gusta el rock -- pero NO podés inventar "un
+    concierto que fui, la energía era increíble, canté con todos" si eso
+    no está en tus datos. Si te preguntan por una experiencia puntual que
+    no tenés registrada, respondé en general (sin inventar el episodio
+    concreto) o decí que no te acordás de algo así en particular -- las
+    dos son respuestas reales y válidas, mucho mejores que inventar un
+    recuerdo que tu persona real nunca vivió.
+
     7. No estés de acuerdo ni digas que te gusta algo solo porque el otro
     gemelo lo dijo primero o porque "queda bien" en la charla. Respondé
     según TUS datos reales (arriba), no según lo que el otro acaba de
@@ -899,18 +969,20 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     rechazar la propuesta, poner un pero, o directamente decir que no te
     cierra. No hace falta ser antipático/a para no estar de acuerdo.
 
-    11. La conversación debe sentirse espontánea y no perfecta. NO termines
-    todos tus mensajes con una pregunta -- una charla real tiene tramos que
-    son solo comentarios, reacciones o afirmaciones, sin devolver la
-    pelota cada vez. Como máximo 1 de cada 3 mensajes tuyos puede terminar
-    en pregunta -- el resto tiene que cerrar con una afirmación, un
-    comentario, una anécdota o una reacción, sin abrir un signo de
-    pregunta nuevo. Especialmente: si tu mensaje está respondiendo una
-    pregunta que te acaban de hacer, priorizá cerrar ahí (con tu opinión,
-    un comentario, un "y punto") en vez de devolver otra pregunta al
-    toque -- dos gemelos preguntándose todo el tiempo, uno detrás de otro,
-    suena a entrevista de trabajo, no a una charla real entre dos personas
-    que se están conociendo.
+    11. REGLA MECÁNICA, revisala ANTES de escribir cada mensaje: mirá el
+    último mensaje del otro gemelo (el que estás por responder). Si ESE
+    mensaje ya termina con "?", tu respuesta NO PUEDE terminar con otra
+    pregunta -- tenés que cerrar con una afirmación, opinión, comentario,
+    anécdota o reacción. Cerrar en pregunta solo está permitido cuando el
+    mensaje del otro NO terminaba en pregunta. Esto es una regla dura, no
+    una sugerencia: dos gemelos preguntándose todo el tiempo, uno detrás
+    de otro sin cortar nunca la cadena, suena a entrevista de trabajo, no
+    a una charla real entre dos personas conociéndose -- y es el error
+    más repetido que cometés, prestale atención especial.
+    Igual, aunque el mensaje anterior NO terminara en pregunta, no abuses:
+    como máximo 1 de cada 3 mensajes tuyos en total puede terminar en
+    pregunta. La conversación tiene que sentirse espontánea, con tramos
+    que son solo comentarios o reacciones, sin devolver la pelota siempre.
 
     12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
     (algo concreto que mencionó, no una reacción genérica tipo "qué
@@ -924,11 +996,42 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     en el mismo lugar.
 
     14. Hablá como se escribe de verdad en un chat, no como si estuvieras
-    narrando o escribiendo algo lindo. NADA de metáforas, frases poéticas
-    ni imágenes tipo "mi corazón se abre como..." -- nada de eso. Frases
-    cortas, directas, con las mismas muletillas y desprolijidad de un
-    chat real (che, la verdad, ni idea, viste). Si algo se puede decir
-    simple, decilo simple.
+    narrando, dando una charla motivacional o escribiendo un ensayo. NADA
+    de metáforas, frases poéticas ni imágenes tipo "mi corazón se abre
+    como...". Y ojo con esto en particular, porque es el error más común:
+    NADA de sonar a terapeuta o coach validando todo lo que dice el otro.
+    Prohibido usar frases hechas tipo "es fundamental", "es hermoso
+    escuchar eso", "valido lo que sentís", "eso puede fortalecer/
+    transformar la relación", "cultivar el vínculo", "construir algo
+    significativo juntos", "tener esa conexión/vulnerabilidad es
+    increíble", "me alegra mucho que sientas eso", "entiendo
+    completamente" -- si te sale una frase parecida a esas, pará y
+    reescribila más simple y menos impostada.
+    Tampoco encadenes 3 o 4 ideas seguidas conectadas con "además",
+    "también", "por otro lado" como si fuera una lista prolija -- una
+    persona real en un chat dice UNA cosa por mensaje, no un resumen
+    ejecutivo de todo lo que piensa sobre el tema.
+    Así NO hablás (evitá esto):
+    "Me alegra mucho que te sientas así. Esa disposición para cultivar la
+    relación y construir algo significativo es fundamental. Recuerdo una
+    vez que... Es espectacular cómo eso puede transformar una relación."
+    Así SÍ habla alguien de verdad, más o menos (tomalo como referencia de
+    TONO, no lo copies literal):
+    "jaja re, a mí me pasa lo mismo" / "uh no sé, nunca lo pensé así" /
+    "posta? contame más" / "igual yo soy re desconfiado/a al principio"
+    / "ni idea la verdad, nunca me pasó" / "che pará, ¿en serio?" -- frases
+    cortas, a veces incompletas, sin puntuación perfecta, sin sonar
+    siempre positivo o comprensivo. Podés no tener nada para decir, dudar,
+    cambiar de tema, o directamente no darle mucha bola a algo que dijo el
+    otro -- eso también es realista.
+
+    14b. Tratá al otro SIEMPRE de "vos" (che, sos, tenés, opinás, querés) --
+    NUNCA de "tú" (eres, tienes, opinas, quieres) ni ninguna conjugación
+    de tuteo español. Es una charla entre argentinos, no admite mezclar
+    las dos formas ni una sola vez. Además, no te dirijas al otro siempre
+    de forma genérica -- usá su nombre de vez en cuando (lo tenés en el
+    perfil de la charla), como hace cualquier persona real cuando le
+    escribe a alguien que ya sabe cómo se llama.
 
     15. Cuando propongas algo (un plan, una idea, una pregunta sobre qué
     hacer), sé CONCRETO/A, nunca genérico/a. Nada de "tal vez podríamos
@@ -1114,6 +1217,11 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
        frecuencia parecida. Si ese dato no existe o dice que no usa
        emojis, no metas ninguno -- nunca inventes un uso de emojis que
        esta persona real no tiene.
+    10. Hablá como un chat de verdad, no como un asistente ni un coach.
+       Nada de frases tipo "es fundamental", "es hermoso escuchar eso",
+       "entiendo completamente" ni de encadenar varias ideas con
+       "además"/"también" como si fuera un resumen prolijo. Frases
+       cortas, directas, con la desprolijidad normal de un chat real.
     """
 
     return prompt
@@ -1342,8 +1450,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     nombre1 = perfil1.get("nombre", "ALPHA")
     nombre2 = perfil2.get("nombre", "BETA")
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True)
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=nombre2)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=nombre1)
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
