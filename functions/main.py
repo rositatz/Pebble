@@ -445,7 +445,7 @@ def simular_situacion(request: https_fn.CallableRequest):
     # (conexiones/{par_id} con supera_umbral=true) en vez de solo repetir
     # los filtros de género/edad/hijos: ese documento no existe salvo que
     # buscar_parejas_pendientes ya haya filtrado por esos criterios Y
-    # procesar_parejas_pendientes ya haya calculado >=75% de compatibilidad
+    # procesar_parejas_pendientes ya haya calculado compatibilidad por encima del umbral
     # con las respuestas del onboarding -- sin esto, cualquiera podría
     # gastar en OpenAI simulando con alguien con quien ni siquiera hay match.
     par_doc = db.collection("conexiones").document(motor._par_id(uid1, uid2)).get()

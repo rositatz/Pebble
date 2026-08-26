@@ -803,7 +803,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     Intereses:
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
     {fisico_prompt}
-    {_instruccion_genero(perfil) if (perfil.get("_privacidad") or {}).get("genero") is True else ""}
+    {_instruccion_genero(perfil)}
 
     =====================================================
     PERSONALIDAD
@@ -973,7 +973,7 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     no solo matches_resumen (que son solo las que superaron el umbral). Sin
     esto, si preguntaban "con quién corriste simulaciones" el gemelo decía
     que no había corrido ninguna aunque sí hubiera corrido, solo que ninguna
-    llegó al 75% necesario para hacer match."""
+    llegó al umbral necesario para hacer match."""
 
     personalidad = perfil.get("personalidad", {})
 
@@ -1045,8 +1045,8 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
             matches_txt += f"    - {m['nombre']}: {m['score']}% de afinidad\n"
         if sin_match:
             matches_txt += (
-                f"    Además corriste {sin_match_txt} con otras personas que no llegaron al 75% "
-                f"necesario para hacer match -- no sabés sus nombres ni el score individual de cada "
+                f"    Además corriste {sin_match_txt} con otras personas que no llegaron al "
+                f"{round(UMBRAL_MATCH * 100)}% necesario para hacer match -- no sabés sus nombres ni el score individual de cada "
                 f"una, solo la cantidad total y cuál fue el MEJOR score entre todas ({round(mejor_score_sin_match)}%, "
                 f"sin saber de quién). Si te pregunta por el nombre de alguien que no está en la lista "
                 f"de matches de arriba, NO tenés dato de esa persona en particular -- no le atribuyas "
@@ -1056,7 +1056,7 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     elif total_simulaciones:
         matches_txt = (
             f"\n    Todavía no tiene matches, pero SÍ corriste {total_txt} con otras personas -- "
-            f"ninguna llegó al 75% necesario para hacer match todavía (la mejor dio "
+            f"ninguna llegó al {round(UMBRAL_MATCH * 100)}% necesario para hacer match todavía (la mejor dio "
             f"{mejor_score_sin_match}%). Si te pregunta por esto, contestale con estos números "
             f"reales -- NO digas que no corriste ninguna simulación, y no inventes nombres (no los tenés).\n"
         )
