@@ -98,7 +98,12 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
     {{
       "estilo": "2-3 oraciones describiendo cómo escribe (largo de
         mensajes, tono, humor, formalidad, muletillas) y cómo se relaciona
-        (directo/a, cariñoso/a, reservado/a, etc.)",
+        (directo/a, cariñoso/a, reservado/a, etc.). Incluí SIEMPRE una
+        frase puntual sobre emojis: si en los mensajes usa emojis de
+        verdad, decí cuáles (los que se repitan) y con qué frecuencia
+        (mucho, de vez en cuando, muy poco) -- si NO usa ninguno en los
+        mensajes, decilo explícitamente ('no usa emojis'). Nunca falta
+        esta frase, ni inventes emojis que no aparezcan en el texto real.",
       "intereses_nuevos": ["intereses o gustos que se notan en los
         mensajes y que NO están ya en esta lista: {', '.join(intereses_actuales) or 'ninguno'}
         -- lista vacía si no hay ninguno claro, nunca inventes"]

@@ -26,7 +26,7 @@ def client():
 
 
 # Un solo lugar para no tener que cambiarlo en cada función por separado.
-UMBRAL_MATCH = 0.55
+UMBRAL_MATCH = 0.50
 
 escenarios_db = [
 
@@ -579,7 +579,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     # mensaje antes de mostrarlo -- se vería "[FIN]" como texto literal.
     instruccion_cierre_natural = (
         f"""
-    17. Si sentís que esta charla puntual llegó a un cierre natural (ya se
+    18. Si sentís que esta charla puntual llegó a un cierre natural (ya se
     dijeron lo que tenían para decir por ahora, se despidieron, quedó todo
     resuelto) -- y SOLO en ese caso -- terminá tu mensaje con la marca
     exacta {_MARCA_CIERRE} al final, en su propia línea, después de tu
@@ -902,8 +902,15 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     11. La conversación debe sentirse espontánea y no perfecta. NO termines
     todos tus mensajes con una pregunta -- una charla real tiene tramos que
     son solo comentarios, reacciones o afirmaciones, sin devolver la
-    pelota cada vez. Terminá con pregunta solo en algunos mensajes, no en
-    todos.
+    pelota cada vez. Como máximo 1 de cada 3 mensajes tuyos puede terminar
+    en pregunta -- el resto tiene que cerrar con una afirmación, un
+    comentario, una anécdota o una reacción, sin abrir un signo de
+    pregunta nuevo. Especialmente: si tu mensaje está respondiendo una
+    pregunta que te acaban de hacer, priorizá cerrar ahí (con tu opinión,
+    un comentario, un "y punto") en vez de devolver otra pregunta al
+    toque -- dos gemelos preguntándose todo el tiempo, uno detrás de otro,
+    suena a entrevista de trabajo, no a una charla real entre dos personas
+    que se están conociendo.
 
     12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
     (algo concreto que mencionó, no una reacción genérica tipo "qué
@@ -936,6 +943,15 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False):
     etc.) -- se ven como texto suelto, no se renderizan. Para remarcar algo
     usá **así** (doble asterisco), y para separar ideas, saltos de línea
     simples nomás.
+
+    17. Emojis: NO uses ninguno por default. Fijate arriba, en "CÓMO
+    ESCRIBE/SE RELACIONA EN LA PRÁCTICA" (si existe ese dato) -- ahí dice
+    si esta persona usa emojis de verdad en sus chats reales, y cuáles.
+    Si ese dato existe y menciona que usa emojis, usá esos mismos (o del
+    mismo estilo) con una frecuencia parecida a la real, nunca de más. Si
+    ese dato no existe todavía, o dice que no usa emojis, entonces NO
+    metas ninguno -- ni para "darle color" al mensaje ni por costumbre.
+    Nunca inventes un uso de emojis que esta persona real no tiene.
     {instruccion_privacidad}
     {instruccion_cierre_natural}
     """
@@ -1092,6 +1108,12 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
        como texto suelto. Si querés remarcar algo, usá **así** (doble
        asterisco a cada lado), nunca HTML. Para separar ideas o puntos de
        una lista, usá saltos de línea simples, no ninguna etiqueta.
+    9. Emojis: NO uses ninguno por default. Si en "Cómo escribe/se
+       relaciona en la práctica" (arriba, dentro de "SOBRE VOS") hay un
+       dato real sobre qué emojis usa esta persona, usá esos mismos con
+       frecuencia parecida. Si ese dato no existe o dice que no usa
+       emojis, no metas ninguno -- nunca inventes un uso de emojis que
+       esta persona real no tiene.
     """
 
     return prompt
