@@ -457,11 +457,16 @@ def simular_situacion(request: https_fn.CallableRequest):
 
     if situacion:
         escenario = motor.armar_escenario_personalizado(situacion)
+        turnos_escenario = 5
     else:
         escenario = random.randrange(len(motor.escenarios_db))
+        # Algunos escenarios preestablecidos (ej: "Su vida en pareja, 10
+        # años después") necesitan más lugar que el resto -- ver "turnos"
+        # opcional en motor.escenarios_db.
+        turnos_escenario = motor.escenarios_db[escenario].get("turnos", 5)
 
     try:
-        registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=5, escenario=escenario)
+        registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=turnos_escenario, escenario=escenario)
     except Exception as e:
         # Igual que en chatear_con_gemelo: sin este try/except una falla de
         # OpenAI acá (red, cuota, etc.) llegaba al cliente como "INTERNAL"

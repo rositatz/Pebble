@@ -25,11 +25,8 @@ def client():
     return _client
 
 
-# Vuelto a 0.75 antes de sembrar los 20 usuarios sintéticos de prueba --
-# con 0.50, casi todos los pares hombre/mujer matcheaban y disparaban
-# escenarios reales con OpenAI de más. Un solo lugar para no tener que
-# cambiarlo en cada función por separado.
-UMBRAL_MATCH = 0.75
+# Un solo lugar para no tener que cambiarlo en cada función por separado.
+UMBRAL_MATCH = 0.55
 
 escenarios_db = [
 
@@ -297,6 +294,76 @@ escenarios_db = [
 
         "tono": "Emocional, abierto y sincero.",
         "tipos_relacion": ["Algo serio"]
+    },
+
+    {
+        "titulo": "Su vida en pareja, 10 años después",
+
+        # A diferencia de los demás escenarios, acá SÍ importa cada palabra
+        # de este texto -- es lo único (junto con tono) que llega al prompt
+        # real (ver contexto_escenario en simular_cita). objetivo/tension de
+        # los demás escenarios son metadata que hoy no se inyecta en ningún
+        # prompt -- acá no hay margen para eso, así que la instrucción
+        # completa de realismo vive directamente en "contexto".
+        "contexto": """
+        ESTE ESCENARIO ES DISTINTO A LOS DEMÁS: no es una charla en el
+        presente, es un flash-forward. Imaginen que pasaron 10 años reales
+        desde que se conocieron -- sea cual sea la forma que tomó la
+        relación en el medio (siguieron juntos, se separaron y volvieron,
+        nunca terminó de funcionar, lo que sea más realista según cómo son
+        de verdad). Están hablando entre ustedes DOS ya en ese futuro, como
+        una charla real de pareja (o ex-pareja, si les tocó así)
+        reflexionando en voz alta sobre cómo llegaron hasta acá.
+
+        REGLA CENTRAL, MÁS IMPORTANTE QUE CUALQUIER OTRA COSA EN ESTE
+        ESCENARIO: esto NO es un cuento de amor. No asuman que todo salió
+        bien porque "quedaría lindo" -- el resultado tiene que salir de
+        los rasgos y valores REALES de cada uno, no de la opción más
+        romántica. Antes de responder, pensá en serio: con tu nivel real
+        de tolerancia al conflicto, necesidad de afecto, independencia,
+        sarcasmo y apertura mental -- ¿es realista que a esta altura sean
+        una pareja sólida y feliz? ¿O es más realista que hayan caído en
+        la rutina, que discutan seguido, que se hayan distanciado
+        emocionalmente, que uno se aburrió sin que el otro se diera
+        cuenta, o directamente que ya no estén juntos? Cualquiera de esas
+        opciones es tan válida como la pareja feliz -- en la mayoría de
+        los casos reales algo no sale perfecto. Que la charla misma (el
+        tono, si contestan cortante o cálido, si hay distancia) REFLEJE
+        ese resultado -- nunca lo declares directamente como si fuera un
+        resumen prolijo.
+
+        A lo largo de la charla tiene que quedar claro, de forma orgánica
+        (nunca como una lista ni un raconto ordenado), varias de estas
+        cosas: qué tipo de pareja son hoy (afectuosa, distante,
+        compañera, tensa...), si se casaron o no y por qué, si tienen
+        hijos o decidieron no tenerlos, si viven juntos o separados, si
+        cayeron en la comodidad/rutina o el vínculo se mantuvo vivo, si
+        pelean seguido y por qué cosas, y si en el fondo son felices con
+        cómo terminó siendo esto o no.
+        """,
+
+        "objetivo": [
+            "Ver cómo se imagina cada uno a largo plazo, según su personalidad real",
+            "Evitar el sesgo de 'final feliz' y forzar una proyección realista",
+            "Evaluar compatibilidad de fondo proyectada en el tiempo, no solo en el primer contacto",
+            "Detectar coherencia entre lo que dicen y lo que sus rasgos reales sugieren"
+        ],
+
+        "tension": """
+        La tensión acá no es un tema puntual como en los demás escenarios
+        -- es el peso real del tiempo: rutina, decisiones de vida tomadas
+        o pospuestas, si el vínculo se profundizó o se erosionó.
+        """,
+
+        "tono": "Depende 100% de cómo haya resultado la relación según sus rasgos reales -- puede ser cálido, tenso, distante, nostálgico, resignado o genuinamente feliz. No fuerces un tono positivo por default.",
+        "tipos_relacion": ["Algo serio"],
+
+        # Más turnos que el resto -- cubrir matrimonio/hijos/convivencia/
+        # peleas/felicidad de forma orgánica necesita más lugar que una
+        # charla de tema único. simular_relacion_completa y simular_situacion
+        # leen esto con .get("turnos", <default>) -- los demás escenarios no
+        # lo tienen y siguen usando el default de siempre.
+        "turnos": 8,
     }
 ]
 
@@ -1506,9 +1573,13 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=5, umbral=UMB
     simulaciones = []
     if supera:
         for indice_escenario in range(len(escenarios_db)):
+            # Algunos escenarios (ej: "Su vida en pareja, 10 años después")
+            # necesitan más lugar que el resto -- si el escenario no trae su
+            # propio "turnos", se usa el de siempre.
+            turnos_escenario = escenarios_db[indice_escenario].get("turnos", turnos)
             registro = simular_y_registrar(
                 uid1, perfil1, uid2, perfil2,
-                turnos=turnos, escenario=indice_escenario, umbral=umbral, guardar=None,
+                turnos=turnos_escenario, escenario=indice_escenario, umbral=umbral, guardar=None,
             )
             simulaciones.append(registro)
 
