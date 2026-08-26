@@ -53,7 +53,7 @@ def analizar_conversacion(historial_chat):
     """
 
     response = client().chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[
             {
                 "role": "system",
@@ -114,7 +114,7 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
     """
 
     response = client().chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[
             {
                 "role": "system",

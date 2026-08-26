@@ -1235,7 +1235,7 @@ def generar_resumen_gemelo(perfil):
     """
 
     response = client().chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[{"role": "user", "content": prompt}],
         temperature=1.0,
     )
@@ -1334,7 +1334,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     )
 
     response_inicio = client().chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[
             {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
         ]
@@ -1393,7 +1393,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         response_2 = client().chat.completions.create(
 
-            model="gpt-4o-mini",
+            model="gpt-5-nano",
 
             messages=[
 
@@ -1434,7 +1434,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         response_1 = client().chat.completions.create(
 
-            model="gpt-4o-mini",
+            model="gpt-5-nano",
 
             messages=[
 

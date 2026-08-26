@@ -592,7 +592,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
 
     try:
         response = motor.client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-nano",
             messages=mensajes,
         )
     except Exception as e:
@@ -710,7 +710,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
 
     try:
         response = motor.client().chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-nano",
             messages=mensajes,
         )
     except Exception as e:
