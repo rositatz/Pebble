@@ -696,3 +696,34 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
         )
 
     return total, S, pref_a_b, pref_b_a, score_conversacional
+
+
+def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral):
+    """Texto para inyectar en el prompt de generar_prompt_gemelo/
+    contexto_escenario -- sin esto, una charla podía fluir perfecta entre
+    dos perfiles que en los datos reales (onboarding) comparten poco,
+    porque nada le decía al modelo que calibrara la facilidad de la
+    charla contra la compatibilidad real. No se le pasa el % exacto (para
+    que no lo actúe/mencione literal) -- solo un nivel cualitativo, que
+    sirve de guía de qué tan fácil o difícil tiene que sentirse fluir.
+    Usa compatibilidad SOLO de onboarding (analisis=None) -- la charla en
+    cuestión todavía no pasó, no se puede analizar a sí misma."""
+    promedio_previo, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+    if promedio_previo >= 0.70:
+        nivel = "ALTA -- comparten bastante de verdad en valores, forma de ser y de comunicarse"
+    elif promedio_previo >= umbral:
+        nivel = "MEDIA -- comparten algunas cosas pero también hay diferencias reales de fondo"
+    else:
+        nivel = "BAJA -- en los datos reales de los dos hay bastante poco en común"
+    return f"""
+    COMPATIBILIDAD REAL ENTRE USTEDES DOS (según sus datos reales de
+    fondo, no esta charla puntual): {nivel}. Esto NO es algo que tengan
+    que mencionar ni actuar de forma literal -- es una guía para qué tan
+    fácil o difícil tiene que fluir la charla. Con compatibilidad baja o
+    media, no es realista que todo encaje perfecto y la conversación
+    fluya sin fricción -- va a haber menos temas en común de los
+    esperados, silencios, desencuentros, cosas que no terminan de
+    conectar, o directamente diferencias de fondo que chocan (no estar
+    siempre de acuerdo). Una charla que fluye demasiado bien pese a esto
+    está mal actuada.
+    """

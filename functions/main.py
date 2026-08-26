@@ -11,7 +11,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
-from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats
+from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats, instruccion_nivel_compatibilidad
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -392,7 +392,10 @@ def simular_situacion(request: https_fn.CallableRequest):
     Datos esperados en request.data:
       - otroUid (obligatorio): uid de la otra persona (el match)
       - situacion (opcional): texto libre de la situación pedida por el
-        usuario. Si no viene, se elige un escenario al azar de los 9 fijos.
+        usuario. Si no viene, corre la charla libre de motor.escenarios_db
+        (hoy un solo escenario genérico -- "Conociéndose" -- sin tema
+        impuesto, para que la compatibilidad real se note sola en cómo
+        fluye la charla, en vez de dividir todo en escenarios de tema fijo).
     """
 
     if request.auth is None:
@@ -460,9 +463,8 @@ def simular_situacion(request: https_fn.CallableRequest):
         turnos_escenario = 5
     else:
         escenario = random.randrange(len(motor.escenarios_db))
-        # Algunos escenarios preestablecidos (ej: "Su vida en pareja, 10
-        # años después") necesitan más lugar que el resto -- ver "turnos"
-        # opcional en motor.escenarios_db.
+        # Ver "turnos" opcional en motor.escenarios_db -- la charla libre
+        # de hoy necesita bastante más lugar que un escenario de tema único.
         turnos_escenario = motor.escenarios_db[escenario].get("turnos", 5)
 
     try:
@@ -689,6 +691,12 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     nombre_propio = (perfil_propio or {}).get("nombre")
 
     system_prompt = motor.generar_prompt_gemelo(perfil_otro, nombre_otro=nombre_propio)
+    if perfil_propio is not None:
+        # Mismo criterio que las simulaciones automáticas: que la charla en
+        # vivo también refleje qué tan compatibles son de verdad, no solo
+        # que ya pasaron el umbral para ser match -- un 51% no debería
+        # sentirse como un 95%.
+        system_prompt += instruccion_nivel_compatibilidad(perfil_propio, perfil_otro, motor.UMBRAL_MATCH)
 
     mensajes = [{"role": "system", "content": system_prompt}]
     for h in historial[-8:]:

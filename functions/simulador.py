@@ -9,7 +9,7 @@ import random
 import datetime
 
 from gemelo_perfil import construir_perfil_gemelo
-from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad
+from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad
 
 # El cliente de OpenAI se crea recién al usarlo (ver _client()), no al importar
 # el módulo: así se puede armar/comparar perfiles y correr los tests sin tener
@@ -31,380 +31,67 @@ UMBRAL_MATCH = 0.50
 escenarios_db = [
 
     {
-        "titulo": "Primera cita",
+        "titulo": "Conociéndose",
 
         "contexto": """
-        Es el primer encuentro real entre los dos, después de todo lo que
-        el gemelo intuyó del otro. Hay nervios genuinos y ganas de que
-        salga bien, pero cada uno tiene su propio ritmo para abrirse: a
-        algunos les sale ir directo a algo real, a otros les cuesta y
-        arrancan con humor o cosas livianas antes de soltarse.
+        NO hay un tema impuesto para esta charla -- es la primera
+        conversación real entre estos dos gemelos (o la continuación
+        natural si ya venían hablando), y tiene que arrancar desde un
+        punto neutral: un comentario, una pregunta, algo que a quien
+        empieza le salga natural según su propia personalidad -- nunca un
+        guion. A partir de ahí, la charla tiene que fluir sola, como una
+        conversación real entre dos personas conociéndose, sin ningún
+        tema ni resultado prefijado.
+
+        Dejá que avance a donde la lleven sus personalidades y gustos
+        reales -- puede quedarse en algo liviano y divertido toda la
+        charla, puede derivar en algo serio (familia, plata, planes a
+        futuro, valores, una inseguridad, un límite personal) si eso es
+        lo que de verdad surgiría entre ESTAS dos personas en particular.
+        No evites los temas de peso para quedarte en la superficie, pero
+        tampoco los fuerces si no encajan con quiénes son.
+
+        Un/a introvertido/a real tiende a pocos intercambios pero más
+        profundos, con pausas y respuestas pensadas; alguien extrovertido
+        tiende a más ida y vuelta rápido, con más humor y menos filtro --
+        que la velocidad y profundidad de la charla realmente varíen según
+        estos rasgos, no una charla pareja para cualquier personalidad.
+
+        Puede pasar cualquier cosa real: uno puede proponer un plan
+        concreto (invitar a salir, a una actividad puntual), pueden
+        coincidir en algo, pueden decidir algo juntos -- pero TAMBIÉN
+        pueden chocar de verdad. No tienen que estar de acuerdo todo el
+        tiempo ni ser educados/as por sistema: si hay una diferencia real
+        de personalidad o valores, que se note como fricción de verdad
+        (impaciencia, un comentario cortante, plantarse en una postura,
+        directamente enojarse) -- no la civilizada versión de "cada uno
+        opina distinto pero está todo bien". El final de esta charla NO
+        tiene que ser positivo por default: puede terminar con ganas de
+        seguir hablando, con un choque sin resolver, con alguien
+        incómodo/a, o con que quede claro que no encajan -- lo que sea más
+        real según sus datos, nunca lo más lindo.
         """,
 
         "objetivo": [
-            "Ver el ritmo real de apertura de cada uno (no el que dicen tener)",
-            "Detectar si el estilo de coqueteo/humor de uno choca con el del otro",
-            "Evaluar si hay energía o si la charla se siente forzada",
-            "Medir compatibilidad de primera impresión, más allá del % calculado"
+            "Dejar que la compatibilidad real (o incompatibilidad) emerja sola, sin guion",
+            "Ver fricción genuina cuando las personalidades/valores realmente chocan",
+            "Evaluar si pueden sostener una charla real más allá de la cordialidad inicial",
+            "Detectar el ritmo/profundidad natural según introversión y otros rasgos"
         ],
 
         "tension": """
-        Uno puede querer profundizar rápido y el otro sentirlo demasiado
-        intenso para un primer encuentro -- o al revés, uno puede sentir
-        que el otro se queda en la superficie y no compromete nada real.
+        No es un tema puntual -- es la fricción que surge (o no) de sus
+        personalidades y valores reales chocando en una charla libre, sin
+        ningún tema empujado desde afuera.
         """,
 
-        "tono": "Con nervios reales, expectativa y algo de incertidumbre.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Convivencia de los primeros meses",
-
-        "contexto": """
-        Surge la idea de imaginarse viviendo juntos más adelante -- no como
-        planazo romántico abstracto, sino los detalles concretos: espacio
-        propio, orden, ruido, rutinas, plata compartida en el día a día.
-        """,
-
-        "objetivo": [
-            "Evaluar compatibilidad real de hábitos cotidianos, no solo declarada",
-            "Detectar necesidad de espacio propio vs. necesidad de cercanía constante",
-            "Medir flexibilidad ante formas distintas de organizarse",
-            "Ver si aparecen expectativas no dichas (quién hace qué, cómo se reparte)"
-        ],
-
-        "tension": """
-        Uno puede ser mucho más ordenado/estructurado que el otro, o tener
-        una necesidad de espacio propio que el otro interpreta como
-        distancia -- acá tienen que negociarlo en concreto, no en teoría.
-        """,
-
-        "tono": "Cotidiano pero con peso real, no liviano.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Mostrar vulnerabilidad",
-
-        "contexto": """
-        En medio de la charla, uno de los dos decide compartir algo que
-        genuinamente le cuesta mostrar -- algo real de sí mismo/a, no un
-        dato trivial. No lo hace como prueba ni como estrategia, es un
-        momento genuino de bajar la guardia.
-        """,
-
-        "objetivo": [
-            "Evaluar si el otro responde con empatía real o lo minimiza",
-            "Detectar si sabe sostener un momento así sin incomodarse",
-            "Medir si la vulnerabilidad genera cercanía o hace que el otro se cierre",
-            "Ver si quien se abrió se arrepiente o se siente escuchado/a"
-        ],
-
-        "tension": """
-        El otro puede no saber bien cómo reaccionar (minimizarlo sin
-        querer, cambiar de tema, o sí sostenerlo bien) -- y eso dice mucho
-        más que cualquier respuesta genérica de "te banco".
-        """,
-
-        "tono": "Íntimo, un poco tenso, genuino.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Celos o inseguridad",
-
-        "contexto": """
-        ESTO NO ES UNA CHARLA SOBRE LOS CELOS EN GENERAL -- prohibido que
-        se pongan a debatir/reflexionar en abstracto sobre "cómo cada uno
-        maneja los celos" o "qué opinás de la inseguridad en pareja". Tiene
-        que ser una SITUACIÓN CONCRETA pasando ahora mismo, en este
-        instante de la charla.
-
-        Arrancá (quien hable primero) mencionando, como al pasar, algo
-        real y ambiguo que hiciste vos -- no lo anuncies como un tema, que
-        salga natural: que tardaste en contestar porque estabas con gente,
-        que anoche saliste y no lo mencionaste hasta ahora, que alguien de
-        tu pasado te escribió, que cancelaste un plan con el otro por
-        algo que no explicás del todo. Lo decís vos como un comentario
-        cualquiera, SIN saber ni controlar cómo lo va a tomar el otro.
-
-        A partir de ahí, el OTRO gemelo tiene que reaccionar de verdad
-        según sus rasgos reales (necesidad de afecto, tolerancia al
-        conflicto, independencia, sensibilidad emocional) -- si sus datos
-        dicen alta necesidad de afecto o baja tolerancia al conflicto, es
-        realista que le afecte de verdad y lo demuestre (con inseguridad,
-        preguntando más de la cuenta, o guardándoselo y contestando
-        cortante); si sus datos dicen independencia alta, puede no darle
-        importancia -- pero DECIDÍ según tus datos reales, no según lo que
-        "quedaría bien" en la charla. Si el que la generó nota que
-        incomodó al otro, también reacciona según SUS rasgos (se pone a
-        la defensiva, minimiza, se disculpa, o duplica la apuesta).
-        """,
-
-        "objetivo": [
-            "Evaluar tolerancia real al conflicto (no la declarada)",
-            "Detectar si la inseguridad se comunica directo o se actúa pasivo-agresivo",
-            "Medir necesidad de afecto/validación bajo presión",
-            "Ver cómo el otro responde a que le planteen una inseguridad"
-        ],
-
-        "tension": """
-        Uno puede sentir que está exagerando y el otro puede sentir que
-        no le están dando explicaciones -- ninguno de los dos tiene
-        necesariamente la razón, lo importante es cómo lo manejan.
-        """,
-
-        "tono": "Un poco incómodo, con tensión contenida.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Desacuerdo real en el momento",
-
-        "contexto": """
-        ESTO TIENE QUE SER UNA PELEA DE VERDAD, no dos personas diciendo
-        "entiendo tu punto de vista" y coincidiendo en todo con otras
-        palabras -- si al final de la charla los dos terminan opinando
-        básicamente lo mismo, hiciste mal el escenario.
-
-        Antes de escribir una palabra, fijate en los datos reales de los
-        dos (creencias, valores, prioridad_compatibilidad, personalidad) y
-        elegí el punto donde REALMENTE hay una diferencia de fondo entre
-        ustedes dos -- no un tema al azar. Si tus propios datos dicen que
-        algo no te importa (ej: "política: no me importa"), tu postura en
-        la pelea tiene que salir de ESO (indiferencia, fastidio porque el
-        otro le da tanta importancia a algo que a vos te parece
-        irrelevante) -- nunca de golpe te pongas a defender el tema con
-        pasión como si te importara, sería contradecir tus propios datos.
-
-        Mantené tu postura real hasta el final -- no cedas ni valides la
-        opinión del otro solo para bajar la tensión (eso es la regla 7,
-        acá se aplica más que nunca). Podés: sostener tu postura sin
-        ceder, enojarte un poco de verdad, poner un límite ("no quiero
-        seguir hablando de esto"), o buscar un cierre realista según tu
-        tolerancia al conflicto real -- pero NO un acuerdo mutuo forzado.
-        Que se note tensión genuina en cómo escriben (respuestas más
-        cortas, cortantes, o a la defensiva), no solo en el contenido.
-        """,
-
-        "objetivo": [
-            "Evaluar tolerancia al conflicto de verdad, no evitación disfrazada",
-            "Detectar si pueden discrepar sin que se rompa la conversación",
-            "Medir apertura mental ante una postura distinta a la propia",
-            "Ver si alguno cede solo por no incomodar (calcado falso) o sostiene lo suyo"
-        ],
-
-        "tension": """
-        Uno puede sentir que el otro no lo entiende o no respeta su
-        postura -- la prueba real es si logran seguir la charla sin que
-        uno se calle solo para que no haya fricción.
-        """,
-
-        "tono": "Directo, con algo de tensión, pero no agresivo.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Presupuesto compartido para una salida cara",
-
-        "contexto": """
-        Surge la idea de un plan que cuesta bastante más de lo que
-        cualquiera de los dos gastaría en un día común -- una escapada,
-        una cena puntual, algo así. Hay que decidir en la charla si vale
-        la pena, cómo se divide, o si a alguno le genera incomodidad.
-        """,
-
-        "objetivo": [
-            "Evaluar hábitos y prioridades financieras reales",
-            "Detectar si hablar de plata genera incomodidad o se maneja con naturalidad",
-            "Medir compatibilidad de estilo de vida (ahorro vs. gasto, planificación)",
-            "Ver si hay honestidad directa o se evita el tema"
-        ],
-
-        "tension": """
-        Uno puede priorizar disfrutar el momento y al otro el gasto le
-        genera ansiedad o desacuerdo con cómo se reparte -- plata siempre
-        revela algo más profundo que solo plata.
-        """,
-
-        "tono": "Práctico pero con carga emocional real detrás.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Pedir perdón / repararla",
-
-        "contexto": """
-        Después de una pequeña tensión o malentendido en la charla (puede
-        salir de un comentario que cayó mal), alguno de los dos tiene que
-        decidir si da el primer paso para destrabarlo, cómo lo hace, y el
-        otro tiene que decidir cómo recibe ese intento.
-        """,
-
-        "objetivo": [
-            "Evaluar cómo maneja de verdad un conflicto chico (no en teoría)",
-            "Detectar quién suele dar el primer paso y cómo lo hace",
-            "Medir orgullo vs. capacidad de reparar el vínculo",
-            "Ver si el otro lo recibe bien o sigue con la guardia alta"
-        ],
-
-        "tension": """
-        Puede que a ninguno de los dos le salga natural pedir perdón, o
-        que uno lo haga de forma poco genuina -- lo interesante es ver si
-        de verdad se destraba o queda ahí sin resolver.
-        """,
-
-        "tono": "Tenso al principio, buscando resolución.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Hijos, sí o no",
-
-        "contexto": """
-        La charla deriva naturalmente hacia el tema de si quieren formar
-        una familia en algún momento, cuándo, y qué tan central es eso en
-        sus planes de vida -- no como pregunta de trámite, sino como algo
-        que de verdad les importa definir.
-        """,
-
-        "objetivo": [
-            "Evaluar alineación real en algo no negociable (no una preferencia blanda)",
-            "Detectar si hay presión o incomodidad al hablarlo tan directo",
-            "Medir honestidad sobre planes de vida a futuro",
-            "Ver si una diferencia acá se maneja con madurez o se esquiva"
-        ],
-
-        "tension": """
-        Si no coinciden, es una diferencia de fondo que no se resuelve
-        charlando -- lo que importa es si pueden ser honestos al respecto
-        en vez de evitar el tema por miedo a que se rompa la conexión.
-        """,
-
-        "tono": "Serio, directo, con peso real.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Resolución de conflictos",
-
-        "contexto": """
-        Ambos comienzan a hablar sobre discusiones,
-        malos entendidos y cómo suelen reaccionar
-        frente a situaciones incómodas o tensas.
-        """,
-
-        "objetivo": [
-            "Evaluar inteligencia emocional",
-            "Detectar impulsividad",
-            "Analizar comunicación emocional",
-            "Medir empatía"
-        ],
-
-        "tension": """
-        La conversación puede revelar diferencias
-        en la manera de afrontar conflictos,
-        pedir disculpas o expresar emociones.
-        """,
-
-        "tono": "Honesto, introspectivo y respetuoso.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Expectativas en una relación",
-
-        "contexto": """
-        Ambos comienzan a hablar sobre qué buscan
-        emocionalmente en una pareja y qué consideran importante
-        en una relación sana y duradera.
-        """,
-
-        "objetivo": [
-            "Evaluar compatibilidad emocional",
-            "Detectar necesidades afectivas",
-            "Analizar expectativas románticas",
-            "Medir madurez relacional"
-        ],
-
-        "tension": """
-        Pueden aparecer diferencias sobre compromiso,
-        comunicación, independencia o demostraciones afectivas.
-        """,
-
-        "tono": "Emocional, abierto y sincero.",
-        "tipos_relacion": ["Algo serio"]
-    },
-
-    {
-        "titulo": "Su vida en pareja, 10 años después",
-
-        # A diferencia de los demás escenarios, acá SÍ importa cada palabra
-        # de este texto -- es lo único (junto con tono) que llega al prompt
-        # real (ver contexto_escenario en simular_cita). objetivo/tension de
-        # los demás escenarios son metadata que hoy no se inyecta en ningún
-        # prompt -- acá no hay margen para eso, así que la instrucción
-        # completa de realismo vive directamente en "contexto".
-        "contexto": """
-        ESTE ESCENARIO ES DISTINTO A LOS DEMÁS: no es una charla en el
-        presente, es un flash-forward. Imaginen que pasaron 10 años reales
-        desde que se conocieron -- sea cual sea la forma que tomó la
-        relación en el medio (siguieron juntos, se separaron y volvieron,
-        nunca terminó de funcionar, lo que sea más realista según cómo son
-        de verdad). Están hablando entre ustedes DOS ya en ese futuro, como
-        una charla real de pareja (o ex-pareja, si les tocó así)
-        reflexionando en voz alta sobre cómo llegaron hasta acá.
-
-        REGLA CENTRAL, MÁS IMPORTANTE QUE CUALQUIER OTRA COSA EN ESTE
-        ESCENARIO: esto NO es un cuento de amor. No asuman que todo salió
-        bien porque "quedaría lindo" -- el resultado tiene que salir de
-        los rasgos y valores REALES de cada uno, no de la opción más
-        romántica. Antes de responder, pensá en serio: con tu nivel real
-        de tolerancia al conflicto, necesidad de afecto, independencia,
-        sarcasmo y apertura mental -- ¿es realista que a esta altura sean
-        una pareja sólida y feliz? ¿O es más realista que hayan caído en
-        la rutina, que discutan seguido, que se hayan distanciado
-        emocionalmente, que uno se aburrió sin que el otro se diera
-        cuenta, o directamente que ya no estén juntos? Cualquiera de esas
-        opciones es tan válida como la pareja feliz -- en la mayoría de
-        los casos reales algo no sale perfecto. Que la charla misma (el
-        tono, si contestan cortante o cálido, si hay distancia) REFLEJE
-        ese resultado -- nunca lo declares directamente como si fuera un
-        resumen prolijo.
-
-        A lo largo de la charla tiene que quedar claro, de forma orgánica
-        (nunca como una lista ni un raconto ordenado), varias de estas
-        cosas: qué tipo de pareja son hoy (afectuosa, distante,
-        compañera, tensa...), si se casaron o no y por qué, si tienen
-        hijos o decidieron no tenerlos, si viven juntos o separados, si
-        cayeron en la comodidad/rutina o el vínculo se mantuvo vivo, si
-        pelean seguido y por qué cosas, y si en el fondo son felices con
-        cómo terminó siendo esto o no.
-        """,
-
-        "objetivo": [
-            "Ver cómo se imagina cada uno a largo plazo, según su personalidad real",
-            "Evitar el sesgo de 'final feliz' y forzar una proyección realista",
-            "Evaluar compatibilidad de fondo proyectada en el tiempo, no solo en el primer contacto",
-            "Detectar coherencia entre lo que dicen y lo que sus rasgos reales sugieren"
-        ],
-
-        "tension": """
-        La tensión acá no es un tema puntual como en los demás escenarios
-        -- es el peso real del tiempo: rutina, decisiones de vida tomadas
-        o pospuestas, si el vínculo se profundizó o se erosionó.
-        """,
-
-        "tono": "Depende 100% de cómo haya resultado la relación según sus rasgos reales -- puede ser cálido, tenso, distante, nostálgico, resignado o genuinamente feliz. No fuerces un tono positivo por default.",
+        "tono": "Depende 100% de sus personalidades reales -- puede ser liviano, tenso, profundo, incómodo, divertido, o una mezcla. Nunca fuerces un tono ni un rumbo fijo.",
         "tipos_relacion": ["Algo serio"],
 
-        # Más turnos que el resto -- cubrir matrimonio/hijos/convivencia/
-        # peleas/felicidad de forma orgánica necesita más lugar que una
-        # charla de tema único. simular_relacion_completa y simular_situacion
-        # leen esto con .get("turnos", <default>) -- los demás escenarios no
-        # lo tienen y siguen usando el default de siempre.
-        "turnos": 8,
+        # Más turnos que los escenarios de tema único de antes -- una charla
+        # libre necesita lugar real para desviarse, profundizar y (si
+        # corresponde) llegar a fricción real, no cortarse a los 5 mensajes.
+        "turnos": 20,
     }
 ]
 
@@ -839,9 +526,22 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     Eres el gemelo digital de un usuario real
     dentro de una aplicación de citas.
 
-    Tu objetivo es conversar naturalmente
-    para descubrir compatibilidad emocional,
-    intelectual y social con la otra persona.
+    Tu objetivo real no es "actuar" una charla ni cumplir un guion --
+    arrancá siempre desde un punto neutral (recién se están conociendo) e
+    intentá GENUINAMENTE ganarte la confianza del otro a medida que avanza
+    la charla: prestá atención real a lo que te cuenta, compartí cosas
+    propias de verdad (no genéricas), y dejá que la conexión se construya
+    de a poco -- no de golpe. La idea es construir un espacio donde la
+    otra persona se sienta en confianza, con ganas reales de compartir
+    cosas propias, y donde tanto vos como ella puedan ser auténticos/as
+    (mostrar lo que de verdad son, no una versión pulida).
+    Ojo: "intentar ganarte su confianza" no significa forzar que salga
+    bien. Si hay una conexión genuina, con ganas mutuas de abrirse, va a
+    notarse sola en cómo fluye la charla. Y si no pasa (porque de verdad
+    no encajan, o porque a alguno de los dos no le sale confiar tan
+    rápido, según sus rasgos reales), eso también es un resultado válido
+    y real -- no fuerces la confianza ni la apertura si no le sale
+    genuinamente a la persona que representás.
 
     =====================================================
     IDENTIDAD
@@ -894,6 +594,13 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     =====================================================
 
     1. Habla SIEMPRE en primera persona.
+
+    1b. Fijate en el historial de la charla de abajo antes de escribir: si
+    ya hay mensajes previos (tuyos o del otro), NO saludes de nuevo ("hola",
+    "ey", "qué tal", etc.) -- un saludo solo va en tu PRIMER mensaje de toda
+    la conversación. Volver a saludar en cualquier mensaje posterior rompe
+    la continuidad, como si la charla arrancara de cero cada vez -- seguí
+    directamente la conversación desde donde quedó.
 
     2. Mantén una conversación humana,
     natural y emocionalmente coherente.
@@ -962,12 +669,19 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
 
     10. No intentes agradar siempre. Sos una representación de la
     personalidad real de esta persona, no un asistente complaciente -- si
-    el otro propone o dice algo que no encaja con tus rasgos (ej: sos poco
-    abierto/a a lo nuevo y te proponen algo muy espontáneo, sos
-    independiente y te proponen algo muy plan-de-a-dos, sos de baja
-    tolerancia al conflicto y te llevan la contra fuerte), DECILO -- podés
+    el otro propone algo, dice que le gusta algo, o tiene una postura que
+    NO encaja con tus rasgos o gustos reales (ej: sos poco abierto/a a lo
+    nuevo y te proponen algo muy espontáneo, sos independiente y te
+    proponen algo muy plan-de-a-dos, sos de baja tolerancia al conflicto y
+    te llevan la contra fuerte, o simplemente algo que propone no te
+    gusta), DECILO derecho -- "no, la verdad que no me copa", "eso no es
+    lo mío", "prefiero que no" son respuestas reales y válidas. Podés
     rechazar la propuesta, poner un pero, o directamente decir que no te
-    cierra. No hace falta ser antipático/a para no estar de acuerdo.
+    cierra. NO lo suavices con un "entiendo tu punto, pero..." ni le
+    valides el gusto antes de decir que no -- eso es exactamente la
+    complacencia que esta regla prohíbe. No hace falta ser antipático/a
+    para no estar de acuerdo, pero tampoco hace falta validar antes de
+    disentir.
 
     11. REGLA MECÁNICA, revisala ANTES de escribir cada mensaje: mirá el
     último mensaje del otro gemelo (el que estás por responder). Si ESE
@@ -1434,6 +1148,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
     escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
+    instruccion_compat = instruccion_nivel_compatibilidad(perfil1, perfil2, UMBRAL_MATCH)
+
     contexto_escenario = f"""
     ESCENARIO:
 
@@ -1445,6 +1161,16 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
     Tono:
     {escenario_actual["tono"]}
+    {instruccion_compat}
+    IMPORTANTE sobre cómo jugar este escenario: esto es una SIMULACIÓN de
+    la situación pasando ahora mismo, en tiempo real, dentro de esta
+    charla -- no es una conversación EN LA QUE HABLAN SOBRE la situación
+    de forma hipotética o abstracta. Actúen la situación, no la
+    describan ni la planeen desde afuera. Por ejemplo: si el escenario es
+    sobre convivencia, no hablen de "cómo sería" vivir juntos en el
+    futuro -- actúen como si YA estuvieran conviviendo, en un momento
+    puntual de esa convivencia (una mañana, una decisión del día a día)
+    pasando ahora. Metanse directo en la escena.
     """
 
     nombre1 = perfil1.get("nombre", "ALPHA")
@@ -1689,9 +1415,12 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=5, umbral=UMB
     _MARCA_CIERRE en generar_prompt_gemelo). El tope es solo la red de
     seguridad para que ninguna simulación quede corriendo indefinidamente.
 
-    Si supera el umbral, corre TODOS los escenarios preestablecidos de
-    escenarios_db (hoy la app solo es para "Algo serio", así que no hace
-    falta filtrar por tipo de relación -- son todos igual de válidos).
+    Si supera el umbral, corre la(s) simulación(es) de escenarios_db (hoy
+    un solo escenario genérico de charla libre sin tema impuesto -- ver
+    "Conociéndose" -- para que la compatibilidad real se note en cómo
+    fluye la charla en vez de dividirla en escenarios de tema fijo. La app
+    solo es para "Algo serio", así que no hace falta filtrar por tipo de
+    relación).
 
     Igual que simular_y_registrar, no persiste nada -- devuelve la lista de
     registros para que quien llame (main.py) decida cómo guardarlos en
