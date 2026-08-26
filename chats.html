@@ -2676,12 +2676,22 @@
       // chat directamente -- se ejecuta desde cargarChatsReales() (script de más
       // abajo) una vez que "people" ya tiene datos reales, no acá, porque a esta
       // altura todavía no cargó nada de Firestore.
+      // ?modo=real fuerza el chat con la persona real (ej: botón "Escribirle a
+      // X" de matches.html) -- sin esto, openChat() abría el modo que haya
+      // quedado guardado en currentMode, que en un match sin mensajes reales
+      // todavía por defecto es "gemelo", así que "Escribirle" mandaba al chat
+      // con el gemelo en vez de con la persona.
       function abrirChatDesdeQueryParam() {
-        const param = new URLSearchParams(location.search).get("persona");
+        const params = new URLSearchParams(location.search);
+        const param = params.get("persona");
+        const modo = params.get("modo");
         if (param && people[param]) {
           openChat(param);
-          // Sacamos el ?persona= de la URL para que un refresh no vuelva a abrir
-          // el chat si el usuario ya lo cerró.
+          if (modo === "real" || modo === "gemelo") {
+            switchPanelMode(modo);
+          }
+          // Sacamos el ?persona=/?modo= de la URL para que un refresh no
+          // vuelva a abrir el chat si el usuario ya lo cerró.
           history.replaceState(null, "", location.pathname + location.hash);
         }
       }

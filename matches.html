@@ -1581,7 +1581,7 @@
         document.getElementById("modal-chat-label").textContent =
           `Escribirle a ${p.name}`;
         document.getElementById("modal-chat-btn").onclick = () => {
-          window.location.href = `./chats.html?persona=${id}`;
+          window.location.href = `./chats.html?persona=${id}&modo=real`;
         };
 
         // Ver el perfil también saca el resaltado naranja de "match nuevo"
@@ -1888,7 +1888,7 @@
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Perfil
               </button>
-              <button class="btn-chat" onclick="marcarMatchVisto('${m.id}');window.location.href='./chats.html?persona=${m.id}'" aria-label="Hablar con ${esc(m.nombre)}">
+              <button class="btn-chat" onclick="marcarMatchVisto('${m.id}');window.location.href='./chats.html?persona=${m.id}&modo=real'" aria-label="Hablar con ${esc(m.nombre)}">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 Escribirle a ${esc(m.nombre)}
               </button>
