@@ -901,9 +901,11 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             # onboarding (gratis) y, únicamente si supera motor.UMBRAL_MATCH,
             # corre los escenarios preestablecidos de verdad (con OpenAI) --
             # por eso "simulaciones" puede venir vacía (par no compatible).
+            perfil1_data = _con_privacidad(db, uid1, doc1.to_dict())
+            perfil2_data = _con_privacidad(db, uid2, doc2.to_dict())
             resultado = motor.simular_relacion_completa(
-                uid1, _con_privacidad(db, uid1, doc1.to_dict()),
-                uid2, _con_privacidad(db, uid2, doc2.to_dict()),
+                uid1, perfil1_data,
+                uid2, perfil2_data,
             )
 
             par_ref = db.collection("conexiones").document(data["par_id"])
@@ -916,6 +918,25 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 "ultimo_pref_a_b":resultado["pref_a_b"],
                 "ultimo_pref_b_a":resultado["pref_b_a"],
                 "ultimo_conv": resultado["score_conversacional"],
+                # Desglose por eje + diferencias concretas de personalidad --
+                # se guardan siempre (independiente de si hubo simulación o
+                # no) para que matches.html pueda mostrar POR QUÉ es el score
+                # que es, apenas hay match, sin depender de una simulación.
+                "desglose": {
+                    "psicologico": resultado["score_psicologico"],
+                    "valores": resultado["score_valores"],
+                    "intereses": resultado["score_intereses"],
+                    "creencias": resultado["score_creencias"],
+                    "comunicacion": resultado["score_comunicacion"],
+                },
+                "diferencias_personalidad": (
+                    motor._diferencias_personalidad(
+                        perfil1_data, perfil2_data, data["usuario_2"]["nombre"] or "Usuario", top_n=3
+                    )
+                    + motor._diferencias_personalidad(
+                        perfil2_data, perfil1_data, data["usuario_1"]["nombre"] or "Usuario", top_n=3
+                    )
+                ),
                 "supera_umbral": resultado["supera_umbral"],
                 "distancia_km": data.get("distancia_km"),
                 "actualizado": (
@@ -1315,5 +1336,59 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
         auth.delete_user(uid)
     except Exception as e:
         print(f"eliminar_cuenta: error borrando la cuenta de Auth {uid}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# FUNCIÓN TEMPORAL DE UN SOLO USO -- borrar después de correrla una vez.
+#
+# Se reemplazó la lista de green/red flags del juego (FLAGS en
+# gemelo-setup.html / FLAGS_JUEGO en gemelo_perfil.py) por una nueva -- los
+# votos viejos guardados en gemelo_setup/data.etapa5.flags quedaron
+# apuntando a índices que ahora significan un comportamiento distinto (o ni
+# siquiera existen si la lista nueva es más corta), así que la preferencia
+# de personalidad que se calculaba a partir de esos votos (ver
+# gemelo_perfil._construir_preferencias_pareja_personalidad) queda mal
+# interpretada en cualquiera que ya haya completado el juego con la lista
+# vieja. Esto borra SOLO ese campo puntual (etapa5.flags) para todos los
+# que ya lo tengan, dejando el resto del onboarding intacto, y regenera
+# gemelo/perfil de cada uno para que el cambio se refleje al toque -- así
+# el juego vuelve a aparecer sin contestar y lo pueden rejugar con la
+# lista nueva.
+#
+# Restringida al email de la dueña de la cuenta a propósito -- no es algo
+# que cualquier usuario logueado deba poder disparar contra todos los
+# demás.
+# ─────────────────────────────────────────────────────────────────────────
+@https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
+def limpiar_flags_viejas(request: https_fn.CallableRequest):
+    if request.auth is None or (request.auth.token or {}).get("email") != "manuelatagle@gmail.com":
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+            "No autorizado."
+        )
+
+    db = firestore.client()
+    limpiados = []
+
+    for doc in db.collection_group("gemelo_setup").stream():
+        if doc.id != "data":
+            continue
+        data = doc.to_dict()
+        if not (data.get("etapa5") or {}).get("flags"):
+            continue
+
+        doc.reference.update({"etapa5.flags": firestore.DELETE_FIELD})
+
+        uid = doc.reference.parent.parent.id
+        try:
+            nuevo_setup = doc.reference.get().to_dict()
+            perfil = construir_perfil_gemelo(nuevo_setup)
+            db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+        except Exception as e:
+            print(f"limpiar_flags_viejas: error regenerando perfil de {uid}: {e}")
+
+        limpiados.append(uid)
+
+    return {"limpiados": limpiados, "total": len(limpiados)}
 
     return {"ok": True}

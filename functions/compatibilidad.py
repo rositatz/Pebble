@@ -446,12 +446,19 @@ def _pref_categoria_satisfecha(preferencia, propio_del_otro):
     """True/False si la autodescripción del candidato (propio_del_otro)
     coincide con lo que el evaluador dijo que le atrae (preferencia) --
     None si falta algún dato o si la preferencia es de las que significan
-    "no tengo preferencia" (ahí no hay nada que evaluar ni penalizar)."""
-    if not preferencia or preferencia.strip().casefold() in ("me da igual", "indiferente"):
+    "no tengo preferencia" (ahí no hay nada que evaluar ni penalizar).
+
+    colorPelo/estiloPelo pasaron a ser multi-select (podés marcar "castaño"
+    Y "rubio" pero no "pelirrojo"), así que `preferencia` puede llegar como
+    lista en vez de un string suelto -- se normaliza a lista siempre acá
+    para no repetir el chequeo en cada llamador."""
+    opciones = preferencia if isinstance(preferencia, list) else [preferencia] if preferencia else []
+    opciones = [str(o).strip().casefold() for o in opciones if o]
+    if not opciones or any(o in ("me da igual", "indiferente") for o in opciones):
         return None
     if not propio_del_otro:
         return None
-    return 1.0 if preferencia.strip().casefold() == propio_del_otro.strip().casefold() else 0.0
+    return 1.0 if str(propio_del_otro).strip().casefold() in opciones else 0.0
 
 
 def _altura_satisfecha(preferencia, altura_propia_evaluador, altura_candidato, margen=_MARGEN_ALTURA_CM):
@@ -752,7 +759,20 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
             gamma * pref_b_a
         )
 
-    return total, S, pref_a_b, pref_b_a, score_conversacional
+    # Desglose por eje -- antes solo se devolvía S (el promedio ya
+    # combinado), así que no había forma de mostrarle al usuario POR QUÉ
+    # es compatible con alguien (ej: "compatibilidad de valores: 80%" en
+    # vez de un solo número mezclado). matches.html lo usa para las barras
+    # de "Razones de compatibilidad".
+    desglose = {
+        "psicologico": score_psicologico,
+        "valores": score_valores,
+        "intereses": score_intereses,
+        "creencias": score_creencias,
+        "comunicacion": score_comunicacion,
+    }
+
+    return total, S, pref_a_b, pref_b_a, score_conversacional, desglose
 
 
 # Frase por rasgo describiendo la DIFERENCIA cuando uno lo tiene alto y el
@@ -760,12 +780,12 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
 # describir a la otra persona en tercera persona ("tiene alta tolerancia al
 # conflicto, vos baja"). Mismos 9 rasgos que ya usa _directiva en simulador.
 _DIFERENCIA_RASGO = {
-    "introversion": "es bastante más {alto} que vos en sociabilidad (extrovertido/a vs. introvertido/a)",
+    "introversion": "es bastante {alto} que vos en sociabilidad (extrovertido/a vs. introvertido/a)",
     "empatia": "le da bastante más/menos peso que a vos a cómo se siente el otro emocionalmente",
     "sarcasmo": "tiene un sentido del humor bastante distinto al tuyo (mucho más o mucho menos sarcástico/a)",
-    "apertura_mental": "es bastante más {alto} que vos frente a ideas o planes nuevos",
+    "apertura_mental": "es bastante {alto} que vos frente a ideas o planes nuevos",
     "ambicion": "le importa bastante {alto} que a vos crecer/lograr cosas a nivel profesional",
-    "sensibilidad_emocional": "es bastante más {alto} que vos emocionalmente (le afectan más o menos las cosas)",
+    "sensibilidad_emocional": "es bastante {alto} que vos emocionalmente (le afectan más o menos las cosas)",
     "necesidad_afecto": "necesita bastante {alto} validación/cercanía afectiva que vos",
     "independencia": "valora bastante {alto} su independencia que vos",
     "tolerancia_conflicto": "tolera bastante {alto} el conflicto/discutir que vos",
@@ -845,21 +865,46 @@ def _temas_obligatorios(perfil1, perfil2, nombre1=None, nombre2=None, top_n=3):
             "cómo son."
         )
 
-    if perfil1.get("valores") or perfil2.get("valores"):
+    if perfil1.get("plan_futuro") or perfil2.get("plan_futuro") or perfil1.get("valores") or perfil2.get("valores"):
         disponibles.append(
-            "Qué buscan a futuro: familia, ambición profesional, "
-            "estabilidad vs. aventura -- prioridades reales de cada uno "
-            "(están en VALORES PERSONALES de cada perfil), no genéricas."
+            "Cómo se imaginan a futuro (usen '¿Cómo se imagina en 5 años?' "
+            "de cada perfil si está -- instalarse y estar estable, formar "
+            "familia, enfocarse en la carrera, seguir explorando, viajar "
+            "sin planes fijos) y ambición profesional / estabilidad vs. "
+            "aventura en general (VALORES PERSONALES de cada perfil) -- "
+            "esto dice mucho de si encajan a largo plazo, no lo traten "
+            "como un dato de relleno."
+        )
+
+    hijos1 = (perfil1.get("hijos") or {}).get("postura_hijos", "")
+    hijos2 = (perfil2.get("hijos") or {}).get("postura_hijos", "")
+    if hijos1 or hijos2:
+        disponibles.append(
+            "Si quieren tener hijos o no, y qué tan importante es la "
+            "familia a futuro -- usen la postura real de '¿Quiere tener "
+            "hijos?' de cada perfil (arriba, en VALORES PERSONALES), nunca "
+            "inventen una postura que no esté ahí."
         )
 
     cre1, cre2 = perfil1.get("creencias") or {}, perfil2.get("creencias") or {}
     valores_creencias = list(cre1.values()) + list(cre2.values())
-    if any(v and v not in ("No me importa", "Nada importante") for v in valores_creencias):
+    _MUY_IMPORTANTE = {"Muy importante"}
+    if any(v in _MUY_IMPORTANTE for v in valores_creencias):
         disponibles.append(
             "Qué tan importante es para cada uno la política y/o la "
             "religión en su vida diaria (usen la POSTURA FRENTE A POLÍTICA "
             "Y RELIGIÓN real de cada perfil, nunca inventen una ideología "
-            "puntual)."
+            "puntual) -- a al menos uno de los dos le importa bastante, así "
+            "que este tema amerita profundizar de verdad si sale."
+        )
+    elif any(v and v not in ("No me importa", "Nada importante") for v in valores_creencias):
+        disponibles.append(
+            "Política y/o religión les puede importar ALGO, pero no mucho "
+            "a ninguno de los dos -- si sale el tema, tóquenlo rápido y de "
+            "pasada (una frase, un comentario) y sigan a otra cosa "
+            "enseguida. No lo conviertan en un tema central ni se queden "
+            "dando vueltas ahí -- eso no sería realista para alguien a "
+            "quien esto no le importa tanto."
         )
 
     if perfil1.get("prioridad_compatibilidad") or perfil2.get("prioridad_compatibilidad"):
@@ -916,7 +961,7 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     sirve de guía de qué tan fácil o difícil tiene que sentirse fluir.
     Usa compatibilidad SOLO de onboarding (analisis=None) -- la charla en
     cuestión todavía no pasó, no se puede analizar a sí misma."""
-    promedio_previo, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+    promedio_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
     if promedio_previo >= 0.70:
         nivel = "ALTA -- comparten bastante de verdad en valores, forma de ser y de comunicarse"
     elif promedio_previo >= umbral:
@@ -949,7 +994,7 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     frío/a. USEN esto quien corresponda -- no lo ignoren para llevarse
     bien porque sí."""
 
-    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2)
+    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2, top_n=4)
     temas_txt = ""
     if temas:
         puntos_temas = "\n    ".join(f"- {t}" for t in temas)

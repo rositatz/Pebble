@@ -72,6 +72,8 @@ REGLAS_NUMERICAS = [
     # ── Etapa 1: identidad y rutina ──
     ("etapa1", "convivo", "Solo/a", {"personalidad.independencia": 0.10, "personalidad.introversion": 0.05}),
     ("etapa1", "convivo", "Con mi familia", {"valores.familia": 0.10}),
+    ("etapa1", "convivo", "Con mi(s) hermano/a(s)", {"valores.familia": 0.08}),
+    ("etapa1", "convivo", "Con mi pareja", {"personalidad.necesidad_afecto": 0.05}),
     ("etapa1", "gustaOcup", "Sí, mucho", {"valores.ambicion": 0.15}),
     ("etapa1", "gustaOcup", "Bastante", {"valores.ambicion": 0.08}),
     ("etapa1", "gustaOcup", "No realmente", {"valores.ambicion": -0.10}),
@@ -159,12 +161,20 @@ REGLAS_NUMERICAS = [
     ("etapa4", "molestaRelacion", "La indiferencia o la frialdad", {"personalidad.necesidad_afecto": 0.12}),
     ("etapa4", "molestaRelacion", "Que no respeten mi tiempo o mi espacio", {"personalidad.independencia": 0.10}),
     ("etapa4", "coqueteo", "Me cuesta mucho demostrarlo", {"personalidad.introversion": 0.05}),
-    ("etapa4", "acompaniado", "Que me busquen sin que pida", {"personalidad.necesidad_afecto": 0.15}),
-    ("etapa4", "acompaniado", "Que me escuchen y validen", {"personalidad.empatia": 0.05, "personalidad.necesidad_afecto": 0.10}),
-    ("etapa4", "necesitasVinc", "Que respeten mi independencia y tiempos", {"personalidad.independencia": 0.15}),
+    # "necesitasVinc" unifica dos preguntas que preguntaban básicamente lo
+    # mismo (qué te hace sentir acompañado/a + qué necesitás de la gente
+    # importante) -- ahora es multi-select (pills.multi), así que puede
+    # marcar varias a la vez en vez de forzar una sola.
+    ("etapa4", "necesitasVinc", "Presencia en momentos simples", {"personalidad.necesidad_afecto": 0.06}),
+    ("etapa4", "necesitasVinc", "Que me escuchen y validen", {"personalidad.empatia": 0.05, "personalidad.necesidad_afecto": 0.10}),
+    ("etapa4", "necesitasVinc", "Que recuerden detalles míos", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa4", "necesitasVinc", "Que me busquen sin que pida", {"personalidad.necesidad_afecto": 0.15}),
+    ("etapa4", "necesitasVinc", "Poder hablar de lo que me pasa sin filtro", {"personalidad.necesidad_afecto": 0.08, "personalidad.introversion": -0.05}),
     ("etapa4", "necesitasVinc", "Disponibilidad real cuando la necesito", {"personalidad.necesidad_afecto": 0.10}),
-    ("etapa4", "necesitasVinc", "Estabilidad y tranquilidad en el vínculo", {"valores.estabilidad": 0.15}),
+    ("etapa4", "necesitasVinc", "Que respeten mi independencia y tiempos", {"personalidad.independencia": 0.15}),
     ("etapa4", "necesitasVinc", "Poder resolver conflictos hablando, sin dramas", {"personalidad.tolerancia_conflicto": 0.10}),
+    ("etapa4", "necesitasVinc", "Estabilidad y tranquilidad en el vínculo", {"valores.estabilidad": 0.15}),
+    ("etapa4", "necesitasVinc", "Tiempo de calidad sin distracciones", {"personalidad.necesidad_afecto": 0.05, "personalidad.introversion": 0.05}),
 
     # ── Etapa 5: chin-chin (binarias propias, no las de "qué te atrae") ──
     ("etapa5", "veloc", "Ir despacio", {"valores.estabilidad": 0.05}),
@@ -227,10 +237,11 @@ REGLAS_NUMERICAS = [
     ("etapa2", "prefComida", "Cocinar", {"valores.estabilidad": 0.05}),
     ("etapa2", "prefComida", "Ir a un restaurante", {"valores.aventura": 0.03}),
     ("etapa2", "prefComida", "Pedir delivery", {"personalidad.independencia": 0.03}),
-    ("etapa3", "causaAnsiedad", "No saber qué va a pasar", {"personalidad.sensibilidad_emocional": 0.08, "valores.estabilidad": 0.05}),
-    ("etapa3", "causaAnsiedad", "No poder cambiar la situación", {"personalidad.tolerancia_conflicto": -0.05}),
-    ("etapa3", "causaAnsiedad", "Presión por expectativas", {"valores.ambicion": 0.05, "personalidad.sensibilidad_emocional": 0.05}),
-    ("etapa3", "causaAnsiedad", "Lo que alguien piensa de mí", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa3", "causaAnsiedad", "Lo desconocido / no saber qué va a pasar", {"personalidad.sensibilidad_emocional": 0.08, "valores.estabilidad": 0.05}),
+    ("etapa3", "causaAnsiedad", "Sentir que no tengo el control de la situación", {"personalidad.tolerancia_conflicto": -0.05}),
+    ("etapa3", "causaAnsiedad", "Las expectativas, propias o de otros", {"valores.ambicion": 0.05, "personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa3", "causaAnsiedad", "Lo que puedan pensar de mí", {"personalidad.necesidad_afecto": 0.08}),
+    ("etapa3", "causaAnsiedad", "Los tiempos ajustados o la falta de tiempo", {"valores.ambicion": 0.05, "personalidad.tolerancia_conflicto": -0.03}),
     ("etapa4", "prefCom", "Verse en persona", {"personalidad.introversion": -0.05}),
     ("etapa4", "prefCom", "Mensajes de texto", {"personalidad.introversion": 0.03}),
     ("etapa4", "inaceptable", "Que me grite o se vuelva agresivo/a", {"personalidad.tolerancia_conflicto": 0.05}),
@@ -513,6 +524,13 @@ def _construir_hijos(e3):
     return {
         "tiene_hijos": e3.get("hijosFuturo") == "Ya tengo",
         "tolerancia_hijos": e3.get("hijosAjenos", ""),
+        # Postura cruda ("Sí"/"No"/"Ya tengo") -- tiene_hijos arriba solo
+        # captura el caso "Ya tengo", perdiendo la distinción querer/no
+        # querer. Sin esto, generar_prompt_gemelo no tenía ningún dato
+        # concreto para que la simulación hablara de si quieren hijos o no
+        # -- solo el número abstracto de valores.familia, insuficiente para
+        # tocar el tema sin inventar.
+        "postura_hijos": e3.get("hijosFuturo", ""),
     }
 
 
@@ -585,22 +603,22 @@ MAPA_PREFERENCIAS_PERSONALIDAD = [
 # GREEN empuja el objetivo hacia el valor de acá; votarlo RED empuja hacia
 # el opuesto (1 - ese valor). Índice = posición en FLAGS_JUEGO.
 MAPA_FLAGS_RASGOS = [
-    {"necesidad_afecto": 0.75},                          # 0  Te escribe primero todos los días
-    {"necesidad_afecto": 0.8, "independencia": 0.25},    # 1  Te dice «Te extraño» a la semana de conocerse
-    {"introversion": 0.2},                               # 2  Te cuenta toda su vida en la primera cita
-    {"introversion": 0.2, "necesidad_afecto": 0.7},      # 3  Te manda 5 audios seguidos
-    {"necesidad_afecto": 0.7, "independencia": 0.3},     # 4  Te presenta a sus amigos después de dos citas
-    {"necesidad_afecto": 0.75},                          # 5  Te pone un apodo cariñoso al toque
-    {"introversion": 0.75, "independencia": 0.7},        # 6  Tarda en responder
-    {"independencia": 0.75},                             # 7  No postea nada de la relación
-    {"tolerancia_conflicto": 0.75},                      # 8  Tiene opiniones fuertes en todo
-    {"tolerancia_conflicto": 0.25, "empatia": 0.7},      # 9  Te deja ganar siempre
-    {"apertura_mental": 0.8},                            # 10 Es espontáneo/a
-    {"apertura_mental": 0.6, "ambicion": 0.25},          # 11 Vive el presente, no planea nada
-    {"ambicion": 0.8},                                   # 12 Es adicto/a al trabajo o estudio
-    {"sensibilidad_emocional": 0.8},                     # 13 Llora en las películas
-    {"introversion": 0.25},                              # 14 Sale de fiesta todos los fines de semana
-    {"independencia": 0.7, "introversion": 0.6},         # 15 No usa mucho el teléfono
+    {"necesidad_afecto": 0.75},                          # 0  Te escribe todos los días sin que se lo pidas
+    {"necesidad_afecto": 0.7, "independencia": 0.2},     # 1  Se pone celoso/a si salís con amigos/as
+    {"empatia": 0.8},                                    # 2  Pregunta «¿cómo te sentís?» todo el tiempo
+    {"empatia": 0.25},                                   # 3  Le cuesta preguntar cómo estás si no se lo decís vos
+    {"sarcasmo": 0.75},                                  # 4  Usa el chiste para todo, hasta en los momentos serios
+    {"sarcasmo": 0.2},                                   # 5  Se toma todo muy en serio, casi no bromea
+    {"apertura_mental": 0.8},                            # 6  Se prende con cualquier plan random de último momento
+    {"apertura_mental": 0.25},                           # 7  Prefiere tener todo planeado con anticipación
+    {"sensibilidad_emocional": 0.8},                     # 8  Llora o se emociona fácil con pelis o canciones
+    {"sensibilidad_emocional": 0.25, "introversion": 0.6}, # 9  Es difícil saber qué le pasa por dentro
+    {"introversion": 0.75},                              # 10 Prefiere un plan tranquilo en casa antes que salir de joda
+    {"independencia": 0.25, "necesidad_afecto": 0.55},   # 11 Necesita hablar las cosas con alguien para procesarlas
+    {"independencia": 0.8},                              # 12 Prefiere resolver todo solo/a antes que pedir ayuda
+    {"ambicion": 0.8},                                   # 13 Prioriza el estudio o el trabajo por encima de casi todo
+    {"tolerancia_conflicto": 0.8},                       # 14 Le cuesta bajar los brazos en una discusión, aunque tenga razón
+    {"tolerancia_conflicto": 0.2},                       # 15 Prefiere evitar el conflicto antes que discutir
 ]
 
 
@@ -649,22 +667,22 @@ def _construir_creencias(respuestas_raw):
 # comportamiento representa. Si se edita una de las dos hay que editar la
 # otra.
 FLAGS_JUEGO = [
-    "Te escribe primero todos los días",
-    "Te dice «Te extraño» a la semana de conocerse",
-    "Te cuenta toda su vida en la primera cita",
-    "Te manda 5 audios seguidos",
-    "Te presenta a sus amigos después de dos citas",
-    "Te pone un apodo cariñoso al toque",
-    "Tarda en responder",
-    "No postea nada de la relación",
-    "Tiene opiniones fuertes en todo",
-    "Te deja ganar siempre",
-    "Es espontáneo/a",
-    "Vive el presente, no planea nada",
-    "Es adicto/a al trabajo o estudio",
-    "Llora en las películas",
-    "Sale de fiesta todos los fines de semana",
-    "No usa mucho el teléfono",
+    "Te escribe todos los días sin que se lo pidas",
+    "Se pone celoso/a si salís con amigos/as",
+    "Pregunta «¿cómo te sentís?» todo el tiempo",
+    "Le cuesta preguntar cómo estás si no se lo decís vos",
+    "Usa el chiste para todo, hasta en los momentos serios",
+    "Se toma todo muy en serio, casi no bromea",
+    "Se prende con cualquier plan random de último momento",
+    "Prefiere tener todo planeado con anticipación",
+    "Llora o se emociona fácil con pelis o canciones",
+    "Es difícil saber qué le pasa por dentro",
+    "Prefiere un plan tranquilo en casa antes que salir de joda",
+    "Necesita hablar las cosas con alguien para procesarlas",
+    "Prefiere resolver todo solo/a antes que pedir ayuda",
+    "Prioriza el estudio o el trabajo por encima de casi todo",
+    "Le cuesta bajar los brazos en una discusión, aunque tenga razón",
+    "Prefiere evitar el conflicto antes que discutir",
 ]
 
 
@@ -760,6 +778,14 @@ def construir_perfil_gemelo(respuestas_raw):
         # guarda también tal cual para que generar_prompt_gemelo
         # (simulador.py) pueda usarlo en las simulaciones de escenarios.
         "prioridad_compatibilidad": _seleccion(e6, "prioridadCompatibilidad"),
+        # Postura cruda de "¿Cómo te imaginás en 5 años?" (etapa3,
+        # futuro5anios) -- antes solo alimentaba valores.estabilidad/
+        # familia/ambicion/aventura (números abstractos), nunca llegaba
+        # como dato concreto a generar_prompt_gemelo, así que las
+        # simulaciones no podían tocar el tema de plan de vida a futuro sin
+        # inventar. Dice mucho de si encajan a futuro, amerita ser un dato
+        # real disponible en la charla.
+        "plan_futuro": e3.get("futuro5anios", ""),
         "pesos_compatibilidad": _construir_pesos_compatibilidad(respuestas_raw),
         "flags_resumen": _resumir_flags(e5),
         "bio": (respuestas_raw.get("gemelo_final") or e7.get("gedit") or "").strip(),

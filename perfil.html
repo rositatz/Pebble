@@ -2383,16 +2383,53 @@
                 />
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Ciudad</label>
-              <input
-                class="form-input"
-                id="eCiudad"
-                type="text"
-                value="Buenos Aires"
-                maxlength="60"
-                placeholder="Tu ciudad"
-              />
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">País</label>
+                <select class="form-select" id="ePais" onchange="togglePaisOtro()">
+                  <option selected>Argentina</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div class="form-group" id="grupoProvincia">
+                <label class="form-label">Provincia / Ciudad</label>
+                <select class="form-select" id="eProvincia">
+                  <option>Buenos Aires</option>
+                  <option>Ciudad Autónoma de Buenos Aires</option>
+                  <option>Catamarca</option>
+                  <option>Chaco</option>
+                  <option>Chubut</option>
+                  <option>Córdoba</option>
+                  <option>Corrientes</option>
+                  <option>Entre Ríos</option>
+                  <option>Formosa</option>
+                  <option>Jujuy</option>
+                  <option>La Pampa</option>
+                  <option>La Rioja</option>
+                  <option>Mendoza</option>
+                  <option>Misiones</option>
+                  <option>Neuquén</option>
+                  <option>Río Negro</option>
+                  <option>Salta</option>
+                  <option>San Juan</option>
+                  <option>San Luis</option>
+                  <option>Santa Cruz</option>
+                  <option>Santa Fe</option>
+                  <option>Santiago del Estero</option>
+                  <option>Tierra del Fuego</option>
+                  <option>Tucumán</option>
+                </select>
+              </div>
+              <div class="form-group" id="grupoCiudadOtro" style="display: none">
+                <label class="form-label">Ciudad</label>
+                <input
+                  class="form-input"
+                  id="eCiudadOtro"
+                  type="text"
+                  maxlength="60"
+                  placeholder="Tu ciudad"
+                />
+              </div>
             </div>
             <div class="form-row">
               <div class="form-group">
@@ -2406,14 +2443,14 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Pronombres (opcional)</label>
-                <input
-                  class="form-input"
-                  id="ePronombres"
-                  type="text"
-                  value="ella / her"
-                  maxlength="30"
-                  placeholder="ej. ella/her"
-                />
+                <select class="form-select" id="ePronombres">
+                  <option value="">Prefiero no decir</option>
+                  <option value="Ella/her" selected>Ella/her</option>
+                  <option value="Él/him">Él/him</option>
+                  <option value="Elle/them">Elle/them</option>
+                  <option value="Ella/él">Ella/él</option>
+                  <option value="Otro">Otro</option>
+                </select>
               </div>
             </div>
             <div class="form-row">
@@ -2595,6 +2632,9 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               <div class="interest-chip" onclick="toggleInterest(this)">
                 Pintura
               </div>
+              <div class="interest-chip" onclick="toggleInterest(this)">
+                Stand up
+              </div>
             </div>
           </div>
 
@@ -2618,6 +2658,12 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               </div>
               <div class="interest-chip" onclick="toggleInterest(this)">
                 Fútbol
+              </div>
+              <div class="interest-chip" onclick="toggleInterest(this)">
+                Pilates
+              </div>
+              <div class="interest-chip" onclick="toggleInterest(this)">
+                Salir a caminar
               </div>
             </div>
           </div>
@@ -2678,6 +2724,9 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               </div>
               <div class="interest-chip" onclick="toggleInterest(this)">
                 Voluntariado
+              </div>
+              <div class="interest-chip" onclick="toggleInterest(this)">
+                Podcasts
               </div>
             </div>
           </div>
@@ -4299,6 +4348,18 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         }
       }
 
+      // Muestra el select de Provincia (Argentina) o el texto libre de
+      // Ciudad (Otro país), nunca los dos a la vez.
+      function togglePaisOtro() {
+        const esOtro = document.getElementById("ePais").value === "Otro";
+        document.getElementById("grupoProvincia").style.display = esOtro
+          ? "none"
+          : "";
+        document.getElementById("grupoCiudadOtro").style.display = esOtro
+          ? ""
+          : "none";
+      }
+
       /* ══════════════════════════════
    SAVE INFO
 ══════════════════════════════ */
@@ -4307,7 +4368,16 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       function saveInfo() {
         const nombre = document.getElementById("eNombre").value.trim();
         const fechaNac = document.getElementById("eFechaNac").value;
-        const ciudad = document.getElementById("eCiudad").value.trim();
+        // País/Provincia son selects (antes "Ciudad" era texto libre, con
+        // errores de tipeo o formatos distintos para el mismo lugar --
+        // "Bs As" vs "Buenos Aires" vs "Cap Fed" no eran comparables entre
+        // sí). "Otro" país sigue permitiendo texto libre para cubrir a
+        // quien no vive en Argentina.
+        const pais = document.getElementById("ePais").value;
+        const ciudad =
+          pais === "Otro"
+            ? document.getElementById("eCiudadOtro").value.trim()
+            : document.getElementById("eProvincia").value;
         const genero = document.getElementById("eGenero").value;
         const pronomb = document.getElementById("ePronombres").value.trim();
         const orient = document.getElementById("eOrientacion").value;
@@ -4351,6 +4421,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           window._db_saveInfo({
             nombre,
             fechaNac,
+            pais,
             ciudad,
             genero,
             pronombres: pronomb,
@@ -5140,13 +5211,38 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           // dónde sacar un respaldo), así que sigue viniendo solo de acá.
           if (d.fechaNac)
             document.getElementById("eFechaNac").value = d.fechaNac;
+          // País/Provincia reemplazaron el texto libre de Ciudad -- si el
+          // dato guardado no trae "pais" (cuentas de antes de este cambio,
+          // o casos donde d.pais no está), se infiere: si el valor coincide
+          // con una provincia argentina conocida, se asume Argentina; si
+          // no, se muestra como "Otro" con el texto tal cual.
+          function aplicarCiudadCargada(valorCiudad, paisGuardado) {
+            if (!valorCiudad) return;
+            const selectProvincia = document.getElementById("eProvincia");
+            const esProvinciaConocida = [...selectProvincia.options].some(
+              (o) => o.value === valorCiudad,
+            );
+            const esArgentina = paisGuardado
+              ? paisGuardado !== "Otro"
+              : esProvinciaConocida;
+            document.getElementById("ePais").value = esArgentina
+              ? "Argentina"
+              : "Otro";
+            if (esArgentina && esProvinciaConocida) {
+              selectProvincia.value = valorCiudad;
+            } else {
+              document.getElementById("eCiudadOtro").value = valorCiudad;
+            }
+            togglePaisOtro();
+          }
+
           if (perfilGemelo && perfilGemelo.ciudad) {
             document.getElementById("vCiudad").textContent =
               perfilGemelo.ciudad;
-            document.getElementById("eCiudad").value = perfilGemelo.ciudad;
+            aplicarCiudadCargada(perfilGemelo.ciudad, d.pais);
           } else if (d.ciudad !== undefined) {
             document.getElementById("vCiudad").textContent = d.ciudad || "—";
-            document.getElementById("eCiudad").value = d.ciudad;
+            aplicarCiudadCargada(d.ciudad, d.pais);
           }
 
           if (perfilGemelo && perfilGemelo.genero) {

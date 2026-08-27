@@ -1525,7 +1525,8 @@
   </div>`;
         }
 
-        // Compat bars (los 3 ejes reales que calcula calcular_compatibilidad)
+        // Compat bars (los ejes reales que calcula calcular_compatibilidad,
+        // desglosados -- ver conexiones/{parId}.desglose en main.py)
         if (p.compat && p.compat.length) {
           html += `<div>
     <p class="modal-section-title">Razones de compatibilidad</p>
@@ -1541,6 +1542,21 @@
     </div>`;
           });
           html += `</div></div>`;
+        }
+
+        // Diferencias concretas de personalidad/valores (ver
+        // compatibilidad._diferencias_personalidad) -- antes esto solo se
+        // usaba puertas adentro del prompt de la simulación para generar
+        // fricción real en la charla; acá se muestra tal cual para que se
+        // entienda POR QUÉ el score es el que es, no solo el número.
+        if (p.diferencias && p.diferencias.length) {
+          html += `<div>
+    <p class="modal-section-title">Diferencias reales de personalidad</p>
+    <ul style="margin:0;padding-left:18px;font-size:0.85rem;color:var(--text-secondary);line-height:1.6">`;
+          p.diferencias.forEach((d) => {
+            html += `<li>${esc(d)}</li>`;
+          });
+          html += `</ul></div>`;
         }
 
         // Interests (intereses reales del usuario, en naranja los compartidos)
@@ -1765,10 +1781,20 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
+      // Antes esto leía sim.score.score_psicologico/score_valores, campos
+      // que el backend NUNCA guardaba en el score de la simulación (solo
+      // guardaba compatibilidad_total/similitud/pref_a_b/pref_b_a/
+      // score_conversacional) -- así que la sección de "Razones de
+      // compatibilidad" estaba rota de fondo, casi nunca mostraba nada.
+      // Ahora se lee del desglose por eje que se guarda directo en
+      // conexiones/{parId} (ver main.py), disponible desde que hay match,
+      // sin depender de que exista una simulación.
       const EJES_COMPAT = [
-        { key: "score_psicologico", label: "Compatibilidad de personalidades" },
-        { key: "score_conversacional", label: "Química en la conversación" },
-        { key: "score_valores", label: "Valores compartidos" },
+        { key: "psicologico", label: "Compatibilidad de personalidades" },
+        { key: "valores", label: "Valores compartidos" },
+        { key: "intereses", label: "Intereses en común" },
+        { key: "comunicacion", label: "Forma de comunicarse" },
+        { key: "creencias", label: "Política y religión" },
       ];
       const SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -1788,14 +1814,22 @@
         return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
       }
 
-      function construirEjes(sim) {
-        if (!sim || !sim.score) return [];
-        return EJES_COMPAT.filter(
-          (e) => typeof sim.score[e.key] === "number",
-        ).map((e) => ({
-          label: e.label,
-          pct: Math.round(sim.score[e.key] * 100),
-        }));
+      // desglose viene de conexiones/{parId}.desglose (siempre disponible
+      // desde que hay match) -- sim.score.score_conversacional es un extra
+      // que solo existe si ya corrió una simulación de verdad.
+      function construirEjes(desglose, sim) {
+        const ejes = desglose
+          ? EJES_COMPAT.filter((e) => typeof desglose[e.key] === "number").map(
+              (e) => ({ label: e.label, pct: Math.round(desglose[e.key] * 100) }),
+            )
+          : [];
+        if (sim && sim.score && typeof sim.score.score_conversacional === "number") {
+          ejes.push({
+            label: "Química en la conversación",
+            pct: Math.round(sim.score.score_conversacional * 100),
+          });
+        }
+        return ejes;
       }
 
       function interesesCompartidos(mios, suyos) {
@@ -1997,7 +2031,8 @@
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           const isNew = !mis[`match_visto_${c.otroId}`];
           const tags = interesesCompartidos(misIntereses, c.otro.intereses);
-          const ejes = construirEjes(c.ultimaSim);
+          const ejes = construirEjes(c.data.desglose, c.ultimaSim);
+          const diferencias = c.data.diferencias_personalidad || [];
           const historial =
             c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)
               ? c.ultimaSim.historial_chat
@@ -2023,6 +2058,7 @@
               : [],
             bio: priv.bio === false ? "" : c.otro.bio || "",
             compat: ejes,
+            diferencias,
             interests: (c.otro.intereses || []).slice(0, 10),
             shared: tags,
             // msg.uid es lo confiable (agregado hace poco); msg.name

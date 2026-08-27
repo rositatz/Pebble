@@ -1095,7 +1095,13 @@
                 Con mi familia
               </button>
               <button class="pill" onclick="selPill(this)">
+                Con mi(s) hermano/a(s)
+              </button>
+              <button class="pill" onclick="selPill(this)">
                 Con amigos/as
+              </button>
+              <button class="pill" onclick="selPill(this)">
+                Con mi pareja
               </button>
             </div>
           </div>
@@ -1370,13 +1376,15 @@
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Tu rutina suele ser?</div>
-            <div class="pills" data-field="rutina">
-              <button class="pill" onclick="selPill(this)">Tranquila</button>
-              <button class="pill" onclick="selPill(this)">Intensa</button>
-              <button class="pill" onclick="selPill(this)">Cambiante</button>
-              <button class="pill" onclick="selPill(this)">Caótica</button>
-              <button class="pill" onclick="selPill(this)">Repetitiva</button>
+            <div class="ql">
+              ¿Tu rutina suele ser? (podés elegir varias)
+            </div>
+            <div class="pills multi" data-field="rutina">
+              <button class="pill" onclick="selMulti(this)">Tranquila</button>
+              <button class="pill" onclick="selMulti(this)">Intensa</button>
+              <button class="pill" onclick="selMulti(this)">Cambiante</button>
+              <button class="pill" onclick="selMulti(this)">Caótica</button>
+              <button class="pill" onclick="selMulti(this)">Repetitiva</button>
             </div>
           </div>
           <div class="q prem-only">
@@ -1487,37 +1495,37 @@
           <div class="q">
             <div class="ql">
               Si tuvieras una tarde libre para hacer algo que disfrutes, ¿qué
-              plan elegirías?
+              plan elegirías? (podés elegir varios)
             </div>
-            <div class="pills" data-field="planIdeal">
-              <button class="pill" onclick="selPill(this)">
+            <div class="pills multi" data-field="planIdeal">
+              <button class="pill" onclick="selMulti(this)">
                 Ir a una cafetería y charlar durante horas.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Pasar el día al aire libre, en la playa, parque o naturaleza.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Recorrer una librería, museo o lugar cultural.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Salir a comer.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Ir a un recital, bar o evento.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Ver una película.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Hacer alguna actividad física o deportiva.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Hacer algo creativo: cocinar, pintar, sacar fotos, etc.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Quedarme en casa y disfrutar de un plan tranquilo.
               </button>
-              <button class="pill" onclick="selPill(this)">
+              <button class="pill" onclick="selMulti(this)">
                 Improvisar y salir a descubrir la ciudad.
               </button>
             </div>
@@ -1528,6 +1536,7 @@
           <div class="sec-title">🍕 Comida</div>
           <div class="q">
             <div class="ql">
+              Es un sábado a la noche y tenés ganas de comer algo rico.
               ¿Preferís pedir, cocinar o ir a un restaurante?
             </div>
             <div class="pills" data-field="prefComida">
@@ -1727,30 +1736,20 @@
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Qué tipo de personalidad te engancha más?</div>
-            <div class="rlist" data-field="persEngancha">
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Súper expresiva, habladora y con mucha onda</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Tranquila, que sabe escuchar y transmite paz</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Intensa o hiperactiva</span>
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Muy cerrada, de las que cuesta remarles la conversación</span
-                >
-              </div>
+            <div class="ql">
+              ¿Qué tipo de personalidad te engancha más? (podés elegir
+              varias, así no cierra tanto a un solo estereotipo)
+            </div>
+            <div class="pills multi" data-field="persEngancha">
+              <button class="pill" onclick="selMulti(this)">
+                Súper expresiva, habladora y con mucha onda</button
+              ><button class="pill" onclick="selMulti(this)">
+                Tranquila, que sabe escuchar y transmite paz</button
+              ><button class="pill" onclick="selMulti(this)">
+                Intensa o hiperactiva</button
+              ><button class="pill" onclick="selMulti(this)">
+                Muy cerrada, de las que cuesta remarles la conversación
+              </button>
             </div>
           </div>
         </div>
@@ -1871,19 +1870,22 @@
           </div>
           <div class="q prem-only">
             <div class="ql">
-              ¿Cuándo empezás a preocuparte demasiado, cuál suele ser la causa?
+              En general, ¿qué te suele generar un poco de ansiedad? (podés
+              elegir varias)
               <span class="ptag">★ Premium</span>
             </div>
-            <div class="pills" data-field="causaAnsiedad">
-              <button class="pill" onclick="selPill(this)">
-                No saber qué va a pasar</button
-              ><button class="pill" onclick="selPill(this)">
-                No poder cambiar la situación</button
-              ><button class="pill" onclick="selPill(this)">
-                Presión por expectativas</button
-              ><button class="pill" onclick="selPill(this)">
-                Lo que alguien piensa de mí</button
-              ><button class="pill" onclick="selPill(this)">Otra</button>
+            <div class="pills multi" data-field="causaAnsiedad">
+              <button class="pill" onclick="selMulti(this)">
+                Lo desconocido / no saber qué va a pasar</button
+              ><button class="pill" onclick="selMulti(this)">
+                Sentir que no tengo el control de la situación</button
+              ><button class="pill" onclick="selMulti(this)">
+                Las expectativas, propias o de otros</button
+              ><button class="pill" onclick="selMulti(this)">
+                Lo que puedan pensar de mí</button
+              ><button class="pill" onclick="selMulti(this)">
+                Los tiempos ajustados o la falta de tiempo</button
+              ><button class="pill" onclick="selMulti(this)">Otra</button>
             </div>
           </div>
           <div class="q">
@@ -2125,35 +2127,6 @@
             </div>
           </div>
           <div class="q">
-            <div class="ql">Si te peleás con un amigo, ¿cómo reaccionás?</div>
-            <div class="rlist" data-field="pelea">
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Digo lo que pienso aunque genere discusión</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Intento hablarlo con calma para resolverlo</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Me guardo cosas para evitar conflictos</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Necesito tomar distancia antes de hablar</span
-                >
-              </div>
-            </div>
-          </div>
-          <div class="q">
             <div class="ql">¿Cómo reaccionás ante un conflicto?</div>
             <div class="rlist" data-field="reaccionConflicto">
               <div class="ritem" onclick="selRadio(this)">
@@ -2211,29 +2184,21 @@
           </div>
           <div class="q">
             <div class="ql">
-              ¿Qué comportamiento considerás más inaceptable en una discusión?
+              ¿Qué comportamientos considerás inaceptables en una discusión?
+              (podés elegir varios)
             </div>
-            <div class="rlist" data-field="inaceptable">
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Que me falte el respeto</span>
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Que me mienta o me oculte cosas</span>
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Que minimice lo que siento</span>
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Que me grite o se vuelva agresivo/a</span>
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Que no escuche mi punto de vista</span>
-              </div>
+            <div class="pills multi" data-field="inaceptable">
+              <button class="pill" onclick="selMulti(this)">
+                Que me falte el respeto</button
+              ><button class="pill" onclick="selMulti(this)">
+                Que me mienta o me oculte cosas</button
+              ><button class="pill" onclick="selMulti(this)">
+                Que minimice lo que siento</button
+              ><button class="pill" onclick="selMulti(this)">
+                Que me grite o se vuelva agresivo/a</button
+              ><button class="pill" onclick="selMulti(this)">
+                Que no escuche mi punto de vista
+              </button>
             </div>
           </div>
         </div>
@@ -2258,13 +2223,20 @@
           </div>
           <div class="q">
             <div class="ql">
-              En una fiesta, alguien que te gusta se acerca. ¿Cómo reaccionás?
+              Cuando estás con alguien que te interesa mucho, ¿cómo te
+              comportás?
             </div>
-            <div class="rlist" data-field="fiestaReac">
+            <div class="rlist" data-field="comportaInt">
               <div class="ritem" onclick="selRadio(this)">
                 <div class="rdot"></div>
                 <span class="rtext"
                   >Me muestro natural y sigo la conversación</span
+                >
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext"
+                  >Me pongo más atento/a y presente, lo demuestro bastante</span
                 >
               </div>
               <div class="ritem" onclick="selRadio(this)">
@@ -2275,29 +2247,7 @@
               </div>
               <div class="ritem" onclick="selRadio(this)">
                 <div class="rdot"></div>
-                <span class="rtext">Espero señales antes de abrirme más</span>
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Me quedo más reservado/a</span>
-              </div>
-            </div>
-          </div>
-          <div class="q">
-            <div class="ql">
-              Cuando estás con alguien que te interesa mucho, ¿cómo te
-              comportás?
-            </div>
-            <div class="rlist" data-field="comportaInt">
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Me pongo más atento/a y presente, lo demuestro bastante</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext">Me vuelvo un poco más tímido/a</span>
+                <span class="rtext">Me vuelvo más tímido/a y reservado/a</span>
               </div>
               <div class="ritem" onclick="selRadio(this)">
                 <div class="rdot"></div>
@@ -2307,9 +2257,7 @@
               </div>
               <div class="ritem" onclick="selRadio(this)">
                 <div class="rdot"></div>
-                <span class="rtext"
-                  >Depende, puedo ser muy expresivo/a o muy frío/a</span
-                >
+                <span class="rtext">Espero señales antes de abrirme más</span>
               </div>
             </div>
           </div>
@@ -2319,10 +2267,10 @@
           <div class="sec-title">🤝 Cercanía y conexión</div>
           <div class="q">
             <div class="ql">
-              ¿Qué cosas te hacen sentir realmente acompañado/a? (podés elegir
-              varios)
+              ¿Qué necesitás de las personas importantes para vos / qué te
+              hace sentir realmente acompañado/a? (podés elegir varios)
             </div>
-            <div class="pills multi" data-field="acompaniado">
+            <div class="pills multi" data-field="necesitasVinc">
               <button class="pill" onclick="selMulti(this)">
                 Presencia en momentos simples</button
               ><button class="pill" onclick="selMulti(this)">
@@ -2332,45 +2280,18 @@
               ><button class="pill" onclick="selMulti(this)">
                 Que me busquen sin que pida</button
               ><button class="pill" onclick="selMulti(this)">
+                Poder hablar de lo que me pasa sin filtro</button
+              ><button class="pill" onclick="selMulti(this)">
+                Disponibilidad real cuando la necesito</button
+              ><button class="pill" onclick="selMulti(this)">
+                Que respeten mi independencia y tiempos</button
+              ><button class="pill" onclick="selMulti(this)">
+                Poder resolver conflictos hablando, sin dramas</button
+              ><button class="pill" onclick="selMulti(this)">
+                Estabilidad y tranquilidad en el vínculo</button
+              ><button class="pill" onclick="selMulti(this)">
                 Tiempo de calidad sin distracciones
               </button>
-            </div>
-          </div>
-          <div class="q">
-            <div class="ql">
-              ¿Qué necesitás más de las personas importantes para vos?
-            </div>
-            <div class="rlist" data-field="necesitasVinc">
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Poder hablar de lo que me pasa sin filtro</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Disponibilidad real cuando la necesito</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Estabilidad y tranquilidad en el vínculo</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Que respeten mi independencia y tiempos</span
-                >
-              </div>
-              <div class="ritem" onclick="selRadio(this)">
-                <div class="rdot"></div>
-                <span class="rtext"
-                  >Poder resolver conflictos hablando, sin dramas</span
-                >
-              </div>
             </div>
           </div>
         </div>
@@ -2387,11 +2308,20 @@
 
         <div class="sec">
           <div class="sec-title">✨ Vibes</div>
-          <div class="bin-group">
-            <div class="bin-group-lbl">¿Sos más de...</div>
+          <div class="q">
+            <div class="ql">
+              Recién empezás a conocer a alguien que te gusta. ¿Preferís ir
+              despacio o ir rápido?
+            </div>
             <div class="binary" data-field="veloc">
               <button class="bbin" onclick="selBin(this)">Ir despacio</button
               ><button class="bbin" onclick="selBin(this)">Ir rápido</button>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              En una primera charla con alguien nuevo, ¿arrancás con charlas
+              profundas desde el inicio o con conversaciones livianas primero?
             </div>
             <div class="binary" data-field="profConv">
               <button class="bbin" onclick="selBin(this)">
@@ -2399,6 +2329,12 @@
               ><button class="bbin" onclick="selBin(this)">
                 Conversaciones livianas primero
               </button>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              Con alguien que te empieza a gustar, ¿te sale hablar todo el
+              día o preferís que sea más espaciado?
             </div>
             <div class="binary" data-field="frecContact">
               <button class="bbin" onclick="selBin(this)">
@@ -2422,14 +2358,23 @@
 
         <div class="sec">
           <div class="sec-title">🌙 Tu cita ideal</div>
-          <div class="bin-group">
-            <div class="bin-group-lbl">¿Sos más de...</div>
+          <div class="q">
+            <div class="ql">
+              Es tu primera cita con alguien que te gusta de verdad.
+              ¿Preferís quedarte en casa o salir de noche?
+            </div>
             <div class="binary" data-field="citaLugar">
               <button class="bbin" onclick="selBin(this)">
                 Quedarse en casa</button
               ><button class="bbin" onclick="selBin(this)">
                 Salir de noche
               </button>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              Si pudieras elegir el clima de una cita ideal, ¿lluvia y
+              películas o playa y música?
             </div>
             <div class="binary" data-field="citaClima">
               <button class="bbin" onclick="selBin(this)">
@@ -2438,11 +2383,23 @@
                 Playa y música
               </button>
             </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              Te invitan a una previa antes de salir con esa persona.
+              ¿Preferís que sea una fiesta grande o una juntada chica?
+            </div>
             <div class="binary" data-field="citaJuntada">
               <button class="bbin" onclick="selBin(this)">Fiesta grande</button
               ><button class="bbin" onclick="selBin(this)">
                 Juntada chica
               </button>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              En una cita nocturna al aire libre, ¿preferís mirar estrellas
+              o caminar sin rumbo?
             </div>
             <div class="binary" data-field="citaActividad">
               <button class="bbin" onclick="selBin(this)">
@@ -2463,13 +2420,22 @@
               ><button class="bbin" onclick="selBin(this)">Tranquilo/a</button>
             </div>
           </div>
-          <div class="bin-group">
-            <div class="bin-group-lbl">¿Sos más de...</div>
+          <div class="q">
+            <div class="ql">
+              Estás lejos de tu pareja por un tiempo. ¿Preferís mantener el
+              contacto con audios o con videollamadas?
+            </div>
             <div class="binary" data-field="carinoComm">
               <button class="bbin" onclick="selBin(this)">Audios</button
               ><button class="bbin" onclick="selBin(this)">
                 Videollamadas
               </button>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              Estando en pareja, ¿preferís el cariño privado o demostrarlo
+              públicamente?
             </div>
             <div class="binary" data-field="carinoPublic">
               <button class="bbin" onclick="selBin(this)">Cariño privado</button
@@ -2477,12 +2443,25 @@
                 Demostrar públicamente
               </button>
             </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              Alguien que te importa te escribe un mensaje importante.
+              ¿Priorizás responder rápido o responder bien, aunque tardes
+              más?
+            </div>
             <div class="binary" data-field="carinoResp">
               <button class="bbin" onclick="selBin(this)">
                 Responder rápido</button
               ><button class="bbin" onclick="selBin(this)">
                 Responder bien
               </button>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">
+              A la hora de coquetear con alguien que te gusta, ¿vas de forma
+              directa o indirecta?
             </div>
             <div class="binary" data-field="carinoCoqueteo">
               <button class="bbin" onclick="selBin(this)">
@@ -2608,50 +2587,60 @@
         <div class="sec">
           <div class="sec-title">💘 Tu tipo</div>
           <div class="q">
-            <div class="ql">¿Qué vibra te suele atraer?</div>
-            <div class="pills" data-field="vibeAtrae">
-              <button class="pill" onclick="selPill(this)">Tranquila</button
-              ><button class="pill" onclick="selPill(this)">Intensa</button
-              ><button class="pill" onclick="selPill(this)">Misteriosa</button
-              ><button class="pill" onclick="selPill(this)">Divertida</button
-              ><button class="pill" onclick="selPill(this)">Sensible</button
-              ><button class="pill" onclick="selPill(this)">Segura</button
-              ><button class="pill" onclick="selPill(this)">Artística</button
-              ><button class="pill" onclick="selPill(this)">Intelectual</button>
+            <div class="ql">
+              ¿Qué vibra te suele atraer? (podés elegir varias)
+            </div>
+            <div class="pills multi" data-field="vibeAtrae">
+              <button class="pill" onclick="selMulti(this)">Tranquila</button
+              ><button class="pill" onclick="selMulti(this)">Intensa</button
+              ><button class="pill" onclick="selMulti(this)">Misteriosa</button
+              ><button class="pill" onclick="selMulti(this)">Divertida</button
+              ><button class="pill" onclick="selMulti(this)">Sensible</button
+              ><button class="pill" onclick="selMulti(this)">Segura</button
+              ><button class="pill" onclick="selMulti(this)">Artística</button
+              ><button class="pill" onclick="selMulti(this)">Intelectual</button>
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Qué tipo de conexión buscás primero?</div>
-            <div class="pills" data-field="conexionPrimero">
-              <button class="pill" onclick="selPill(this)">Emocional</button
-              ><button class="pill" onclick="selPill(this)">Mental</button
-              ><button class="pill" onclick="selPill(this)">Física</button
-              ><button class="pill" onclick="selPill(this)">Divertida</button
-              ><button class="pill" onclick="selPill(this)">Tranquila</button>
+            <div class="ql">
+              ¿Qué tipo de conexión buscás primero? (podés elegir varias)
+            </div>
+            <div class="pills multi" data-field="conexionPrimero">
+              <button class="pill" onclick="selMulti(this)">Emocional</button
+              ><button class="pill" onclick="selMulti(this)">Mental</button
+              ><button class="pill" onclick="selMulti(this)">Física</button
+              ><button class="pill" onclick="selMulti(this)">Divertida</button
+              ><button class="pill" onclick="selMulti(this)">Tranquila</button>
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Te gusta alguien que...</div>
-            <div class="pills" data-field="gustaMueven">
-              <button class="pill" onclick="selPill(this)">
+            <div class="ql">¿Te gusta alguien que... (podés elegir varias)</div>
+            <div class="pills multi" data-field="gustaMueven">
+              <button class="pill" onclick="selMulti(this)">
                 Tome iniciativa</button
-              ><button class="pill" onclick="selPill(this)">Vaya lento</button
-              ><button class="pill" onclick="selPill(this)">
+              ><button class="pill" onclick="selMulti(this)">Vaya lento</button
+              ><button class="pill" onclick="selMulti(this)">
                 Sea demostrativo/a</button
-              ><button class="pill" onclick="selPill(this)">
-                Sea misterioso/a
+              ><button class="pill" onclick="selMulti(this)">
+                Sea misterioso/a</button
+              ><button class="pill" onclick="selMulti(this)">
+                Tenga sentido del humor</button
+              ><button class="pill" onclick="selMulti(this)">
+                Sea independiente</button
+              ><button class="pill" onclick="selMulti(this)">
+                Escuche de verdad
               </button>
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Te atrae más alguien...</div>
-            <div class="pills" data-field="atraeMas">
-              <button class="pill" onclick="selPill(this)">Seguro/a</button
-              ><button class="pill" onclick="selPill(this)">Sensible</button
-              ><button class="pill" onclick="selPill(this)">Gracioso/a</button
-              ><button class="pill" onclick="selPill(this)">Inteligente</button
-              ><button class="pill" onclick="selPill(this)">Creativo/a</button
-              ><button class="pill" onclick="selPill(this)">Ambicioso/a</button>
+            <div class="ql">¿Te atrae más alguien... (podés elegir varias)</div>
+            <div class="pills multi" data-field="atraeMas">
+              <button class="pill" onclick="selMulti(this)">Seguro/a</button
+              ><button class="pill" onclick="selMulti(this)">Sensible</button
+              ><button class="pill" onclick="selMulti(this)">Gracioso/a</button
+              ><button class="pill" onclick="selMulti(this)">Inteligente</button
+              ><button class="pill" onclick="selMulti(this)">Creativo/a</button
+              ><button class="pill" onclick="selMulti(this)">Ambicioso/a</button>
             </div>
           </div>
         </div>
@@ -2724,27 +2713,30 @@
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Qué color de pelo te atrae más?</div>
-            <div class="pills" data-field="colorPelo">
-              <button class="pill" onclick="selPill(this)">Negro</button
-              ><button class="pill" onclick="selPill(this)">Castaño</button
-              ><button class="pill" onclick="selPill(this)">Rubio</button
-              ><button class="pill" onclick="selPill(this)">Pelirrojo</button
-              ><button class="pill" onclick="selPill(this)">Me da igual</button>
+            <div class="ql">
+              ¿Qué color de pelo te atrae más? (podés elegir varios)
+            </div>
+            <div class="pills multi" data-field="colorPelo">
+              <button class="pill" onclick="selMulti(this)">Negro</button
+              ><button class="pill" onclick="selMulti(this)">Castaño</button
+              ><button class="pill" onclick="selMulti(this)">Rubio</button
+              ><button class="pill" onclick="selMulti(this)">Pelirrojo</button
+              ><button class="pill" onclick="selMulti(this)">Me da igual</button>
             </div>
           </div>
           <div class="q prem-only">
             <div class="ql">
-              ¿Qué estilo de pelo te gusta? <span class="ptag">★ Premium</span>
+              ¿Qué estilo de pelo te gusta? (podés elegir varios)
+              <span class="ptag">★ Premium</span>
             </div>
-            <div class="pills" data-field="estiloPelo">
-              <button class="pill" onclick="selPill(this)">Corto</button
-              ><button class="pill" onclick="selPill(this)">Largo</button
-              ><button class="pill" onclick="selPill(this)">Ondulado</button
-              ><button class="pill" onclick="selPill(this)">Lacio</button
-              ><button class="pill" onclick="selPill(this)">Despeinado</button
-              ><button class="pill" onclick="selPill(this)">Prolijo</button
-              ><button class="pill" onclick="selPill(this)">Me da igual</button>
+            <div class="pills multi" data-field="estiloPelo">
+              <button class="pill" onclick="selMulti(this)">Corto</button
+              ><button class="pill" onclick="selMulti(this)">Largo</button
+              ><button class="pill" onclick="selMulti(this)">Ondulado</button
+              ><button class="pill" onclick="selMulti(this)">Lacio</button
+              ><button class="pill" onclick="selMulti(this)">Despeinado</button
+              ><button class="pill" onclick="selMulti(this)">Prolijo</button
+              ><button class="pill" onclick="selMulti(this)">Me da igual</button>
             </div>
           </div>
           <div class="q">
@@ -3070,22 +3062,22 @@
 
       /* ─── FLAGS ─── */
       const FLAGS = [
-        "Te escribe primero todos los días",
-        "Te dice «Te extraño» a la semana de conocerse",
-        "Te cuenta toda su vida en la primera cita",
-        "Te manda 5 audios seguidos",
-        "Te presenta a sus amigos después de dos citas",
-        "Te pone un apodo cariñoso al toque",
-        "Tarda en responder",
-        "No postea nada de la relación",
-        "Tiene opiniones fuertes en todo",
-        "Te deja ganar siempre",
-        "Es espontáneo/a",
-        "Vive el presente, no planea nada",
-        "Es adicto/a al trabajo o estudio",
-        "Llora en las películas",
-        "Sale de fiesta todos los fines de semana",
-        "No usa mucho el teléfono",
+        "Te escribe todos los días sin que se lo pidas",
+        "Se pone celoso/a si salís con amigos/as",
+        "Pregunta «¿cómo te sentís?» todo el tiempo",
+        "Le cuesta preguntar cómo estás si no se lo decís vos",
+        "Usa el chiste para todo, hasta en los momentos serios",
+        "Se toma todo muy en serio, casi no bromea",
+        "Se prende con cualquier plan random de último momento",
+        "Prefiere tener todo planeado con anticipación",
+        "Llora o se emociona fácil con pelis o canciones",
+        "Es difícil saber qué le pasa por dentro",
+        "Prefiere un plan tranquilo en casa antes que salir de joda",
+        "Necesita hablar las cosas con alguien para procesarlas",
+        "Prefiere resolver todo solo/a antes que pedir ayuda",
+        "Prioriza el estudio o el trabajo por encima de casi todo",
+        "Le cuesta bajar los brazos en una discusión, aunque tenga razón",
+        "Prefiere evitar el conflicto antes que discutir",
       ];
       let flagIdx = 0,
         flagVotes = {};
@@ -3792,8 +3784,16 @@
             .slice(0, 3)
             .map((r) => resolverGenero(r, genero))
             .join(", ") || resolverGenero("auténtico/a", genero);
-        const vibe = e6.vibeAtrae || "especial";
-        const plan = e2.planIdeal || "improvisar y ver qué surge";
+        // vibeAtrae/conexionPrimero pasaron a ser multi-select -- acá solo
+        // se usa uno para armar la plantilla de respaldo (el resumen real
+        // lo escribe la IA con todas las respuestas), así que alcanza con
+        // el primero que haya elegido.
+        const vibe = (Array.isArray(e6.vibeAtrae) ? e6.vibeAtrae[0] : e6.vibeAtrae) || "especial";
+        // planIdeal también pasó a multi-select -- el primero alcanza para
+        // esta plantilla de respaldo.
+        const plan =
+          (Array.isArray(e2.planIdeal) ? e2.planIdeal[0] : e2.planIdeal) ||
+          "improvisar y ver qué surge";
         const artista = e2.artista || "la música";
         const estetica = e2.estetica || "";
 
@@ -3829,8 +3829,11 @@
               .map((t) => resolverGenero(t, genero)),
           );
         if (estetica) traits.push(estetica);
-        if (e6.conexionPrimero)
-          traits.push("Conexión " + e6.conexionPrimero.toLowerCase());
+        const conexionPrimero1 = Array.isArray(e6.conexionPrimero)
+          ? e6.conexionPrimero[0]
+          : e6.conexionPrimero;
+        if (conexionPrimero1)
+          traits.push("Conexión " + conexionPrimero1.toLowerCase());
         function escHtml(s) {
           return String(s)
             .replace(/&/g, "&amp;")
@@ -3866,7 +3869,7 @@
         ["etapa3", "cuestaMostrar"],
         ["etapa3", "malinterp"],
         ["etapa3", "ansiedadSeg"],
-        ["etapa4", "pelea"],
+        ["etapa4", "reaccionConflicto"],
         ["etapa4", "cuandoMolesta"],
         ["etapa6", "psi1"],
         ["etapa6", "perdonar"],

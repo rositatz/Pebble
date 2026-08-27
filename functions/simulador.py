@@ -10,7 +10,7 @@ import datetime
 import difflib
 
 from gemelo_perfil import construir_perfil_gemelo
-from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad
+from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad, _diferencias_personalidad
 
 # El cliente de OpenAI se crea recién al usarlo (ver _client()), no al importar
 # el módulo: así se puede armar/comparar perfiles y correr los tests sin tener
@@ -556,13 +556,29 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
 
     valores = perfil.get("valores", {})
 
+    # Postura concreta sobre hijos (ver gemelo_perfil._construir_hijos) --
+    # sin esto, lo único que había era el número abstracto de "familia" de
+    # abajo, insuficiente para que la simulación tocara el tema sin
+    # inventar una respuesta. "Ya tengo" y "Sí"/"No" son las únicas
+    # respuestas reales del onboarding, se muestran tal cual.
+    hijos = perfil.get("hijos") or {}
+    postura_hijos = hijos.get("postura_hijos", "")
+    _ETIQUETAS_HIJOS = {"Sí": "Sí, quiere tener hijos", "No": "No quiere tener hijos", "Ya tengo": "Ya tiene hijos"}
+    hijos_linea = f"\n    - ¿Quiere tener hijos?: {_ETIQUETAS_HIJOS[postura_hijos]}" if postura_hijos in _ETIQUETAS_HIJOS else ""
+
+    # Postura cruda de "¿Cómo te imaginás en 5 años?" (ver gemelo_perfil.py)
+    # -- mismo criterio que hijos_linea arriba: sin el dato concreto, la
+    # simulación no puede tocar plan de vida a futuro sin inventar.
+    plan_futuro = perfil.get("plan_futuro", "")
+    plan_futuro_linea = f"\n    - ¿Cómo se imagina en 5 años?: {plan_futuro}" if plan_futuro else ""
+
     valores_prompt = f"""
     VALORES PERSONALES:
 
     - Importancia de familia: {valores.get('familia', 0.5)}
     - Ambición profesional: {valores.get('ambicion', 0.5)}
     - Necesidad de estabilidad: {valores.get('estabilidad', 0.5)}
-    - Gusto por aventura: {valores.get('aventura', 0.5)}
+    - Gusto por aventura: {valores.get('aventura', 0.5)}{hijos_linea}{plan_futuro_linea}
     """
 
     # =====================================================
@@ -1541,7 +1557,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     # rápido (menos onda -> menos ganas de seguir escribiendo), resultando
     # en el problema inverso al buscado: charlas MÁS cortas justo donde se
     # necesita más lugar para que se note por qué no encajan.
-    promedio_compat_previo, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+    promedio_compat_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
     if promedio_compat_previo >= 0.70:
         min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR
     elif promedio_compat_previo >= UMBRAL_MATCH:
@@ -1747,16 +1763,32 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             break  # se detectó un bucle repitiendo lo mismo -- cortar acá en vez de seguir
 
     analisis = analizar_conversacion(historial_chat)
-    promedio, similitud, pref_a_b, pref_b_a, score_conversacional = calcular_compatibilidad(perfil1, perfil2, analisis)
+    promedio, similitud, pref_a_b, pref_b_a, score_conversacional, desglose = calcular_compatibilidad(perfil1, perfil2, analisis)
     score = {
         "compatibilidad_total": promedio,
         "similitud": similitud,
         "pref_a_b": pref_a_b,
         "pref_b_a": pref_b_a,
         "score_conversacional": score_conversacional,
+        "score_psicologico": desglose["psicologico"],
+        "score_valores": desglose["valores"],
+        "score_intereses": desglose["intereses"],
+        "score_creencias": desglose["creencias"],
+        "score_comunicacion": desglose["comunicacion"],
     }
 
-    return historial_chat, analisis, score
+    # Diferencias REALES de personalidad/valores entre los dos (mismas
+    # semillas de fricción que ya usa instruccion_nivel_compatibilidad para
+    # la charla) -- se guardan como texto para que matches.html pueda
+    # mostrarle al usuario POR QUÉ no son tan compatibles en personalidad,
+    # no solo un número. Antes esto solo vivía puertas adentro del prompt de
+    # la simulación, nunca llegaba a la interfaz.
+    diferencias_personalidad = (
+        _diferencias_personalidad(perfil1, perfil2, perfil2.get("nombre", "la otra persona"), top_n=3)
+        + _diferencias_personalidad(perfil2, perfil1, perfil1.get("nombre", "la otra persona"), top_n=3)
+    )
+
+    return historial_chat, analisis, score, diferencias_personalidad
 
 
 # =====================================================
@@ -1780,7 +1812,7 @@ def _par_id(uid1, uid2):
     return f"{str(uid1)}_{str(uid2)}"if str(uid1) < str(uid2) else f"{str(uid2)}_{str(uid1)}"
 
 
-def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral=UMBRAL_MATCH):
+def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral=UMBRAL_MATCH, diferencias_personalidad=None):
 
     escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
@@ -1798,6 +1830,11 @@ def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat,
         "score": score,
         "umbral_usado": umbral,
         "supera_umbral": score["compatibilidad_total"] >= umbral,
+        # Frases concretas de fricción real de personalidad/valores (ver
+        # compatibilidad._diferencias_personalidad) -- matches.html las
+        # muestra tal cual para explicar POR QUÉ el score es el que es, en
+        # vez de dejar el número solo sin contexto.
+        "diferencias_personalidad": diferencias_personalidad or [],
     }
 
 
@@ -1816,10 +1853,11 @@ def simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=3, escenario=0, umb
     registro y decide dónde persistirlo -- local por default, pero se le puede
     pasar cualquier función que escriba a Firestore u otro lado."""
 
-    historial_chat, analisis, score = simular_cita(uid1, perfil1, uid2, perfil2, turnos=turnos, escenario=escenario)
+    historial_chat, analisis, score, diferencias_personalidad = simular_cita(uid1, perfil1, uid2, perfil2, turnos=turnos, escenario=escenario)
 
     registro = registro_simulacion(
-        uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral
+        uid1, perfil1, uid2, perfil2, escenario, historial_chat, analisis, score, umbral,
+        diferencias_personalidad=diferencias_personalidad,
     )
 
     if guardar is not None:
@@ -1851,7 +1889,7 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=5, umbral=UMB
     registros para que quien llame (main.py) decida cómo guardarlos en
     Firestore."""
 
-    promedio, s, pref_a_b, pref_b_a, score_conversacional = calcular_compatibilidad(perfil1, perfil2)
+    promedio, s, pref_a_b, pref_b_a, score_conversacional, desglose = calcular_compatibilidad(perfil1, perfil2)
     supera = promedio >= umbral
 
     simulaciones = []
@@ -1873,6 +1911,11 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=5, umbral=UMB
         "pref_a_b": pref_a_b,
         "pref_b_a": pref_b_a,
         "score_conversacional":score_conversacional,
+        "score_psicologico": desglose["psicologico"],
+        "score_valores": desglose["valores"],
+        "score_intereses": desglose["intereses"],
+        "score_creencias": desglose["creencias"],
+        "score_comunicacion": desglose["comunicacion"],
         "supera_umbral": supera,
         "simulaciones": simulaciones,
     }
