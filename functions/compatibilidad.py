@@ -53,7 +53,7 @@ def analizar_conversacion(historial_chat):
     """
 
     response = client().chat.completions.create(
-        model="gpt-5-mini",
+        model="gpt-5.6-terra",
         messages=[
             {
                 "role": "system",
@@ -114,7 +114,7 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
     """
 
     response = client().chat.completions.create(
-        model="gpt-5-mini",
+        model="gpt-5.6-terra",
         messages=[
             {
                 "role": "system",
@@ -130,6 +130,62 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
         "estilo": (resultado.get("estilo") or "").strip(),
         "intereses_nuevos": [str(i).strip() for i in (resultado.get("intereses_nuevos") or []) if str(i).strip()],
     }
+
+
+def extraer_correcciones_gemelo(mensajes_a_gemelo):
+    """Analiza mensajes que la persona le escribió a SU PROPIO gemelo (chat
+    personal, gemelo.html -- NUNCA charlas con matches) y detecta
+    instrucciones EXPLÍCITAS que le dio sobre cómo comportarse o hablar (ej:
+    "dejá de decir posta", "no me llames Rosita, decime Rosi", "hablame más
+    corto"). Sin esto, una corrección solo vivía en el historial de ESA
+    conversación puntual (los últimos mensajes que se mandan en cada llamada,
+    ver chatear_con_gemelo) -- se perdía apenas se salía de esa ventana, o al
+    volver otro día, y el gemelo repetía justo lo que se le había pedido que
+    dejara de hacer, sin que fuera realmente un problema de "no aprender"
+    sino de no tener dónde guardar la corrección de forma durable. Nunca
+    inventa una corrección que no esté dicha tal cual."""
+
+    if not mensajes_a_gemelo:
+        return []
+
+    texto_mensajes = "\n".join(f"- {m}" for m in mensajes_a_gemelo)
+
+    prompt = f"""
+    Estos son mensajes reales que una persona le escribió a su propio
+    asistente de IA (su "gemelo digital") dentro de una app de citas.
+
+    Buscá ÚNICAMENTE instrucciones EXPLÍCITAS que la persona le dio al
+    gemelo sobre cómo comportarse, hablar o dirigirse a ella (ej: "dejá de
+    decir X", "no me llames así", "hablame más corto", "no seas tan
+    formal"). NO cuentan quejas generales, preguntas, ni comentarios sobre
+    otras personas -- solo pedidos directos dirigidos AL GEMELO sobre su
+    propio comportamiento.
+
+    Devolvé únicamente JSON válido:
+    {{
+      "correcciones": ["lista de instrucciones tal cual se pueden aplicar,
+        en imperativo corto (ej: 'no decir posta', 'llamarla Rosi, no
+        Rosita') -- lista vacía si no hay ninguna, nunca inventes"]
+    }}
+
+    Mensajes:
+    {texto_mensajes}
+    """
+
+    response = client().chat.completions.create(
+        model="gpt-5.6-terra",
+        messages=[
+            {
+                "role": "system",
+                "content": "Detectás instrucciones explícitas que alguien le dio a su asistente de IA. Nunca inventás una que no esté dicha tal cual."
+            },
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+
+    resultado = json.loads(response.choices[0].message.content)
+    return [str(c).strip() for c in (resultado.get("correcciones") or []) if str(c).strip()]
 
 
 def actualizar_memoria(memoria, analisis):
@@ -759,6 +815,53 @@ def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, 
     return [texto for _, texto in diffs[:top_n]]
 
 
+# Temas CONCRETOS que se pueden pedir sin inventar nada, porque están
+# anclados a preguntas reales del onboarding (ver gemelo_perfil.py) -- cada
+# uno solo se agrega si al menos uno de los dos perfiles tiene el dato real
+# que lo respalda. Reemplaza dejar que el modelo elija sus propios "temas
+# profundos": antes a veces eran genéricos o directamente no tenían dato
+# real detrás, así que terminaba rellenando con algo inventado.
+def _temas_obligatorios(perfil1, perfil2, top_n=3):
+    """Arma una lista de temas que la charla tiene que tocar sí o sí, en
+    orden de prioridad, filtrando solo los que tienen datos reales de
+    onboarding para al menos uno de los dos perfiles."""
+    disponibles = []
+
+    if perfil1.get("conflictos") or perfil2.get("conflictos"):
+        disponibles.append(
+            "Cómo reaccionan cuando algo les molesta o están en desacuerdo "
+            "de verdad (cada uno ya tiene declarado cómo maneja el "
+            "conflicto en su perfil -- que se note tal cual es esa forma de "
+            "reaccionar, no una genérica)."
+        )
+
+    if perfil1.get("valores") or perfil2.get("valores"):
+        disponibles.append(
+            "Qué buscan a futuro: familia, ambición profesional, "
+            "estabilidad vs. aventura -- prioridades reales de cada uno "
+            "(están en VALORES PERSONALES de cada perfil), no genéricas."
+        )
+
+    cre1, cre2 = perfil1.get("creencias") or {}, perfil2.get("creencias") or {}
+    valores_creencias = list(cre1.values()) + list(cre2.values())
+    if any(v and v not in ("No me importa", "Nada importante") for v in valores_creencias):
+        disponibles.append(
+            "Qué tan importante es para cada uno la política y/o la "
+            "religión en su vida diaria (usen la POSTURA FRENTE A POLÍTICA "
+            "Y RELIGIÓN real de cada perfil, nunca inventen una ideología "
+            "puntual)."
+        )
+
+    if perfil1.get("prioridad_compatibilidad") or perfil2.get("prioridad_compatibilidad"):
+        disponibles.append(
+            "Qué es lo que más necesitan/valoran en una conexión con "
+            "alguien (ya está declarado en cada perfil, en orden de "
+            "prioridad)."
+        )
+
+    return disponibles[:top_n]
+
+
 def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nombre2=None):
     """Texto para inyectar en el prompt de generar_prompt_gemelo/
     contexto_escenario -- sin esto, una charla podía fluir perfecta entre
@@ -802,29 +905,43 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     frío/a. USEN esto quien corresponda -- no lo ignoren para llevarse
     bien porque sí."""
 
+    temas = _temas_obligatorios(perfil1, perfil2)
+    temas_txt = ""
+    if temas:
+        puntos_temas = "\n    ".join(f"- {t}" for t in temas)
+        temas_txt = f"""
+    TEMAS QUE ESTA CHARLA TIENE QUE TOCAR SÍ O SÍ (sacados directo de datos
+    reales del onboarding de los dos -- no los reemplacen por otros
+    inventados, y no hace falta anunciarlos, que salgan con naturalidad en
+    algún punto de la charla):
+    {puntos_temas}"""
+
     return f"""
     COMPATIBILIDAD REAL ENTRE USTEDES DOS (según sus datos reales de
     fondo, no esta charla puntual): {nivel}. Esto NO es algo que tengan
     que mencionar ni actuar de forma literal -- es una guía para qué tan
-    fácil o difícil tiene que fluir la charla. Con compatibilidad baja o
-    media, no es realista que todo encaje perfecto y la conversación
-    fluya sin fricción -- va a haber menos temas en común de los
-    esperados, silencios, desencuentros, cosas que no terminan de
-    conectar, o directamente diferencias de fondo que chocan (no estar
-    siempre de acuerdo). Una charla que fluye demasiado bien pese a esto
-    está mal actuada. NUNCA repitan o parafraseen lo que acaba de decir el
-    otro como si fuera lo mismo que ustedes piensan/sienten/hacen -- eso
-    es el error más grave posible acá, literalmente actuar como si fueran
-    la misma persona cuando NO comparten tanto en los datos reales.
+    fácil o difícil tiene que fluir la charla. NUNCA repitan o parafraseen
+    lo que acaba de decir el otro como si fuera lo mismo que ustedes
+    piensan/sienten/hacen -- eso es el error más grave posible acá,
+    literalmente actuar como si fueran la misma persona cuando NO comparten
+    tanto en los datos reales.
     {"" if nivel.startswith("ALTA") else '''
-    EXIGENCIA CONCRETA, no opcional: en algún punto de esta charla TIENE
-    que pasar al menos UN desacuerdo real y explícito -- uno de los dos
-    dice algo con lo que el otro NO está de acuerdo, lo dice derecho (no
-    lo suaviza ni lo disimula), y eso genera una fricción visible (incomodidad,
-    un pique, un silencio raro, o directamente una discusión corta) antes de
-    que la charla siga. No alcanza con "menos onda" o silencios genéricos --
-    tiene que verse un choque puntual y real, no ambiente tibio. Si para
-    cuando termine la charla no hubo ningún momento así, la simulación no
-    reflejó la compatibilidad real que tienen.'''}
+    OJO, ESTO ES LO MÁS IMPORTANTE DE ESTA SECCIÓN: compatibilidad baja o
+    media NO SIGNIFICA una charla más corta ni con menos temas -- la
+    charla dura lo mismo y toca la misma cantidad de temas que cualquier
+    otra. La diferencia se nota en CÓMO SE SIENTEN esos temas, nunca en
+    cuántos hay ni cuánto dura la charla. Formas correctas de mostrar
+    compatibilidad baja/media (usen una o varias, no todas de una):
+    desacuerdos reales donde uno dice derecho que no está de acuerdo,
+    algo parecido a una pelea o discusión corta, poca confianza para
+    abrirse del todo (respuestas más cortas o evasivas en temas
+    personales), o un ambiente medio incómodo / con poca onda en general
+    (menos entusiasmo, menos ganas de seguir profundizando, silencios raros).
+    Lo que NO sirve para mostrar esto: cortar la charla antes, evitar
+    cambiar de tema, o simplemente hablar menos en general -- eso no se
+    lee como incompatibilidad, se lee como una charla mal actuada. EXIGENCIA
+    CONCRETA, no opcional: en algún punto de esta charla tiene que pasar al
+    menos UNA de las formas de arriba de manera clara y notoria, no sutil.'''}
     {friccion_txt}
+    {temas_txt}
     """

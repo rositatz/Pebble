@@ -438,6 +438,9 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
       sí, este mensaje cambia de tema.
     - ¿Ya quedó claro si un plan/propuesta se acepta o no? Si sí, no sigo
       re-confirmándolo -- avanzo a otra cosa.
+    - ¿Ya tocamos los TEMAS QUE ESTA CHARLA TIENE QUE TOCAR SÍ O SÍ (si hay
+      alguno arriba)? Si todavía no, priorizo llevar la charla para ese
+      lado en vez de quedarme en algo secundario.
     - {linea_cierre_checklist}
     - La compatibilidad real de fondo con esta persona está indicada más
       arriba (si aplica) -- mi mensaje tiene que sentirse acorde a eso, no
@@ -546,6 +549,30 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
         conflictos_prompt = "\n    CÓMO MANEJA LOS CONFLICTOS:\n"
         for descripcion in conflictos.values():
             conflictos_prompt += f"    - {descripcion}\n"
+
+    # Antes esto se guardaba en el perfil (perfil.creencias, ver
+    # gemelo_perfil._construir_creencias) y compatibilidad.
+    # compatibilidad_creencias ya lo usaba para el % de match, pero NUNCA se
+    # le pasaba al modelo acá -- si en la charla salía política o religión,
+    # no tenía ningún dato real para responder y terminaba inventando una
+    # postura o esquivando el tema por completo.
+    creencias_prompt = ""
+    creencias = perfil.get("creencias") or {}
+    if creencias:
+        etiquetas_creencias = {
+            "politicaImportancia": "Qué tan importante le resulta la política",
+            "politicaHablar": "Qué tan dispuesto/a está a hablar de política",
+            "religionImportancia": "Qué tan importante le resulta la religión",
+            "religionCompartir": "Qué tan dispuesto/a está a compartir/hablar de su religión",
+        }
+        creencias_prompt = (
+            "\n    POSTURA FRENTE A POLÍTICA Y RELIGIÓN (dato real del "
+            "onboarding -- si sale el tema, usá ESTO; nunca inventes una "
+            "ideología, partido o postura puntual que no esté acá, alcanza "
+            "con lo que dice cada línea):\n"
+        )
+        for campo, valor in creencias.items():
+            creencias_prompt += f"    - {etiquetas_creencias.get(campo, campo)}: {valor}\n"
 
     notas_prompt = ""
     notas = perfil.get("notas_personales", [])
@@ -711,6 +738,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
 
     {valores_prompt}
     {conflictos_prompt}
+    {creencias_prompt}
     {flags_prompt}
     {bio_prompt}
     {notas_prompt}
@@ -1090,6 +1118,24 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     if _instruccion_genero(perfil):
         identidad_txt += f"    - {_instruccion_genero(perfil)}\n"
 
+    # Correcciones explícitas que {nombre} ya te dio en charlas anteriores
+    # (ver main.actualizar_aprendizaje_gemelo / compatibilidad.
+    # extraer_correcciones_gemelo) -- sin esto, un pedido tipo "dejá de decir
+    # X" solo sobrevivía mientras siguiera dentro de los últimos mensajes de
+    # ESA conversación puntual; en una charla nueva (u otro día) se perdía
+    # del todo y el gemelo repetía justo lo que se le había pedido que
+    # dejara de hacer.
+    correcciones_txt = ""
+    if perfil.get("correcciones_gemelo"):
+        puntos_correccion = "\n".join(f"    - {c}" for c in perfil["correcciones_gemelo"])
+        correcciones_txt = f"""
+    CORRECCIONES QUE {nombre.upper()} YA TE PIDIÓ ANTES (son órdenes
+    directas sobre CÓMO TENÉS QUE COMPORTARTE VOS, el gemelo -- no datos
+    sobre {nombre}. Respetalas SIEMPRE, en cualquier charla, no solo en la
+    que se dijeron):
+{puntos_correccion}
+"""
+
     sin_match = max(0, total_simulaciones - len(matches_resumen))
     sin_match_txt = "1 simulación" if sin_match == 1 else f"{sin_match} simulaciones"
     total_txt = "1 simulación" if total_simulaciones == 1 else f"{total_simulaciones} simulaciones"
@@ -1133,6 +1179,7 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     {personalidad_txt}
     {identidad_txt}
     {matches_txt}
+    {correcciones_txt}
 
     REGLAS:
     0. Si {nombre} te pregunta "cómo funcionan las simulaciones" o "cómo
@@ -1354,7 +1401,7 @@ def generar_resumen_gemelo(perfil):
     """
 
     response = client().chat.completions.create(
-        model="gpt-5-mini",
+        model="gpt-5.6-terra",
         messages=[{"role": "user", "content": prompt}],
         temperature=1.0,
     )
@@ -1410,6 +1457,21 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         nombre1=perfil1.get("nombre", "ALPHA"), nombre2=perfil2.get("nombre", "BETA"),
     )
 
+    # Piso de turnos antes de poder cerrar, pero MÁS ALTO cuanto más baja es
+    # la compatibilidad -- no es solo una instrucción de prompt (que ya está
+    # arriba, en instruccion_nivel_compatibilidad): esto es un piso real en
+    # código. Sin esto, una compatibilidad baja empujaba al modelo a cerrar
+    # rápido (menos onda -> menos ganas de seguir escribiendo), resultando
+    # en el problema inverso al buscado: charlas MÁS cortas justo donde se
+    # necesita más lugar para que se note por qué no encajan.
+    promedio_compat_previo, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+    if promedio_compat_previo >= 0.70:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR
+    elif promedio_compat_previo >= UMBRAL_MATCH:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 2
+    else:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 4
+
     contexto_escenario = f"""
     ESCENARIO:
 
@@ -1462,7 +1524,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     )
 
     response_inicio = client().chat.completions.create(
-        model="gpt-5-mini",
+        model="gpt-5.6-terra",
         messages=[
             {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
         ]
@@ -1521,7 +1583,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         response_2 = client().chat.completions.create(
 
-            model="gpt-5-mini",
+            model="gpt-5.6-terra",
 
             messages=[
 
@@ -1556,7 +1618,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             vista_2.append({"role": "assistant", "content": parte})
             vista_1.append({"role": "user", "content": parte})
 
-        if cierre_2 and turno_idx >= _MIN_TURNOS_ANTES_DE_CERRAR:
+        if cierre_2 and turno_idx >= min_turnos_efectivo:
             break  # perfil2 sintió que la charla ya cerró -- no le pedimos más a perfil1
         if repetitivo_2:
             break  # se detectó un bucle repitiendo lo mismo -- cortar acá en vez de seguir
@@ -1567,7 +1629,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         response_1 = client().chat.completions.create(
 
-            model="gpt-5-mini",
+            model="gpt-5.6-terra",
 
             messages=[
 
@@ -1602,7 +1664,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             vista_1.append({"role": "assistant", "content": parte})
             vista_2.append({"role": "user", "content": parte})
 
-        if cierre_1 and turno_idx >= _MIN_TURNOS_ANTES_DE_CERRAR:
+        if cierre_1 and turno_idx >= min_turnos_efectivo:
             break  # perfil1 sintió que la charla ya cerró -- no seguimos a otra vuelta
         if repetitivo_1:
             break  # se detectó un bucle repitiendo lo mismo -- cortar acá en vez de seguir

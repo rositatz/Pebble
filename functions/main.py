@@ -11,7 +11,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
-from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats, instruccion_nivel_compatibilidad
+from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats, extraer_correcciones_gemelo, instruccion_nivel_compatibilidad
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -513,7 +513,11 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
       - historial (opcional): los últimos mensajes de la conversación, en
         formato [{"role": "user"|"assistant", "content": str}, ...], para
         que el gemelo tenga contexto de lo que ya se habló. Se recortan a
-        los últimos 8 acá mismo por las dudas.
+        los últimos 20 acá mismo por las dudas (antes eran 8: una corrección
+        del tipo "dejá de decir X" se salía de ese límite después de un par
+        de idas y vueltas más, y el gemelo "se olvidaba" de respetarla
+        dentro de la MISMA conversación, no por no aprender sino porque
+        directamente ya no la tenía en el contexto que se le mandaba).
     """
 
     if request.auth is None:
@@ -581,7 +585,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
     )
 
     mensajes = [{"role": "system", "content": system_prompt}]
-    for h in historial[-8:]:
+    for h in historial[-20:]:
         if not isinstance(h, dict):
             continue
         role = h.get("role")
@@ -592,7 +596,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
 
     try:
         response = motor.client().chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-5.6-terra",
             messages=mensajes,
         )
     except Exception as e:
@@ -702,7 +706,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
         )
 
     mensajes = [{"role": "system", "content": system_prompt}]
-    for h in historial[-8:]:
+    for h in historial[-20:]:
         if not isinstance(h, dict):
             continue
         role = h.get("role")
@@ -713,7 +717,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
 
     try:
         response = motor.client().chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-5.6-terra",
             messages=mensajes,
         )
     except Exception as e:
@@ -1155,6 +1159,27 @@ def _mensajes_propios_recientes(db, uid, limite=VENTANA_MENSAJES_APRENDIZAJE):
     return mensajes[-limite:]
 
 
+def _mensajes_al_propio_gemelo(db, uid, limite=VENTANA_MENSAJES_APRENDIZAJE):
+    """Igual que la primera parte de _mensajes_propios_recientes, pero SOLO
+    el chat con el propio gemelo (gemelo.html) -- a propósito no mezcla los
+    mensajes reales con matches acá, porque una corrección de comportamiento
+    ("dejá de decir X") solo tiene sentido si se la dijo AL GEMELO, no a otra
+    persona real en un chat de match."""
+
+    mensajes = []
+    try:
+        snap = db.collection("usuarios").document(uid).collection("chats").document("gemelo_propio").get()
+        if snap.exists:
+            log = snap.to_dict().get("log") or []
+            for entrada in log:
+                if isinstance(entrada, dict) and entrada.get("tipo") == "user" and entrada.get("text"):
+                    mensajes.append(entrada["text"])
+    except Exception as e:
+        print(f"_mensajes_al_propio_gemelo: error leyendo chat con el gemelo de {uid}: {e}")
+
+    return mensajes[-limite:]
+
+
 @scheduler_fn.on_schedule(
     schedule="0 4 * * *",
     timezone="America/Argentina/Buenos_Aires",
@@ -1209,6 +1234,21 @@ def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
                 cambios["estilo_aprendido"] = resultado["estilo"]
             if intereses_nuevos:
                 cambios["intereses"] = intereses_actuales + intereses_nuevos
+
+            # Correcciones que la persona le dio a SU PROPIO gemelo sobre
+            # cómo comportarse (ver extraer_correcciones_gemelo) -- se
+            # guardan aparte de estilo_aprendido/intereses porque son
+            # instrucciones directas, no descripciones. Se acumulan (dedupe
+            # sin importar mayúsculas) y se recortan a las últimas 15 para
+            # que la lista no crezca sin límite.
+            correcciones_actuales = perfil.get("correcciones_gemelo") or []
+            mensajes_gemelo = _mensajes_al_propio_gemelo(db, uid)
+            if mensajes_gemelo:
+                correcciones_nuevas = extraer_correcciones_gemelo(mensajes_gemelo)
+                vistas_corr = {c.casefold() for c in correcciones_actuales}
+                a_agregar = [c for c in correcciones_nuevas if c.casefold() not in vistas_corr]
+                if a_agregar:
+                    cambios["correcciones_gemelo"] = (correcciones_actuales + a_agregar)[-15:]
 
             if cambios:
                 perfil_ref.set(cambios, merge=True)

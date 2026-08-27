@@ -1808,6 +1808,7 @@
         ></textarea>
         <button
           class="panel-send-btn"
+          id="panelSendBtn"
           onclick="sendPanelMsg()"
           aria-label="Enviar"
         >
@@ -2140,7 +2141,21 @@
       // Envía el mensaje del usuario, lo guarda en memoria y en Firestore
       // Si es el primer mensaje con esa persona, inyecta el ítem en la lista de conversaciones
       // Después de 300ms muestra typing y genera una respuesta automática
+      // Mientras se espera la respuesta del gemelo de un match (modo
+      // "gemelo"), se bloquea mandar otro mensaje -- mismo problema que en
+      // gemelo.html: mandar dos mensajes seguidos rápido hacía que el
+      // gemelo "pensara" para los dos y el orden de las respuestas quedara
+      // mezclado. El modo "real" (chat humano-humano, sin IA de por medio)
+      // no necesita este bloqueo.
+      let esperandoRespuestaGemeloMatch = false;
+      function _bloquearEnvioPanel(bloquear) {
+        esperandoRespuestaGemeloMatch = bloquear;
+        const btn = document.getElementById("panelSendBtn");
+        if (btn) btn.disabled = bloquear;
+      }
+
       function sendPanelMsg() {
+        if (esperandoRespuestaGemeloMatch) return;
         const input = document.getElementById("panelInput");
         const text = input.value.trim();
         if (!text || !curPerson) return;
@@ -2188,6 +2203,7 @@
           window._db_saveChat(persona, mode, [...md.msgs]);
         }
 
+        _bloquearEnvioPanel(true);
         setTimeout(() => {
           addTyping();
           (async () => {
@@ -2199,7 +2215,7 @@
             try {
               const historial = md.msgs
                 .slice(0, -1)
-                .slice(-8)
+                .slice(-20)
                 .map((m) => ({
                   role: m.from === "me" ? "user" : "assistant",
                   content: m.text,
@@ -2236,6 +2252,7 @@
             if (typeof window._db_saveChat === "function") {
               window._db_saveChat(persona, mode, [...md.msgs]);
             }
+            _bloquearEnvioPanel(false);
           })();
         }, 300);
       }

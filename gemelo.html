@@ -1428,6 +1428,18 @@
       let replayingChat = false;
       let _saveChatTimer = null;
 
+      // Mientras el gemelo está pensando una respuesta, no se puede mandar
+      // otro mensaje -- antes, si mandabas dos mensajes seguidos rápido, el
+      // gemelo terminaba "pensando" para los dos a la vez y el orden de las
+      // respuestas quedaba mezclado/raro. Con esto, sendMessage() se ignora
+      // por completo hasta que la respuesta anterior (o su error) llegó.
+      let esperandoRespuestaGemelo = false;
+      function _bloquearEnvio(bloquear) {
+        esperandoRespuestaGemelo = bloquear;
+        const btn = document.getElementById("sendBtn");
+        if (btn) btn.disabled = bloquear;
+      }
+
       // Matches reales (id + nombre) para el picker de "Consejo para un
       // match" -- lo llena el <script type="module"> de más abajo. "var" (no
       // "let") a propósito: así queda expuesto en window y ese otro script
@@ -1752,6 +1764,7 @@
             addTwinMsg(
               "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
             );
+            _bloquearEnvio(false);
             return;
           }
           window
@@ -1781,17 +1794,20 @@
               addTwinMsg(
                 `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
               );
-            });
+            })
+            .finally(() => _bloquearEnvio(false));
         }, 300);
       }
 
       function sendMessage() {
+        if (esperandoRespuestaGemelo) return; // el gemelo todavía está respondiendo el mensaje anterior
         const text = inputEl.value.trim();
         if (!text) return; // no hace nada si el input está vacío
         inputEl.value = "";
         autoResize(inputEl);
         addUserMsg(text);
         closePlusMenu();
+        _bloquearEnvio(true);
 
         const matchPedido = detectarPedidoDeSimulacion(text);
         if (matchPedido) {
@@ -1807,12 +1823,13 @@
               addTwinMsg(
                 "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
               );
+              _bloquearEnvio(false);
             }, 400);
             return;
           }
           const historial = chatLog
             .filter((e) => e.tipo === "user" || e.tipo === "twin")
-            .slice(-8)
+            .slice(-20)
             .map((e) => ({
               role: e.tipo === "user" ? "user" : "assistant",
               content: e.text,
@@ -1827,7 +1844,8 @@
               removeTyping();
               console.error("Error en chatear_con_gemelo:", err);
               addTwinMsg(`No pude responder: ${mensajeErrorGemelo(err)}`);
-            });
+            })
+            .finally(() => _bloquearEnvio(false));
         }, 300);
       }
 
