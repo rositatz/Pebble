@@ -27,7 +27,7 @@ def client():
 
 
 # Un solo lugar para no tener que cambiarlo en cada función por separado.
-UMBRAL_MATCH = 0.50
+UMBRAL_MATCH = 0.40
 
 escenarios_db = [
 
