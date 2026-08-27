@@ -445,6 +445,28 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+        position: relative;
+      }
+      /* "VS" en el medio de cada par -- sin esto no quedaba claro que las
+         dos opciones son alternativas (elegís UNA de las dos), se leían
+         como si pudiera marcarse más de una por renglón. */
+      .binary::after {
+        content: "VS";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg);
+        color: var(--text-m);
+        font-family: var(--fb);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 3px 8px;
+        border-radius: var(--r-full);
+        border: 1px solid var(--border);
+        pointer-events: none;
+        z-index: 1;
       }
       .bbin {
         padding: 22px 14px;
