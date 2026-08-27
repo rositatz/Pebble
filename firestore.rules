@@ -89,7 +89,11 @@ service cloud.firestore {
 
       // Para actualizar una conexión ya existente, un usuario de la pareja
       // solo puede tocar los campos de chat -- nunca el score, la pareja, ni
-      // la lista de participantes.
+      // la lista de participantes. "gemelo" queda en la lista solo por los
+      // docs viejos que ya lo tenían (affectedKeys() son las claves que
+      // CAMBIAN en este write, no las que ya existen sin tocarse) -- el chat
+      // con el gemelo de un match ahora vive en el subdoc gemeloPrivado de
+      // abajo, ver por qué en ese match.
       allow update: if request.auth != null &&
         request.auth.uid in resource.data.participantes &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['real', 'gemelo']);
@@ -100,6 +104,19 @@ service cloud.firestore {
         allow read: if request.auth != null &&
           request.auth.uid in get(/databases/$(database)/documents/conexiones/$(parId)).data.participantes;
         allow write: if false;
+      }
+
+      // Chat PRIVADO de un usuario con el gemelo (IA) de la otra persona del
+      // par -- un subdoc por dueño, {uid del dueño} == {ownerUid}. Antes esto
+      // vivía en el campo "gemelo" del doc de arriba, compartido por los dos
+      // participantes -- pero Firestore no puede ocultar un campo puntual
+      // dentro de un doc que ya se puede leer entero, así que si las DOS
+      // cuentas de un match chateaban con el gemelo de la otra, cada una
+      // podía leer (y pisar, porque _db_saveChat reescribía el array entero)
+      // la conversación privada de la otra. Un subdoc propio, con su propia
+      // regla, es la única forma real de que sea privado de verdad.
+      match /gemeloPrivado/{ownerUid} {
+        allow read, write: if request.auth != null && request.auth.uid == ownerUid;
       }
     }
 

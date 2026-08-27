@@ -829,10 +829,19 @@ def _temas_obligatorios(perfil1, perfil2, top_n=3):
 
     if perfil1.get("conflictos") or perfil2.get("conflictos"):
         disponibles.append(
-            "Cómo reaccionan cuando algo les molesta o están en desacuerdo "
-            "de verdad (cada uno ya tiene declarado cómo maneja el "
-            "conflicto en su perfil -- que se note tal cual es esa forma de "
-            "reaccionar, no una genérica)."
+            "Un desacuerdo o conflicto REAL entre ustedes dos -- NO es una "
+            "charla sobre cómo manejan los conflictos en general ni sobre "
+            "su forma de ser, es un choque que pasa AHORA, en esta misma "
+            "charla. Usen las diferencias reales de personalidad/valores de "
+            "más arriba (si hay) como motivo concreto para el desacuerdo, y "
+            "reaccionen cada uno según su propia forma real de manejar el "
+            "conflicto (ver 'CÓMO MANEJA LOS CONFLICTOS' en su propio "
+            "perfil): pueden pelearse, tratarse mal, subir el tono, "
+            "ponerse a la defensiva o cerrarse -- lo que corresponda según "
+            "su personalidad y la compatibilidad real entre ustedes, sin "
+            "suavizarlo. Lo que importa es que se vea CÓMO LO ENFRENTAN Y "
+            "LO RESUELVEN (o si no lo resuelven), no una descripción de "
+            "cómo son."
         )
 
     if perfil1.get("valores") or perfil2.get("valores"):
@@ -859,7 +868,25 @@ def _temas_obligatorios(perfil1, perfil2, top_n=3):
             "prioridad)."
         )
 
-    return disponibles[:top_n]
+    resultado = disponibles[:top_n]
+
+    # Los intereses van SIEMPRE aparte, sin competir por los top_n lugares
+    # de arriba -- no es un tema "profundo" a agregar a la lista de a uno,
+    # es un piso mínimo de charla casual que tiene que estar sí o sí, pero
+    # sin ir tan en detalle (a diferencia de los temas de arriba, que sí
+    # ameritan profundizar).
+    if perfil1.get("intereses") or perfil2.get("intereses"):
+        resultado.append(
+            "Sus intereses -- pero VARIADOS, no se queden solo en series o "
+            "música: que se note más de un tipo (por ejemplo algo de cómo "
+            "pasan su tiempo libre, comida, deporte/actividad física, plan "
+            "de finde, lo que sea que tengan en su perfil). Alcanza con "
+            "mencionarlos con naturalidad de pasada, sin ir muy en "
+            "profundidad en ninguno -- esto es un piso mínimo de charla "
+            "casual, no el eje central."
+        )
+
+    return resultado
 
 
 def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nombre2=None):

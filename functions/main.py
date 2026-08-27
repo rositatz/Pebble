@@ -729,12 +729,14 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
 
     # generar_prompt_gemelo (motor.py) le permite al modelo partir su turno
     # en varios mensajitos cortos separados con motor._MARCA_MULTIMENSAJE --
-    # simular_cita los desarma en mensajes de chat separados, pero acá se
-    # devuelve un solo string al front, así que si el modelo la usa se
-    # reemplaza por un salto de línea doble en vez de dejarla como texto
-    # literal visible.
-    respuesta = response.choices[0].message.content.replace(motor._MARCA_MULTIMENSAJE, "\n\n")
-    return {"respuesta": respuesta}
+    # antes acá se reemplazaba esa marca por un salto de línea doble y se
+    # devolvía un solo string, así que en vez de aparecer como burbujas de
+    # chat separadas (como sí pasa en simular_cita), se veía como un salto
+    # de línea raro en el medio de una sola burbuja. Ahora se parte de
+    # verdad con _dividir_mensajes y se devuelve la lista -- el frontend
+    # (chats.html) tiene que agregar cada parte como un mensaje separado.
+    partes = motor._dividir_mensajes(response.choices[0].message.content)
+    return {"partes": partes}
 
 
 # Firestore no incluye en un orderBy() los docs a los que les falta ese campo

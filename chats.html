@@ -2211,7 +2211,7 @@
             // -- reemplaza el autoReply() enlatado con nombres de demo que
             // había acá antes. El historial excluye el mensaje que se acaba
             // de mandar (ya va aparte como "mensaje" al backend).
-            let reply;
+            let partes;
             try {
               const historial = md.msgs
                 .slice(0, -1)
@@ -2220,18 +2220,23 @@
                   role: m.from === "me" ? "user" : "assistant",
                   content: m.text,
                 }));
-              reply = await window._llamarChatGemeloMatch(
+              partes = await window._llamarChatGemeloMatch(
                 persona,
                 text,
                 historial,
               );
             } catch (err) {
               console.error("Error en chatear_con_gemelo_match:", err);
-              reply =
-                "No pude responder ahora mismo. Probá de nuevo en un rato.";
+              partes = ["No pude responder ahora mismo. Probá de nuevo en un rato."];
             }
             removeTyping();
-            md.msgs.push({ from: "them", text: reply, time: nowTime() });
+            // El gemelo puede partir su turno en varios mensajitos cortos
+            // (ver motor._dividir_mensajes en el backend) -- cada parte va
+            // como una burbuja separada, no todas pegadas con saltos de
+            // línea dentro de un solo mensaje.
+            (partes || []).forEach((parte) => {
+              md.msgs.push({ from: "them", text: parte, time: nowTime() });
+            });
             md.lastTime = nowTime();
             // Si seguís mirando esta misma conversación cuando llega la
             // respuesta, se da por leída al toque (en vez de sumarla a los
@@ -2806,7 +2811,10 @@
           mensaje,
           historial: historial || [],
         });
-        return res.data.respuesta;
+        // El backend puede partir la respuesta en varios mensajitos cortos
+        // (ver motor._dividir_mensajes) -- siempre devuelve un array, con
+        // al menos un elemento.
+        return res.data.partes;
       };
 
       let uid = null;
@@ -2863,33 +2871,48 @@
                   if (_perfilesCache[c.otroId]) {
                     c.otro = _perfilesCache[c.otroId].otro;
                     c.simulaciones = _perfilesCache[c.otroId].simulaciones;
-                    return;
+                  } else {
+                    try {
+                      const s = await getDoc(doc(db, "usuarios", c.otroId));
+                      c.otro = s.exists() ? s.data() : {};
+                    } catch (e) {
+                      c.otro = {};
+                    }
+                    try {
+                      // TODOS los escenarios simulados con esta persona -- antes
+                      // limit(1) solo traía el último, así que si el match
+                      // corrió varios escenarios preestablecidos se perdían
+                      // todos menos uno.
+                      const simSnap = await getDocs(
+                        query(
+                          collection(db, "conexiones", c.parId, "simulaciones"),
+                          orderBy("fecha", "asc"),
+                        ),
+                      );
+                      c.simulaciones = simSnap.docs.map((d) => d.data());
+                    } catch (e) {
+                      c.simulaciones = [];
+                    }
+                    _perfilesCache[c.otroId] = {
+                      otro: c.otro,
+                      simulaciones: c.simulaciones,
+                    };
                   }
+
+                  // Mi chat privado con el gemelo de esta persona (ver
+                  // firestore.rules: conexiones/{parId}/gemeloPrivado/{mi
+                  // uid}) -- a diferencia de "otro"/"simulaciones" (datos
+                  // estáticos del otro, sí se cachean), esto es MI propia
+                  // conversación en curso, así que se trae fresco en cada
+                  // ciclo del snapshot.
                   try {
-                    const s = await getDoc(doc(db, "usuarios", c.otroId));
-                    c.otro = s.exists() ? s.data() : {};
-                  } catch (e) {
-                    c.otro = {};
-                  }
-                  try {
-                    // TODOS los escenarios simulados con esta persona -- antes
-                    // limit(1) solo traía el último, así que si el match
-                    // corrió varios escenarios preestablecidos se perdían
-                    // todos menos uno.
-                    const simSnap = await getDocs(
-                      query(
-                        collection(db, "conexiones", c.parId, "simulaciones"),
-                        orderBy("fecha", "asc"),
-                      ),
+                    const gp = await getDoc(
+                      doc(db, "conexiones", c.parId, "gemeloPrivado", user.uid),
                     );
-                    c.simulaciones = simSnap.docs.map((d) => d.data());
+                    c.gemeloPrivado = gp.exists() ? gp.data() : {};
                   } catch (e) {
-                    c.simulaciones = [];
+                    c.gemeloPrivado = {};
                   }
-                  _perfilesCache[c.otroId] = {
-                    otro: c.otro,
-                    simulaciones: c.simulaciones,
-                  };
                 }),
               );
 
@@ -3145,17 +3168,31 @@
         const p = window.people && window.people[personaId];
         const realHasta = p && p.real ? p.real.msgs.length : 0;
         const gemeloHasta = p && p.gemelo ? p.gemelo.msgs.length : 0;
+
+        // El punto de lectura del chat "gemelo" ahora vive en el subdoc
+        // PRIVADO (conexiones/{parId}/gemeloPrivado/{mi uid}) -- ver
+        // _db_saveChat y firestore.rules. Es un doc que solo yo toco, así
+        // que un set con merge alcanza (no hace falta el try/catch de
+        // updateDoc-o-setDoc que sí hace falta abajo para el doc
+        // compartido).
+        try {
+          await setDoc(
+            doc(db, "conexiones", parId(uid, personaId), "gemeloPrivado", uid),
+            { vistoHasta: gemeloHasta },
+            { merge: true },
+          );
+        } catch (e) {
+          console.error("_db_marcarLeido: error guardando vistoHasta de gemelo:", e);
+        }
+
         const ref = doc(db, "conexiones", parId(uid, personaId));
         try {
           // real.vistoHasta es un mapa por uid (real.vistoHasta.<mi uid>) --
           // no un número plano -- porque el doc lo comparten las dos
           // cuentas y cada una tiene que poder marcar SU propio punto de
-          // lectura sin pisar el de la otra. gemelo.vistoHasta sigue siendo
-          // un número plano: ahí solo escribe esta cuenta, el otro lado es
-          // la IA.
+          // lectura sin pisar el de la otra.
           await updateDoc(ref, {
             [`real.vistoHasta.${uid}`]: realHasta,
-            "gemelo.vistoHasta": gemeloHasta,
           });
         } catch (e) {
           // El documento todavía no existe (primera vez que se toca esta conversación)
@@ -3164,36 +3201,47 @@
             {
               ...parUsuarios(personaId),
               real: { vistoHasta: { [uid]: realHasta } },
-              gemelo: { vistoHasta: gemeloHasta },
             },
             { merge: true },
           );
         }
       };
 
-      // Guarda el array completo de mensajes de una conversación en Firestore,
-      // en conexiones/{parId} con la forma { usuario_1, usuario_2, real: {...}, gemelo: {...} }
+      // Guarda el array completo de mensajes de una conversación en Firestore.
+      // Modo "real": en conexiones/{parId} (doc compartido por las dos
+      // cuentas -- es una charla entre dos personas reales, tiene que ser
+      // visible para ambas). Modo "gemelo": en el subdoc PRIVADO
+      // conexiones/{parId}/gemeloPrivado/{mi uid} -- es MI conversación con
+      // el gemelo (IA) de la otra persona, nadie más la tiene que poder leer.
+      // Antes las dos vivían en el mismo doc compartido (campo "gemelo"), así
+      // que si las dos cuentas de un match chateaban con el gemelo de la
+      // otra, cada una podía leer -- y pisar -- la conversación de la otra.
       window._db_saveChat = async (personaId, mode, msgs) => {
         if (!uid) return;
+
+        if (mode === "gemelo") {
+          await setDoc(
+            doc(db, "conexiones", parId(uid, personaId), "gemeloPrivado", uid),
+            { msgs },
+            { merge: true },
+          );
+          return;
+        }
+
         const ref = doc(db, "conexiones", parId(uid, personaId));
-        // "real.ultimaActividad" (solo en modo real) es lo que usa
-        // generar_recordatorios_diarios en el backend para saber hace
-        // cuánto no hay mensajes nuevos y avisar "¿Retomás con X?" -- por
-        // eso es un Timestamp real, no el "HH:MM" de md.lastTime (que no
-        // sirve para calcular días de diferencia).
-        const campos = { [`${mode}.msgs`]: msgs };
-        if (mode === "real") campos["real.ultimaActividad"] = serverTimestamp();
+        // "real.ultimaActividad" es lo que usa generar_recordatorios_diarios
+        // en el backend para saber hace cuánto no hay mensajes nuevos y
+        // avisar "¿Retomás con X?" -- por eso es un Timestamp real, no el
+        // "HH:MM" de md.lastTime (que no sirve para calcular días de
+        // diferencia).
+        const campos = { "real.msgs": msgs, "real.ultimaActividad": serverTimestamp() };
         try {
           await updateDoc(ref, campos);
         } catch (e) {
           // El documento todavía no existe (primer mensaje con esta persona)
-          const modoData =
-            mode === "real"
-              ? { msgs, ultimaActividad: serverTimestamp() }
-              : { msgs };
           await setDoc(
             ref,
-            { ...parUsuarios(personaId), [mode]: modoData },
+            { ...parUsuarios(personaId), real: { msgs, ultimaActividad: serverTimestamp() } },
             { merge: true },
           );
         }

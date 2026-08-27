@@ -1888,8 +1888,20 @@
       // el match elegido y muestra el resumen y el score que devuelve de
       // verdad -- reemplaza el flujo viejo que solo mostraba una respuesta
       // enlatada mencionando nombres fijos (Sofía, Valentina, etc).
+      // Chips por default de la fila de accesos rápidos -- se usan para
+      // "volver" ahí después de elegir un match en el picker, tanto si la
+      // simulación sale bien como si falla (antes solo se restauraban en el
+      // camino exitoso, así que un error dejaba los nombres de matches
+      // colgados en la fila para siempre).
+      const QUICK_REPLIES_DEFAULT = [
+        "¿Cómo van mis matches?",
+        "Ayudame a romper el hielo",
+        "Quiero darte feedback",
+      ];
+
       function elegirMatchParaConsejo(otroUid, nombre) {
         addUserMsg(`Dame un consejo para hablar con ${nombre}`);
+        setQuickReplies([]); // oculta los nombres del picker apenas se elige uno, sin esperar la respuesta
         setTimeout(() => {
           addTyping();
           if (typeof window._llamarSimularSituacion !== "function") {
