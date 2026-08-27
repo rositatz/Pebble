@@ -2132,6 +2132,62 @@
             </div>
           </div>
           <div class="q">
+            <div class="ql">¿Cómo reaccionás ante un conflicto?</div>
+            <div class="rlist" data-field="reaccionConflicto">
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">Confronto directo, digo lo que pienso</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">Trato de resolverlo hablando con calma</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext"
+                  >Necesito tomar distancia antes de encarar el tema</span
+                >
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">Prefiero evitarlo, no me gusta confrontar</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext"
+                  >Cedo para que no escale, aunque no esté de acuerdo</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="q">
+            <div class="ql">¿Qué es lo que más te molesta en una relación?</div>
+            <div class="rlist" data-field="molestaRelacion">
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">Que no cumplan lo que prometen</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">La falta de comunicación</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">Los celos o el control excesivo</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext">La indiferencia o la frialdad</span>
+              </div>
+              <div class="ritem" onclick="selRadio(this)">
+                <div class="rdot"></div>
+                <span class="rtext"
+                  >Que no respeten mi tiempo o mi espacio</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="q">
             <div class="ql">
               ¿Qué comportamiento considerás más inaceptable en una discusión?
             </div>
@@ -3643,6 +3699,25 @@
         btn.textContent = "Guardando…";
         btn.disabled = true;
         await saveStage(currentStage);
+        // Si ya se había completado el onboarding antes (se está editando,
+        // no haciéndolo por primera vez), hay que regenerar gemelo/perfil
+        // acá mismo -- el trigger de Firestore (generar_perfil_gemelo) a
+        // propósito NO regenera en ediciones posteriores a la primera vez
+        // (ver ese trigger en main.py), así que sin esto, "Seguir después"
+        // guardaba la respuesta cruda pero el perfil YA PROCESADO (el que
+        // usan las simulaciones y el chat) se quedaba con el valor viejo
+        // para siempre, hasta que la persona volviera a pasar por "Este soy
+        // yo ✓". Mismo llamado que ya hace autoguardarEtapaActual() para el
+        // autoguardado en segundo plano -- acá hace falta repetirlo porque
+        // la navegación a perfil.html mata cualquier autoguardado pendiente
+        // antes de que llegue a dispararse.
+        if (stageData.completed) {
+          try {
+            await generarGemeloAhoraCallable();
+          } catch (e) {
+            console.error("Error regenerando gemelo/perfil al salir:", e);
+          }
+        }
         if (uid) {
           try {
             await updateDoc(doc(db, "usuarios", uid), {

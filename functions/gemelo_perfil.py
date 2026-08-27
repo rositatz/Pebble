@@ -148,6 +148,16 @@ REGLAS_NUMERICAS = [
     ("etapa4", "pelea", "Intento hablarlo con calma para resolverlo", {"personalidad.tolerancia_conflicto": 0.15, "personalidad.empatia": 0.10}),
     ("etapa4", "pelea", "Me guardo cosas para evitar conflictos", {"personalidad.tolerancia_conflicto": -0.15}),
     ("etapa4", "pelea", "Necesito tomar distancia antes de hablar", {"personalidad.tolerancia_conflicto": -0.05}),
+    ("etapa4", "reaccionConflicto", "Confronto directo, digo lo que pienso", {"personalidad.tolerancia_conflicto": 0.15}),
+    ("etapa4", "reaccionConflicto", "Trato de resolverlo hablando con calma", {"personalidad.tolerancia_conflicto": 0.10, "personalidad.empatia": 0.08}),
+    ("etapa4", "reaccionConflicto", "Necesito tomar distancia antes de encarar el tema", {"personalidad.tolerancia_conflicto": -0.05}),
+    ("etapa4", "reaccionConflicto", "Prefiero evitarlo, no me gusta confrontar", {"personalidad.tolerancia_conflicto": -0.15}),
+    ("etapa4", "reaccionConflicto", "Cedo para que no escale, aunque no esté de acuerdo", {"personalidad.tolerancia_conflicto": -0.10, "personalidad.empatia": 0.05}),
+    ("etapa4", "molestaRelacion", "Que no cumplan lo que prometen", {"valores.estabilidad": 0.08}),
+    ("etapa4", "molestaRelacion", "La falta de comunicación", {"personalidad.necesidad_afecto": 0.08, "personalidad.empatia": 0.05}),
+    ("etapa4", "molestaRelacion", "Los celos o el control excesivo", {"personalidad.independencia": 0.12}),
+    ("etapa4", "molestaRelacion", "La indiferencia o la frialdad", {"personalidad.necesidad_afecto": 0.12}),
+    ("etapa4", "molestaRelacion", "Que no respeten mi tiempo o mi espacio", {"personalidad.independencia": 0.10}),
     ("etapa4", "coqueteo", "Me cuesta mucho demostrarlo", {"personalidad.introversion": 0.05}),
     ("etapa4", "acompaniado", "Que me busquen sin que pida", {"personalidad.necesidad_afecto": 0.15}),
     ("etapa4", "acompaniado", "Que me escuchen y validen", {"personalidad.empatia": 0.05, "personalidad.necesidad_afecto": 0.10}),
@@ -305,6 +315,20 @@ _MAPA_MOLESTA = {
     "Me alejo": "ante el malestar tiende a alejarse",
     "Exploto después": "acumula hasta que explota",
     "Actúo como si nada": "prefiere disimular que algo le molesta",
+}
+_MAPA_REACCION_CONFLICTO = {
+    "Confronto directo, digo lo que pienso": "confronta directo y dice lo que piensa sin rodeos",
+    "Trato de resolverlo hablando con calma": "prefiere resolver un conflicto hablando con calma",
+    "Necesito tomar distancia antes de encarar el tema": "necesita tomar distancia antes de encarar un conflicto",
+    "Prefiero evitarlo, no me gusta confrontar": "evita confrontar, no le gusta el conflicto directo",
+    "Cedo para que no escale, aunque no esté de acuerdo": "tiende a ceder en un conflicto aunque no esté de acuerdo, para que no escale",
+}
+_MAPA_MOLESTA_RELACION = {
+    "Que no cumplan lo que prometen": "le molesta mucho que no cumplan lo que prometen, valora la palabra dada",
+    "La falta de comunicación": "le pesa la falta de comunicación, necesita que le cuenten las cosas",
+    "Los celos o el control excesivo": "no tolera los celos ni el control excesivo, valora mucho su independencia",
+    "La indiferencia o la frialdad": "le afecta la indiferencia o la frialdad, necesita sentir interés real",
+    "Que no respeten mi tiempo o mi espacio": "necesita que le respeten su tiempo y su espacio propio",
 }
 
 
@@ -509,11 +533,17 @@ def _construir_fisico_propio(e6):
 def _construir_conflictos(e4):
     pelea = (e4.get("pelea") or "").strip()
     molesta = (e4.get("cuandoMolesta") or "").strip()
+    reaccion_conflicto = (e4.get("reaccionConflicto") or "").strip()
+    molesta_relacion = (e4.get("molestaRelacion") or "").strip()
     conflictos = {}
     if pelea in _MAPA_PELEA:
         conflictos["peleas"] = _MAPA_PELEA[pelea]
     if molesta in _MAPA_MOLESTA:
         conflictos["cuando_le_molesta_algo"] = _MAPA_MOLESTA[molesta]
+    if reaccion_conflicto in _MAPA_REACCION_CONFLICTO:
+        conflictos["reaccion_ante_conflicto"] = _MAPA_REACCION_CONFLICTO[reaccion_conflicto]
+    if molesta_relacion in _MAPA_MOLESTA_RELACION:
+        conflictos["que_le_molesta_en_relacion"] = _MAPA_MOLESTA_RELACION[molesta_relacion]
     return conflictos
 
 

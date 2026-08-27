@@ -5,6 +5,7 @@
 #Revisa qué parejas no han sido evaluadas antes y crea los registros en parejas_evaluacion en estado PENDIENTE.
 import os
 import json
+import random
 
 from gemelo_perfil import construir_perfil_gemelo
 
@@ -821,7 +822,7 @@ def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, 
 # que lo respalda. Reemplaza dejar que el modelo elija sus propios "temas
 # profundos": antes a veces eran genéricos o directamente no tenían dato
 # real detrás, así que terminaba rellenando con algo inventado.
-def _temas_obligatorios(perfil1, perfil2, top_n=3):
+def _temas_obligatorios(perfil1, perfil2, nombre1=None, nombre2=None, top_n=3):
     """Arma una lista de temas que la charla tiene que tocar sí o sí, en
     orden de prioridad, filtrando solo los que tienen datos reales de
     onboarding para al menos uno de los dos perfiles."""
@@ -875,15 +876,31 @@ def _temas_obligatorios(perfil1, perfil2, top_n=3):
     # es un piso mínimo de charla casual que tiene que estar sí o sí, pero
     # sin ir tan en detalle (a diferencia de los temas de arriba, que sí
     # ameritan profundizar).
-    if perfil1.get("intereses") or perfil2.get("intereses"):
+    # Se sortean 1-2 intereses REALES de cada uno para esta charla puntual
+    # -- antes se le dejaba al modelo elegir qué interés mencionar, y
+    # sistemáticamente convergía en los mismos de siempre (fútbol, día de
+    # descanso, música, series) sin importar qué tuviera cada perfil
+    # realmente cargado. Sorteando server-side, cada simulación toca algo
+    # distinto de verdad, no lo que el modelo "prefiere" mencionar.
+    intereses1 = perfil1.get("intereses") or []
+    intereses2 = perfil2.get("intereses") or []
+    elegidos1 = random.sample(intereses1, min(2, len(intereses1)))
+    elegidos2 = random.sample(intereses2, min(2, len(intereses2)))
+    if elegidos1 or elegidos2:
+        partes_intereses = []
+        if elegidos1:
+            partes_intereses.append(f"de {nombre1 or 'uno/a'}: {', '.join(elegidos1)}")
+        if elegidos2:
+            partes_intereses.append(f"de {nombre2 or 'el/la otro/a'}: {', '.join(elegidos2)}")
         resultado.append(
-            "Sus intereses -- pero VARIADOS, no se queden solo en series o "
-            "música: que se note más de un tipo (por ejemplo algo de cómo "
-            "pasan su tiempo libre, comida, deporte/actividad física, plan "
-            "de finde, lo que sea que tengan en su perfil). Alcanza con "
-            "mencionarlos con naturalidad de pasada, sin ir muy en "
+            "De sus intereses reales, para ESTA charla puntual les toca la "
+            "posibilidad de mencionar (si sale con naturalidad, sin forzarlo "
+            "ni anunciarlo) -- " + "; ".join(partes_intereses) + ". Elegidos al "
+            "azar para esta charla en particular -- en otra charla tocarían "
+            "otros. Alcanza con mencionarlos de pasada, sin ir muy en "
             "profundidad en ninguno -- esto es un piso mínimo de charla "
-            "casual, no el eje central."
+            "casual, no el eje central. No se queden solo en series/música "
+            "por costumbre si estos intereses sorteados son otra cosa."
         )
 
     return resultado
@@ -932,7 +949,7 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     frío/a. USEN esto quien corresponda -- no lo ignoren para llevarse
     bien porque sí."""
 
-    temas = _temas_obligatorios(perfil1, perfil2)
+    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2)
     temas_txt = ""
     if temas:
         puntos_temas = "\n    ".join(f"- {t}" for t in temas)

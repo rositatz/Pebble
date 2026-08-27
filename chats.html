@@ -3220,11 +3220,20 @@
         if (!uid) return;
 
         if (mode === "gemelo") {
-          await setDoc(
-            doc(db, "conexiones", parId(uid, personaId), "gemeloPrivado", uid),
-            { msgs },
-            { merge: true },
-          );
+          // Sin try/catch acá, un error de guardado (red, permisos, lo que
+          // sea) quedaba en silencio: el mensaje ya se veía en pantalla
+          // (se agrega a md.msgs y se renderiza ANTES de llamar a esto),
+          // pero nunca se guardaba de verdad -- recién se notaba al
+          // recargar la página y verlo "desaparecido".
+          try {
+            await setDoc(
+              doc(db, "conexiones", parId(uid, personaId), "gemeloPrivado", uid),
+              { msgs },
+              { merge: true },
+            );
+          } catch (e) {
+            console.error("_db_saveChat: error guardando chat con gemelo:", e);
+          }
           return;
         }
 

@@ -382,7 +382,7 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=300, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=540, memory=MemoryOption.MB_512)
 def simular_situacion(request: https_fn.CallableRequest):
     """Se llama desde el chat con el propio gemelo (gemelo.html): el usuario
     le pide a SU gemelo que simule una situación con el gemelo de otra persona

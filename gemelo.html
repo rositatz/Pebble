@@ -1782,11 +1782,7 @@
               addTwinMsg(
                 `Corrí una simulación real con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}<br><br>La conversación completa (todo lo que se dijeron de verdad, no un resumen) la podés ver en el chat con ${nombreSafe}.`,
               );
-              setQuickReplies([
-                "¿Cómo van mis matches?",
-                "Ayudame a romper el hielo",
-                "Quiero darte feedback",
-              ]);
+              setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
             .catch((err) => {
               removeTyping();
@@ -1794,6 +1790,7 @@
               addTwinMsg(
                 `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
               );
+              setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
             .finally(() => _bloquearEnvio(false));
         }, 300);
@@ -1900,8 +1897,14 @@
       ];
 
       function elegirMatchParaConsejo(otroUid, nombre) {
+        // Este picker dispara simular_situacion por afuera de sendMessage()
+        // -- sin este chequeo, el candado de "un mensaje a la vez" no lo
+        // cubría, así que se podía elegir un match acá mientras otra
+        // respuesta del gemelo todavía estaba en camino.
+        if (esperandoRespuestaGemelo) return;
         addUserMsg(`Dame un consejo para hablar con ${nombre}`);
         setQuickReplies([]); // oculta los nombres del picker apenas se elige uno, sin esperar la respuesta
+        _bloquearEnvio(true);
         setTimeout(() => {
           addTyping();
           if (typeof window._llamarSimularSituacion !== "function") {
@@ -1909,6 +1912,7 @@
             addTwinMsg(
               "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
             );
+            _bloquearEnvio(false);
             return;
           }
           window
@@ -1926,11 +1930,7 @@
               addTwinMsg(
                 `Simulé una situación con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}`,
               );
-              setQuickReplies([
-                "¿Cómo van mis matches?",
-                "Ayudame a romper el hielo",
-                "Quiero darte feedback",
-              ]);
+              setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
             .catch((err) => {
               removeTyping();
@@ -1938,7 +1938,9 @@
               addTwinMsg(
                 `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
               );
-            });
+              setQuickReplies(QUICK_REPLIES_DEFAULT);
+            })
+            .finally(() => _bloquearEnvio(false));
         }, 300);
       }
 
@@ -2036,9 +2038,17 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
       const functionsInstance = getFunctions(app);
+      // timeout explícito: el SDK de Firebase espera 70s por default antes
+      // de abortar en el cliente, pero simular_situacion corre una charla
+      // completa entre los dos gemelos (hasta 20 turnos, prompts largos) y
+      // el propio backend tiene timeout_sec=540 -- sin este override, el
+      // cliente se rendía mucho antes de que el backend pudiera terminar,
+      // así que la simulación "nunca" funcionaba aunque el servidor la
+      // hubiera completado bien.
       const simularSituacionCallable = httpsCallable(
         functionsInstance,
         "simular_situacion",
+        { timeout: 520000 },
       );
       const chatearConGemeloCallable = httpsCallable(
         functionsInstance,
