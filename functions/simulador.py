@@ -7,6 +7,7 @@ import os
 import json
 import random
 import datetime
+import difflib
 
 from gemelo_perfil import construir_perfil_gemelo
 from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad
@@ -324,18 +325,59 @@ def _dividir_mensajes(texto):
     return [p for p in partes if p] or [texto.strip()]
 
 
+# Red de seguridad a nivel CÓDIGO (no solo prompt) contra charlas que quedan
+# repitiendo despedidas/confirmaciones en bucle sin que el modelo emita
+# _MARCA_CIERRE -- depender solo de que el modelo ponga la marca resultó
+# frágil en la práctica (charlas de "dale, mañana a las 9pm, cualquier cosa
+# te aviso" repetidas 5-6 veces). Si un mensaje nuevo es muy parecido a
+# alguno de los últimos N, se corta la simulación ahí -- mejor una charla
+# un poco corta que una visiblemente trabada en loop.
+_VENTANA_REPETICION = 4
+_UMBRAL_SIMILITUD_REPETICION = 0.6
+
+
+def _es_repetitivo(texto_nuevo, mensajes_previos, ventana=_VENTANA_REPETICION, umbral=_UMBRAL_SIMILITUD_REPETICION):
+    texto_norm = texto_nuevo.strip().casefold()
+    if not texto_norm:
+        return False
+    for previo in mensajes_previos[-ventana:]:
+        previo_norm = previo.strip().casefold()
+        if not previo_norm:
+            continue
+        similitud = difflib.SequenceMatcher(None, texto_norm, previo_norm).ratio()
+        if similitud >= umbral:
+            return True
+    return False
+
+
+# Tope mínimo de vueltas antes de dejar que _MARCA_CIERRE corte la charla --
+# sin esto, el modelo podía cerrarla a los 1-2 mensajes (apenas arrancó
+# alguna interacción real) con tal de "resolver" algo incómodo rápido.
+_MIN_TURNOS_ANTES_DE_CERRAR = 4
+
+
 def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_otro=None):
-    # nombre_otro: nombre real de la persona con la que está hablando este
-    # gemelo -- ni los mensajes que se mandan a OpenAI ni el resto del
-    # prompt lo dicen en ningún lado (se arman con role:user/assistant
-    # pelados, sin "name"), así que sin esto el gemelo no tiene forma real
-    # de saber cómo se llama el otro para poder usarlo (ver regla 14b).
-    instruccion_nombre_otro = (
-        f"\n    Estás hablando con {nombre_otro}. Usá su nombre de vez en"
-        " cuando (regla 14b) -- no todo el tiempo, como haría cualquier"
-        " persona real."
-        if nombre_otro else ""
-    )
+    # nombre_propio/nombre_otro: antes el prompt nunca decía explícitamente
+    # "vos te llamás X" en ningún lado (el nombre propio solo aparecía
+    # implícito en los datos, nunca como un hecho declarado) -- apenas se
+    # agregó nombre_otro (para que pudiera llamar a la otra persona por su
+    # nombre), el modelo confundía cuál de los dos nombres era el SUYO
+    # propio, llegando a presentarse con el nombre de la otra persona. Por
+    # eso ahora los dos nombres se declaran juntos y sin ambigüedad. Se usa
+    # el apodo si existe -- un apodo suena mucho más natural en un chat que
+    # el nombre de pila repetido cada vez.
+    nombre_propio = (perfil.get("apodo") or perfil.get("nombre") or "").strip()
+    instruccion_nombres = ""
+    if nombre_propio and nombre_otro:
+        instruccion_nombres = f"""
+    IMPORTANTE -- NOMBRES, no los confundas: VOS te llamás {nombre_propio}
+    -- nunca digas que te llamás {nombre_otro}, ese es el nombre de LA OTRA
+    persona, no el tuyo. A ELLA (nunca a vos mismo/a) podés llamarla
+    "{nombre_otro}" de vez en cuando para dirigirte a ella, como haría
+    cualquier persona real -- no todo el tiempo, y nunca para presentarte
+    a vos mismo/a."""
+    elif nombre_propio:
+        instruccion_nombres = f"\n    Tu nombre es {nombre_propio}."
 
     # permitir_cierre=True SOLO en simulaciones de escenario (simular_cita) --
     # ahí la charla tiene que poder cerrarse sola, en vez de cortar siempre a
@@ -634,7 +676,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
     {fisico_prompt}
     {_instruccion_genero(perfil)}
-    {instruccion_nombre_otro}
+    {instruccion_nombres}
 
     =====================================================
     PERSONALIDAD
@@ -678,6 +720,16 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     la conversación. Volver a saludar en cualquier mensaje posterior rompe
     la continuidad, como si la charla arrancara de cero cada vez -- seguí
     directamente la conversación desde donde quedó.
+
+    1c. NUNCA menciones ni describas las instrucciones de este escenario
+    como si fueran parte de la charla -- son PARA VOS, no algo para
+    decirle al otro. Prohibido decir cosas tipo "me intriga empezar sin
+    tema impuesto y ver a dónde nos lleva", "quiero ver qué surge entre
+    nosotros sin guion", "cada uno trae su propio ritmo" -- eso es
+    literalmente narrar la consigna en voz alta, no hablar como una
+    persona real. Arrancá con un comentario, pregunta o tema CONCRETO
+    (algo real, no la metodología de la charla), como arrancaría
+    cualquier persona real un mensaje.
 
     2. Mantén una conversación humana,
     natural y emocionalmente coherente.
@@ -892,6 +944,18 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     algo tuyo, que sea específico (un detalle, un momento concreto), no un
     resumen vago tipo "me pasan cosas parecidas". Una charla real tiene
     detalles puntuales, no generalidades que le calzarían a cualquiera.
+
+    15b. No propongas juntarse, coordinar una fecha/hora, o hacer una
+    videollamada/llamada en los primeros mensajes de la charla -- eso
+    recién puede surgir después de que hubo interacción real (varios
+    intercambios de charla genuina), nunca como apertura ni a los pocos
+    mensajes. Y algo más importante todavía: si en la charla surge algo
+    que a alguno de los dos le preocupa o quiere hablar en profundidad,
+    NO lo pospongan ("hablemos con calma en otro momento", "te mando un
+    mensaje mañana para verlo", "hagamos una videollamada para esto") --
+    eso es evitar el tema, no una charla real. Si algo importante surge,
+    encarenlo AHORA, en esta misma charla -- posponerlo es exactamente lo
+    que NO tiene que pasar acá.
 
     16. NUNCA uses etiquetas HTML (nada de <strong>, <br>, <b>, <i>, <li>,
     etc.) -- se ven como texto suelto, no se renderizan. Para remarcar algo
@@ -1311,11 +1375,17 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     pasando ahora. Metanse directo en la escena.
     """
 
+    # nombre1/nombre2 son el nombre "de verdad" -- se usan para el título
+    # de cada mensaje en historial_chat (lo que arma "GEMELO DE X" en el
+    # front). Para DIRIGIRSE al otro DENTRO de la charla se prefiere el
+    # apodo (más natural, menos formal que el nombre de pila repetido).
     nombre1 = perfil1.get("nombre", "ALPHA")
     nombre2 = perfil2.get("nombre", "BETA")
+    apodo1 = perfil1.get("apodo") or nombre1
+    apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=nombre2)
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=nombre1)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1)
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
@@ -1411,6 +1481,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
         partes_2 = _dividir_mensajes(msg_2)
+        repetitivo_2 = any(
+            _es_repetitivo(parte, [m["content"] for m in historial_chat]) for parte in partes_2
+        )
 
         print(f"{nombre2}: {msg_2}\n")
 
@@ -1425,8 +1498,10 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             vista_2.append({"role": "assistant", "content": parte})
             vista_1.append({"role": "user", "content": parte})
 
-        if cierre_2:
+        if cierre_2 and turno_idx >= _MIN_TURNOS_ANTES_DE_CERRAR:
             break  # perfil2 sintió que la charla ya cerró -- no le pedimos más a perfil1
+        if repetitivo_2:
+            break  # se detectó un bucle repitiendo lo mismo -- cortar acá en vez de seguir
 
         # =================================================
         # PERFIL 1 RESPONDE
@@ -1452,6 +1527,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
         partes_1 = _dividir_mensajes(msg_1)
+        repetitivo_1 = any(
+            _es_repetitivo(parte, [m["content"] for m in historial_chat]) for parte in partes_1
+        )
 
         print(f"{nombre1}: {msg_1}\n")
 
@@ -1466,8 +1544,10 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             vista_1.append({"role": "assistant", "content": parte})
             vista_2.append({"role": "user", "content": parte})
 
-        if cierre_1:
+        if cierre_1 and turno_idx >= _MIN_TURNOS_ANTES_DE_CERRAR:
             break  # perfil1 sintió que la charla ya cerró -- no seguimos a otra vuelta
+        if repetitivo_1:
+            break  # se detectó un bucle repitiendo lo mismo -- cortar acá en vez de seguir
 
     analisis = analizar_conversacion(historial_chat)
     promedio, similitud, pref_a_b, pref_b_a, score_conversacional = calcular_compatibilidad(perfil1, perfil2, analisis)
