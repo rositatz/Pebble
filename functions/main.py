@@ -592,7 +592,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
 
     try:
         response = motor.client().chat.completions.create(
-            model="gpt-5-nano",
+            model="gpt-5-mini",
             messages=mensajes,
         )
     except Exception as e:
@@ -696,7 +696,10 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
         # vivo también refleje qué tan compatibles son de verdad, no solo
         # que ya pasaron el umbral para ser match -- un 51% no debería
         # sentirse como un 95%.
-        system_prompt += instruccion_nivel_compatibilidad(perfil_propio, perfil_otro, motor.UMBRAL_MATCH)
+        system_prompt += instruccion_nivel_compatibilidad(
+            perfil_propio, perfil_otro, motor.UMBRAL_MATCH,
+            nombre1=nombre_propio, nombre2=perfil_otro.get("nombre", "la otra persona"),
+        )
 
     mensajes = [{"role": "system", "content": system_prompt}]
     for h in historial[-8:]:
@@ -710,7 +713,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
 
     try:
         response = motor.client().chat.completions.create(
-            model="gpt-5-nano",
+            model="gpt-5-mini",
             messages=mensajes,
         )
     except Exception as e:

@@ -668,6 +668,9 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
 
     Edad:
     {perfil.get('edad') or 'no especificada'}
+    (Hablá como una persona argentina real de ESA edad escribiría en un
+    chat -- ni más formal/adulta ni más adolescente de lo que corresponde
+    a esos años.)
 
     Profesión:
     {perfil.get('profesion') or 'no especificada'}
@@ -883,8 +886,13 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     significativo juntos", "tener esa conexión/vulnerabilidad es
     increíble", "me alegra mucho que sientas eso", "entiendo
     completamente", "hay algo mágico/especial en...", "eso es hermoso",
-    "compartir X con otros/as" como cierre poético -- si te sale una frase
-    parecida a esas, pará y reescribila más simple y menos impostada.
+    "compartir X con otros/as" como cierre poético. TAMPOCO arranques
+    mensajes siempre con la misma frase de apertura tipo "Me suena muy
+    real", "Me encanta esa vibra", "Me pasa lo mismo", "Qué bueno
+    escuchar eso" -- si ya usaste una de estas (o algo parecido) en
+    mensajes anteriores de esta charla, para este mensaje entrá directo al
+    contenido, sin ninguna frase de apertura genérica. Si te sale una
+    frase parecida a cualquiera de estas, pará y reescribila más simple.
     El registro objetivo es CANCHERO Y RELAJADO -- como le escribirías a
     alguien que te gusta pero recién estás conociendo, sin impostar
     romanticismo de más ni sonar a carta de amor. Nada de "esa conexión",
@@ -1299,7 +1307,7 @@ def generar_resumen_gemelo(perfil):
     """
 
     response = client().chat.completions.create(
-        model="gpt-5-nano",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=1.0,
     )
@@ -1350,7 +1358,10 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
     escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
-    instruccion_compat = instruccion_nivel_compatibilidad(perfil1, perfil2, UMBRAL_MATCH)
+    instruccion_compat = instruccion_nivel_compatibilidad(
+        perfil1, perfil2, UMBRAL_MATCH,
+        nombre1=perfil1.get("nombre", "ALPHA"), nombre2=perfil2.get("nombre", "BETA"),
+    )
 
     contexto_escenario = f"""
     ESCENARIO:
@@ -1404,7 +1415,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     )
 
     response_inicio = client().chat.completions.create(
-        model="gpt-5-nano",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
         ]
@@ -1463,7 +1474,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         response_2 = client().chat.completions.create(
 
-            model="gpt-5-nano",
+            model="gpt-5-mini",
 
             messages=[
 
@@ -1509,7 +1520,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         response_1 = client().chat.completions.create(
 
-            model="gpt-5-nano",
+            model="gpt-5-mini",
 
             messages=[
 

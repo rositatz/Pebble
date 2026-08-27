@@ -53,7 +53,7 @@ def analizar_conversacion(historial_chat):
     """
 
     response = client().chat.completions.create(
-        model="gpt-5-nano",
+        model="gpt-5-mini",
         messages=[
             {
                 "role": "system",
@@ -114,7 +114,7 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
     """
 
     response = client().chat.completions.create(
-        model="gpt-5-nano",
+        model="gpt-5-mini",
         messages=[
             {
                 "role": "system",
@@ -698,7 +698,47 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
     return total, S, pref_a_b, pref_b_a, score_conversacional
 
 
-def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral):
+# Frase por rasgo describiendo la DIFERENCIA cuando uno lo tiene alto y el
+# otro bajo -- (nombre1_tiene_alto, nombre2_tiene_alto), armadas para
+# describir a la otra persona en tercera persona ("tiene alta tolerancia al
+# conflicto, vos baja"). Mismos 9 rasgos que ya usa _directiva en simulador.
+_DIFERENCIA_RASGO = {
+    "introversion": "es bastante más {alto} que vos en sociabilidad (extrovertido/a vs. introvertido/a)",
+    "empatia": "le da bastante más/menos peso que a vos a cómo se siente el otro emocionalmente",
+    "sarcasmo": "tiene un sentido del humor bastante distinto al tuyo (mucho más o mucho menos sarcástico/a)",
+    "apertura_mental": "es bastante más {alto} que vos frente a ideas o planes nuevos",
+    "ambicion": "le importa bastante {alto} que a vos crecer/lograr cosas a nivel profesional",
+    "sensibilidad_emocional": "es bastante más {alto} que vos emocionalmente (le afectan más o menos las cosas)",
+    "necesidad_afecto": "necesita bastante {alto} validación/cercanía afectiva que vos",
+    "independencia": "valora bastante {alto} su independencia que vos",
+    "tolerancia_conflicto": "tolera bastante {alto} el conflicto/discutir que vos",
+}
+
+
+def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, top_n=2):
+    """Desde la perspectiva de perfil1: en qué rasgos reales diverge más de
+    perfil2, para dar puntos de fricción CONCRETOS en vez de una
+    instrucción abstracta de "no estén siempre de acuerdo". Devuelve una
+    lista de frases listas para mostrar, ya en tercera persona (sobre
+    nombre2) -- vacía si no hay diferencias grandes o faltan datos."""
+    p1 = perfil1.get("personalidad") or {}
+    p2 = perfil2.get("personalidad") or {}
+    diffs = []
+    for rasgo, plantilla in _DIFERENCIA_RASGO.items():
+        v1, v2 = p1.get(rasgo), p2.get(rasgo)
+        if v1 is None or v2 is None:
+            continue
+        diferencia = abs(v1 - v2)
+        if diferencia < umbral_diferencia:
+            continue
+        alto = "más" if v2 > v1 else "menos"
+        texto = plantilla.format(alto=alto)
+        diffs.append((diferencia, f"{nombre2} {texto}."))
+    diffs.sort(key=lambda x: -x[0])
+    return [texto for _, texto in diffs[:top_n]]
+
+
+def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nombre2=None):
     """Texto para inyectar en el prompt de generar_prompt_gemelo/
     contexto_escenario -- sin esto, una charla podía fluir perfecta entre
     dos perfiles que en los datos reales (onboarding) comparten poco,
@@ -715,6 +755,32 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral):
         nivel = "MEDIA -- comparten algunas cosas pero también hay diferencias reales de fondo"
     else:
         nivel = "BAJA -- en los datos reales de los dos hay bastante poco en común"
+
+    # Puntos de fricción CONCRETOS (no solo "no estén siempre de acuerdo"
+    # en abstracto) -- en la práctica, la instrucción cualitativa sola no
+    # alcanzaba para evitar que dos perfiles con 53% de compatibilidad
+    # terminaran reflejándose el uno al otro como calcados. Con diferencias
+    # de personalidad puntuales y nombradas, el modelo tiene algo real y
+    # específico para chocar, no solo la orden genérica de "generar
+    # fricción" (mucho más fácil de ignorar).
+    friccion_txt = ""
+    if promedio_previo < 0.70 and nombre1 and nombre2:
+        diffs_1_ve_2 = _diferencias_personalidad(perfil1, perfil2, nombre2)
+        diffs_2_ve_1 = _diferencias_personalidad(perfil2, perfil1, nombre1)
+        if diffs_1_ve_2 or diffs_2_ve_1:
+            puntos = "\n    ".join(f"- {d}" for d in (diffs_1_ve_2 + diffs_2_ve_1))
+            friccion_txt = f"""
+    DIFERENCIAS REALES DE PERSONALIDAD ENTRE USTEDES DOS (usalas como
+    semillas de fricción real -- si sale un tema donde esto aplica, que SE
+    NOTE la diferencia en cómo reaccionan, no la disimulen ni la
+    suavicen):
+    {puntos}
+    Por ejemplo: si uno tolera mal el conflicto y el otro no, uno se va a
+    sentir incómodo/a con algo que el otro dice con total naturalidad. Si
+    uno necesita mucha más cercanía afectiva, puede sentir que el otro es
+    frío/a. USEN esto quien corresponda -- no lo ignoren para llevarse
+    bien porque sí."""
+
     return f"""
     COMPATIBILIDAD REAL ENTRE USTEDES DOS (según sus datos reales de
     fondo, no esta charla puntual): {nivel}. Esto NO es algo que tengan
@@ -725,5 +791,9 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral):
     esperados, silencios, desencuentros, cosas que no terminan de
     conectar, o directamente diferencias de fondo que chocan (no estar
     siempre de acuerdo). Una charla que fluye demasiado bien pese a esto
-    está mal actuada.
+    está mal actuada. NUNCA repitan o parafraseen lo que acaba de decir el
+    otro como si fuera lo mismo que ustedes piensan/sienten/hacen -- eso
+    es el error más grave posible acá, literalmente actuar como si fueran
+    la misma persona cuando NO comparten tanto en los datos reales.
+    {friccion_txt}
     """
