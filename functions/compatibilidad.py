@@ -715,25 +715,46 @@ _DIFERENCIA_RASGO = {
 }
 
 
+# Frase por eje de VALORES describiendo la diferencia -- familia/aventura/
+# estabilidad viven en perfil.valores, no en perfil.personalidad. "ambicion"
+# vive en los dos (gemelo_perfil.construir_perfil_gemelo copia el valor a
+# personalidad para que _directiva pueda usarlo en el prompt) así que NO se
+# repite acá para no duplicar la misma frase de fricción dos veces.
+_DIFERENCIA_VALOR = {
+    "familia": "le da bastante {alto} peso a formar/priorizar una familia que vos",
+    "aventura": "es bastante {alto} de tirarse a planes nuevos o arriesgados que vos",
+    "estabilidad": "necesita bastante {alto} estabilidad y rutina en su vida que vos",
+}
+
+
 def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, top_n=2):
     """Desde la perspectiva de perfil1: en qué rasgos reales diverge más de
-    perfil2, para dar puntos de fricción CONCRETOS en vez de una
-    instrucción abstracta de "no estén siempre de acuerdo". Devuelve una
-    lista de frases listas para mostrar, ya en tercera persona (sobre
-    nombre2) -- vacía si no hay diferencias grandes o faltan datos."""
-    p1 = perfil1.get("personalidad") or {}
-    p2 = perfil2.get("personalidad") or {}
+    perfil2 (personalidad Y valores juntos, ordenado por magnitud real de la
+    diferencia, no por eje), para dar puntos de fricción CONCRETOS en vez de
+    una instrucción abstracta de "no estén siempre de acuerdo". Sin esto,
+    una pareja que difiere sobre todo en VALORES (familia/aventura/
+    estabilidad, el eje que más pesa en la similitud pura -- ver pesos_s en
+    calcular_compatibilidad) pero tiene personalidades parecidas terminaba
+    sin ningún punto de fricción concreto, aunque su compatibilidad total
+    fuera media/baja por esa diferencia de valores. Devuelve una lista de
+    frases listas para mostrar, ya en tercera persona (sobre nombre2) --
+    vacía si no hay diferencias grandes o faltan datos."""
+    p1, p2 = perfil1.get("personalidad") or {}, perfil2.get("personalidad") or {}
+    val1, val2 = perfil1.get("valores") or {}, perfil2.get("valores") or {}
+
     diffs = []
-    for rasgo, plantilla in _DIFERENCIA_RASGO.items():
-        v1, v2 = p1.get(rasgo), p2.get(rasgo)
-        if v1 is None or v2 is None:
-            continue
-        diferencia = abs(v1 - v2)
-        if diferencia < umbral_diferencia:
-            continue
-        alto = "más" if v2 > v1 else "menos"
-        texto = plantilla.format(alto=alto)
-        diffs.append((diferencia, f"{nombre2} {texto}."))
+    for campo1, campo2, plantillas in ((p1, p2, _DIFERENCIA_RASGO), (val1, val2, _DIFERENCIA_VALOR)):
+        for rasgo, plantilla in plantillas.items():
+            v1, v2 = campo1.get(rasgo), campo2.get(rasgo)
+            if v1 is None or v2 is None:
+                continue
+            diferencia = abs(v1 - v2)
+            if diferencia < umbral_diferencia:
+                continue
+            alto = "más" if v2 > v1 else "menos"
+            texto = plantilla.format(alto=alto)
+            diffs.append((diferencia, f"{nombre2} {texto}."))
+
     diffs.sort(key=lambda x: -x[0])
     return [texto for _, texto in diffs[:top_n]]
 
@@ -795,5 +816,15 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     otro como si fuera lo mismo que ustedes piensan/sienten/hacen -- eso
     es el error más grave posible acá, literalmente actuar como si fueran
     la misma persona cuando NO comparten tanto en los datos reales.
+    {"" if nivel.startswith("ALTA") else '''
+    EXIGENCIA CONCRETA, no opcional: en algún punto de esta charla TIENE
+    que pasar al menos UN desacuerdo real y explícito -- uno de los dos
+    dice algo con lo que el otro NO está de acuerdo, lo dice derecho (no
+    lo suaviza ni lo disimula), y eso genera una fricción visible (incomodidad,
+    un pique, un silencio raro, o directamente una discusión corta) antes de
+    que la charla siga. No alcanza con "menos onda" o silencios genéricos --
+    tiene que verse un choque puntual y real, no ambiente tibio. Si para
+    cuando termine la charla no hubo ningún momento así, la simulación no
+    reflejó la compatibilidad real que tienen.'''}
     {friccion_txt}
     """
