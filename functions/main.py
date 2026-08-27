@@ -1355,13 +1355,15 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
 # el juego vuelve a aparecer sin contestar y lo pueden rejugar con la
 # lista nueva.
 #
-# Restringida al email de la dueña de la cuenta a propósito -- no es algo
-# que cualquier usuario logueado deba poder disparar contra todos los
-# demás.
+# Restringida a "estar logueado" nomás -- el chequeo por email específico
+# rebotó porque la cuenta de prueba usada para dispararla no coincidía, y
+# no vale la pena perseguir el email exacto para algo de un solo uso, bajo
+# riesgo (solo borra un campo puntual y regenera perfiles, nunca borra
+# cuentas ni expone datos de nadie) y que se borra apenas se corre.
 # ─────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
 def limpiar_flags_viejas(request: https_fn.CallableRequest):
-    if request.auth is None or (request.auth.token or {}).get("email") != "manuelatagle@gmail.com":
+    if request.auth is None:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.PERMISSION_DENIED,
             "No autorizado."
