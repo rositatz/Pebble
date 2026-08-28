@@ -794,7 +794,7 @@ _DIFERENCIA_RASGO = {
     "sarcasmo": "tiene un sentido del humor bastante distinto al tuyo (mucho más o mucho menos sarcástico/a)",
     "apertura_mental": "es bastante {alto} abierto/a a ideas o planes nuevos que vos",
     "ambicion": "le importa bastante {alto} que a vos crecer/lograr cosas a nivel profesional",
-    "sensibilidad_emocional": "es bastante {alto} sensible que vos a nivel emocional (le afectan más o menos las cosas)",
+    "sensibilidad_emocional": "es bastante {alto} sensible que vos a nivel emocional -- le afectan {alto} las cosas del día a día",
     "necesidad_afecto": "necesita bastante {alto} validación/cercanía afectiva que vos",
     "independencia": "valora bastante {alto} su independencia que vos",
     "tolerancia_conflicto": "tolera bastante {alto} el conflicto/discutir que vos",
