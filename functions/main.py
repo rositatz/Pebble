@@ -1477,66 +1477,6 @@ def limpiar_flags_viejas(request: https_fn.CallableRequest):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# FUNCIÓN TEMPORAL -- borrar después de correrla una vez.
-#
-# conexiones/{parId}.diferencias_personalidad pasó de ser una lista
-# combinada (frases sobre los dos mezcladas) a un dict {uid: [frases]} --
-# cada lista describe SOLO a ese uid, con un mínimo de 3 frases (antes
-# podía quedar en 1 si solo un rasgo superaba el umbral de diferencia).
-# Esto recalcula ambos campos (desglose + diferencias_personalidad, este
-# último ya en el formato nuevo) para cada conexión ya existente, con los
-# perfiles actuales -- no vuelve a correr simulaciones, no manda
-# notificaciones, no toca ultimo_score ni nada más del documento.
-# ─────────────────────────────────────────────────────────────────────────
-@https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
-def recalcular_desglose_conexiones(request: https_fn.CallableRequest):
-    if request.auth is None:
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
-            "No autorizado."
-        )
-
-    db = firestore.client()
-    actualizadas = []
-    errores = []
-
-    for doc in db.collection("conexiones").stream():
-        data = doc.to_dict()
-        u1, u2 = data.get("usuario_1") or {}, data.get("usuario_2") or {}
-        uid1, uid2 = u1.get("uid"), u2.get("uid")
-        if not uid1 or not uid2:
-            continue
-
-        try:
-            doc1 = db.collection("usuarios").document(uid1).collection("gemelo").document("perfil").get()
-            doc2 = db.collection("usuarios").document(uid2).collection("gemelo").document("perfil").get()
-            if not doc1.exists or not doc2.exists:
-                continue
-
-            perfil1_data = _con_privacidad(db, uid1, doc1.to_dict())
-            perfil2_data = _con_privacidad(db, uid2, doc2.to_dict())
-
-            _, _, _, _, _, desglose_valores = motor.calcular_compatibilidad(perfil1_data, perfil2_data)
-
-            nombre1, nombre2 = u1.get("nombre") or "Usuario", u2.get("nombre") or "Usuario"
-            diferencias_por_uid = {
-                uid1: motor._diferencias_personalidad(perfil2_data, perfil1_data, nombre1, top_n=3, minimo=3),
-                uid2: motor._diferencias_personalidad(perfil1_data, perfil2_data, nombre2, top_n=3, minimo=3),
-            }
-
-            doc.reference.update({
-                "desglose": desglose_valores,
-                "diferencias_personalidad": diferencias_por_uid,
-            })
-            actualizadas.append(doc.id)
-        except Exception as e:
-            print(f"recalcular_desglose_conexiones: error con {doc.id}: {e}")
-            errores.append({"par_id": doc.id, "error": str(e)})
-
-    return {"actualizadas": actualizadas, "total": len(actualizadas), "errores": errores}
-
-
-# ─────────────────────────────────────────────────────────────────────────
 # FUNCIÓN TEMPORAL DE DIAGNÓSTICO -- borrar cuando ya no haga falta.
 #
 # "Forzar la corrida de matches" (buscar_parejas_pendientes +
