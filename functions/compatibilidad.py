@@ -836,7 +836,7 @@ def _resolver_genero(texto, genero):
     return texto
 
 
-def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, top_n=2):
+def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, top_n=2, minimo=0):
     """Desde la perspectiva de perfil1: en qué rasgos reales diverge más de
     perfil2 (personalidad Y valores juntos, ordenado por magnitud real de la
     diferencia, no por eje), para dar puntos de fricción CONCRETOS en vez de
@@ -847,25 +847,44 @@ def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, 
     sin ningún punto de fricción concreto, aunque su compatibilidad total
     fuera media/baja por esa diferencia de valores. Devuelve una lista de
     frases listas para mostrar, ya en tercera persona (sobre nombre2) --
-    vacía si no hay diferencias grandes o faltan datos."""
+    vacía si no hay diferencias grandes o faltan datos.
+
+    "minimo" garantiza un piso de frases aunque no lleguen al umbral -- para
+    mostrar en matches.html hacen falta al menos 3 puntos de análisis, pero
+    con umbral_diferencia=0.3 un par muy parecido en casi todo podía dejar
+    solo 1. Si no alcanza el umbral, se completa con las siguientes
+    diferencias más grandes disponibles (nunca con diferencias
+    insignificantes -- ver el descarte de <= 0.02 abajo, donde la frase
+    "más/menos" ya no describiría nada real)."""
     p1, p2 = perfil1.get("personalidad") or {}, perfil2.get("personalidad") or {}
     val1, val2 = perfil1.get("valores") or {}, perfil2.get("valores") or {}
 
-    diffs = []
+    todas = []
     for campo1, campo2, plantillas in ((p1, p2, _DIFERENCIA_RASGO), (val1, val2, _DIFERENCIA_VALOR)):
         for rasgo, plantilla in plantillas.items():
             v1, v2 = campo1.get(rasgo), campo2.get(rasgo)
             if v1 is None or v2 is None:
                 continue
             diferencia = abs(v1 - v2)
-            if diferencia < umbral_diferencia:
+            if diferencia <= 0.02:
                 continue
             alto = "más" if v2 > v1 else "menos"
             texto = _resolver_genero(plantilla.format(alto=alto), perfil2.get("genero", ""))
-            diffs.append((diferencia, f"{nombre2} {texto}."))
+            todas.append((diferencia, f"{nombre2} {texto}."))
 
-    diffs.sort(key=lambda x: -x[0])
-    return [texto for _, texto in diffs[:top_n]]
+    todas.sort(key=lambda x: -x[0])
+    n = max(top_n, minimo)
+
+    resultado = [texto for mag, texto in todas if mag >= umbral_diferencia][:n]
+    if minimo and len(resultado) < minimo:
+        ya = set(resultado)
+        for _, texto in todas:
+            if len(resultado) >= minimo:
+                break
+            if texto not in ya:
+                resultado.append(texto)
+                ya.add(texto)
+    return resultado
 
 
 # Temas CONCRETOS que se pueden pedir sin inventar nada, porque están

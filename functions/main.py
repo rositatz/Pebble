@@ -999,14 +999,23 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                     "creencias": resultado["score_creencias"],
                     "comunicacion": resultado["score_comunicacion"],
                 },
-                "diferencias_personalidad": (
-                    motor._diferencias_personalidad(
-                        perfil1_data, perfil2_data, data["usuario_2"]["nombre"] or "Usuario", top_n=3
-                    )
-                    + motor._diferencias_personalidad(
-                        perfil2_data, perfil1_data, data["usuario_1"]["nombre"] or "Usuario", top_n=3
-                    )
-                ),
+                # Antes esto era una sola lista combinada (frases sobre los
+                # DOS, mezcladas) -- así, cuando alguien abría el perfil del
+                # otro en matches.html, veía también frases sobre sí mismo,
+                # lo cual no tiene sentido en una sección que se supone que
+                # describe a la otra persona. Ahora es un dict por uid: cada
+                # lista son las frases que describen A ESE uid puntual (con
+                # un mínimo de 3, ver minimo= en _diferencias_personalidad),
+                # así matches.html puede mostrar solo diferencias_personalidad
+                # [otroId] -- las del otro, nunca las propias.
+                "diferencias_personalidad": {
+                    uid1: motor._diferencias_personalidad(
+                        perfil2_data, perfil1_data, data["usuario_1"]["nombre"] or "Usuario", top_n=3, minimo=3
+                    ),
+                    uid2: motor._diferencias_personalidad(
+                        perfil1_data, perfil2_data, data["usuario_2"]["nombre"] or "Usuario", top_n=3, minimo=3
+                    ),
+                },
                 "supera_umbral": resultado["supera_umbral"],
                 "distancia_km": data.get("distancia_km"),
                 "actualizado": (
@@ -1470,88 +1479,14 @@ def limpiar_flags_viejas(request: https_fn.CallableRequest):
 # ─────────────────────────────────────────────────────────────────────────
 # FUNCIÓN TEMPORAL -- borrar después de correrla una vez.
 #
-# Recalcula usuarios/{uid}/gemelo/perfil de TODOS los perfiles ya generados,
-# con el fix de _aplicar_reglas/_construir_pesos_compatibilidad (promediar
-# entre opciones marcadas en preguntas multi-select en vez de sumar cada
-# delta completo) y el de comportaInt (4 de 6 opciones habían quedado sin
-# ninguna regla que las matcheara tras la fusión con fiestaReac). Los
-# perfiles generados ANTES de este fix quedaron con esos mismos números
-# viejos guardados -- esto los recalcula sin esperar a que cada persona
-# vuelva a tocar el onboarding.
-#
-# Mismo merge de intereses que generar_gemelo_ahora (preserva lo agregado a
-# mano en perfil.html o aprendido de chats reales, solo reemplaza los slots
-# derivados de artista/género/serie/deporte/equipo/estética).
-#
-# NO TOCA gemelo_setup/data para nada -- el resumen de texto de la etapa 7
-# ("Este soy yo") vive ahí (campo etapa7.resumen / resumen_ia_texto), no en
-# gemelo/perfil, así que recalcular acá no lo cambia ni lo invalida.
-# ─────────────────────────────────────────────────────────────────────────
-@https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
-def recalcular_perfiles_multiselect(request: https_fn.CallableRequest):
-    if request.auth is None:
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
-            "No autorizado."
-        )
-
-    db = firestore.client()
-    recalculados = []
-    errores = []
-
-    for doc in db.collection_group("gemelo_setup").stream():
-        if doc.id != "data":
-            continue
-        datos_setup = doc.to_dict()
-        if not datos_setup.get("completed"):
-            continue
-
-        uid = doc.reference.parent.parent.id
-        try:
-            perfil_ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
-
-            datos_anteriores = perfil_ref.get().to_dict() or {}
-            intereses_previos = datos_anteriores.get("intereses") or []
-            slots_previos = {str(s).strip().casefold() for s in (datos_anteriores.get("intereses_slots") or [])}
-            extras = [i for i in intereses_previos if str(i).strip().casefold() not in slots_previos]
-
-            perfil = construir_perfil_gemelo(datos_setup)
-
-            vistos, combinados = set(), []
-            for i in (perfil.get("intereses_slots") or []) + extras:
-                i = str(i).strip()
-                if i and i.casefold() not in vistos:
-                    vistos.add(i.casefold())
-                    combinados.append(i)
-            combinados = combinados[:20]
-            perfil["intereses"] = combinados
-            perfil["intereses_onboarding"] = combinados
-
-            perfil_ref.set(perfil)
-            recalculados.append(uid)
-        except Exception as e:
-            print(f"recalcular_perfiles_multiselect: error con {uid}: {e}")
-            errores.append({"uid": uid, "error": str(e)})
-
-    return {"recalculados": recalculados, "total": len(recalculados), "errores": errores}
-
-
-# ─────────────────────────────────────────────────────────────────────────
-# FUNCIÓN TEMPORAL -- borrar después de correrla una vez.
-#
-# conexiones/{parId}.desglose y .diferencias_personalidad se calculan UNA
-# sola vez (cuando procesar_parejas_pendientes crea el match) y quedan
-# guardados ahí -- no se recalculan solos cuando se corrige algo en
-# compatibilidad.py, aunque el perfil de las personas ya se haya
-# actualizado (ver recalcular_perfiles_multiselect, arriba). Por eso el bug
-# de género en las frases de diferencias de personalidad seguía apareciendo
-# en matches ya existentes después del fix: el texto viejo, ya guardado,
-# no se tocaba solo.
-#
-# Esto SOLO recalcula esos dos campos (desglose + diferencias_personalidad)
-# para cada conexión ya existente, con los perfiles actuales -- no vuelve a
-# correr simulaciones, no manda notificaciones, no toca ultimo_score ni
-# nada más del documento.
+# conexiones/{parId}.diferencias_personalidad pasó de ser una lista
+# combinada (frases sobre los dos mezcladas) a un dict {uid: [frases]} --
+# cada lista describe SOLO a ese uid, con un mínimo de 3 frases (antes
+# podía quedar en 1 si solo un rasgo superaba el umbral de diferencia).
+# Esto recalcula ambos campos (desglose + diferencias_personalidad, este
+# último ya en el formato nuevo) para cada conexión ya existente, con los
+# perfiles actuales -- no vuelve a correr simulaciones, no manda
+# notificaciones, no toca ultimo_score ni nada más del documento.
 # ─────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
 def recalcular_desglose_conexiones(request: https_fn.CallableRequest):
@@ -1584,14 +1519,14 @@ def recalcular_desglose_conexiones(request: https_fn.CallableRequest):
             _, _, _, _, _, desglose_valores = motor.calcular_compatibilidad(perfil1_data, perfil2_data)
 
             nombre1, nombre2 = u1.get("nombre") or "Usuario", u2.get("nombre") or "Usuario"
-            diferencias = (
-                motor._diferencias_personalidad(perfil1_data, perfil2_data, nombre2, top_n=3)
-                + motor._diferencias_personalidad(perfil2_data, perfil1_data, nombre1, top_n=3)
-            )
+            diferencias_por_uid = {
+                uid1: motor._diferencias_personalidad(perfil2_data, perfil1_data, nombre1, top_n=3, minimo=3),
+                uid2: motor._diferencias_personalidad(perfil1_data, perfil2_data, nombre2, top_n=3, minimo=3),
+            }
 
             doc.reference.update({
                 "desglose": desglose_valores,
-                "diferencias_personalidad": diferencias,
+                "diferencias_personalidad": diferencias_por_uid,
             })
             actualizadas.append(doc.id)
         except Exception as e:

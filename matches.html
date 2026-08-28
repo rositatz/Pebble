@@ -1572,10 +1572,12 @@
         }
 
         // Gemelo preview (solo si hay una simulación real de la que sacarlo)
+        // -- clickeable, lleva a chats.html en modo "gemelo" (la simulación
+        // completa entre estos dos gemelos puntuales), no al chat real.
         if (p.preview && p.preview.length) {
           html += `<div>
     <p class="modal-section-title">Fragmento de la conversación entre gemelos</p>
-    <div class="gemelo-preview">`;
+    <div class="gemelo-preview" style="cursor:pointer" onclick="window.location.href='./chats.html?persona=${p.id}&modo=gemelo'" title="Ver la conversación completa entre gemelos">`;
           p.preview.forEach((b) => {
             html += `<div class="preview-bubble ${b.side}">${esc(b.text)}</div>`;
           });
@@ -2031,7 +2033,13 @@
           const isNew = !mis[`match_visto_${c.otroId}`];
           const tags = interesesCompartidos(misIntereses, c.otro.intereses);
           const ejes = construirEjes(c.data.desglose, c.ultimaSim);
-          const diferencias = c.data.diferencias_personalidad || [];
+          // diferencias_personalidad es un dict {uid: [frases]} -- se toma
+          // solo la lista del OTRO (c.otroId), nunca la propia, así en su
+          // perfil solo aparece lo que describe a esa persona.
+          const diferenciasPorUid = c.data.diferencias_personalidad || {};
+          const diferencias = Array.isArray(diferenciasPorUid)
+            ? [] // formato viejo (lista combinada) -- ya no se usa, se descarta
+            : diferenciasPorUid[c.otroId] || [];
           const historial =
             c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)
               ? c.ultimaSim.historial_chat
@@ -2044,6 +2052,7 @@
             .join(" · ");
 
           profiles[c.otroId] = {
+            id: c.otroId,
             name: nombre,
             age: edad,
             city: ciudad,
