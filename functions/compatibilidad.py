@@ -6,6 +6,7 @@
 import os
 import json
 import random
+import re
 
 from gemelo_perfil import construir_perfil_gemelo
 
@@ -812,6 +813,29 @@ _DIFERENCIA_VALOR = {
 }
 
 
+def _resolver_genero(texto, genero):
+    """Mismo mecanismo que resolverGenero() en gemelo-setup.html (JS), pero
+    del lado del servidor -- las plantillas de _DIFERENCIA_RASGO/_DIFERENCIA_
+    VALOR usan la forma "palabra/a" (introvertido/a, abierto/a) porque no se
+    sabe de antemano el género de quién describen. Sin esto, la frase le
+    quedaba literal "es bastante más abierto/a" a cualquiera, sin importar
+    que su perfil ya tuviera declarado "Mujer"/"Hombre"/etc."""
+    if not texto:
+        return texto
+    femenino = genero == "Mujer"
+
+    def _reemplazar(m):
+        base = m.group(1)
+        if not femenino:
+            return base
+        return base[:-1] + "a" if base.endswith("o") else base + "a"
+
+    texto = re.sub(r"(\w+)/a\b", _reemplazar, texto, flags=re.UNICODE)
+    texto = re.sub(r"\bEl/la\b", "La" if femenino else "El", texto)
+    texto = re.sub(r"\bel/la\b", "la" if femenino else "el", texto)
+    return texto
+
+
 def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, top_n=2):
     """Desde la perspectiva de perfil1: en qué rasgos reales diverge más de
     perfil2 (personalidad Y valores juntos, ordenado por magnitud real de la
@@ -837,7 +861,7 @@ def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, 
             if diferencia < umbral_diferencia:
                 continue
             alto = "más" if v2 > v1 else "menos"
-            texto = plantilla.format(alto=alto)
+            texto = _resolver_genero(plantilla.format(alto=alto), perfil2.get("genero", ""))
             diffs.append((diferencia, f"{nombre2} {texto}."))
 
     diffs.sort(key=lambda x: -x[0])
@@ -892,8 +916,8 @@ def _temas_obligatorios(perfil1, perfil2, nombre1=None, nombre2=None, top_n=3):
             "como un dato de relleno."
         )
 
-    hijos1 = (perfil1.get("hijos") or {}).get("postura_hijos", "")
-    hijos2 = (perfil2.get("hijos") or {}).get("postura_hijos", "")
+    hijos1 = perfil1.get("postura_hijos", "")
+    hijos2 = perfil2.get("postura_hijos", "")
     if hijos1 or hijos2:
         disponibles.append(
             "Si quieren tener hijos o no, y qué tan importante es la "

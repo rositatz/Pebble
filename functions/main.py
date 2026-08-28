@@ -1468,6 +1468,75 @@ def limpiar_flags_viejas(request: https_fn.CallableRequest):
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# FUNCIÓN TEMPORAL -- borrar después de correrla una vez.
+#
+# Recalcula usuarios/{uid}/gemelo/perfil de TODOS los perfiles ya generados,
+# con el fix de _aplicar_reglas/_construir_pesos_compatibilidad (promediar
+# entre opciones marcadas en preguntas multi-select en vez de sumar cada
+# delta completo) y el de comportaInt (4 de 6 opciones habían quedado sin
+# ninguna regla que las matcheara tras la fusión con fiestaReac). Los
+# perfiles generados ANTES de este fix quedaron con esos mismos números
+# viejos guardados -- esto los recalcula sin esperar a que cada persona
+# vuelva a tocar el onboarding.
+#
+# Mismo merge de intereses que generar_gemelo_ahora (preserva lo agregado a
+# mano en perfil.html o aprendido de chats reales, solo reemplaza los slots
+# derivados de artista/género/serie/deporte/equipo/estética).
+#
+# NO TOCA gemelo_setup/data para nada -- el resumen de texto de la etapa 7
+# ("Este soy yo") vive ahí (campo etapa7.resumen / resumen_ia_texto), no en
+# gemelo/perfil, así que recalcular acá no lo cambia ni lo invalida.
+# ─────────────────────────────────────────────────────────────────────────
+@https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
+def recalcular_perfiles_multiselect(request: https_fn.CallableRequest):
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+            "No autorizado."
+        )
+
+    db = firestore.client()
+    recalculados = []
+    errores = []
+
+    for doc in db.collection_group("gemelo_setup").stream():
+        if doc.id != "data":
+            continue
+        datos_setup = doc.to_dict()
+        if not datos_setup.get("completed"):
+            continue
+
+        uid = doc.reference.parent.parent.id
+        try:
+            perfil_ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+
+            datos_anteriores = perfil_ref.get().to_dict() or {}
+            intereses_previos = datos_anteriores.get("intereses") or []
+            slots_previos = {str(s).strip().casefold() for s in (datos_anteriores.get("intereses_slots") or [])}
+            extras = [i for i in intereses_previos if str(i).strip().casefold() not in slots_previos]
+
+            perfil = construir_perfil_gemelo(datos_setup)
+
+            vistos, combinados = set(), []
+            for i in (perfil.get("intereses_slots") or []) + extras:
+                i = str(i).strip()
+                if i and i.casefold() not in vistos:
+                    vistos.add(i.casefold())
+                    combinados.append(i)
+            combinados = combinados[:20]
+            perfil["intereses"] = combinados
+            perfil["intereses_onboarding"] = combinados
+
+            perfil_ref.set(perfil)
+            recalculados.append(uid)
+        except Exception as e:
+            print(f"recalcular_perfiles_multiselect: error con {uid}: {e}")
+            errores.append({"uid": uid, "error": str(e)})
+
+    return {"recalculados": recalculados, "total": len(recalculados), "errores": errores}
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # FUNCIÓN TEMPORAL DE DIAGNÓSTICO -- borrar cuando ya no haga falta.
 #
 # "Forzar la corrida de matches" (buscar_parejas_pendientes +

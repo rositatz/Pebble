@@ -257,14 +257,17 @@ REGLAS_NUMERICAS = [
     ("etapa4", "inaceptable", "Que no escuche mi punto de vista", {"personalidad.empatia": 0.05}),
     ("etapa4", "inaceptable", "Que me mienta o me oculte cosas", {"valores.estabilidad": 0.05}),
     ("etapa4", "inaceptable", "Que me falte el respeto", {"personalidad.tolerancia_conflicto": 0.05}),
-    ("etapa4", "fiestaReac", "Me muestro natural y sigo la conversación", {"personalidad.introversion": -0.10}),
-    ("etapa4", "fiestaReac", "Me pongo nervioso/a pero intento seguirle el ritmo", {"personalidad.sensibilidad_emocional": 0.05}),
-    ("etapa4", "fiestaReac", "Espero señales antes de abrirme más", {"personalidad.introversion": 0.05}),
-    ("etapa4", "fiestaReac", "Me quedo más reservado/a", {"personalidad.introversion": 0.15}),
+    # "fiestaReac" se fusionó con "comportaInt" en el onboarding (mismo
+    # campo ahora, 6 opciones) -- las reglas de acá abajo tienen que usar
+    # el texto EXACTO de las 6 opciones actuales de comportaInt, si no
+    # quedan huérfanas y esa opción no suma nada (bug real que había acá:
+    # 4 de las 6 opciones no matcheaban ninguna regla).
+    ("etapa4", "comportaInt", "Me muestro natural y sigo la conversación", {"personalidad.introversion": -0.10}),
     ("etapa4", "comportaInt", "Me pongo más atento/a y presente, lo demuestro bastante", {"personalidad.necesidad_afecto": 0.08}),
-    ("etapa4", "comportaInt", "Me vuelvo un poco más tímido/a", {"personalidad.introversion": 0.10}),
+    ("etapa4", "comportaInt", "Me pongo nervioso/a pero intento seguirle el ritmo", {"personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa4", "comportaInt", "Me vuelvo más tímido/a y reservado/a", {"personalidad.introversion": 0.12}),
     ("etapa4", "comportaInt", "Intento actuar normal aunque por dentro piense todo", {"personalidad.introversion": 0.05}),
-    ("etapa4", "comportaInt", "Depende, puedo ser muy expresivo/a o muy frío/a", {"personalidad.sensibilidad_emocional": 0.05}),
+    ("etapa4", "comportaInt", "Espero señales antes de abrirme más", {"personalidad.introversion": 0.05}),
     ("etapa5", "citaClima", "Lluvia y películas", {"personalidad.introversion": 0.05}),
     ("etapa5", "citaClima", "Playa y música", {"personalidad.introversion": -0.05, "valores.aventura": 0.03}),
     ("etapa5", "citaActividad", "Mirar estrellas", {"personalidad.sensibilidad_emocional": 0.05}),
@@ -362,11 +365,43 @@ def _seleccion(datos_etapa, campo):
     return valor if isinstance(valor, list) else [valor]
 
 
-def _aplicar_reglas(numerico, respuestas_raw, reglas):
+def _reglas_por_campo(reglas):
+    agrupadas = {}
     for etapa, campo, respuesta_esperada, cambios in reglas:
+        agrupadas.setdefault((etapa, campo), []).append((respuesta_esperada, cambios))
+    return agrupadas
+
+
+def _cambios_promediados(reglas_campo, seleccionadas):
+    """Muchas preguntas que antes eran de una sola respuesta pasaron a
+    multi-select (para no forzar a elegir un solo estereotipo) -- pero si
+    cada opción marcada suma su delta completo, marcar 3-4 opciones en una
+    sola pregunta mueve la personalidad tanto como responder 3-4 preguntas
+    distintas, y varios rasgos terminan cambiando de golpe por una sola
+    pregunta. Promediando entre las opciones marcadas, el efecto total de
+    ESA pregunta se mantiene parecido sin importar cuántas opciones se
+    hayan elegido -- elegir una sola sigue funcionando exactamente igual
+    que antes (n=1, sin cambios)."""
+    coincidencias = [
+        cambios for respuesta_esperada, cambios in reglas_campo
+        if respuesta_esperada.strip().casefold() in seleccionadas
+    ]
+    if not coincidencias:
+        return None
+    n = len(coincidencias)
+    resultado = {}
+    for cambios in coincidencias:
+        for ruta, delta in cambios.items():
+            resultado[ruta] = resultado.get(ruta, 0.0) + delta / n
+    return resultado
+
+
+def _aplicar_reglas(numerico, respuestas_raw, reglas):
+    for (etapa, campo), reglas_campo in _reglas_por_campo(reglas).items():
         datos_etapa = respuestas_raw.get(etapa) or {}
         seleccionadas = {str(v).strip().casefold() for v in _seleccion(datos_etapa, campo)}
-        if respuesta_esperada.strip().casefold() not in seleccionadas:
+        cambios = _cambios_promediados(reglas_campo, seleccionadas)
+        if cambios is None:
             continue
         for ruta, delta in cambios.items():
             grupo, clave = ruta.split(".")
@@ -375,10 +410,11 @@ def _aplicar_reglas(numerico, respuestas_raw, reglas):
 
 def _construir_pesos_compatibilidad(respuestas_raw):
     pesos = dict(PESOS_DEFAULT)
-    for etapa, campo, respuesta_esperada, cambios in REGLAS_PESOS:
+    for (etapa, campo), reglas_campo in _reglas_por_campo(REGLAS_PESOS).items():
         datos_etapa = respuestas_raw.get(etapa) or {}
         seleccionadas = {str(v).strip().casefold() for v in _seleccion(datos_etapa, campo)}
-        if respuesta_esperada.strip().casefold() not in seleccionadas:
+        cambios = _cambios_promediados(reglas_campo, seleccionadas)
+        if cambios is None:
             continue
         for eje, delta in cambios.items():
             pesos[eje] += delta
