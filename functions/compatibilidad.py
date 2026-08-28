@@ -779,12 +779,21 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
 # describir a la otra persona en tercera persona ("tiene alta tolerancia al
 # conflicto, vos baja"). Mismos 9 rasgos que ya usa _directiva en simulador.
 _DIFERENCIA_RASGO = {
-    "introversion": "es bastante {alto} que vos en sociabilidad (extrovertido/a vs. introvertido/a)",
+    # Las tres de abajo (introversion/apertura_mental/sensibilidad_emocional)
+    # antes decían "es bastante más/menos QUE VOS frente a ideas nuevas" --
+    # le faltaba el adjetivo del rasgo, quedaba una frase incompleta ("menos
+    # ¿qué?"). Ahora {alto} modifica un adjetivo real (abierto-a/sensible),
+    # no queda pegado directo a "que vos". "introversion" en particular
+    # describe el rasgo CRUDO (introvertido/a), no "sociable" -- {alto} ya
+    # viene calculado sobre el valor de introversión, así que frasearlo
+    # como "más/menos sociable" invertía el sentido (más introvertido/a =
+    # MENOS sociable, no más).
+    "introversion": "es bastante {alto} introvertido/a que vos",
     "empatia": "le da bastante más/menos peso que a vos a cómo se siente el otro emocionalmente",
     "sarcasmo": "tiene un sentido del humor bastante distinto al tuyo (mucho más o mucho menos sarcástico/a)",
-    "apertura_mental": "es bastante {alto} que vos frente a ideas o planes nuevos",
+    "apertura_mental": "es bastante {alto} abierto/a a ideas o planes nuevos que vos",
     "ambicion": "le importa bastante {alto} que a vos crecer/lograr cosas a nivel profesional",
-    "sensibilidad_emocional": "es bastante {alto} que vos emocionalmente (le afectan más o menos las cosas)",
+    "sensibilidad_emocional": "es bastante {alto} sensible que vos a nivel emocional (le afectan más o menos las cosas)",
     "necesidad_afecto": "necesita bastante {alto} validación/cercanía afectiva que vos",
     "independencia": "valora bastante {alto} su independencia que vos",
     "tolerancia_conflicto": "tolera bastante {alto} el conflicto/discutir que vos",
@@ -853,15 +862,23 @@ def _temas_obligatorios(perfil1, perfil2, nombre1=None, nombre2=None, top_n=3):
             "charla sobre cómo manejan los conflictos en general ni sobre "
             "su forma de ser, es un choque que pasa AHORA, en esta misma "
             "charla. Usen las diferencias reales de personalidad/valores de "
-            "más arriba (si hay) como motivo concreto para el desacuerdo, y "
-            "reaccionen cada uno según su propia forma real de manejar el "
-            "conflicto (ver 'CÓMO MANEJA LOS CONFLICTOS' en su propio "
-            "perfil): pueden pelearse, tratarse mal, subir el tono, "
-            "ponerse a la defensiva o cerrarse -- lo que corresponda según "
-            "su personalidad y la compatibilidad real entre ustedes, sin "
-            "suavizarlo. Lo que importa es que se vea CÓMO LO ENFRENTAN Y "
-            "LO RESUELVEN (o si no lo resuelven), no una descripción de "
-            "cómo son."
+            "más arriba (si hay) como motivo concreto para el desacuerdo. "
+            "MUY IMPORTANTE: cada uno reacciona SEGÚN SU PROPIO estilo real "
+            "de manejar el conflicto (ver 'CÓMO MANEJA LOS CONFLICTOS' en su "
+            "propio perfil) -- eso NO es opcional ni una opción más entre "
+            "varias, es LA que corresponde usar. Si tus datos dicen que "
+            "necesitás distancia o te cuesta abrirte, tu reacción real acá "
+            "es pedir espacio, cerrarte o cortar la charla un rato -- NUNCA "
+            "confrontar directo, marcar todo punto por punto, ni ponerte "
+            "frío/a de golpe, aunque eso sea más dramático o 'interesante' "
+            "narrativamente. Si tus datos dicen que confrontás directo, "
+            "ahí sí corresponde decir las cosas de frente. No mezcles: la "
+            "persona que dijo que le cuesta mostrar cómo se siente y busca "
+            "distancia primero JAMÁS reacciona con un choque frontal solo "
+            "porque es lo que arma un conflicto más rápido. Lo que importa "
+            "es que se vea CÓMO LO ENFRENTAN Y LO RESUELVEN (o si no lo "
+            "resuelven) siendo fieles a cómo son de verdad, no una versión "
+            "genérica de 'alguien peleando'."
         )
 
     if perfil1.get("plan_futuro") or perfil2.get("plan_futuro") or perfil1.get("valores") or perfil2.get("valores"):
@@ -961,10 +978,19 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     Usa compatibilidad SOLO de onboarding (analisis=None) -- la charla en
     cuestión todavía no pasó, no se puede analizar a sí misma."""
     promedio_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+
+    # 4 escalones, no 3 -- antes "MEDIA" era un solo balde entre el umbral y
+    # 0.70, así que un 53% y un 68% recibían EXACTAMENTE la misma exigencia
+    # de fricción, aunque haya casi 15 puntos de diferencia real entre
+    # ellos. El nivel de conflicto tiene que escalar junto con el score, no
+    # ser binario (hay conflicto / no hay conflicto).
+    punto_medio = (umbral + 0.70) / 2
     if promedio_previo >= 0.70:
         nivel = "ALTA -- comparten bastante de verdad en valores, forma de ser y de comunicarse"
+    elif promedio_previo >= punto_medio:
+        nivel = "MEDIA-ALTA -- comparten bastante, pero no todo -- hay alguna diferencia real de fondo"
     elif promedio_previo >= umbral:
-        nivel = "MEDIA -- comparten algunas cosas pero también hay diferencias reales de fondo"
+        nivel = "MEDIA-BAJA -- comparten algunas cosas pero también hay diferencias reales de peso"
     else:
         nivel = "BAJA -- en los datos reales de los dos hay bastante poco en común"
 
@@ -1004,6 +1030,41 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     algún punto de la charla):
     {puntos_temas}"""
 
+    # La intensidad de la fricción exigida escala junto con el nivel --
+    # antes MEDIA-ALTA (ej: 68%) y MEDIA-BAJA (ej: 53%) recibían la MISMA
+    # exigencia ("al menos una pelea/desacuerdo notorio"), así que subir de
+    # 53% a 60% no cambiaba en nada qué tan fuerte tenía que ser el choque.
+    if nivel.startswith("ALTA"):
+        intensidad_txt = ""
+    elif nivel.startswith("MEDIA-ALTA"):
+        intensidad_txt = """
+    Como la compatibilidad es MEDIA-ALTA, la fricción tiene que ser LEVE --
+    nada de pelea seria ni de ponerse frío/a de golpe, eso EXAGERARÍA la
+    incompatibilidad real. Alcanza con un roce chico: una diferencia de
+    opinión puntual que no escala, un comentario que incomoda un toque,
+    un "che, no sé si estoy de acuerdo con eso" sin más drama, o un
+    silencio corto antes de seguir. EXIGENCIA CONCRETA: al menos UN roce
+    así tiene que pasar, pero manteniéndose liviano -- no lo conviertan en
+    el eje de la charla."""
+    elif nivel.startswith("MEDIA-BAJA"):
+        intensidad_txt = """
+    Como la compatibilidad es MEDIA-BAJA, la fricción tiene que notarse de
+    verdad, más que un roce chico -- un desacuerdo real donde uno dice
+    derecho que no está de acuerdo, algo parecido a una discusión corta,
+    o un ambiente notoriamente más incómodo/con menos onda en algún tramo
+    de la charla. No hace falta que sea una pelea grande, pero sí algo
+    más que un comentario suelto. EXIGENCIA CONCRETA: al menos UNA de
+    estas formas tiene que pasar de manera clara, no sutil."""
+    else:
+        intensidad_txt = """
+    Como la compatibilidad es BAJA, la fricción tiene que ser fuerte y
+    real: un desacuerdo serio, algo parecido a una pelea de verdad, o muy
+    poca confianza para abrirse (respuestas cortas/evasivas en temas
+    personales) combinado con un ambiente incómodo sostenido, no solo un
+    momento puntual. EXIGENCIA CONCRETA, no opcional: en algún punto de
+    esta charla tiene que pasar al menos UNA de estas formas de manera
+    clara y notoria."""
+
     return f"""
     COMPATIBILIDAD REAL ENTRE USTEDES DOS (según sus datos reales de
     fondo, no esta charla puntual): {nivel}. Esto NO es algo que tengan
@@ -1014,22 +1075,15 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     literalmente actuar como si fueran la misma persona cuando NO comparten
     tanto en los datos reales.
     {"" if nivel.startswith("ALTA") else '''
-    OJO, ESTO ES LO MÁS IMPORTANTE DE ESTA SECCIÓN: compatibilidad baja o
-    media NO SIGNIFICA una charla más corta ni con menos temas -- la
-    charla dura lo mismo y toca la misma cantidad de temas que cualquier
-    otra. La diferencia se nota en CÓMO SE SIENTEN esos temas, nunca en
-    cuántos hay ni cuánto dura la charla. Formas correctas de mostrar
-    compatibilidad baja/media (usen una o varias, no todas de una):
-    desacuerdos reales donde uno dice derecho que no está de acuerdo,
-    algo parecido a una pelea o discusión corta, poca confianza para
-    abrirse del todo (respuestas más cortas o evasivas en temas
-    personales), o un ambiente medio incómodo / con poca onda en general
-    (menos entusiasmo, menos ganas de seguir profundizando, silencios raros).
-    Lo que NO sirve para mostrar esto: cortar la charla antes, evitar
-    cambiar de tema, o simplemente hablar menos en general -- eso no se
-    lee como incompatibilidad, se lee como una charla mal actuada. EXIGENCIA
-    CONCRETA, no opcional: en algún punto de esta charla tiene que pasar al
-    menos UNA de las formas de arriba de manera clara y notoria, no sutil.'''}
+    OJO: compatibilidad no-ALTA no significa una charla más corta ni con
+    menos temas -- la charla dura lo mismo y toca la misma cantidad de
+    temas que cualquier otra. La diferencia se nota en CÓMO SE SIENTEN esos
+    temas y en la intensidad de la fricción (ver abajo), nunca en cuántos
+    hay ni cuánto dura la charla. Lo que NO sirve para mostrar esto: cortar
+    la charla antes, evitar cambiar de tema, o simplemente hablar menos en
+    general -- eso no se lee como incompatibilidad, se lee como una charla
+    mal actuada.'''}
+    {intensidad_txt}
     {friccion_txt}
     {temas_txt}
     """

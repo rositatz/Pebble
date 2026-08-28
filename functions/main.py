@@ -2,6 +2,7 @@ import random
 import datetime
 import hashlib
 import json
+import traceback
 
 import firebase_admin
 from firebase_admin import firestore, auth
@@ -1068,7 +1069,10 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             procesadas += 1
 
         except Exception as e:
-            doc.reference.update({"estado": "ERROR", "error": str(e)})
+            # traceback completo, no solo str(e) -- un mensaje como
+            # "unsupported operand type(s) for *: 'dict' and 'float'" no
+            # dice en qué línea/función pasó, y sin eso hay que adivinar.
+            doc.reference.update({"estado": "ERROR", "error": traceback.format_exc()})
             con_error += 1
 
     print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error.")
@@ -1462,4 +1466,62 @@ def limpiar_flags_viejas(request: https_fn.CallableRequest):
 
     return {"limpiados": limpiados, "total": len(limpiados)}
 
-    return {"ok": True}
+
+# ─────────────────────────────────────────────────────────────────────────
+# FUNCIÓN TEMPORAL DE DIAGNÓSTICO -- borrar cuando ya no haga falta.
+#
+# "Forzar la corrida de matches" (buscar_parejas_pendientes +
+# procesar_parejas_pendientes) devolvió "no se corrió ninguna simulación" --
+# esto lee el estado real de Firestore para saber por qué: si es porque no
+# hay parejas pendientes, porque todas dieron un score por debajo del
+# umbral (comportamiento esperado: si no superan el umbral, no se gasta en
+# una simulación real de OpenAI), o porque algo tiró una excepción real.
+# ─────────────────────────────────────────────────────────────────────────
+@https_fn.on_call(timeout_sec=120, memory=MemoryOption.MB_512)
+def diagnostico_matches(request: https_fn.CallableRequest):
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+            "No autorizado."
+        )
+
+    db = firestore.client()
+
+    # {"resetear_errores": true} vuelve a poner en PENDIENTE cualquier
+    # pareja que haya quedado en ERROR, así procesar_parejas_pendientes la
+    # vuelve a tomar en la próxima corrida forzada (por default solo mira
+    # estado == PENDIENTE, nunca reintenta un ERROR solo).
+    if (request.data or {}).get("resetear_errores"):
+        reseteadas = 0
+        for doc in db.collection("parejas_pendientes").where("estado", "==", "ERROR").stream():
+            doc.reference.update({"estado": "PENDIENTE", "error": None})
+            reseteadas += 1
+        return {"reseteadas": reseteadas}
+
+    pendientes = []
+    for doc in db.collection("parejas_pendientes").stream():
+        d = doc.to_dict()
+        pendientes.append({
+            "par_id": d.get("par_id"),
+            "estado": d.get("estado"),
+            "usuario_1": (d.get("usuario_1") or {}).get("nombre"),
+            "usuario_2": (d.get("usuario_2") or {}).get("nombre"),
+            "error": d.get("error"),
+        })
+
+    conexiones_recientes = []
+    for doc in db.collection("conexiones").order_by("creado", direction=firestore.Query.DESCENDING).limit(15).stream():
+        d = doc.to_dict()
+        conexiones_recientes.append({
+            "usuario_1": (d.get("usuario_1") or {}).get("nombre"),
+            "usuario_2": (d.get("usuario_2") or {}).get("nombre"),
+            "ultimo_score": d.get("ultimo_score"),
+            "supera_umbral": d.get("supera_umbral"),
+        })
+
+    return {
+        "umbral_actual": motor.UMBRAL_MATCH,
+        "parejas_pendientes_count": len(pendientes),
+        "parejas_pendientes": pendientes,
+        "conexiones_recientes": conexiones_recientes,
+    }
