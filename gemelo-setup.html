@@ -2588,21 +2588,6 @@
           <div class="sec-title">💘 Tu tipo</div>
           <div class="q">
             <div class="ql">
-              ¿Qué vibra te suele atraer? (podés elegir varias)
-            </div>
-            <div class="pills multi" data-field="vibeAtrae">
-              <button class="pill" onclick="selMulti(this)">Tranquila</button
-              ><button class="pill" onclick="selMulti(this)">Intensa</button
-              ><button class="pill" onclick="selMulti(this)">Misteriosa</button
-              ><button class="pill" onclick="selMulti(this)">Divertida</button
-              ><button class="pill" onclick="selMulti(this)">Sensible</button
-              ><button class="pill" onclick="selMulti(this)">Segura</button
-              ><button class="pill" onclick="selMulti(this)">Artística</button
-              ><button class="pill" onclick="selMulti(this)">Intelectual</button>
-            </div>
-          </div>
-          <div class="q">
-            <div class="ql">
               ¿Qué tipo de conexión buscás primero? (podés elegir varias)
             </div>
             <div class="pills multi" data-field="conexionPrimero">
@@ -2633,14 +2618,23 @@
             </div>
           </div>
           <div class="q">
-            <div class="ql">¿Te atrae más alguien... (podés elegir varias)</div>
+            <div class="ql">
+              ¿Qué tipo de persona te atrae más? (podés elegir varias)
+            </div>
             <div class="pills multi" data-field="atraeMas">
               <button class="pill" onclick="selMulti(this)">Seguro/a</button
               ><button class="pill" onclick="selMulti(this)">Sensible</button
               ><button class="pill" onclick="selMulti(this)">Gracioso/a</button
               ><button class="pill" onclick="selMulti(this)">Inteligente</button
               ><button class="pill" onclick="selMulti(this)">Creativo/a</button
-              ><button class="pill" onclick="selMulti(this)">Ambicioso/a</button>
+              ><button class="pill" onclick="selMulti(this)">Ambicioso/a</button
+              ><button class="pill" onclick="selMulti(this)">Tranquilo/a</button
+              ><button class="pill" onclick="selMulti(this)">Intenso/a</button
+              ><button class="pill" onclick="selMulti(this)">
+                Misterioso/a</button
+              ><button class="pill" onclick="selMulti(this)">
+                Divertido/a</button
+              ><button class="pill" onclick="selMulti(this)">Artístico/a</button>
             </div>
           </div>
         </div>
@@ -3787,8 +3781,9 @@
         // vibeAtrae/conexionPrimero pasaron a ser multi-select -- acá solo
         // se usa uno para armar la plantilla de respaldo (el resumen real
         // lo escribe la IA con todas las respuestas), así que alcanza con
-        // el primero que haya elegido.
-        const vibe = (Array.isArray(e6.vibeAtrae) ? e6.vibeAtrae[0] : e6.vibeAtrae) || "especial";
+        // el primero que haya elegido. "vibeAtrae" se unificó con
+        // "atraeMas" (ver etapa6, sec "Tu tipo") -- ya no existe aparte.
+        const vibe = (Array.isArray(e6.atraeMas) ? e6.atraeMas[0] : e6.atraeMas) || "especial";
         // planIdeal también pasó a multi-select -- el primero alcanza para
         // esta plantilla de respaldo.
         const plan =

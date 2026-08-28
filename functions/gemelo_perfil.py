@@ -49,6 +49,14 @@ REGLAS_PESOS = [
     ("etapa6", "atraeMas", "Inteligente", {"psicologico": 0.04}),
     ("etapa6", "atraeMas", "Creativo/a", {"conversacional": 0.04}),
     ("etapa6", "atraeMas", "Ambicioso/a", {"valores": 0.06}),
+    # Se sumaron acá al unificar con la vieja pregunta "¿Qué vibra te
+    # suele atraer?" -- eran la misma pregunta en el fondo (tipo de
+    # persona/vibra que atrae), separadas sin necesidad.
+    ("etapa6", "atraeMas", "Tranquilo/a", {"psicologico": 0.04}),
+    ("etapa6", "atraeMas", "Intenso/a", {"psicologico": 0.04}),
+    ("etapa6", "atraeMas", "Misterioso/a", {"psicologico": 0.04}),
+    ("etapa6", "atraeMas", "Divertido/a", {"conversacional": 0.06}),
+    ("etapa6", "atraeMas", "Artístico/a", {"conversacional": 0.04}),
     ("etapa6", "politicaImportancia", "Muy importante", {"creencias": 0.10}),
     ("etapa6", "religionImportancia", "Muy importante", {"creencias": 0.10}),
 
@@ -284,7 +292,7 @@ REGLAS_NUMERICAS = [
 CAMPOS_PREFERENCIA_PAREJA = [
     ("etapa3", "persEngancha"),
     ("etapa5", "similitud"), ("etapa5", "carinoIntens"),
-    ("etapa6", "vibeAtrae"), ("etapa6", "conexionPrimero"), ("etapa6", "gustaMueven"),
+    ("etapa6", "conexionPrimero"), ("etapa6", "gustaMueven"),
     ("etapa6", "atraeMas"), ("etapa6", "colorPelo"), ("etapa6", "estiloPelo"),
     ("etapa6", "alturaAtrae"), ("etapa6", "contextura"), ("etapa6", "outfitCrush"),
 ]
@@ -592,6 +600,11 @@ MAPA_PREFERENCIAS_PERSONALIDAD = [
     ("etapa6", "atraeMas", "Sensible", {"sensibilidad_emocional": 0.8, "empatia": 0.8}),
     ("etapa6", "atraeMas", "Inteligente", {"apertura_mental": 0.85}),
     ("etapa6", "atraeMas", "Creativo/a", {"apertura_mental": 0.85}),
+    ("etapa6", "atraeMas", "Tranquilo/a", {"introversion": 0.65, "sensibilidad_emocional": 0.3}),
+    ("etapa6", "atraeMas", "Intenso/a", {"introversion": 0.2, "sensibilidad_emocional": 0.8}),
+    ("etapa6", "atraeMas", "Misterioso/a", {"introversion": 0.75}),
+    ("etapa6", "atraeMas", "Divertido/a", {"introversion": 0.2, "sarcasmo": 0.65}),
+    ("etapa6", "atraeMas", "Artístico/a", {"apertura_mental": 0.8}),
     ("etapa3", "persEngancha", "Súper expresiva, habladora y con mucha onda", {"introversion": 0.15}),
     ("etapa3", "persEngancha", "Tranquila, que sabe escuchar y transmite paz", {"introversion": 0.55, "empatia": 0.75}),
     ("etapa3", "persEngancha", "Intensa o hiperactiva", {"introversion": 0.15, "sensibilidad_emocional": 0.7}),
