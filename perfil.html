@@ -5527,6 +5527,18 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           ),
         ].map((c) => c.textContent.trim());
         await setDoc(doc(db, "usuarios", uid), { intereses }, { merge: true });
+        // usuarios/{uid}.intereses (arriba) es lo que arma las tarjetas del
+        // feed, pero el % de compatibilidad real y las simulaciones leen
+        // gemelo/perfil.intereses_onboarding -- ese campo es de
+        // solo-lectura para el cliente (ver firestore.rules), así que
+        // propagar el cambio ahí tiene que pasar por este callable
+        // server-side (mismo mecanismo que ya usa _db_saveInfo para
+        // género/orientación/ciudad).
+        try {
+          await actualizarPreferenciasMatchingCallable({ intereses });
+        } catch (e) {
+          console.error("Error propagando intereses al perfil real:", e);
+        }
       };
 
       window.doLogout = async () => {

@@ -230,8 +230,49 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
             "Todavía no completaste el onboarding de tu gemelo."
         )
 
+    perfil_ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+
+    # construir_perfil_gemelo recalcula TODO desde gemelo_setup/data -- para
+    # personalidad/valores eso es lo correcto (si cambiaste una respuesta,
+    # tu gemelo tiene que reflejarlo). Pero "intereses"/"intereses_onboarding"
+    # también se venían pisando por completo con la lista angosta que se
+    # arma sola a partir de 5-6 campos puntuales (artista, género musical,
+    # serie, deporte, equipo, estética) -- así que cualquier interés que se
+    # hubiera agregado después (eligiéndolo a mano en perfil.html, o
+    # aprendido de chats reales vía actualizar_aprendizaje_gemelo) se
+    # perdía apenas se volvía a tocar CUALQUIER respuesta del onboarding,
+    # aunque no tuviera nada que ver con intereses. Se combina la lista
+    # nueva (recalculada, capta un cambio real como "cambié mi serie
+    # favorita") con la ya guardada (preserva lo aprendido/elegido a mano)
+    # en vez de que una pise a la otra.
+    # Merge en vez de pisar: "intereses_slots" guarda SOLO lo que sale de
+    # las 6 respuestas puntuales (artista/género musical/serie/deporte/
+    # equipo/estética) la vez anterior que se generó el perfil. Restando
+    # eso del "intereses" completo de esa vez, queda el resto -- lo
+    # agregado a mano en perfil.html o aprendido de chats reales -- que
+    # SIEMPRE se preserva. Los slots nuevos (recalculados ahora) reemplazan
+    # a los viejos automáticamente: si cambiaste tu serie favorita, la
+    # vieja no queda dando vueltas para siempre, la nueva ocupa su lugar.
+    datos_anteriores = perfil_ref.get().to_dict() or {}
+    intereses_previos = datos_anteriores.get("intereses") or []
+    slots_previos = {str(s).strip().casefold() for s in (datos_anteriores.get("intereses_slots") or [])}
+    extras = [i for i in intereses_previos if str(i).strip().casefold() not in slots_previos]
+
     perfil = construir_perfil_gemelo(doc_setup.to_dict())
-    db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+
+    vistos, combinados = set(), []
+    for i in (perfil.get("intereses_slots") or []) + extras:
+        i = str(i).strip()
+        if i and i.casefold() not in vistos:
+            vistos.add(i.casefold())
+            combinados.append(i)
+    combinados = combinados[:20]
+    perfil["intereses"] = combinados
+    perfil["intereses_onboarding"] = combinados
+    # "intereses_slots" queda tal cual lo devolvió construir_perfil_gemelo
+    # (los slots NUEVOS) -- es la referencia para la PRÓXIMA regeneración.
+
+    perfil_ref.set(perfil)
 
     return {"ok": True}
 
@@ -318,6 +359,7 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
       - edadMinBusco (opcional)
       - edadMaxBusco (opcional)
       - ciudad (opcional)
+      - intereses (opcional)
     """
 
     if request.auth is None:
@@ -365,6 +407,33 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
         valor = (data.get("ciudad") or "").strip()[:60]
         if valor:
             cambios["ciudad"] = valor
+
+    # El picker de intereses de perfil.html (usuarios/{uid}.intereses) vivía
+    # totalmente desconectado del "intereses_onboarding" congelado que
+    # calcular_compatibilidad y las simulaciones usan de verdad -- ese
+    # campo se armaba solo, a partir de 5-6 respuestas puntuales del
+    # onboarding (artista, género musical, serie, deporte, equipo,
+    # estética), así que elegir un interés nuevo acá (ej: Pilates, Stand
+    # up) nunca llegaba a afectar el % de compatibilidad ni las charlas
+    # simuladas. Se actualizan los dos ("intereses" e "intereses_onboarding")
+    # a lo mismo que la persona eligió a mano en su perfil -- a diferencia
+    # de personalidad/valores (que si se dejaran editar libremente
+    # permitirían "inflar" el match), elegir tus propios intereses reales
+    # no tiene ese riesgo: es la persona reportando de sí misma, no su
+    # gemelo aprendiendo algo de un chat.
+    if "intereses" in data:
+        crudos = data.get("intereses")
+        if isinstance(crudos, list):
+            vistos, limpio = set(), []
+            for i in crudos:
+                i = str(i).strip()[:40]
+                if i and i.casefold() not in vistos:
+                    vistos.add(i.casefold())
+                    limpio.append(i)
+                if len(limpio) >= 15:
+                    break
+            cambios["intereses"] = limpio
+            cambios["intereses_onboarding"] = limpio
 
     if not cambios:
         return {"ok": True}

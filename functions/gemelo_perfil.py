@@ -748,16 +748,20 @@ def construir_perfil_gemelo(respuestas_raw):
     perfil = {
         **_construir_identidad(e1),
         **_construir_hijos(e3),
-        # "intereses" es el que se sigue mostrando/usando en los prompts y
-        # que actualizar_aprendizaje_gemelo (main.py) puede seguir sumando
-        # con el tiempo a partir de chats reales (con consentimiento).
-        # "intereses_onboarding" es una copia CONGELADA del mismo valor
-        # inicial, tomada en el momento de generar el perfil -- es la que
-        # usa compatibilidad.compatibilidad_intereses() para el % de
-        # compatibilidad real, justamente para que nadie pueda "inflar" sus
-        # intereses charlando con su propio gemelo y matchear más fácil.
+        # "intereses"/"intereses_onboarding" empiezan iguales acá (primera
+        # vez que se genera el perfil), pero main.generar_gemelo_ahora es
+        # quien de verdad los mantiene actualizados en cada regeneración
+        # posterior: combina esto (lo recalculado a partir de las 6
+        # respuestas de acá abajo) con lo que ya hubiera acumulado antes
+        # (elegido a mano en perfil.html, o aprendido de chats reales vía
+        # actualizar_aprendizaje_gemelo) -- así un cambio de respuesta acá
+        # REEMPLAZA el interés viejo de ese mismo campo, sin borrar lo
+        # demás. "intereses_slots" es la lista SOLO de lo que sale de estas
+        # 6 respuestas puntuales (sin lo acumulado aparte) -- generar_gemelo_
+        # ahora la usa como referencia para saber qué reemplazar.
         "intereses": intereses,
         "intereses_onboarding": intereses,
+        "intereses_slots": intereses,
         "personalidad": personalidad,
         "estilo_chat": _construir_estilo_chat(e3, e4),
         "valores": valores,

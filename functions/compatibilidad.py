@@ -373,15 +373,14 @@ def compatibilidad_psicologica(perfil1, perfil2):
 
 def compatibilidad_intereses(perfil1, perfil2):
     """Similitud de Jaccard (intersección / unión, sin importar mayúsculas)
-    entre los intereses de cada uno. Usa intereses_onboarding -- la copia
-    CONGELADA en el momento de generar el perfil (ver
-    gemelo_perfil.construir_perfil_gemelo) -- y no "intereses", que
-    actualizar_aprendizaje_gemelo puede seguir sumando con el tiempo a
-    partir de chats reales. Si esto usara "intereses" directamente, alguien
-    podría chatear con su propio gemelo mencionando intereses falsos para
-    matchear más -- exactamente el hueco que se evitó a propósito con
-    personalidad/valores. Perfiles generados antes de que existiera
-    intereses_onboarding caen a "intereses" como respaldo."""
+    entre los intereses de cada uno. Usa intereses_onboarding si está (con
+    perfiles viejos que no lo tengan, cae a "intereses"). A diferencia de
+    personalidad/valores (que siguen viniendo SOLO del onboarding, nunca de
+    un chat, para que no se puedan "inflar"), acá se decidió a propósito
+    que sí valga un interés nuevo mencionado en un chat real con el propio
+    gemelo o elegido a mano en perfil.html -- ver main.generar_gemelo_ahora,
+    que mantiene intereses_onboarding e intereses sincronizados a la misma
+    lista combinada (onboarding actual + lo acumulado aparte)."""
 
     i1 = {str(i).strip().casefold() for i in (perfil1.get("intereses_onboarding") or perfil1.get("intereses") or [])}
     i2 = {str(i).strip().casefold() for i in (perfil2.get("intereses_onboarding") or perfil2.get("intereses") or [])}
