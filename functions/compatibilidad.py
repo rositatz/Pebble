@@ -31,24 +31,21 @@ def analizar_conversacion(historial_chat):
     prompt_analisis = f"""
     Analiza la siguiente conversación entre dos usuarios.
 
-    Devuelve únicamente JSON válido.
+    Devuelve únicamente JSON válido, con esta forma exacta (un número
+    plano para cada uno de estos campos, en escala 0.0 a 1.0 -- NUNCA un
+    objeto anidado ni un string, solo el número):
 
-    Evalúa:
-
-    - quimica
-    - interes_mutuo
-    - comodidad
-    - tension
-    - empatia
-    - humor
-    - coqueteo
-    - compatibilidad_emocional
-    - compatibilidad_intelectual
-    - red_flags
-    - resumen_interaccion
-
-    Escala:
-    0.0 a 1.0
+    - quimica: number
+    - interes_mutuo: number
+    - comodidad: number
+    - tension: number
+    - empatia: number
+    - humor: number
+    - coqueteo: number
+    - compatibilidad_emocional: number
+    - compatibilidad_intelectual: number
+    - red_flags: array de strings (vacío si no hay ninguna)
+    - resumen_interaccion: string
 
     Conversación:
     {historial_chat}
@@ -603,6 +600,14 @@ def compatibilidad_conversacional(analisis):
     for k, peso in pesos.items():
 
         valor = analisis.get(k, 0.5)
+
+        # El JSON que devuelve el modelo no sigue un schema estricto (ver
+        # analizar_conversacion) -- rara vez, en vez de un número plano,
+        # anida un objeto (ej: {"puntaje": 0.7, "explicacion": "..."}) para
+        # alguno de estos campos. Sin esta validación, esa única vez rompía
+        # TODA la simulación con un TypeError, tirando abajo el par entero.
+        if not isinstance(valor, (int, float)):
+            valor = 0.5
 
         score += valor * peso
 
