@@ -1507,6 +1507,22 @@ def diagnostico_matches(request: https_fn.CallableRequest):
             reseteadas += 1
         return {"reseteadas": reseteadas}
 
+    # {"eliminar_par_id": "<uid1>_<uid2>"} borra ese match por completo --
+    # conexiones/{par_id} (y su subcolección simulaciones) + parejas_pendientes
+    # /{par_id}, para un caso puntual que no debería haberse creado (ej: el
+    # filtro de género/orientación corrió con código viejo antes de un fix).
+    eliminar_par_id = (request.data or {}).get("eliminar_par_id")
+    if eliminar_par_id:
+        con_ref = db.collection("conexiones").document(eliminar_par_id)
+        for sub in con_ref.collection("simulaciones").stream():
+            sub.reference.delete()
+        con_existia = con_ref.get().exists
+        con_ref.delete()
+        pend_ref = db.collection("parejas_pendientes").document(eliminar_par_id)
+        pend_existia = pend_ref.get().exists
+        pend_ref.delete()
+        return {"conexion_borrada": con_existia, "pareja_pendiente_borrada": pend_existia}
+
     pendientes = []
     for doc in db.collection("parejas_pendientes").stream():
         d = doc.to_dict()
@@ -1519,11 +1535,14 @@ def diagnostico_matches(request: https_fn.CallableRequest):
         })
 
     conexiones_recientes = []
-    for doc in db.collection("conexiones").order_by("creado", direction=firestore.Query.DESCENDING).limit(15).stream():
+    for doc in db.collection("conexiones").order_by("creado", direction=firestore.Query.DESCENDING).limit(50).stream():
         d = doc.to_dict()
         conexiones_recientes.append({
+            "par_id": doc.id,
             "usuario_1": (d.get("usuario_1") or {}).get("nombre"),
+            "usuario_1_uid": (d.get("usuario_1") or {}).get("uid"),
             "usuario_2": (d.get("usuario_2") or {}).get("nombre"),
+            "usuario_2_uid": (d.get("usuario_2") or {}).get("uid"),
             "ultimo_score": d.get("ultimo_score"),
             "supera_umbral": d.get("supera_umbral"),
         })
