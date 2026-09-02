@@ -102,7 +102,20 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
         verdad, decí cuáles (los que se repitan) y con qué frecuencia
         (mucho, de vez en cuando, muy poco) -- si NO usa ninguno en los
         mensajes, decilo explícitamente ('no usa emojis'). Nunca falta
-        esta frase, ni inventes emojis que no aparezcan en el texto real.",
+        esta frase, ni inventes emojis que no aparezcan en el texto real.
+        Incluí TAMBIÉN, sin idealizar, qué tan elaboradas/ingeniosas son
+        sus respuestas en la práctica real (ej: 'respuestas cortas y
+        directas, no busca ser ingenioso/a', o 'construye chistes/
+        referencias con elaboración', o 'tarda en encontrar qué decir,
+        respuestas simples') -- esto se usa después como techo real de
+        qué tan 'brillante' puede sonar el gemelo, así que tiene que ser
+        fiel a lo que se ve en el texto, no una versión mejorada.",
+      "ejemplos_textuales": ["2 o 3 mensajes copiados TAL CUAL del texto
+        de entrada (sin parafrasear, sin corregir, sin mejorar), elegidos
+        por ser representativos de su nivel real de elaboración/ingenio
+        -- ni los más flojos ni los más logrados, los más típicos.
+        Lista vacía si los mensajes son muy pocos o muy cortos para
+        elegir algo representativo."],
       "intereses_nuevos": ["intereses o gustos que se notan en los
         mensajes y que NO están ya en esta lista: {', '.join(intereses_actuales) or 'ninguno'}
         -- lista vacía si no hay ninguno claro, nunca inventes"]
@@ -127,6 +140,7 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
     resultado = json.loads(response.choices[0].message.content)
     return {
         "estilo": (resultado.get("estilo") or "").strip(),
+        "ejemplos_textuales": [str(e).strip() for e in (resultado.get("ejemplos_textuales") or []) if str(e).strip()],
         "intereses_nuevos": [str(i).strip() for i in (resultado.get("intereses_nuevos") or []) if str(i).strip()],
     }
 

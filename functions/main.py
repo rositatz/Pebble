@@ -954,7 +954,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
         .stream()
     )
 
-    procesadas, con_error = 0, 0
+    procesadas, con_error, descartados = 0, 0, 0
 
     for doc in pendientes:
         data = doc.to_dict()
@@ -966,6 +966,27 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             doc2 = db.collection("usuarios").document(uid2).collection("gemelo").document("perfil").get()
             if not doc1.exists or not doc2.exists:
                 raise ValueError("A alguno de los dos ya no le existe el perfil de gemelo.")
+
+            # buscar_parejas_pendientes ya filtró por género/orientación,
+            # edad e hijos al encolar el par -- pero eso fue en ese momento
+            # puntual. Si alguno de los dos editó su onboarding (cambió
+            # orientación, rango de edad que busca, o postura sobre hijos)
+            # mientras el par seguía PENDIENTE, sin este re-chequeo se
+            # procesaba igual con los filtros ya vencidos, y podía terminar
+            # en un match que ya no correspondía según los datos actuales.
+            perfil1_raw, perfil2_raw = doc1.to_dict(), doc2.to_dict()
+            if not compatible_por_genero(perfil1_raw, perfil2_raw):
+                doc.reference.update({"estado": "DESCARTADO", "motivo_descarte": "genero_incompatible"})
+                descartados += 1
+                continue
+            if not compatible_por_edad(perfil1_raw, perfil2_raw):
+                doc.reference.update({"estado": "DESCARTADO", "motivo_descarte": "edad_incompatible"})
+                descartados += 1
+                continue
+            if not compatible_por_hijos(perfil1_raw, perfil2_raw):
+                doc.reference.update({"estado": "DESCARTADO", "motivo_descarte": "hijos_incompatible"})
+                descartados += 1
+                continue
 
             # simular_relacion_completa calcula compatibilidad solo con el
             # onboarding (gratis) y, únicamente si supera motor.UMBRAL_MATCH,
@@ -1084,7 +1105,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             doc.reference.update({"estado": "ERROR", "error": traceback.format_exc()})
             con_error += 1
 
-    print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error.")
+    print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error, {descartados} descartadas por cambio de datos.")
 
 
 @scheduler_fn.on_schedule(schedule="0 1 1 * *", timezone="America/Argentina/Buenos_Aires")
@@ -1337,6 +1358,14 @@ def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
             cambios = {}
             if resultado["estilo"]:
                 cambios["estilo_aprendido"] = resultado["estilo"]
+            # Mensajes reales, copiados tal cual (nunca generados) -- sirven de
+            # ancla concreta para que el gemelo no suene más ingenioso/rápido
+            # de lo que esta persona es en la práctica (ver simulador.
+            # generar_prompt_gemelo/generar_prompt_gemelo_personal). Un texto
+            # descriptivo ("respuestas cortas y simples") es mucho más débil
+            # como techo que mostrarle al modelo ejemplos reales concretos.
+            if resultado["ejemplos_textuales"]:
+                cambios["estilo_ejemplos"] = resultado["ejemplos_textuales"]
             if intereses_nuevos:
                 cambios["intereses"] = intereses_actuales + intereses_nuevos
 
@@ -1418,6 +1447,97 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
         auth.delete_user(uid)
     except Exception as e:
         print(f"eliminar_cuenta: error borrando la cuenta de Auth {uid}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# FUNCIÓN TEMPORAL DE DEMO -- borrar después de usarla.
+#
+# Corre una simulación real (con OpenAI, no texto armado a mano) entre dos
+# gemelos de prueba armados a mano con compatibilidad muy baja, para que la
+# usuaria vea cómo se comporta el motor real en ese caso. No toca Firestore
+# para nada (no depende de cuentas reales ni las crea) -- ni guarda nada, ni
+# lee nada más que ejecutar el motor de simulación con estos dos perfiles
+# embebidos. `umbral=0.0` fuerza que la simulación corra igual aunque la
+# compatibilidad de base esté por debajo del piso real de match (0.40),
+# que es exactamente el punto de este pedido puntual.
+_PERFILES_DEMO_BAJA_COMPAT = r"""
+{
+  "perfilA": {
+    "nombre": "Valeria", "apodo": "Vale", "edad": 24, "rango_edad_busco": {"min": 20, "max": 30},
+    "ciudad": "", "ubicacion": null, "profesion": "Estudio · nivel: Carrera universitaria / Licenciatura · área: Educación",
+    "convivencia": "Con mi familia", "signo": "Virgo", "genero": "Mujer", "orientacion": "Heterosexual", "busco": "",
+    "tiene_hijos": false, "tolerancia_hijos": "No, para nada", "postura_hijos": "Sí",
+    "intereses": ["Ludovico Einaudi", "Clásica", "Jazz", "Downton Abbey", "No practico ninguno.", "No sigo el fútbol", "Elegante"],
+    "intereses_onboarding": ["Ludovico Einaudi", "Clásica", "Jazz", "Downton Abbey", "No practico ninguno.", "No sigo el fútbol", "Elegante"],
+    "intereses_slots": ["Ludovico Einaudi", "Clásica", "Jazz", "Downton Abbey", "No practico ninguno.", "No sigo el fútbol", "Elegante"],
+    "personalidad": {"introversion": 1.0, "empatia": 0.6, "sarcasmo": 0.48, "apertura_mental": 0.35, "sensibilidad_emocional": 0.15, "necesidad_afecto": 0.3, "independencia": 1.0, "tolerancia_conflicto": 0.3, "ambicion": 0.75},
+    "estilo_chat": {"mensajes_cortos": false, "usa_humor": false, "coqueto": false, "analitico": true},
+    "valores": {"familia": 1.0, "ambicion": 0.75, "aventura": 0.45, "estabilidad": 1.0},
+    "conflictos": {"cuando_le_molesta_algo": "ante el malestar tiende a alejarse", "reaccion_ante_conflicto": "necesita tomar distancia antes de encarar un conflicto", "que_le_molesta_en_relacion": "necesita que le respeten su tiempo y su espacio propio"},
+    "notas_personales": ["Un día perfecto para mí: Un día tranquilo en casa leyendo.", "Si no hiciera lo que hago, haría: Estaría dedicada a la docencia.", "En una tarde libre, sin obligaciones: Leyendo.", "Lo que me ayuda a desconectar: Leer.", "Algo nuevo que probaría: Un té nuevo.", "Lo que me cuesta mostrar: Me cuesta mostrar el enojo.", "Lo que la gente suele malinterpretar de mí: Piensan que soy fría."],
+    "preferencias_pareja": {"persEngancha": ["Tranquila, que sabe escuchar y transmite paz"], "similitud": "Muy parecido/a a vos", "carinoIntens": "Tranquilo/a", "conexionPrimero": ["Mental", "Tranquila"], "gustaMueven": ["Escuche de verdad", "Sea independiente"], "atraeMas": ["Tranquilo/a"], "colorPelo": ["Me da igual"], "estiloPelo": ["Me da igual"], "alturaAtrae": "Indiferente", "contextura": ["Me da igual"], "outfitCrush": "Elegante"},
+    "preferencias_pareja_personalidad": {"introversion": 0.6, "sensibilidad_emocional": 0.3, "empatia": 0.75},
+    "fisico_propio": {"colorPelo": "Castaño", "estiloPelo": "Largo", "altura_cm": 165, "contextura": "Delgada"},
+    "creencias": {"politicaImportancia": "Muy importante", "politicaHablar": "Sí, me gusta debatirlo", "religionImportancia": "Muy importante", "religionCompartir": "Sí, mucho"},
+    "prefCom": "Verse en persona",
+    "prioridad_compatibilidad": ["Los valores que compartimos", "Nuestras personalidades", "Cómo nos comunicamos", "La química cuando charlamos", "Los intereses y gustos en común", "Compartir creencias (política o religión)", "La atracción física"],
+    "plan_futuro": "Instalado/a y estable",
+    "pesos_compatibilidad": {"conversacional": 0.183, "valores": 0.197, "intereses": 0.12, "fisico": 0.09, "psicologico": 0.15, "comunicacion": 0.07, "creencias": 0.19},
+    "flags_resumen": {"green": 0, "red": 0, "total": 0, "green_textos": [], "red_textos": []}, "bio": ""
+  },
+  "perfilB": {
+    "nombre": "Maxi", "apodo": "Maxi", "edad": 23, "rango_edad_busco": {"min": 19, "max": 29},
+    "ciudad": "", "ubicacion": null, "profesion": "Trabajo · nivel: Secundaria · área: Deportes · además: Deporte",
+    "convivencia": "Con mi pareja", "signo": "Aries", "genero": "Hombre", "orientacion": "Heterosexual", "busco": "",
+    "tiene_hijos": false, "tolerancia_hijos": "Sí, prefiero que no", "postura_hijos": "No",
+    "intereses": ["Duki", "Trap", "Reggaetón", "La Casa de Papel", "Juego al fútbol.", "Boca Juniors", "Streetwear"],
+    "intereses_onboarding": ["Duki", "Trap", "Reggaetón", "La Casa de Papel", "Juego al fútbol.", "Boca Juniors", "Streetwear"],
+    "intereses_slots": ["Duki", "Trap", "Reggaetón", "La Casa de Papel", "Juego al fútbol.", "Boca Juniors", "Streetwear"],
+    "personalidad": {"introversion": 0.0, "empatia": 0.5, "sarcasmo": 0.52, "apertura_mental": 0.99, "sensibilidad_emocional": 1.0, "necesidad_afecto": 1.0, "independencia": 0.88, "tolerancia_conflicto": 0.7, "ambicion": 0.45},
+    "estilo_chat": {"mensajes_cortos": false, "usa_humor": true, "coqueto": true, "analitico": false},
+    "valores": {"familia": 0.1, "ambicion": 0.45, "aventura": 1.0, "estabilidad": 0.48},
+    "conflictos": {"cuando_le_molesta_algo": "cuando algo le molesta lo dice en el momento", "reaccion_ante_conflicto": "confronta directo y dice lo que piensa sin rodeos", "que_le_molesta_en_relacion": "le molesta mucho que no cumplan lo que prometen, valora la palabra dada"},
+    "notas_personales": ["Un día perfecto para mí: Una previa larga y salir toda la noche.", "Si no hiciera lo que hago, haría: Estaría en la música.", "En una tarde libre, sin obligaciones: Con amigos armando planes.", "Lo que me ayuda a desconectar: Salir.", "Algo nuevo que probaría: Paracaidismo.", "Lo que me cuesta mostrar: No me cuesta nada, digo todo.", "Lo que la gente suele malinterpretar de mí: Piensan que soy mucho."],
+    "preferencias_pareja": {"persEngancha": ["Súper expresiva, habladora y con mucha onda"], "similitud": "Completamente diferente", "carinoIntens": "Intenso/a", "conexionPrimero": ["Física", "Divertida"], "gustaMueven": ["Sea demostrativo/a", "Tenga sentido del humor"], "atraeMas": ["Divertido/a"], "colorPelo": ["Me da igual"], "estiloPelo": ["Me da igual"], "alturaAtrae": "Indiferente", "contextura": ["Me da igual"], "outfitCrush": "Sporty / gym"},
+    "preferencias_pareja_personalidad": {"introversion": 0.17, "sarcasmo": 0.65},
+    "fisico_propio": {"colorPelo": "Negro", "estiloPelo": "Corto", "altura_cm": 180, "contextura": "Atlética"},
+    "creencias": {"politicaImportancia": "No me importa", "politicaHablar": "Prefiero evitarlo", "religionImportancia": "Nada importante", "religionCompartir": "No me importa"},
+    "prefCom": "Mensajes de texto",
+    "prioridad_compatibilidad": ["La atracción física", "La química cuando charlamos", "Los intereses y gustos en común", "Nuestras personalidades", "Cómo nos comunicamos", "Los valores que compartimos", "Compartir creencias (política o religión)"],
+    "plan_futuro": "Todavía explorando opciones",
+    "pesos_compatibilidad": {"conversacional": 0.346, "valores": 0.16, "intereses": 0.115, "fisico": 0.1, "psicologico": 0.1, "comunicacion": 0.115, "creencias": 0.063},
+    "flags_resumen": {"green": 0, "red": 0, "total": 0, "green_textos": [], "red_textos": []}, "bio": ""
+  }
+}
+"""
+
+
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=540, memory=MemoryOption.MB_512)
+def demo_simulacion_baja_compatibilidad(request: https_fn.CallableRequest):
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+            "No autorizado."
+        )
+
+    perfiles = json.loads(_PERFILES_DEMO_BAJA_COMPAT)
+    perfil_a, perfil_b = perfiles["perfilA"], perfiles["perfilB"]
+
+    resultado = motor.simular_relacion_completa(
+        "demo_valeria", perfil_a, "demo_maxi", perfil_b, umbral=0.0,
+    )
+
+    return {
+        "compatibilidad_base_onboarding": resultado["compatibilidad_promedio"],
+        "simulaciones": [
+            {
+                "escenario": s["escenario"],
+                "historial_chat": s["historial_chat"],
+                "score": s["score"],
+            }
+            for s in resultado["simulaciones"]
+        ],
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────

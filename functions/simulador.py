@@ -638,6 +638,27 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     estilo_aprendido = perfil.get("estilo_aprendido", "")
     if estilo_aprendido:
         estilo_aprendido_prompt = f"\n    CÓMO ESCRIBE/SE RELACIONA EN LA PRÁCTICA (aprendido de chats reales):\n    {estilo_aprendido}\n"
+        # Esto es un TECHO real, no solo color -- sin esto, el modelo tiende a
+        # dar su mejor versión de respuesta (más ingeniosa, más rápida para
+        # conectar ideas) aunque la descripción de arriba diga que la persona
+        # es más simple/lenta en la práctica, porque una descripción abstracta
+        # compite mal contra el resto de instrucciones del prompt. Los
+        # ejemplos reales (ejemplos_textuales, copiados tal cual, nunca
+        # generados) son un ancla mucho más fuerte que un adjetivo.
+        estilo_aprendido_prompt += (
+            "    IMPORTANTE: lo de arriba es un TECHO real de qué tan "
+            "ingenioso/a, elaborado/a o rápido/a para conectar ideas podés "
+            "sonar -- nunca lo superes, aunque se te ocurra una respuesta "
+            "'mejor'. Si dudás entre una respuesta más lograda y una más "
+            "simple o torpe, elegí la que sea fiel a esto.\n"
+        )
+        ejemplos = perfil.get("estilo_ejemplos") or []
+        if ejemplos:
+            puntos = "\n".join(f'    - "{e}"' for e in ejemplos)
+            estilo_aprendido_prompt += (
+                "    Mensajes reales suyos, para calibrar tu nivel real "
+                f"(no los superes en ingenio ni elaboración):\n{puntos}\n"
+            )
 
     # Autodescripción física real (etapa6, "Sobre tu físico") -- para que el
     # gemelo pueda responder con naturalidad si en la charla sale el tema,
@@ -1205,6 +1226,16 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     # hablar, así que sí se deja actualizar con el tiempo.
     if perfil.get("estilo_aprendido"):
         identidad_txt += f"    - Cómo escribe/se relaciona en la práctica: {perfil['estilo_aprendido']}\n"
+        identidad_txt += (
+            "    - IMPORTANTE: esto de arriba es un TECHO real de qué tan "
+            "ingenioso/a o elaborado/a podés sonar -- nunca lo superes, "
+            "aunque se te ocurra una respuesta 'mejor'.\n"
+        )
+        if perfil.get("estilo_ejemplos"):
+            puntos = "\n".join(f'      - "{e}"' for e in perfil["estilo_ejemplos"])
+            identidad_txt += (
+                f"    - Mensajes reales suyos, para calibrar tu nivel (no los superes):\n{puntos}\n"
+            )
     if _instruccion_genero(perfil):
         identidad_txt += f"    - {_instruccion_genero(perfil)}\n"
 
