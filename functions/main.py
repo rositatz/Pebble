@@ -1450,6 +1450,42 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# FUNCIÓN TEMPORAL DE UN SOLO USO -- borrar después de correrla una vez.
+#
+# planes.html ya se cambió para que el botón "Gratis" guarde plan=premium
+# de acá en más -- esto es el fix RETROACTIVO para cuentas que ya existían
+# antes de ese cambio (las 20 sintéticas + cualquier cuenta real previa) y
+# nunca tuvieron plan/premiumHasta seteado. premiumHasta se pone a +10 años
+# para que no haga falta "renovarlo" mientras dure el piloto sin cobrar.
+# ─────────────────────────────────────────────────────────────────────────
+@https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
+def marcar_todos_premium(request: https_fn.CallableRequest):
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+            "No autorizado."
+        )
+
+    db = firestore.client()
+    ahora = datetime.datetime.now(datetime.timezone.utc)
+    vence = ahora + datetime.timedelta(days=3650)
+
+    actualizados = []
+    for doc in db.collection("usuarios").stream():
+        try:
+            doc.reference.set({
+                "plan": "premium",
+                "planActivadoAt": ahora.isoformat(),
+                "premiumHasta": vence.isoformat(),
+            }, merge=True)
+            actualizados.append(doc.id)
+        except Exception as e:
+            print(f"marcar_todos_premium: error con {doc.id}: {e}")
+
+    return {"actualizados": len(actualizados)}
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # FUNCIÓN TEMPORAL DE DEMO -- borrar después de usarla.
 #
 # Corre una simulación real (con OpenAI, no texto armado a mano) entre dos

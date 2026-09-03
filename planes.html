@@ -602,11 +602,26 @@
       });
 
       window.elegirGratis = async function () {
+        // Por ahora todos entran como premium por default (fase de piloto,
+        // sin cobrar) -- se deja el nombre de la función y el botón "Gratis"
+        // igual que antes, pero el plan real que se guarda es "premium".
+        // perfil.html.esPremiumActivo() exige ADEMÁS premiumHasta > ahora
+        // (mismo campo que guarda pago.html tras un pago real, ahí vence a
+        // los 30 días) -- acá se pone una fecha bien lejana para que no haga
+        // falta "renovarlo" mientras dure el piloto sin cobrar. El botón de
+        // pago real (pago.html) sigue funcionando igual si se vuelve a cobrar.
         if (currentUid) {
           try {
+            const ahora = new Date();
+            const vence = new Date(ahora);
+            vence.setFullYear(vence.getFullYear() + 10);
             await setDoc(
               doc(db, "usuarios", currentUid),
-              { plan: "free" },
+              {
+                plan: "premium",
+                planActivadoAt: ahora.toISOString(),
+                premiumHasta: vence.toISOString(),
+              },
               { merge: true },
             );
           } catch (e) {}

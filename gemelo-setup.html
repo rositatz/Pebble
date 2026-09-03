@@ -4023,7 +4023,11 @@
           const snap = await getDoc(doc(db, "usuarios", uid));
           if (snap.exists()) {
             const d = snap.data();
-            userPlan = d.plan || "free";
+            // Default a "premium" (no "free") -- fase de piloto sin cobrar,
+            // así una cuenta sin el campo "plan" seteado (ej: cuentas viejas,
+            // o creadas por afuera del flujo normal de planes.html) también
+            // ve las preguntas ★ Premium en vez de quedar bloqueada.
+            userPlan = d.plan || "premium";
             if (userPlan === "premium")
               document.body.classList.add("is-premium");
           }
