@@ -1577,6 +1577,62 @@ def demo_simulacion_baja_compatibilidad(request: https_fn.CallableRequest):
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# FUNCIÓN TEMPORAL -- borrar después de correrla una vez.
+#
+# Reemplaza las respuestas de 2 cuentas sintéticas (Nicolás Farías, Abril
+# Quiroga) por un par deliberadamente OPUESTO en personalidad (introversión
+# 1.0 vs 0.0) pero que igual matchea -- para mostrar que el algoritmo no
+# exige personas idénticas: cada uno declaró que le atrae justo el tipo de
+# personalidad real del otro (atraeMas), y los valores/creencias quedaron
+# alineados. Mismo flujo que un onboarding real: resumen generado con IA
+# ANTES de tener bio, después perfil final con ese resumen adentro.
+# ─────────────────────────────────────────────────────────────────────────
+_ACTUALIZAR_OPUESTOS_JSON = r'''
+[{"nombre_completo": "Nicolás Farías", "uid": "5sYBV1fDf8ZTa0ckIoSmm9ZXoX52", "email": "nicolas.farias@gmail.com", "raw": {"etapa1": {"generoIdentidad": "Hombre", "orientacion": "Bisexual", "nombre": "Nicolás", "apodo": "Nico", "edad": "23", "edadMinBusco": "20", "edadMaxBusco": "29", "convivo": "Solo/a", "signo": "Géminis", "situacion": "Trabajo de manera independiente", "nivelEstudio": "Curso / certificación", "areaTrabajo": "Tecnología / Sistemas", "proyectoAdicional": "Emprendimiento", "gustaOcup": "Bastante", "siNoOcup": "Estaría armando videojuegos.", "productiv": "De noche", "rutina": ["Tranquila", "Cambiante"], "diaPerfecto": "Un día tranquilo programando algo que me copa, sin planes con nadie."}, "etapa2": {"artista": "Tame Impala", "genero": ["Electrónica", "Indie", "Pop"], "serie": "Black Mirror", "estetica": "Alternativa", "arreglo": "Cómodo/a siempre", "planIdeal": ["Quedarme en casa y disfrutar de un plan tranquilo.", "Ver una película."], "prefComida": "Pedir delivery", "tardeLibre": "Programando algún proyecto personal.", "probarNuevo": "Un juego de rol en vivo.", "desconectar": "Jugar algo o ver anime.", "deporte": "No practico ninguno.", "equipo": "No sigo el fútbol", "sobreLikes": "A veces", "stalkear": "Algo sí"}, "etapa3": {"comoSoy": ["Reservado/a", "Observador/a", "Intenso/a"], "cuestaMostrar": "Me cuesta mostrar cuando algo realmente me importa.", "malinterp": "Piensan que soy raro por cómo pienso las cosas.", "genteNueva": "Observás primero", "findeDesc": "Quedarme solo/a en casa para descansar", "diasSolo": "Re bien, disfruto mis momentos a solas", "persEngancha": ["Súper expresiva, habladora y con mucha onda"], "viajePlan": "Prefiero fluir y decidir en el momento", "decision": "Actúo rápido y confío en mi intuición", "cambioPlanes": "Me adapto fácil, incluso me puede gustar lo inesperado", "sentirFondo": "Siento todo bastante intenso, me atraviesa lo que me pasa", "impactoEmoc": "Lo proceso por mi cuenta y después veo si lo comparto", "causaAnsiedad": ["Lo desconocido / no saber qué va a pasar"], "ansiedadSeg": "Me da ansiedad la rutina fija; me da seguridad tener proyectos propios.", "hijosFuturo": "Sí", "hijosAjenos": "No, para nada", "relacionPadres": "Buena pero con distancia", "familiaEnPareja": "Presente pero con límites propios", "futuro5anios": "Instalado/a y estable", "estabilidadEconomica": "Importante pero no lo central"}, "etapa4": {"prefCom": "Mensajes de texto", "velocResp": "Depende el momento", "iniciarConv": "A veces", "respSecas": "No me importa", "demostrar": ["Acciones"], "intensoGusta": "Sí, bastante", "enamoraFacil": "A veces", "cuandoMolesta": "Me alejo", "pedirAlgo": "Espero que la otra persona se dé cuenta sola", "reaccionConflicto": "Necesito tomar distancia antes de encarar el tema", "molestaRelacion": "Los celos o el control excesivo", "inaceptable": ["Que me mienta o me oculte cosas"], "coqueteo": "Me cuesta mucho demostrarlo", "comportaInt": "Intento actuar normal aunque por dentro piense todo", "necesitasVinc": ["Que respeten mi independencia y tiempos", "Poder hablar de lo que me pasa sin filtro"]}, "etapa5": {"veloc": "Ir despacio", "profConv": "Charlas profundas desde el inicio", "frecContact": "Hablar más espaciado", "similitud": "Completamente diferente", "citaLugar": "Quedarse en casa", "citaClima": "Lluvia y películas", "citaJuntada": "Juntada chica", "citaActividad": "Caminar sin rumbo", "carinoIntens": "Intenso/a", "carinoComm": "Audios", "carinoPublic": "Cariño privado", "carinoResp": "Responder bien", "carinoCoqueteo": "Coqueteo indirecto", "siGusta": ["Le hablo menos (me pongo raro/a)", "Sobrepiensa cada mensaje"], "dejResponder": "Te da igual", "enRelacion": ["Intenso/a", "Independiente", "Observador/a"], "enElAmor": "El/la que sobrepiensa todo"}, "etapa6": {"conexionPrimero": ["Mental", "Emocional"], "gustaMueven": ["Sea demostrativo/a", "Tenga sentido del humor"], "atraeMas": ["Divertido/a", "Gracioso/a", "Sensible"], "prioridadCompatibilidad": ["Los valores que compartimos", "Nuestras personalidades", "La química cuando charlamos", "Los intereses y gustos en común", "Cómo nos comunicamos", "La atracción física", "Compartir creencias (política o religión)"], "politicaImportancia": "No me importa", "politicaHablar": "Prefiero evitarlo", "religionImportancia": "Algo importante", "religionCompartir": "Un poco", "psi1": "Aprendí que no todos van a entender cómo pienso, y está bien.", "perdonar": "Perdonarme a mí", "psi3": "Me cuesta soltar aunque no lo demuestre.", "psi4": "Suelo cruzarme con gente muy demandante.", "psi5": "Que está bien pensar distinto.", "colorPeloPropio": "Negro", "estiloPeloPropio": "Despeinado", "alturaPropia": "177", "contexturaPropia": "Delgada", "colorPelo": ["Me da igual"], "estiloPelo": ["Me da igual"], "alturaAtrae": "Indiferente", "contextura": ["Me da igual"], "outfitCrush": "Natural / casual"}, "completed": true}}, {"nombre_completo": "Abril Quiroga", "uid": "EMWBlpc1fiUSOAtBe2oPObM9HyK2", "email": "abril.quiroga@gmail.com", "raw": {"etapa1": {"generoIdentidad": "Mujer", "orientacion": "Heterosexual", "nombre": "Abril", "apodo": "Abri", "edad": "19", "edadMinBusco": "18", "edadMaxBusco": "24", "convivo": "Con mi familia", "signo": "Libra", "situacion": "Estudio", "nivelEstudio": "Carrera universitaria / Licenciatura", "areaTrabajo": "Comunicación / Relaciones Públicas", "proyectoAdicional": "Creación de contenido / redes sociales", "gustaOcup": "Bastante", "siNoOcup": "Estaría armando mi propia marca de ropa.", "productiv": "De noche", "rutina": ["Cambiante", "Intensa"], "diaPerfecto": "Ir de shopping con amigas y grabar contenido."}, "etapa2": {"artista": "Tame Impala", "genero": ["Pop", "Indie"], "serie": "Gossip Girl", "estetica": "Aesthetic", "arreglo": "Me arreglo bastante", "planIdeal": ["Salir a comer.", "Ir a un recital, bar o evento."], "prefComida": "Ir a un restaurante", "tardeLibre": "Grabando contenido o mirando series.", "probarNuevo": "Clases de baile.", "desconectar": "Escuchar música y hablar con amigas.", "deporte": "No practico ninguno.", "equipo": "No sigo el fútbol", "sobreLikes": "Sí, bastante", "stalkear": "Obvio que sí"}, "etapa3": {"comoSoy": ["Divertido/a", "Sociable", "Espontáneo/a"], "cuestaMostrar": "Me cuesta mostrar cuando estoy insegura de cómo me veo.", "malinterp": "Piensan que soy superficial por mis redes.", "genteNueva": "Tomás iniciativa", "findeDesc": "Salir a tomar algo con gente para distraerme", "diasSolo": "Un poco encerrado/a, me dan ganas de ver gente", "persEngancha": ["Muy cerrada, de las que cuesta remarles la conversación"], "viajePlan": "Prefiero fluir y decidir en el momento", "decision": "Actúo rápido y confío en mi intuición", "cambioPlanes": "Me adapto fácil, incluso me puede gustar lo inesperado", "sentirFondo": "Siento todo bastante intenso, me atraviesa lo que me pasa", "impactoEmoc": "Necesito hablarlo con alguien para ordenarme", "causaAnsiedad": ["Lo que puedan pensar de mí"], "ansiedadSeg": "Me da ansiedad lo que opinen de mí; me da seguridad mi familia.", "hijosFuturo": "Sí", "hijosAjenos": "Un poco", "relacionPadres": "Muy cercana", "familiaEnPareja": "Presente pero con límites propios", "futuro5anios": "Instalado/a y estable", "estabilidadEconomica": "Importante pero no lo central"}, "etapa4": {"prefCom": "Mensajes de texto", "velocResp": "Siempre rápido", "iniciarConv": "A veces", "respSecas": "Sí, mucho", "demostrar": ["Palabras", "Regalos"], "intensoGusta": "Sí, bastante", "enamoraFacil": "Sí, me pasa seguido", "cuandoMolesta": "Lo hablo enseguida", "pedirAlgo": "A veces me cuesta porque no quiero incomodar", "reaccionConflicto": "Trato de resolverlo hablando con calma", "molestaRelacion": "La indiferencia o la frialdad", "inaceptable": ["Que minimice lo que siento"], "coqueteo": "Indirecto/a, por actitudes", "comportaInt": "Me pongo nervioso/a pero intento seguirle el ritmo", "necesitasVinc": ["Que me busquen sin que pida", "Que recuerden detalles míos"]}, "etapa5": {"veloc": "Ir rápido", "profConv": "Conversaciones livianas primero", "frecContact": "Hablar todo el día", "similitud": "Completamente diferente", "citaLugar": "Salir de noche", "citaClima": "Playa y música", "citaJuntada": "Fiesta grande", "citaActividad": "Caminar sin rumbo", "carinoIntens": "Intenso/a", "carinoComm": "Videollamadas", "carinoPublic": "Demostrar públicamente", "carinoResp": "Responder rápido", "carinoCoqueteo": "Coqueteo directo", "siGusta": ["Stalkeo todas sus redes", "Le hablo más"], "dejResponder": "Sobrepensás", "enRelacion": ["Detallista", "Sensible", "Romántico/a"], "enElAmor": "El/la que se enamora rápido"}, "etapa6": {"conexionPrimero": ["Emocional", "Divertida"], "gustaMueven": ["Sea misterioso/a", "Escuche de verdad"], "atraeMas": ["Misterioso/a", "Inteligente", "Creativo/a"], "prioridadCompatibilidad": ["La química cuando charlamos", "Nuestras personalidades", "La atracción física", "Los intereses y gustos en común", "Cómo nos comunicamos", "Los valores que compartimos", "Compartir creencias (política o religión)"], "politicaImportancia": "No me importa", "politicaHablar": "Prefiero evitarlo", "religionImportancia": "Algo importante", "religionCompartir": "Un poco", "psi1": "Aprendí a no cambiar quien soy para gustarle a alguien.", "perdonar": "Perdonar a otros", "psi3": "Idealizo bastante rápido.", "psi4": "Siempre me cruzo con gente indecisa.", "psi5": "Que gusto tal cual soy.", "colorPeloPropio": "Rubio", "estiloPeloPropio": "Ondulado", "alturaPropia": "163", "contexturaPropia": "Con curvas", "colorPelo": ["Me da igual"], "estiloPelo": ["Me da igual"], "alturaAtrae": "Indiferente", "contextura": ["Me da igual"], "outfitCrush": "Natural / casual"}, "completed": true}}]
+'''
+
+
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=300, memory=MemoryOption.MB_512)
+def actualizar_cuentas_opuestos_demo(request: https_fn.CallableRequest):
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.PERMISSION_DENIED,
+            "No autorizado."
+        )
+
+    db = firestore.client()
+    personas = json.loads(_ACTUALIZAR_OPUESTOS_JSON)
+
+    actualizadas = []
+    errores = []
+
+    for p in personas:
+        try:
+            uid = p["uid"]
+            raw = p["raw"]
+
+            perfil_borrador = construir_perfil_gemelo(raw)
+            try:
+                resumen_texto = motor.generar_resumen_gemelo(perfil_borrador)
+            except Exception as e:
+                resumen_texto = ""
+                print(f"actualizar_cuentas_opuestos_demo: error generando resumen de {p['nombre_completo']}: {e}")
+
+            raw.setdefault("etapa7", {})["gedit"] = resumen_texto
+            perfil_final = construir_perfil_gemelo(raw)
+
+            db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").set(raw)
+            db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil_final)
+
+            actualizadas.append({"nombre": p["nombre_completo"], "uid": uid})
+        except Exception as e:
+            print(f"actualizar_cuentas_opuestos_demo: error con {p['nombre_completo']}: {e}")
+            errores.append({"nombre": p["nombre_completo"], "error": str(e)})
+
+    return {"actualizadas": actualizadas, "errores": errores}
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # FUNCIÓN TEMPORAL DE UN SOLO USO -- borrar después de correrla una vez.
 #
 # Se reemplazó la lista de green/red flags del juego (FLAGS en

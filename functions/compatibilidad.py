@@ -1046,8 +1046,15 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     # de fricción, aunque haya casi 15 puntos de diferencia real entre
     # ellos. El nivel de conflicto tiene que escalar junto con el score, no
     # ser binario (hay conflicto / no hay conflicto).
-    punto_medio = (umbral + 0.70) / 2
-    if promedio_previo >= 0.70:
+    # 0.70 estaba hardcodeado acá como corte de "ALTA" -- si UMBRAL_MATCH
+    # (el piso real de match) llega a subir hasta igualar o superar ese
+    # número, los 4 niveles se aplanaban a 2 (punto_medio quedaba pegado al
+    # umbral). Por eso el corte de ALTA se calcula relativo al umbral real
+    # en vez de fijo, dejando siempre lugar arriba para 3 escalones
+    # distintos de compatibilidad "de match para arriba".
+    umbral_alto = min(0.95, umbral + 0.15)
+    punto_medio = (umbral + umbral_alto) / 2
+    if promedio_previo >= umbral_alto:
         nivel = "ALTA -- comparten bastante de verdad en valores, forma de ser y de comunicarse"
     elif promedio_previo >= punto_medio:
         nivel = "MEDIA-ALTA -- comparten bastante, pero no todo -- hay alguna diferencia real de fondo"
