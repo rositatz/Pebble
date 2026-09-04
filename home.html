@@ -2042,7 +2042,7 @@
               "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
           } else {
             const pctMejor = Math.round((mejorScoreSinMatch || 0) * 100);
-            el.innerHTML = `Ya corrió <strong>${totalSimulaciones} simulaci${totalSimulaciones === 1 ? "ón" : "ones"}</strong>, pero ninguna llegó todavía al 50% necesario para hacer match (mejor intento: <strong>${pctMejor}%</strong>).`;
+            el.innerHTML = `Ya corrió <strong>${totalSimulaciones} simulaci${totalSimulaciones === 1 ? "ón" : "ones"}</strong>, pero ninguna llegó todavía al 70% necesario para hacer match (mejor intento: <strong>${pctMejor}%</strong>).`;
           }
           return;
         }
