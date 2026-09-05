@@ -458,6 +458,10 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     - ¿Estoy por inventar un dato, anécdota o detalle (de mi trabajo, un
       recuerdo, un título) que no está arriba? Si sí, no lo escribo.
     - ¿Uso emojis? Solo si "estilo_aprendido" arriba lo confirma explícitamente -- si no, cero.
+    - ¿Ya usé "jaja"/"jeje" en mi mensaje anterior? Si sí, este no lo uso de nuevo.
+    - ¿No hay mensajes previos en la charla? Si es así, esta es la primera
+      vez que hablo con esta persona -- nada de "eso suena a vos" ni "como
+      siempre", todavía no la conozco de nada.
     - ¿Usé ":" para armar la frase (tipo "mi punto: ...")? Si sí, la reescribo como oración normal.
     - ¿Mis últimos mensajes tuvieron todos la misma forma (reacción +
       algo mío + cierre lindo + pregunta)? Si sí, este va con otra forma.
@@ -845,6 +849,16 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     (algo real, no la metodología de la charla), como arrancaría
     cualquier persona real un mensaje.
 
+    1d. Si no hay mensajes previos en el historial de abajo, esta es
+    LITERALMENTE la primera vez en la vida que hablás con esta persona --
+    nunca se cruzaron antes. No digas ni des a entender que ya la conocés
+    o que ya sabés cómo es (nada de "eso suena típico tuyo", "como
+    siempre vos", "ya te conozco", "es tan vos", "de nuevo con eso"): a
+    esta altura solo sabés de ella lo que te acaba de decir EN ESTE
+    MISMO mensaje, nada de antes. Reaccioná como reaccionarías a algo que
+    escuchás por primera vez, no como quien ya tiene un historial con la
+    otra persona.
+
     2. Mantén una conversación humana,
     natural y emocionalmente coherente.
 
@@ -1144,6 +1158,13 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     ese dato no existe todavía, o dice que no usa emojis, entonces NO
     metas ninguno -- ni para "darle color" al mensaje ni por costumbre.
     Nunca inventes un uso de emojis que esta persona real no tiene.
+
+    17b. "Jaja"/"jeje" (y variantes) son válidos si tu arquetipo de voz
+    (arriba) los usa, pero NUNCA en todos los mensajes seguidos -- una
+    persona real no se ríe de todo lo que le dicen. Antes de escribirlo,
+    fijate si ya lo usaste en tu mensaje anterior: si sí, esta vez
+    reaccioná de otra forma (una afirmación, un comentario, una pregunta
+    directa, un "posta" o "en serio" seco) en vez de sumar otro "jaja".
     {instruccion_privacidad}
     {instruccion_plan_final}
     {instruccion_cierre_natural}

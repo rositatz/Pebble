@@ -656,6 +656,26 @@ def _fit_psicologico_direccion(preferidor, candidato):
     return sum(1 - abs(objetivo[r] - real[r]) for r in rasgos) / len(rasgos)
 
 
+def _atrae_diferencia_real(preferidor, candidato, umbral_diferencia=0.4, umbral_satisfaccion=0.3):
+    """True si preferidor busca (preferencias_pareja_personalidad) un rasgo
+    que además es realmente DISTINTO al propio -- no cualquier preferencia,
+    sino una donde preferidor y candidato son notablemente distintos en ese
+    rasgo puntual Y candidato de verdad cumple lo que preferidor busca ahí.
+    Se mira rasgo por rasgo (no el promedio general, ver
+    compatibilidad_psicologica) porque dos perfiles pueden ser opuestos en
+    UN rasgo saliente (ej: introversión) y parecidos en el resto -- el
+    promedio general diluiría justo la diferencia que hace que se atraigan."""
+    objetivo = preferidor.get("preferencias_pareja_personalidad") or {}
+    propio = preferidor.get("personalidad") or {}
+    real_otro = candidato.get("personalidad") or {}
+    for r in set(objetivo) & set(propio) & set(real_otro):
+        diferencia_real = abs(propio[r] - real_otro[r])
+        satisfaccion = 1 - abs(objetivo[r] - real_otro[r])
+        if diferencia_real >= umbral_diferencia and satisfaccion >= (1 - umbral_satisfaccion):
+            return True
+    return False
+
+
 def compatibilidad_preferencias_unidireccional(preferidor, candidato, analisis=None):
     """Qué tan bien encaja candidato con lo que preferidor busca, pesado con
     los pesos PROPIOS de preferidor (pesos_compatibilidad) -- llamar esto en
@@ -1070,8 +1090,17 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     # de personalidad puntuales y nombradas, el modelo tiene algo real y
     # específico para chocar, no solo la orden genérica de "generar
     # fricción" (mucho más fácil de ignorar).
+    # OJO: antes esto se gateaba con "promedio_previo < 0.70", un umbral
+    # hardcodeado que por casualidad coincidía con el UMBRAL_MATCH viejo.
+    # Al subir UMBRAL_MATCH a 0.70, un match justo en MEDIA-BAJA (ej: 75%)
+    # dejaba de calificar (0.75 no es < 0.70) y se quedaba SIN estas
+    # semillas concretas de fricción -- el modelo tenía que inventar el
+    # roce de la nada, sin nada real en qué anclarlo, lo que en la
+    # práctica generaba conflictos más largos/difusos que un roce puntual
+    # y contenido. El gate correcto es "no es ALTA" (mismos 3 escalones
+    # que sí piden fricción más abajo), no un número de score fijo.
     friccion_txt = ""
-    if promedio_previo < 0.70 and nombre1 and nombre2:
+    if not nivel.startswith("ALTA") and nombre1 and nombre2:
         diffs_1_ve_2 = _diferencias_personalidad(perfil1, perfil2, nombre2)
         diffs_2_ve_1 = _diferencias_personalidad(perfil2, perfil1, nombre1)
         if diffs_1_ve_2 or diffs_2_ve_1:
@@ -1087,6 +1116,31 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     uno necesita mucha más cercanía afectiva, puede sentir que el otro es
     frío/a. USEN esto quien corresponda -- no lo ignoren para llevarse
     bien porque sí."""
+
+    # Que sean opuestos en personalidad no implica por sí solo más
+    # fricción: si además cada uno busca justamente eso (una personalidad
+    # distinta a la propia -- ver _fit_psicologico_direccion, que compara
+    # preferencias_pareja_personalidad de uno contra los rasgos reales del
+    # otro), esa diferencia es en parte POR QUÉ este par matchea, no solo
+    # un motivo de choque. Sin esto, dos perfiles opuestos-que-se-buscan
+    # (como el mecanismo real de atraeMas) solo mostraban fricción, nunca
+    # la atracción real por la diferencia que la propia preferencia indica.
+    atraccion_diferencia_txt = ""
+    if nombre1 and nombre2:
+        atrae_1 = _atrae_diferencia_real(perfil1, perfil2)
+        atrae_2 = _atrae_diferencia_real(perfil2, perfil1)
+        if atrae_1 or atrae_2:
+            quien = [n for n, atrae in ((nombre1, atrae_1), (nombre2, atrae_2)) if atrae]
+            verbo = "buscan" if len(quien) == 2 else "busca"
+            atraccion_diferencia_txt = f"""
+    ADEMÁS DE LA FRICCIÓN: {" y ".join(quien)} {verbo} justamente a alguien
+    con una personalidad distinta a la propia -- no es casualidad que
+    hagan match pese a ser tan diferentes en esto. En algún momento de la
+    charla que se note también ESO, no solo el choque: un comentario
+    genuino tipo "me gusta que seas tan distinto/a a mí en esto" o una
+    reacción de curiosidad/atracción real ante la diferencia (no un
+    cumplido vacío ni algo forzado) -- para que se entienda por qué el
+    match funciona a pesar de la diferencia, no solo que chocan por ella."""
 
     temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2, top_n=4)
     temas_txt = ""
@@ -1123,7 +1177,11 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     o un ambiente notoriamente más incómodo/con menos onda en algún tramo
     de la charla. No hace falta que sea una pelea grande, pero sí algo
     más que un comentario suelto. EXIGENCIA CONCRETA: al menos UNA de
-    estas formas tiene que pasar de manera clara, no sutil."""
+    estas formas tiene que pasar de manera clara, no sutil -- pero
+    CONTENIDA: una discusión corta, no una pelea que se extiende varios
+    mensajes ni que domina el resto de la charla. Después de ese momento,
+    la conversación sigue fluyendo normal -- MEDIA-BAJA sigue siendo
+    match, no es lo mismo que BAJA."""
     else:
         intensidad_txt = """
     Como la compatibilidad es BAJA, la fricción tiene que ser fuerte y
@@ -1154,5 +1212,6 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     mal actuada.'''}
     {intensidad_txt}
     {friccion_txt}
+    {atraccion_diferencia_txt}
     {temas_txt}
     """
