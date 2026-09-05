@@ -2071,7 +2071,7 @@
       // Arma la tira de "Matches recientes" (hasta 5, ordenados por mayor
       // afinidad) con fotos y nombres reales -- reemplaza los 5 items fijos
       // de antes. Reusa mostrarPip/ocultarPip vía el mismo id "mav-{id}".
-      async function cargarMatchesRecientes(user, data, candidatos) {
+      async function cargarMatchesRecientes(user, data, candidatos, miInvocacion) {
         const strip = document.getElementById("matchesStrip");
         const emptyEl = document.getElementById("matchesStripEmpty");
         if (!candidatos.length) {
@@ -2096,6 +2096,12 @@
             }
           }),
         );
+
+        // Otra sesión de auth pudo haber empezado mientras esperábamos las
+        // fotos/nombres de arriba (ver el mismo chequeo en
+        // onAuthStateChanged) -- si ya no somos la corrida vigente, no
+        // pisar el strip con matches de la cuenta anterior.
+        if (uid !== miInvocacion) return;
 
         let html = "";
         top.forEach((c) => {
@@ -2148,9 +2154,21 @@
           showApp(user);
           uid = user.uid;
 
+          // Si se cierra sesión y se entra con otra cuenta rápido, este
+          // mismo callback puede seguir corriendo para el usuario VIEJO
+          // (sus awaits de abajo ya estaban en vuelo) mientras el nuevo
+          // onAuthStateChanged ya arrancó el suyo -- sin este chequeo, la
+          // respuesta del viejo llega después y pisa la pantalla con SUS
+          // matches durante unos segundos, aunque `uid` ya apunte al
+          // usuario nuevo. miInvocacion guarda para quién es ESTA corrida
+          // puntual; si `uid` cambió antes de terminar, esta ya quedó
+          // obsoleta y no debe tocar el DOM.
+          const miInvocacion = user.uid;
+
           // Cargar matches reales + badges de las tarjetas de sección
           try {
             const snap = await getDoc(doc(db, "usuarios", uid));
+            if (uid !== miInvocacion) return;
             const data = snap.exists() ? snap.data() : {};
             renderNavAvatar(data.avatarFoto);
 
@@ -2201,13 +2219,14 @@
               console.warn("Error contando notificaciones sin leer:", e);
             }
 
+            if (uid !== miInvocacion) return;
             actualizarBadgesSecciones(data, candidatos, notifsSinLeer);
             actualizarBannerGemelo(
               candidatos,
               totalSimulaciones,
               mejorScoreSinMatch,
             );
-            await cargarMatchesRecientes(user, data, candidatos);
+            await cargarMatchesRecientes(user, data, candidatos, miInvocacion);
           } catch (e) {
             console.warn("Error cargando matches/chats:", e);
             const sub = document.getElementById("gemeloInfoSub");
