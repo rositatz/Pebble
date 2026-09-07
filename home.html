@@ -1060,10 +1060,317 @@
           font-size: 0.58rem;
         }
       }
+
+      /* ── TUTORIAL DE BIENVENIDA (primera vez, en Inicio) ── */
+      #tutorialOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 998;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .tut-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 40px 32px 28px;
+        text-align: center;
+        position: relative;
+        animation: tut-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      @keyframes tut-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .tut-skip {
+        position: absolute;
+        top: 18px;
+        right: 20px;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      .tut-skip:hover {
+        color: var(--text-primary);
+      }
+      .tut-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tut-icon svg {
+        width: 36px;
+        height: 36px;
+      }
+      .tut-title {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        color: var(--text-primary);
+      }
+      .tut-text {
+        font-family: var(--font-body);
+        font-size: 0.92rem;
+        color: var(--text-secondary);
+        line-height: 1.55;
+        margin-bottom: 26px;
+      }
+      .tut-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-bottom: 22px;
+      }
+      .tut-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border2);
+        transition: background 0.25s, width 0.25s;
+      }
+      .tut-dot.active {
+        background: var(--orange);
+        width: 18px;
+        border-radius: 4px;
+      }
+      .tut-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 100px;
+        border: none;
+        background: var(--orange);
+        color: #fff;
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .tut-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 117, 31, 0.35);
+      }
+      .tut-step {
+        display: none;
+      }
+      .tut-step.active {
+        display: block;
+      }
+      .tut-where {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--orange);
+        margin: -14px 0 20px;
+      }
+      .tut-where svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+      }
+      /* Mini-mockups de la interfaz real, para que el tutorial muestre DÓNDE
+      aparece cada cosa en vez de solo describirla con texto. */
+      .tut-mock {
+        margin: 0 auto 22px;
+        max-width: 260px;
+      }
+      .tut-mock-chat {
+        background: var(--surf-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 12px;
+        text-align: left;
+      }
+      .tut-mock-bubble {
+        max-width: 78%;
+        padding: 7px 11px;
+        border-radius: 12px;
+        font-size: 0.72rem;
+        line-height: 1.35;
+        margin-bottom: 7px;
+        color: var(--text-primary);
+      }
+      .tut-mock-bubble.a {
+        background: var(--surf-3);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 3px;
+      }
+      .tut-mock-bubble.b {
+        background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+        color: #fff;
+        margin-left: auto;
+        border-bottom-right-radius: 3px;
+      }
+      .tut-mock-match {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--surf-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px;
+        text-align: left;
+      }
+      .tut-mock-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+      }
+      .tut-mock-match-name {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--text-primary);
+      }
+      .tut-mock-match-pct {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 0.78rem;
+        color: var(--orange);
+      }
+      .tut-mock-btn {
+        margin-left: auto;
+        background: var(--orange);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 7px 14px;
+        border-radius: 100px;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
     <div id="loadingOverlay"><div class="loading-spinner"></div></div>
+
+    <!-- Tutorial de bienvenida -- solo la primera vez, apenas se crea la
+    cuenta (ver tutorial_visto en usuarios/{uid} y el chequeo dentro de
+    onAuthStateChanged más abajo). -->
+    <div id="tutorialOverlay" style="display: none">
+      <div class="tut-card">
+        <button class="tut-skip" type="button" onclick="cerrarTutorial()">
+          Saltar
+        </button>
+
+        <div class="tut-step active" data-tut-step="1">
+          <div class="tut-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+            </svg>
+          </div>
+          <div class="tut-title">Armá tu gemelo</div>
+          <div class="tut-text">
+            Contestá algunas preguntas sobre vos. Con eso creamos tu
+            <strong style="color: var(--text-primary)">gemelo</strong>: una
+            versión con IA que piensa y habla como vos.
+          </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            Lo hacés apenas cierres esto
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="2">
+          <div class="tut-mock" aria-hidden="true">
+            <div class="tut-mock-chat">
+              <div class="tut-mock-bubble a">holaa, ¿qué venís escuchando?</div>
+              <div class="tut-mock-bubble b">metido con cosas de tecnología últimamente</div>
+              <div class="tut-mock-bubble a">jaja banco eso 👀</div>
+            </div>
+          </div>
+          <div class="tut-title">Tu gemelo sale a conocer gente</div>
+          <div class="tut-text">
+            Cuando hay compatibilidad real con otra persona, tu gemelo simula
+            una charla con el gemelo de ella para ver si de verdad conectan.
+          </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Pasa solo, de noche -- vos no tenés que hacer nada
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="3">
+          <div class="tut-mock" aria-hidden="true">
+            <div class="tut-mock-match">
+              <div class="tut-mock-avatar"></div>
+              <div>
+                <div class="tut-mock-match-name">Abril</div>
+                <div class="tut-mock-match-pct">84% de afinidad</div>
+              </div>
+            </div>
+          </div>
+          <div class="tut-title">Si conecta, aparece el match</div>
+          <div class="tut-text">
+            Si la charla simulada sale bien, se los mostramos a los dos: es
+            un match real, no un perfil más para deslizar.
+          </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+            Así, mismo lugar donde estás ahora, en "Matches recientes"
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="4">
+          <div class="tut-mock" aria-hidden="true">
+            <div class="tut-mock-chat" style="display: flex; align-items: center; gap: 10px">
+              <div class="tut-mock-bubble a" style="margin: 0; flex: 1">
+                ¿te gustaría vernos un día de estos?
+              </div>
+              <span class="tut-mock-btn">Chatear</span>
+            </div>
+          </div>
+          <div class="tut-title">Ahí entrás vos</div>
+          <div class="tut-text">
+            Podés chatear de verdad con esa persona cuando quieras -- tu
+            gemelo ya rompió el hielo por vos.
+          </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+            Tocás el match, después "Chats"
+          </div>
+        </div>
+
+        <div class="tut-dots" aria-hidden="true">
+          <span class="tut-dot active" data-tut-dot="1"></span>
+          <span class="tut-dot" data-tut-dot="2"></span>
+          <span class="tut-dot" data-tut-dot="3"></span>
+          <span class="tut-dot" data-tut-dot="4"></span>
+        </div>
+
+        <button class="tut-btn" type="button" onclick="tutorialSiguiente()" id="tutBtn">
+          Siguiente
+        </button>
+      </div>
+    </div>
 
     <!-- ══════════════════════════════════════
      AUTH GATE
@@ -1858,6 +2165,54 @@
       // apunta a gemelo-setup.html en cambio (ver el chequeo de
       // gemelo_completado en onAuthStateChanged).
       let gemeloBannerDestino = "gemelo";
+
+      // ── TUTORIAL DE BIENVENIDA ──
+      let tutPaso = 1;
+      const TUT_TOTAL_PASOS = 4;
+      function _marcarTutorialVisto() {
+        if (uid) {
+          setDoc(
+            doc(db, "usuarios", uid),
+            { tutorial_visto: true },
+            { merge: true },
+          ).catch((e) => console.warn("Error guardando tutorial_visto:", e));
+        }
+      }
+      window.tutorialSiguiente = function () {
+        if (tutPaso >= TUT_TOTAL_PASOS) {
+          // Último paso: cierra Y lleva directo a armar el gemelo -- es el
+          // paso que de verdad hay que hacer, no alcanza con solo cerrar el
+          // tutorial y esperar que la persona encuentre el banner sola.
+          document.getElementById("tutorialOverlay").style.display = "none";
+          _marcarTutorialVisto();
+          goTo("gemelo-setup");
+          return;
+        }
+        tutPaso++;
+        document
+          .querySelectorAll(".tut-step")
+          .forEach((el) =>
+            el.classList.toggle(
+              "active",
+              parseInt(el.dataset.tutStep) === tutPaso,
+            ),
+          );
+        document
+          .querySelectorAll(".tut-dot")
+          .forEach((el) =>
+            el.classList.toggle(
+              "active",
+              parseInt(el.dataset.tutDot) === tutPaso,
+            ),
+          );
+        document.getElementById("tutBtn").textContent =
+          tutPaso === TUT_TOTAL_PASOS ? "Armar mi gemelo" : "Siguiente";
+      };
+      window.cerrarTutorial = function () {
+        document.getElementById("tutorialOverlay").style.display = "none";
+        _marcarTutorialVisto();
+      };
+
       function showAuthError(msg) {
         let el = document.getElementById("auth-error");
         if (!el) {
@@ -2182,6 +2537,16 @@
             if (uid !== miInvocacion) return;
             const data = snap.exists() ? snap.data() : {};
             renderNavAvatar(data.avatarFoto);
+
+            // Tutorial de bienvenida -- se muestra apenas se crea la cuenta,
+            // acá en Inicio (no en gemelo-setup.html: si la persona no sabe
+            // que tiene que armar su gemelo ni dónde, nunca va a llegar
+            // sola a esa pantalla). tutorial_visto es undefined en una
+            // cuenta que nunca lo vio -- default a mostrarlo.
+            if (data.tutorial_visto !== true) {
+              const overlay = document.getElementById("tutorialOverlay");
+              if (overlay) overlay.style.display = "flex";
+            }
 
             // Onboarding del gemelo incompleto -- el banner "Tu gemelo está
             // activo" no tiene sentido todavía (no hay gemelo/perfil, no
