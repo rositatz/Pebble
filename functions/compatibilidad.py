@@ -829,8 +829,8 @@ _DIFERENCIA_RASGO = {
     # como "más/menos sociable" invertía el sentido (más introvertido/a =
     # MENOS sociable, no más).
     "introversion": "es bastante {alto} introvertido/a que vos",
-    "empatia": "le da bastante más/menos peso que a vos a cómo se siente el otro emocionalmente",
-    "sarcasmo": "tiene un sentido del humor bastante distinto al tuyo (mucho más o mucho menos sarcástico/a)",
+    "empatia": "le da bastante {alto} peso que a vos a cómo se siente el otro emocionalmente",
+    "sarcasmo": "es bastante {alto} sarcástico/a o irónico/a en su humor que vos",
     "apertura_mental": "es bastante {alto} abierto/a a ideas o planes nuevos que vos",
     "ambicion": "le importa bastante {alto} que a vos crecer/lograr cosas a nivel profesional",
     "sensibilidad_emocional": "es bastante {alto} sensible que vos a nivel emocional -- le afectan {alto} las cosas del día a día",
