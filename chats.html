@@ -2342,14 +2342,12 @@
       let chatTutPaso = 1;
       const CHAT_TUT_TOTAL_PASOS = 3;
       function _marcarChatTutorialVisto() {
-        if (uid) {
-          setDoc(
-            doc(db, "usuarios", uid),
-            { chat_tutorial_visto: true },
-            { merge: true },
-          ).catch((e) =>
-            console.warn("Error guardando chat_tutorial_visto:", e),
-          );
+        // window._guardarFlagUsuario lo expone el <script type="module">
+        // de más abajo -- este script clásico no ve uid/db/doc/setDoc
+        // directamente (scopes separados, ver el comentario junto a
+        // window._uid en ese script).
+        if (typeof window._guardarFlagUsuario === "function") {
+          window._guardarFlagUsuario("chat_tutorial_visto");
         }
       }
       window.chatTutorialSiguiente = function () {
@@ -3491,6 +3489,25 @@
         // "me" relativo que no significa nada en un doc compartido por dos
         // cuentas.
         window._uid = uid;
+
+        // Mismo motivo que window._uid arriba: _marcarChatTutorialVisto
+        // (script clásico, más abajo) necesita escribir en Firestore pero
+        // no ve db/doc/setDoc de acá -- sin este puente tiraba
+        // "uid is not defined" en silencio cada vez que se llamaba, así
+        // que chat_tutorial_visto nunca se guardaba de verdad y el
+        // tutorial volvía a aparecer en cada chat nuevo que se abría.
+        window._guardarFlagUsuario = async (campo) => {
+          if (!uid) return;
+          try {
+            await setDoc(
+              doc(db, "usuarios", uid),
+              { [campo]: true },
+              { merge: true },
+            );
+          } catch (e) {
+            console.warn(`Error guardando ${campo}:`, e);
+          }
+        };
 
         // ── Cargar conversaciones guardadas de Firestore ──
         // Los chats viven en conexiones/{parId}, un solo doc compartido por

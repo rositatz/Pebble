@@ -2178,12 +2178,14 @@
       // aparecer en cada visita siguiente pese a haber tocado "Armar mi
       // gemelo".
       function _marcarTutorialVisto() {
-        if (!uid) return Promise.resolve();
-        return setDoc(
-          doc(db, "usuarios", uid),
-          { tutorial_visto: true },
-          { merge: true },
-        ).catch((e) => console.warn("Error guardando tutorial_visto:", e));
+        // window._guardarFlagUsuario lo expone el <script type="module">
+        // de más abajo (ver ahí el porqué) -- puede no estar listo
+        // todavía en un click MUY temprano, así que el chequeo es
+        // defensivo, pero en la práctica el módulo ya corrió mucho antes
+        // de que alguien llegue a tocar el tutorial.
+        if (typeof window._guardarFlagUsuario !== "function")
+          return Promise.resolve();
+        return window._guardarFlagUsuario("tutorial_visto");
       }
       window.tutorialSiguiente = async function () {
         if (tutPaso >= TUT_TOTAL_PASOS) {
@@ -2526,6 +2528,28 @@
           }
           showApp(user);
           uid = user.uid;
+
+          // El script clásico (tutorialSiguiente/cerrarTutorial, más abajo
+          // en el archivo) no ve uid/db/doc/setDoc -- son de este script
+          // type="module", un <script> normal tiene su propio scope
+          // separado (mismo motivo por el que window._uid se expone unas
+          // líneas más abajo). Sin este puente, _marcarTutorialVisto tiraba
+          // "uid is not defined" cada vez que se llamaba -- un
+          // ReferenceError silencioso (nadie lo veía salvo mirando la
+          // consola), así que tutorial_visto nunca se llegaba a guardar de
+          // verdad y el tutorial volvía a aparecer en cada visita.
+          window._guardarFlagUsuario = async (campo) => {
+            if (!uid) return;
+            try {
+              await setDoc(
+                doc(db, "usuarios", uid),
+                { [campo]: true },
+                { merge: true },
+              );
+            } catch (e) {
+              console.warn(`Error guardando ${campo}:`, e);
+            }
+          };
 
           // Si se cierra sesión y se entra con otra cuenta rápido, este
           // mismo callback puede seguir corriendo para el usuario VIEJO
