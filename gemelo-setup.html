@@ -209,6 +209,10 @@
         flex-wrap: wrap;
       }
       .ptag {
+        /* Oculto durante el piloto, junto con el resto de las referencias a
+        premium (ver .prem-only más abajo) -- se deja de mostrar la
+        etiqueta "★ Premium" en cada pregunta, sin borrar el marcado. */
+        display: none;
         font-size: 0.62rem;
         font-weight: 700;
         color: var(--premium);
@@ -968,6 +972,91 @@
       .tut-step.active {
         display: block;
       }
+      .tut-where {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-family: var(--fb);
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--orange);
+        margin: -14px 0 20px;
+      }
+      .tut-where svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+      }
+      /* Mini-mockups de la interfaz real, para que el tutorial muestre DÓNDE
+      aparece cada cosa en vez de solo describirla con texto. */
+      .tut-mock {
+        margin: 0 auto 22px;
+        max-width: 260px;
+      }
+      .tut-mock-chat {
+        background: var(--surf-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 12px;
+        text-align: left;
+      }
+      .tut-mock-bubble {
+        max-width: 78%;
+        padding: 7px 11px;
+        border-radius: 12px;
+        font-size: 0.72rem;
+        margin-bottom: 7px;
+        line-height: 1.35;
+      }
+      .tut-mock-bubble.a {
+        background: var(--surf-3);
+        border-bottom-left-radius: 3px;
+      }
+      .tut-mock-bubble.b {
+        background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+        color: #fff;
+        margin-left: auto;
+        border-bottom-right-radius: 3px;
+      }
+      .tut-mock-match {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--surf-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px;
+        text-align: left;
+      }
+      .tut-mock-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+      }
+      .tut-mock-match-name {
+        font-family: var(--fd);
+        font-weight: 700;
+        font-size: 0.88rem;
+      }
+      .tut-mock-match-pct {
+        font-family: var(--fd);
+        font-weight: 800;
+        font-size: 0.78rem;
+        color: var(--orange);
+      }
+      .tut-mock-btn {
+        margin-left: auto;
+        background: var(--orange);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 7px 14px;
+        border-radius: var(--r-full);
+        flex-shrink: 0;
+      }
 
       /* ── STAGGER: PILLS ── */
       .stage.active .pill {
@@ -1080,44 +1169,69 @@
             <strong style="color: var(--text)">gemelo</strong>: una versión
             con IA que piensa y habla como vos.
           </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            Es justo lo que estás por empezar ahora
+          </div>
         </div>
 
         <div class="tut-step" data-tut-step="2">
-          <div class="tut-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.8 8.8 0 0 1-4-1L3 20l1-5.5A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5Z" />
-            </svg>
+          <div class="tut-mock" aria-hidden="true">
+            <div class="tut-mock-chat">
+              <div class="tut-mock-bubble a">holaa, ¿qué venís escuchando?</div>
+              <div class="tut-mock-bubble b">metido con cosas de tecnología últimamente</div>
+              <div class="tut-mock-bubble a">jaja banco eso 👀</div>
+            </div>
           </div>
           <div class="tut-title">Tu gemelo sale a conocer gente</div>
           <div class="tut-text">
             Cuando hay compatibilidad real con otra persona, tu gemelo simula
             una charla con el gemelo de ella para ver si de verdad conectan.
           </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Pasa solo, de noche -- vos no tenés que hacer nada
+          </div>
         </div>
 
         <div class="tut-step" data-tut-step="3">
-          <div class="tut-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
-            </svg>
+          <div class="tut-mock" aria-hidden="true">
+            <div class="tut-mock-match">
+              <div class="tut-mock-avatar"></div>
+              <div>
+                <div class="tut-mock-match-name">Abril</div>
+                <div class="tut-mock-match-pct">84% de afinidad</div>
+              </div>
+            </div>
           </div>
           <div class="tut-title">Si conecta, aparece el match</div>
           <div class="tut-text">
             Si la charla simulada sale bien, se los mostramos a los dos: es
             un match real, no un perfil más para deslizar.
           </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+            Así se ve en Inicio, en "Matches recientes"
+          </div>
         </div>
 
         <div class="tut-step" data-tut-step="4">
-          <div class="tut-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
-            </svg>
+          <div class="tut-mock" aria-hidden="true">
+            <div class="tut-mock-chat" style="display: flex; align-items: center; gap: 10px">
+              <div class="tut-mock-bubble a" style="margin: 0; flex: 1">
+                ¿te gustaría vernos un día de estos?
+              </div>
+              <span class="tut-mock-btn">Chatear</span>
+            </div>
           </div>
           <div class="tut-title">Ahí entrás vos</div>
           <div class="tut-text">
             Podés chatear de verdad con esa persona cuando quieras -- tu
             gemelo ya rompió el hielo por vos.
+          </div>
+          <div class="tut-where">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+            Tocá el match, después "Chats"
           </div>
         </div>
 

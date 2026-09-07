@@ -2111,7 +2111,14 @@
             <h1 class="hero-name" id="heroName"></h1>
             <p class="hero-meta" id="heroMeta">Buenos Aires · 23 años</p>
           </div>
-          <span class="plan-badge free" id="heroPlanBadge">
+          <!-- Oculto durante el piloto junto con el resto de "Premium" en
+          esta página (ver la sección ⑧ Plan más abajo) -- actualizarBadge()
+          lo sigue actualizando igual, solo no se muestra. -->
+          <span
+            class="plan-badge free"
+            id="heroPlanBadge"
+            style="display: none"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
