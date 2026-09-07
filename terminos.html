@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebble — Términos y condiciones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Open+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="./images/logo_pebble_transparente.png" />
+
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --orange: #ff751f;
+        --bg: #eeedec;
+        --surf-1: #ffffff;
+        --border: rgba(0, 0, 0, 0.08);
+        --text-primary: #000000;
+        --text-secondary: #4d4d4d;
+        --text-muted: rgba(0, 0, 0, 0.5);
+        --font-display: "Bricolage Grotesque", sans-serif;
+        --font-body: "Open Sans", sans-serif;
+        --r-lg: 14px;
+      }
+      html,
+      body {
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--bg);
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+      }
+      .logo {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        text-decoration: none;
+        color: var(--text-primary);
+      }
+      .logo span {
+        color: var(--orange);
+      }
+      .back-link {
+        font-family: var(--font-body);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-decoration: none;
+      }
+      .back-link:hover {
+        color: var(--orange);
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 36px 24px 80px;
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-size: 1.9rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+      }
+      .updated {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 32px;
+      }
+      section {
+        margin-bottom: 30px;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+      p,
+      li {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+      ul {
+        padding-left: 1.3em;
+        margin-top: 8px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      strong {
+        color: var(--text-primary);
+      }
+      .callout {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--orange);
+        border-radius: var(--r-lg);
+        padding: 16px 18px;
+        margin: 14px 0;
+      }
+      .callout p {
+        color: var(--text-primary);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="./home.html" class="logo">PE<span>BB</span>LE</a>
+      <a href="javascript:history.back()" class="back-link">← Volver</a>
+    </header>
+
+    <main>
+      <h1>Términos y condiciones</h1>
+      <p class="updated">Última actualización: septiembre de 2026</p>
+
+      <section>
+        <h2>1. Qué es Pebble</h2>
+        <p>
+          Pebble es una aplicación de citas que utiliza inteligencia
+          artificial para generar un <strong>"gemelo"</strong>: una
+          representación conversacional basada en las respuestas que das
+          durante el onboarding. Antes de que dos personas se conecten
+          directamente, sus gemelos simulan una conversación entre sí para
+          estimar qué tan compatibles podrían ser.
+        </p>
+      </section>
+
+      <section>
+        <div class="callout">
+          <p>
+            <strong>Importante:</strong> cuando ves una conversación marcada
+            como "gemelo de [nombre]", no estás hablando con esa persona real
+            — es una IA que intenta representar su forma de ser a partir de
+            sus respuestas. Solo cuando aparece un match real y entrás al
+            chat directo estás hablando con la persona de verdad.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>2. Quién puede usar Pebble</h2>
+        <ul>
+          <li>Tenés que tener 18 años o más para crear una cuenta.</li>
+          <li>
+            La información que cargues en el onboarding tiene que ser real —
+            no se permite crear perfiles con datos falsos, de otra persona,
+            o suplantando una identidad.
+          </li>
+          <li>
+            Una persona no puede tener más de una cuenta activa al mismo
+            tiempo.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>3. Cómo funciona el gemelo</h2>
+        <ul>
+          <li>
+            El gemelo se construye a partir de tus respuestas del onboarding
+            y, con tu consentimiento, puede aprender de tus conversaciones
+            reales dentro de la app para representarte mejor con el tiempo.
+          </li>
+          <li>
+            El gemelo puede cometer errores, malinterpretar algo, o generar
+            una respuesta que no coincide exactamente con lo que dirías en
+            esa situación puntual. Es una aproximación, no una copia exacta
+            de tu forma de pensar.
+          </li>
+          <li>
+            El porcentaje de compatibilidad que te mostramos es una
+            estimación calculada por el sistema a partir de tus respuestas y
+            de la conversación simulada — no es una garantía de que la
+            relación vaya a funcionar en la vida real.
+          </li>
+          <li>
+            Podés pedir en cualquier momento que tu gemelo no siga aprendiendo
+            de tus chats reales desde la sección de privacidad de tu perfil.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. Tu cuenta y tu contenido</h2>
+        <ul>
+          <li>Sos responsable de mantener segura tu contraseña.</li>
+          <li>
+            Las fotos y la información que subís tienen que ser tuyas y no
+            pueden infringir derechos de terceros.
+          </li>
+          <li>
+            Podés borrar tu cuenta en cualquier momento desde tu perfil. Al
+            hacerlo, se elimina tu información personal, tus conversaciones y
+            tus conexiones con otras personas.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>5. Conducta esperada</h2>
+        <p>No está permitido usar Pebble para:</p>
+        <ul>
+          <li>Acosar, amenazar o discriminar a otras personas.</li>
+          <li>
+            Suplantar la identidad de otra persona real, ficticia o de una
+            figura pública.
+          </li>
+          <li>
+            Compartir contenido sexual sin consentimiento, ilegal, o que
+            involucre a menores de edad.
+          </li>
+          <li>
+            Usar la app con fines comerciales, publicitarios o de recolección
+            de datos de otros usuarios sin autorización.
+          </li>
+          <li>
+            Intentar manipular, saturar o explotar el sistema de matching o
+            el motor de simulación (por ejemplo, con cuentas automatizadas).
+          </li>
+        </ul>
+        <p>
+          El incumplimiento de estas reglas puede resultar en la suspensión o
+          eliminación de tu cuenta, sin previo aviso en casos graves.
+        </p>
+      </section>
+
+      <section>
+        <h2>6. Planes pagos</h2>
+        <ul>
+          <li>
+            Pebble ofrece funciones adicionales bajo un plan premium. Los
+            precios y beneficios vigentes se muestran en la sección de
+            planes de la app.
+          </li>
+          <li>
+            Podés cancelar tu suscripción en cualquier momento; seguís
+            teniendo acceso premium hasta el final del período ya pagado.
+          </li>
+          <li>
+            Durante la etapa piloto de la app, el acceso premium puede
+            otorgarse sin costo — esto puede cambiar en versiones futuras,
+            con aviso previo.
+          </li>
+        </ul>
+      </section>
+
+      <section id="privacidad">
+        <h2>7. Privacidad</h2>
+        <p>
+          Recolectamos la información que cargás en el onboarding, tus fotos,
+          tus conversaciones y datos técnicos básicos (como los mensajes que
+          intercambiás dentro de la app) con el único fin de operar el
+          servicio: construir tu gemelo, calcular compatibilidad y mostrarte
+          matches. No vendemos tu información personal a terceros.
+        </p>
+        <p>
+          Algunos datos (como tu identidad de género u orientación sexual)
+          quedan ocultos para otros usuarios por defecto, hasta que vos
+          decidís mostrarlos desde la sección de privacidad de tu perfil.
+        </p>
+        <p>
+          Usamos un proveedor externo de inteligencia artificial para generar
+          las conversaciones simuladas y los resúmenes de perfil — tus datos
+          se comparten con ese proveedor únicamente para prestar ese
+          servicio, no para entrenar modelos de uso general ni para fines
+          publicitarios.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Límites de responsabilidad</h2>
+        <p>
+          Pebble facilita conexiones, pero no participa en los encuentros ni
+          en las relaciones que surjan entre usuarios reales. Recomendamos
+          tomar las precauciones habituales al conocer gente nueva: encontrarse
+          primero en un lugar público, avisar a alguien de confianza, y
+          confiar en tu propio criterio por encima de cualquier porcentaje de
+          compatibilidad que muestre la app.
+        </p>
+        <p>
+          El servicio se ofrece "tal cual", sin garantías de disponibilidad
+          continua, ausencia de errores, o de que vayas a encontrar pareja
+          usando la app.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. Cambios a estos términos</h2>
+        <p>
+          Podemos actualizar estos términos a medida que la app evoluciona.
+          Si hay un cambio importante, te lo vamos a avisar dentro de la app
+          antes de que entre en vigencia.
+        </p>
+      </section>
+
+      <section>
+        <h2>10. Contacto</h2>
+        <p>
+          Si tenés preguntas sobre estos términos, podés escribirnos desde la
+          sección de ayuda de tu perfil.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

@@ -139,8 +139,30 @@ def _directiva(valor, texto_alto, texto_bajo, umbral=0.58):
 # neutro a propósito (no hay una forma gramatical única "correcta" para
 # imponer ahí).
 _GENERO_INSTRUCCION = {
-    "Mujer": "Género: femenino -- escribí siempre en femenino (ej: \"segura\", \"la que se enamora rápido\"), nunca uses barras como \"o/a\" ni \"el/la\".",
-    "Hombre": "Género: masculino -- escribí siempre en masculino (ej: \"seguro\", \"el que se enamora rápido\"), nunca uses barras como \"o/a\" ni \"el/la\".",
+    "Mujer": (
+        "Género: femenino -- escribí siempre en femenino cuando hablás de VOS "
+        "MISMO/A (ej: \"segura\", \"la que se enamora rápido\", \"quedé "
+        "sorprendida\"), nunca uses barras como \"o/a\" ni \"el/la\". Prestale "
+        "atención especial a esto en TODO el mensaje, no solo al arrancar --"
+        " es un error grave y frecuente equivocarse a mitad de frase. Si "
+        "hablás de LOS DOS juntos (\"somos...\", \"estamos...\", \"nos "
+        "llevamos...\") y no sabés el género de la otra persona o es distinto "
+        "al tuyo, usá la forma masculina plural -- es la que corresponde en "
+        "español para un grupo mixto ('somos bastante distintos', no "
+        "'distintas'), nunca asumas que comparte tu género para conjugar en "
+        "plural."
+    ),
+    "Hombre": (
+        "Género: masculino -- escribí siempre en masculino cuando hablás de "
+        "VOS MISMO (ej: \"seguro\", \"el que se enamora rápido\", \"quedé "
+        "sorprendido\"), nunca uses barras como \"o/a\" ni \"el/la\". Prestale "
+        "atención especial a esto en TODO el mensaje, no solo al arrancar --"
+        " es un error grave y frecuente equivocarse a mitad de frase. Si "
+        "hablás de LOS DOS juntos (\"somos...\", \"estamos...\", \"nos "
+        "llevamos...\") usá la forma masculina plural, es la que corresponde "
+        "en español para un grupo mixto o de género no confirmado ('somos "
+        "bastante distintos')."
+    ),
 }
 
 
@@ -453,6 +475,13 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     checklist_final = f"""
     ─────────────────────────────
     ANTES DE MANDAR EL MENSAJE, CHEQUEO RÁPIDO:
+    - Repaso TODO el mensaje que estoy por mandar, palabra por palabra: cada
+      adjetivo/participio que uso sobre MÍ ("segura/o", "cansada/o",
+      "sorprendida/o") o sobre LOS DOS JUNTOS ("distintas/os",
+      "parecidas/os") -- ¿está en el género correcto? (arriba, en "Género").
+      Sobre mí: mi propio género. Sobre los dos juntos: masculino, salvo que
+      sepa con certeza que las dos personas son mujeres. Este es un error
+      grave y frecuente, no solo al arrancar el mensaje.
     - ¿Ya saludé antes en esta charla? Si sí, no vuelvo a saludar.
     - ¿El mensaje que respondo termina en "?"? Si soy bastante introvertido/a
       (arriba), evito cerrar el mío también en pregunta -- pero si soy
@@ -1450,12 +1479,11 @@ def generar_resumen_gemelo(perfil):
     creencias = perfil.get("creencias") or {}
     if creencias:
         partes_datos.append("Postura frente a política/religión: " + "; ".join(f"{k}: {v}" for k, v in creencias.items()))
-    fisico = perfil.get("fisico_propio") or {}
-    fisico_partes = [v for v in (fisico.get("colorPelo"), fisico.get("estiloPelo"), fisico.get("contextura")) if v]
-    if fisico.get("altura_cm"):
-        fisico_partes.append(f"{fisico['altura_cm']}cm")
-    if fisico_partes:
-        partes_datos.append("Físico: " + ", ".join(fisico_partes))
+    # A propósito NO se le pasa "fisico_propio" (color/estilo de pelo,
+    # altura, contextura) -- el resumen es la bio de una app de citas, y la
+    # descripción física ya la muestran las fotos del perfil, no el texto.
+    # Pasárselo como dato más terminaba generando líneas tipo "soy morocha
+    # de 165cm" que no aportan nada que las fotos no digan ya.
     prioridad = perfil.get("prioridad_compatibilidad") or []
     if prioridad:
         partes_datos.append("Lo que más le importa en una conexión, en orden: " + " > ".join(prioridad))
@@ -1532,6 +1560,10 @@ def generar_resumen_gemelo(perfil):
     - Cerrar con una frase corta tipo eslogan ("Así soy yo", "Eso es lo que me define", etc.)
     Si alguna de estas te resulta la forma más natural de decir algo, decilo
     igual pero con palabras distintas y más específicas de ESTA persona.
+
+    NUNCA describas su físico (altura, contextura, color/estilo de pelo, o
+    cualquier rasgo de apariencia) -- las fotos del perfil ya muestran eso,
+    el texto tiene que describir quién es, no cómo se ve.
 
     Los números de personalidad/valores son SOLO para que vos entiendas a la
     persona antes de escribir -- el texto final tiene que sonar como lo

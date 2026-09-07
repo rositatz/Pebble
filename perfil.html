@@ -3065,8 +3065,12 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         </div>
       </div>
 
-      <!-- ⑧ Plan -->
-      <div class="card fu">
+      <!-- ⑧ Plan -- oculto a propósito durante el piloto (todos son premium
+      sin pagar, no tiene sentido mostrar upgrade/pago todavía). NO se borró
+      nada: el markup, los ids y actualizarSeccionPlan() siguen intactos,
+      así que reactivarlo cuando corresponda es solo sacar el
+      style="display:none" de este div. -->
+      <div class="card fu" style="display: none">
         <div class="plan-section">
           <div class="section-header">
             <div>

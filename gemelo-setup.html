@@ -786,13 +786,19 @@
         border-color: rgba(255, 255, 255, 0.2);
       }
 
-      /* ── PREMIUM ── */
+      /* ── PREMIUM ──
+      Oculto durante el piloto (ver home.html: el signup ya no pasa por
+      planes.html) -- .prem-only sigue marcando en el HTML mismo cuáles
+      preguntas son premium (no se borró esa info de ningún lado), pero por
+      ahora se muestran TODAS sin importar el plan. Para volver a
+      restringirlas por plan, descomentar la regla de abajo y comentar/
+      borrar la de "display: block" de acá arriba. */
       .prem-only {
-        display: none;
-      }
-      body.is-premium .prem-only {
         display: block;
       }
+      /* body.is-premium .prem-only {
+        display: block;
+      } */
 
       /* ── HELPERS ── */
       .divider {
@@ -844,6 +850,123 @@
         to {
           transform: rotate(360deg);
         }
+      }
+
+      /* ── TUTORIAL DE BIENVENIDA (primera vez, antes de la etapa 1) ── */
+      #tutorialOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 998;
+        background: rgba(10, 10, 10, 0.88);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .tut-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 40px 32px 28px;
+        text-align: center;
+        position: relative;
+        animation: tut-in 0.35s var(--spring);
+      }
+      @keyframes tut-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .tut-skip {
+        position: absolute;
+        top: 18px;
+        right: 20px;
+        font-family: var(--fb);
+        font-size: 0.8rem;
+        color: var(--text-m);
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      .tut-skip:hover {
+        color: var(--text);
+      }
+      .tut-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--orange-mid), var(--orange));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tut-icon svg {
+        width: 36px;
+        height: 36px;
+      }
+      .tut-title {
+        font-family: var(--fd);
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+      }
+      .tut-text {
+        font-family: var(--fb);
+        font-size: 0.92rem;
+        color: var(--text-m);
+        line-height: 1.55;
+        margin-bottom: 26px;
+      }
+      .tut-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-bottom: 22px;
+      }
+      .tut-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border);
+        transition: background 0.25s, width 0.25s;
+      }
+      .tut-dot.active {
+        background: var(--orange);
+        width: 18px;
+        border-radius: 4px;
+      }
+      .tut-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: var(--r-full);
+        border: none;
+        background: var(--orange);
+        color: #fff;
+        font-family: var(--fb);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .tut-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 117, 31, 0.35);
+      }
+      .tut-step {
+        display: none;
+      }
+      .tut-step.active {
+        display: block;
       }
 
       /* ── STAGGER: PILLS ── */
@@ -931,6 +1054,85 @@
   </head>
   <body>
     <div id="auth-gate"><div class="spin"></div></div>
+
+    <!-- Tutorial de bienvenida -- solo la primera vez, antes de la etapa 1
+    (ver tutorial_visto en usuarios/{uid} y mostrarTutorial() más abajo). -->
+    <div id="tutorialOverlay" style="display: none">
+      <div class="tut-card">
+        <button
+          class="tut-skip"
+          type="button"
+          onclick="cerrarTutorial()"
+        >
+          Saltar
+        </button>
+
+        <div class="tut-step active" data-tut-step="1">
+          <div class="tut-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+            </svg>
+          </div>
+          <div class="tut-title">Armá tu gemelo</div>
+          <div class="tut-text">
+            Contestá algunas preguntas sobre vos. Con eso creamos tu
+            <strong style="color: var(--text)">gemelo</strong>: una versión
+            con IA que piensa y habla como vos.
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="2">
+          <div class="tut-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.8 8.8 0 0 1-4-1L3 20l1-5.5A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5Z" />
+            </svg>
+          </div>
+          <div class="tut-title">Tu gemelo sale a conocer gente</div>
+          <div class="tut-text">
+            Cuando hay compatibilidad real con otra persona, tu gemelo simula
+            una charla con el gemelo de ella para ver si de verdad conectan.
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="3">
+          <div class="tut-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+            </svg>
+          </div>
+          <div class="tut-title">Si conecta, aparece el match</div>
+          <div class="tut-text">
+            Si la charla simulada sale bien, se los mostramos a los dos: es
+            un match real, no un perfil más para deslizar.
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="4">
+          <div class="tut-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+            </svg>
+          </div>
+          <div class="tut-title">Ahí entrás vos</div>
+          <div class="tut-text">
+            Podés chatear de verdad con esa persona cuando quieras -- tu
+            gemelo ya rompió el hielo por vos.
+          </div>
+        </div>
+
+        <div class="tut-dots" aria-hidden="true">
+          <span class="tut-dot active" data-tut-dot="1"></span>
+          <span class="tut-dot" data-tut-dot="2"></span>
+          <span class="tut-dot" data-tut-dot="3"></span>
+          <span class="tut-dot" data-tut-dot="4"></span>
+        </div>
+
+        <button class="tut-btn" type="button" onclick="tutorialSiguiente()" id="tutBtn">
+          Siguiente
+        </button>
+      </div>
+    </div>
 
     <header class="topbar">
       <a href="home.html" class="logo">PE<span>BB</span>LE</a>
@@ -4019,6 +4221,12 @@
         }
         uid = user.uid;
 
+        // Tutorial de bienvenida: se muestra si la cuenta todavía no lo vio
+        // (tutorial_visto != true) -- default a "mostrarlo" (true) para una
+        // cuenta que ni siquiera tiene el doc de usuarios todavía creado,
+        // que es exactamente el caso de alguien recién registrado.
+        let mostrarTutorialBienvenida = true;
+
         try {
           const snap = await getDoc(doc(db, "usuarios", uid));
           if (snap.exists()) {
@@ -4030,6 +4238,7 @@
             userPlan = d.plan || "premium";
             if (userPlan === "premium")
               document.body.classList.add("is-premium");
+            mostrarTutorialBienvenida = d.tutorial_visto !== true;
           }
         } catch (e) {}
 
@@ -4060,7 +4269,54 @@
         const hash = window.location.hash.match(/#etapa-(\d)/);
         showStage(hash ? parseInt(hash[1]) : 1);
         document.getElementById("auth-gate").style.display = "none";
+
+        // Si viene de un link directo a una etapa puntual (#etapa-N, ej.
+        // "seguir después" desde perfil.html) es alguien retomando, no
+        // arrancando de cero -- no lo interrumpimos con el tutorial aunque
+        // técnicamente no lo haya visto todavía.
+        if (mostrarTutorialBienvenida && !hash) {
+          document.getElementById("tutorialOverlay").style.display = "flex";
+        }
       });
+
+      // ── TUTORIAL DE BIENVENIDA ──
+      let tutPaso = 1;
+      const TUT_TOTAL_PASOS = 4;
+      window.tutorialSiguiente = function () {
+        if (tutPaso >= TUT_TOTAL_PASOS) {
+          cerrarTutorial();
+          return;
+        }
+        tutPaso++;
+        document
+          .querySelectorAll(".tut-step")
+          .forEach((el) =>
+            el.classList.toggle(
+              "active",
+              parseInt(el.dataset.tutStep) === tutPaso,
+            ),
+          );
+        document
+          .querySelectorAll(".tut-dot")
+          .forEach((el) =>
+            el.classList.toggle(
+              "active",
+              parseInt(el.dataset.tutDot) === tutPaso,
+            ),
+          );
+        document.getElementById("tutBtn").textContent =
+          tutPaso === TUT_TOTAL_PASOS ? "Empezar" : "Siguiente";
+      };
+      window.cerrarTutorial = function () {
+        document.getElementById("tutorialOverlay").style.display = "none";
+        if (uid) {
+          setDoc(
+            doc(db, "usuarios", uid),
+            { tutorial_visto: true },
+            { merge: true },
+          ).catch((e) => console.warn("Error guardando tutorial_visto:", e));
+        }
+      };
     </script>
   </body>
 </html>

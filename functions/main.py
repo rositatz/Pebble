@@ -824,6 +824,13 @@ _SIN_UBICACION = 999999
 # incluso en el caso más caro (pareja "Algo serio", ~9 escenarios).
 LOTE_NOCTURNO = 10
 
+# Pool de candidatas de donde se arma cada lote nocturno -- más grande que
+# LOTE_NOCTURNO a propósito, para poder ELEGIR entre varias en vez de
+# quedarse con las 10 primeras por cercanía sin más criterio. Es una lectura
+# barata (Firestore, no OpenAI), así que no pesa en el costo real de la
+# corrida -- lo caro sigue limitado por LOTE_NOCTURNO.
+POOL_CANDIDATAS_NOCTURNO = 300
+
 
 @scheduler_fn.on_schedule(schedule="every 60 minutes", timezone="America/Argentina/Buenos_Aires")
 def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
@@ -926,6 +933,47 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     )
 
 
+def _elegir_lote_diverso(pool, tamano_lote):
+    """De una lista de docs de 'parejas_pendientes' (ya ordenada por
+    cercanía), arma un lote de hasta tamano_lote pares maximizando cuántas
+    cuentas DISTINTAS toca -- en vez de tomar directo las primeras
+    tamano_lote por cercanía, que podían ser todas de la misma cuenta con
+    muchos pares pendientes cerca suyo.
+
+    3 pasadas sobre el pool (greedy, respetando el orden por cercanía
+    dentro de cada pasada):
+    1. Pares donde NINGUNO de los dos ya entró en el lote.
+    2. Pares donde como máximo UNO de los dos ya entró (repite una cuenta,
+       no dos).
+    3. Cualquiera que quede, sin restricción -- para SIEMPRE llenar el
+       lote completo si hay pares disponibles, aunque eso implique repetir
+       cuentas."""
+    seleccionados = []
+    usados = set()
+    ids_elegidos = set()
+
+    for max_repetidos in (0, 1, None):
+        if len(seleccionados) >= tamano_lote:
+            break
+        for doc in pool:
+            if len(seleccionados) >= tamano_lote:
+                break
+            if doc.id in ids_elegidos:
+                continue
+            data = doc.to_dict()
+            uid1 = data["usuario_1"]["uid"]
+            uid2 = data["usuario_2"]["uid"]
+            repetidos = (uid1 in usados) + (uid2 in usados)
+            if max_repetidos is not None and repetidos > max_repetidos:
+                continue
+            seleccionados.append(doc)
+            ids_elegidos.add(doc.id)
+            usados.add(uid1)
+            usados.add(uid2)
+
+    return seleccionados
+
+
 @scheduler_fn.on_schedule(
     schedule="0 3 * * *",
     timezone="America/Argentina/Buenos_Aires",
@@ -942,17 +990,27 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     LOTE_NOCTURNO pares por corrida -- si queda cola, la siguiente corrida
     (mañana) sigue con las que falten. Cada par se procesa en su propio
     try/except para que un error puntual (ej: un timeout de OpenAI) no tire
-    abajo el resto del lote."""
+    abajo el resto del lote.
+
+    La elección de CUÁLES pares entran en el lote de esta noche prioriza
+    diversidad de cuentas (ver _elegir_lote_diverso): si hay más de
+    LOTE_NOCTURNO cuentas con pares pendientes, el lote intenta no repetir
+    ninguna cuenta dos veces -- así a más gente le llega alguna novedad por
+    noche, en vez de que una cuenta con muchos pares pendientes se coma el
+    lote entero. Cuando ya no alcanzan pares "frescos" para completar el
+    lote, ahí sí se permite repetir cuentas, pero siempre se llena el lote
+    completo (nunca se deja un lugar vacío pudiendo llenarlo)."""
 
     db = firestore.client()
 
-    pendientes = (
+    pool = list(
         db.collection("parejas_pendientes")
         .where("estado", "==", "PENDIENTE")
         .order_by("distancia_km")
-        .limit(LOTE_NOCTURNO)
+        .limit(POOL_CANDIDATAS_NOCTURNO)
         .stream()
     )
+    pendientes = _elegir_lote_diverso(pool, LOTE_NOCTURNO)
 
     procesadas, con_error, descartados = 0, 0, 0
 

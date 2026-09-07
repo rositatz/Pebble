@@ -1336,8 +1336,9 @@
           <a
             href="#"
             class="gemelo-banner"
+            id="gemeloBanner"
             onclick="
-              goTo('gemelo');
+              goTo(gemeloBannerDestino);
               return false;
             "
             aria-label="Ver chat con tu gemelo"
@@ -1356,13 +1357,17 @@
               </svg>
             </div>
             <div class="gemelo-info">
-              <div class="gemelo-info-title">Tu gemelo está activo</div>
-              <!-- Se llena con datos reales -- ver actualizarBannerGemelo() más abajo. -->
+              <!-- Título y texto se pisan según si el onboarding del gemelo
+              está completo -- ver actualizarBannerGemelo()/el chequeo de
+              gemelo_completado más abajo. -->
+              <div class="gemelo-info-title" id="gemeloInfoTitle">
+                Tu gemelo está activo
+              </div>
               <div class="gemelo-info-sub" id="gemeloInfoSub">
                 Cargando actividad del gemelo…
               </div>
             </div>
-            <div class="gemelo-live">
+            <div class="gemelo-live" id="gemeloLive">
               <span class="live-dot" aria-label="Activo"></span>
               <span class="live-label">Live</span>
             </div>
@@ -1839,6 +1844,7 @@
       function goTo(page) {
         const map = {
           gemelo: "./gemelo.html",
+          "gemelo-setup": "./gemelo-setup.html",
           matches: "./matches.html",
           chats: "./chats.html",
           notificaciones: "./notificaciones.html",
@@ -1847,6 +1853,11 @@
         const url = map[page];
         if (url) window.location.href = url;
       }
+      // A dónde navega el banner "Tu gemelo" al hacer click -- normalmente
+      // al chat (gemelo), pero mientras el onboarding no esté completo
+      // apunta a gemelo-setup.html en cambio (ver el chequeo de
+      // gemelo_completado en onAuthStateChanged).
+      let gemeloBannerDestino = "gemelo";
       function showAuthError(msg) {
         let el = document.getElementById("auth-error");
         if (!el) {
@@ -2172,6 +2183,37 @@
             const data = snap.exists() ? snap.data() : {};
             renderNavAvatar(data.avatarFoto);
 
+            // Onboarding del gemelo incompleto -- el banner "Tu gemelo está
+            // activo" no tiene sentido todavía (no hay gemelo/perfil, no
+            // puede haber simulaciones ni matches), así que se reemplaza por
+            // uno de progreso. gemelo_completado es undefined en una cuenta
+            // que nunca arrancó el onboarding -- por eso el chequeo es
+            // "!== true", no "=== false" (cubre los dos casos: nunca
+            // arrancó, o arrancó y quedó a mitad de camino).
+            const gemeloIncompleto = data.gemelo_completado !== true;
+            const gemeloInfoTitle = document.getElementById("gemeloInfoTitle");
+            const gemeloLive = document.getElementById("gemeloLive");
+            if (gemeloIncompleto) {
+              const pct = Math.round(data.gemelo_progreso || 0);
+              gemeloBannerDestino = "gemelo-setup";
+              if (gemeloInfoTitle)
+                gemeloInfoTitle.textContent =
+                  pct > 0 ? "Completá tu gemelo" : "Creá tu gemelo";
+              const sub = document.getElementById("gemeloInfoSub");
+              if (sub)
+                sub.innerHTML =
+                  pct > 0
+                    ? `Te falta un <strong>${pct}%</strong> para terminarlo -- así puede empezar a buscar matches por vos.`
+                    : `Todavía no lo empezaste -- contestá unas preguntas para que tu gemelo pueda empezar a buscar matches por vos.`;
+              if (gemeloLive)
+                gemeloLive.innerHTML = `<span class="live-label" style="color:var(--orange-light)">${pct}%</span>`;
+            } else {
+              gemeloBannerDestino = "gemelo";
+              if (gemeloInfoTitle) gemeloInfoTitle.textContent = "Tu gemelo está activo";
+              if (gemeloLive)
+                gemeloLive.innerHTML = `<span class="live-dot" aria-label="Activo"></span><span class="live-label">Live</span>`;
+            }
+
             // Los matches/chats viven en conexiones/{parId} (un doc
             // compartido por pareja). Una sola query con array-contains:
             // dos queries separadas por usuario_1.uid/usuario_2.uid con una
@@ -2221,11 +2263,15 @@
 
             if (uid !== miInvocacion) return;
             actualizarBadgesSecciones(data, candidatos, notifsSinLeer);
-            actualizarBannerGemelo(
-              candidatos,
-              totalSimulaciones,
-              mejorScoreSinMatch,
-            );
+            // Con el onboarding incompleto, gemeloInfoSub ya se llenó arriba
+            // con el mensaje de progreso -- no dejar que esto lo pise.
+            if (!gemeloIncompleto) {
+              actualizarBannerGemelo(
+                candidatos,
+                totalSimulaciones,
+                mejorScoreSinMatch,
+              );
+            }
             await cargarMatchesRecientes(user, data, candidatos, miInvocacion);
           } catch (e) {
             console.warn("Error cargando matches/chats:", e);
@@ -2327,7 +2373,11 @@
           const cred = await createUserWithEmailAndPassword(auth, email, pass);
           await updateProfile(cred.user, { displayName: nombre });
           localStorage.setItem("pebble_login_time", Date.now().toString());
-          window.location.href = "./planes.html";
+          // planes.html (elegir plan) queda oculto durante el piloto -- se
+          // salta directo a armar el gemelo. El default userPlan = d.plan ||
+          // "premium" (gemelo-setup.html) ya cubre que esta cuenta, sin
+          // "plan" seteado todavía, vea las preguntas premium igual.
+          window.location.href = "./gemelo-setup.html";
         } catch (err) {
           showAuthError(signupMsg(err.code));
           setBtnLoading(btn, false);
@@ -2341,7 +2391,7 @@
           const result = await signInWithPopup(auth, googleProvider);
           localStorage.setItem("pebble_login_time", Date.now().toString());
           const isNew = result._tokenResponse?.isNewUser;
-          if (isNew) window.location.href = "./planes.html";
+          if (isNew) window.location.href = "./gemelo-setup.html";
           // Si ya tenía cuenta, onAuthStateChanged lo lleva a la app
         } catch (err) {
           if (err.code !== "auth/popup-closed-by-user")
@@ -2356,7 +2406,7 @@
           const result = await signInWithPopup(auth, facebookProvider);
           localStorage.setItem("pebble_login_time", Date.now().toString());
           const isNew = result._tokenResponse?.isNewUser;
-          if (isNew) window.location.href = "./planes.html";
+          if (isNew) window.location.href = "./gemelo-setup.html";
         } catch (err) {
           console.error("Facebook login error:", err.code, err.message);
           if (err.code === "auth/popup-closed-by-user") return;
