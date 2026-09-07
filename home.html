@@ -2169,22 +2169,29 @@
       // ── TUTORIAL DE BIENVENIDA ──
       let tutPaso = 1;
       const TUT_TOTAL_PASOS = 4;
+      // Devuelve la promesa del guardado -- hay que ESPERARLA antes de
+      // navegar a otra página (ver tutorialSiguiente más abajo). Antes esto
+      // era fire-and-forget: goTo() cambiaba window.location.href apenas
+      // después de disparar el setDoc, y la navegación cortaba el pedido a
+      // Firestore a mitad de camino casi siempre -- tutorial_visto nunca
+      // llegaba a guardarse de verdad, así que el tutorial volvía a
+      // aparecer en cada visita siguiente pese a haber tocado "Armar mi
+      // gemelo".
       function _marcarTutorialVisto() {
-        if (uid) {
-          setDoc(
-            doc(db, "usuarios", uid),
-            { tutorial_visto: true },
-            { merge: true },
-          ).catch((e) => console.warn("Error guardando tutorial_visto:", e));
-        }
+        if (!uid) return Promise.resolve();
+        return setDoc(
+          doc(db, "usuarios", uid),
+          { tutorial_visto: true },
+          { merge: true },
+        ).catch((e) => console.warn("Error guardando tutorial_visto:", e));
       }
-      window.tutorialSiguiente = function () {
+      window.tutorialSiguiente = async function () {
         if (tutPaso >= TUT_TOTAL_PASOS) {
           // Último paso: cierra Y lleva directo a armar el gemelo -- es el
           // paso que de verdad hay que hacer, no alcanza con solo cerrar el
           // tutorial y esperar que la persona encuentre el banner sola.
           document.getElementById("tutorialOverlay").style.display = "none";
-          _marcarTutorialVisto();
+          await _marcarTutorialVisto();
           goTo("gemelo-setup");
           return;
         }

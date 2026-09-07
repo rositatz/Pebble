@@ -3348,7 +3348,16 @@
                   });
 
                 const real = c.data.real || {};
-                const gemelo = c.data.gemelo || {};
+                // El chat con el gemelo del match vive en el subdoc PRIVADO
+                // (conexiones/{parId}/gemeloPrivado/{mi uid} -- ver
+                // _db_saveChat/_db_marcarLeido y firestore.rules), no en
+                // c.data.gemelo -- ese campo del doc compartido quedó sin
+                // usar desde que se separó a un subdoc propio por persona.
+                // Leer de ahí hacía que la conversación con el gemelo
+                // pareciera "no guardarse": el mensaje sí llegaba a
+                // Firestore, pero este snapshot la reconstruía leyendo un
+                // campo que nadie escribe más, así que volvía vacía.
+                const gemelo = c.gemeloPrivado || {};
                 const realMsgs = Array.isArray(real.msgs) ? real.msgs : [];
                 const gemeloMsgs = Array.isArray(gemelo.msgs)
                   ? gemelo.msgs
