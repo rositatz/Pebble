@@ -1643,10 +1643,273 @@
           padding: 8px 12px;
         }
       }
+
+      /* ── TUTORIAL DE BIENVENIDA (primera vez que se abre un chat) ── */
+      #chatTutorialOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 998;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .tut-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 40px 32px 28px;
+        text-align: center;
+        position: relative;
+        animation: tut-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      @keyframes tut-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .tut-skip {
+        position: absolute;
+        top: 18px;
+        right: 20px;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      .tut-skip:hover {
+        color: var(--text-primary);
+      }
+      .tut-title {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        color: var(--text-primary);
+      }
+      .tut-text {
+        font-family: var(--font-body);
+        font-size: 0.92rem;
+        color: var(--text-secondary);
+        line-height: 1.55;
+        margin-bottom: 22px;
+      }
+      .tut-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-bottom: 22px;
+      }
+      .tut-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border2);
+        transition: background 0.25s, width 0.25s;
+      }
+      .tut-dot.active {
+        background: var(--orange);
+        width: 18px;
+        border-radius: 4px;
+      }
+      .tut-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 100px;
+        border: none;
+        background: var(--orange);
+        color: #fff;
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .tut-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 117, 31, 0.35);
+      }
+      .tut-step {
+        display: none;
+      }
+      .tut-step.active {
+        display: block;
+      }
+      /* Mini-mockups calcados de la barra de modo real (ver updateModeBar())
+      -- para que el tutorial muestre la barra EXACTA que van a ver, no una
+      genérica. */
+      .tut-mock-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: var(--r-lg);
+        padding: 10px 14px;
+        margin: 0 auto 22px;
+        max-width: 280px;
+        text-align: left;
+        font-family: var(--font-body);
+        font-size: 0.78rem;
+      }
+      .tut-mock-bar.gemelo {
+        background: #1a1a1a;
+        color: #eeedec;
+      }
+      .tut-mock-bar.real {
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--text-primary);
+      }
+      .tut-mock-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        flex-shrink: 0;
+      }
+      .tut-mock-badge {
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        padding: 2px 8px;
+        border-radius: 100px;
+        flex-shrink: 0;
+      }
+      .tut-mock-badge.ia {
+        background: var(--orange);
+        color: #fff;
+      }
+      .tut-mock-badge.online {
+        background: rgba(34, 197, 94, 0.18);
+        color: #16a34a;
+      }
+      .tut-mock-sim {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #111;
+        border-radius: var(--r-lg);
+        padding: 12px 14px;
+        margin: 0 auto 22px;
+        max-width: 280px;
+        text-align: left;
+      }
+      .tut-mock-sim-title {
+        flex: 1;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: #eeedec;
+      }
+      .tut-mock-sim-sub {
+        font-family: var(--font-body);
+        font-size: 0.68rem;
+        color: rgba(238, 237, 236, 0.55);
+      }
+      .tut-mock-sim-badge {
+        background: rgba(255, 255, 255, 0.1);
+        color: #eeedec;
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 100px;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
     <div id="loadingOverlay"><div class="loading-spinner"></div></div>
+
+    <!-- Tutorial de bienvenida a chats -- solo la primera vez que se abre
+    una conversación puntual (ver chat_tutorial_visto en usuarios/{uid} y
+    el chequeo dentro de openChat() más abajo). Explica las 3 partes de un
+    chat: modo Gemelo (privado, práctica), modo Real (la persona de
+    verdad) y la simulación previa al match. -->
+    <div id="chatTutorialOverlay" style="display: none">
+      <div class="tut-card">
+        <button
+          class="tut-skip"
+          type="button"
+          onclick="cerrarChatTutorial()"
+        >
+          Saltar
+        </button>
+
+        <div class="tut-step active" data-tut-step="1">
+          <div class="tut-mock-bar gemelo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <span style="flex: 1"
+              >Hablás con el <strong>gemelo de Abril</strong> · Modo
+              práctica</span
+            >
+            <span class="tut-mock-badge ia">IA</span>
+          </div>
+          <div class="tut-title">Modo Gemelo</div>
+          <div class="tut-text">
+            Acá practicás con una IA que representa a la otra persona --
+            probás cómo fluye antes de animarte a hablarle de verdad.
+            <strong style="color: var(--text-primary)"
+              >Esta charla es solo tuya: la otra persona nunca la ve.</strong
+            >
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="2">
+          <div class="tut-mock-bar real" aria-hidden="true">
+            <span class="tut-mock-dot"></span>
+            <span style="flex: 1">Chat real con <strong>Abril</strong></span>
+            <span class="tut-mock-badge online">En línea</span>
+          </div>
+          <div class="tut-title">Modo Real</div>
+          <div class="tut-text">
+            Acá le escribís directo a la persona, de verdad. Se desbloquea
+            solo cuando la afinidad llega al 80% -- antes de eso, el modo
+            Gemelo es el único disponible.
+          </div>
+        </div>
+
+        <div class="tut-step" data-tut-step="3">
+          <div class="tut-mock-sim" aria-hidden="true">
+            <div>
+              <div class="tut-mock-sim-title">Simulación entre gemelos</div>
+              <div class="tut-mock-sim-sub">Antes de que se conocieran</div>
+            </div>
+            <span class="tut-mock-sim-badge">Privado</span>
+          </div>
+          <div class="tut-title">La simulación</div>
+          <div class="tut-text">
+            Antes del match, sus gemelos ya habían simulado una charla para
+            estimar si iban a conectar. La podés volver a leer con "Ver
+            simulación", arriba del chat en modo Gemelo.
+          </div>
+        </div>
+
+        <div class="tut-dots" aria-hidden="true">
+          <span class="tut-dot active" data-tut-dot="1"></span>
+          <span class="tut-dot" data-tut-dot="2"></span>
+          <span class="tut-dot" data-tut-dot="3"></span>
+        </div>
+
+        <button
+          class="tut-btn"
+          type="button"
+          onclick="chatTutorialSiguiente()"
+          id="chatTutBtn"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
 
     <!-- Top nav -->
     <nav class="app-nav" aria-label="Navegación">
@@ -1953,6 +2216,9 @@
       let curPerson = null;
       // Modo activo en el panel: 'gemelo' (chat con IA) o 'real' (chat directo con la persona)
       let curMode = null;
+      // Default a "mostrarlo" -- se corrige a false en onAuthStateChanged si
+      // Firestore dice que esta cuenta ya lo vio (chat_tutorial_visto).
+      let mostrarTutorialChat = true;
 
       /* ── Open chat panel ── */
       // Abre el panel lateral de chat para la persona con el id dado
@@ -1962,6 +2228,17 @@
         const p = people[id];
         curPerson = id;
         curMode = p.currentMode;
+
+        // Tutorial de bienvenida a chats -- se muestra la primera vez que
+        // se abre CUALQUIER conversación puntual (acá, no antes: recién
+        // ahora tienen sentido "modo Gemelo/Real" y "Ver simulación",
+        // ninguno existe en la lista de chats sola). Una sola vez por
+        // cuenta, ver mostrarTutorialChat/onAuthStateChanged.
+        if (mostrarTutorialChat) {
+          mostrarTutorialChat = false;
+          const overlay = document.getElementById("chatTutorialOverlay");
+          if (overlay) overlay.style.display = "flex";
+        }
 
         document.getElementById("panelAv").style.cssText = p.photo
           ? `background-image:url('${p.photo}');background-size:cover;background-position:center;cursor:pointer`
@@ -1996,6 +2273,50 @@
           window._db_marcarLeido(id);
         }
       }
+
+      // ── TUTORIAL DE BIENVENIDA A CHATS ──
+      let chatTutPaso = 1;
+      const CHAT_TUT_TOTAL_PASOS = 3;
+      function _marcarChatTutorialVisto() {
+        if (uid) {
+          setDoc(
+            doc(db, "usuarios", uid),
+            { chat_tutorial_visto: true },
+            { merge: true },
+          ).catch((e) =>
+            console.warn("Error guardando chat_tutorial_visto:", e),
+          );
+        }
+      }
+      window.chatTutorialSiguiente = function () {
+        if (chatTutPaso >= CHAT_TUT_TOTAL_PASOS) {
+          cerrarChatTutorial();
+          return;
+        }
+        chatTutPaso++;
+        document
+          .querySelectorAll("#chatTutorialOverlay .tut-step")
+          .forEach((el) =>
+            el.classList.toggle(
+              "active",
+              parseInt(el.dataset.tutStep) === chatTutPaso,
+            ),
+          );
+        document
+          .querySelectorAll("#chatTutorialOverlay .tut-dot")
+          .forEach((el) =>
+            el.classList.toggle(
+              "active",
+              parseInt(el.dataset.tutDot) === chatTutPaso,
+            ),
+          );
+        document.getElementById("chatTutBtn").textContent =
+          chatTutPaso === CHAT_TUT_TOTAL_PASOS ? "Entendido" : "Siguiente";
+      };
+      window.cerrarChatTutorial = function () {
+        document.getElementById("chatTutorialOverlay").style.display = "none";
+        _marcarChatTutorialVisto();
+      };
 
       // Cierra el panel de chat y resetea la persona y modo activos
       function closeChat() {
@@ -3106,6 +3427,7 @@
         try {
           const snap = await getDoc(doc(db, "usuarios", uid));
           const mis = snap.exists() ? snap.data() : {};
+          mostrarTutorialChat = mis.chat_tutorial_visto !== true;
           const nombreNav =
             mis.nombre ||
             user.displayName ||
