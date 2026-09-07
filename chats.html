@@ -1825,6 +1825,38 @@
         border-radius: 100px;
         flex-shrink: 0;
       }
+      /* Señala el botón real que hay que tocar (reusa .panel-mode-seg/
+      .panel-mode-btn TAL CUAL -- ver esas clases más arriba en este mismo
+      archivo -- para que el tutorial muestre el botón real, no una
+      aproximación). */
+      .tut-mock-point {
+        margin: 0 auto 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .tut-mock-toggle {
+        pointer-events: none;
+      }
+      .tut-mock-arrow {
+        font-family: var(--font-body);
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--orange);
+      }
+      .tut-mock-sim-btn {
+        background: rgba(255, 117, 31, 0.15);
+        border: 1px solid rgba(255, 117, 31, 0.3);
+        border-radius: 10px;
+        padding: 3px 10px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: var(--orange);
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -1846,6 +1878,19 @@
         </button>
 
         <div class="tut-step active" data-tut-step="1">
+          <div class="tut-mock-point" aria-hidden="true">
+            <div class="panel-mode-seg tut-mock-toggle">
+              <button class="panel-mode-btn active" type="button" tabindex="-1">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Gemelo
+              </button>
+              <button class="panel-mode-btn" type="button" tabindex="-1">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Real
+              </button>
+            </div>
+            <div class="tut-mock-arrow">☝ tocá acá arriba del chat</div>
+          </div>
           <div class="tut-mock-bar gemelo" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             <span style="flex: 1"
@@ -1865,6 +1910,19 @@
         </div>
 
         <div class="tut-step" data-tut-step="2">
+          <div class="tut-mock-point" aria-hidden="true">
+            <div class="panel-mode-seg tut-mock-toggle">
+              <button class="panel-mode-btn" type="button" tabindex="-1">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Gemelo
+              </button>
+              <button class="panel-mode-btn active" type="button" tabindex="-1">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Real
+              </button>
+            </div>
+            <div class="tut-mock-arrow">☝ tocá acá arriba del chat</div>
+          </div>
           <div class="tut-mock-bar real" aria-hidden="true">
             <span class="tut-mock-dot"></span>
             <span style="flex: 1">Chat real con <strong>Abril</strong></span>
@@ -1873,12 +1931,17 @@
           <div class="tut-title">Modo Real</div>
           <div class="tut-text">
             Acá le escribís directo a la persona, de verdad. Se desbloquea
-            solo cuando la afinidad llega al 80% -- antes de eso, el modo
-            Gemelo es el único disponible.
+            solo cuando la afinidad llega al 80% -- antes de eso, el botón
+            "Real" aparece apagado y el modo Gemelo es el único disponible.
           </div>
         </div>
 
         <div class="tut-step" data-tut-step="3">
+          <div class="tut-mock-bar gemelo" style="margin-bottom: 10px" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <span style="flex: 1">Modo práctica</span>
+            <span class="tut-mock-sim-btn">Ver simulación ↗</span>
+          </div>
           <div class="tut-mock-sim" aria-hidden="true">
             <div>
               <div class="tut-mock-sim-title">Simulación entre gemelos</div>
@@ -1889,8 +1952,9 @@
           <div class="tut-title">La simulación</div>
           <div class="tut-text">
             Antes del match, sus gemelos ya habían simulado una charla para
-            estimar si iban a conectar. La podés volver a leer con "Ver
-            simulación", arriba del chat en modo Gemelo.
+            estimar si iban a conectar. Tocá
+            <strong style="color: var(--orange)">"Ver simulación"</strong>,
+            arriba de los mensajes en modo Gemelo, para volver a leerla.
           </div>
         </div>
 
