@@ -1001,6 +1001,17 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     lote, ahí sí se permite repetir cuentas, pero siempre se llena el lote
     completo (nunca se deja un lugar vacío pudiendo llenarlo)."""
 
+    # ─────────────────────────────────────────────────────────────────
+    # PAUSA TEMPORAL -- a pedido puntual de la usuaria, para no gastar
+    # créditos de OpenAI esta noche en particular. Se autolimita a esta
+    # fecha (no queda pausado para siempre si me olvido de sacarlo) --
+    # borrar este bloque cuando ya no haga falta.
+    # ─────────────────────────────────────────────────────────────────
+    _hoy_ar = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).date()
+    if _hoy_ar == datetime.date(2026, 9, 8):
+        print("procesar_parejas_pendientes: pausado por hoy (2026-09-08) a pedido de la usuaria -- no se procesa nada.")
+        return
+
     db = firestore.client()
 
     pool = list(
