@@ -114,7 +114,16 @@ def armar_escenario_personalizado(texto):
     no alcanzaba para que el modelo reinterprete un texto tan corto y
     ambiguo. Envolver el texto explícitamente como "ya están viviendo esto"
     fuerza la lectura correcta antes de que la instrucción genérica entre en
-    juego."""
+    juego.
+
+    El primer ejemplo (una cita puntual) no alcanzaba para pedidos como "el
+    primer viaje juntos": un evento así tiene una fase previa real de
+    organizarlo, así que "ya en curso" seguía siendo ambiguo -- el modelo
+    podía leer "ya estamos organizando el viaje" (el trámite en sí) como
+    una lectura válida de "en curso", cuando lo que se pide es estar
+    VIVIENDO el viaje. Se agrega un segundo ejemplo específico para ese
+    caso, nombrando "planeando/organizando" como la lectura incorrecta a
+    evitar explícitamente, no solo "algo futuro"."""
     texto = texto.strip()
     titulo = texto if len(texto) <= 60 else texto[:57] + "..."
     return {
@@ -125,9 +134,14 @@ def armar_escenario_personalizado(texto):
             "Por ejemplo, si el pedido es \"la primera cita\", NO están "
             "poniéndose de acuerdo en cuándo/dónde verse -- ya están ahí, en "
             "medio de la cita, charlando como charlarían en ese momento "
-            "puntual. Métanse directo en la escena, como si ya estuviera "
-            "pasando en este preciso momento, no como algo futuro o "
-            "hipotético."
+            "puntual. Si el pedido es algo con una fase previa real (ej: "
+            "\"nuestro primer viaje juntos\"), NO están planeándolo ni "
+            "organizando los detalles antes de que pase -- ya están DE "
+            "VIAJE, en un momento puntual de ese viaje (caminando por algún "
+            "lado, en un cuarto, decidiendo qué hacer ese día), no en la "
+            "etapa de prepararlo. Métanse directo en la escena, como si ya "
+            "estuviera pasando en este preciso momento, no como algo futuro, "
+            "hipotético, o que todavía se está organizando."
         ),
         "tono": "Natural, como si fuera una conversación real entre dos personas conociéndose.",
     }

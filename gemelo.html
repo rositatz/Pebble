@@ -1767,15 +1767,36 @@
       // pedidosSimulacionPendientes).
       //
       // Heurística simple, no un llamado a IA aparte (encarecería CADA
-      // mensaje, no solo los que piden varias) -- 2+ menciones de palabras
-      // disparadoras es la señal de que hay más de un pedido junto; separar
-      // por las conjunciones típicas entre pedidos ("y también", "y otra",
-      // " y ", " o ") arma las partes candidatas. Con una sola mención,
-      // nunca separa nada -- así una frase normal con un "y" suelto
-      // ("simulá cuando discutimos y no llegamos a un acuerdo") no se
-      // corta a la mitad.
+      // mensaje, no solo los que piden varias). Dos señales, en orden:
+      //
+      // 1. Enumeración con preposición repetida ("...de nuestra primera
+      //    pelea... y de nuestro primer viaje...") -- en español, cuando se
+      //    listan dos pedidos con frases largas, la preposición ("de"/
+      //    "sobre") tiende a repetirse antes de cada uno. Esta es la señal
+      //    MÁS confiable -- "simulación de X y de Y" es casi siempre dos
+      //    pedidos, incluso si la palabra disparadora ("simulación") solo
+      //    aparece una vez al principio (contar menciones de esa palabra,
+      //    como se hacía antes, no alcanzaba para detectar justo este caso
+      //    real: "simulá... de la pelea... y de nuestro viaje" tiene un
+      //    solo "simul*" pero son dos pedidos).
+      // 2. Si no matchea eso, 2+ menciones de palabras disparadoras
+      //    ("simulá X y simulá Y") -- separando por las conjunciones
+      //    típicas entre pedidos.
+      //
+      // Con ninguna de las dos señales, nunca separa nada -- así una frase
+      // normal con un "y" suelto ("simulá cuando discutimos y no llegamos a
+      // un acuerdo") no se corta a la mitad.
       function separarPedidosDeSimulacion(text) {
         const disparador = /\b(escenario|simul\w*|situaci[oó]n|cita|salida)\b/gi;
+        if (!disparador.test(text)) return [text];
+
+        const porPreposicion = text.match(
+          /^(.*?\b(?:de|sobre)\s+.+?)\s+y\s+(?:de|sobre)\s+(.+)$/i,
+        );
+        if (porPreposicion) {
+          return [porPreposicion[1].trim(), porPreposicion[2].trim()];
+        }
+
         const ocurrencias = (text.match(disparador) || []).length;
         if (ocurrencias < 2) return [text];
         const partes = text
