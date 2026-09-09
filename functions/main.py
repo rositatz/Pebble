@@ -28,6 +28,38 @@ def _con_creado(par_ref, payload):
     return payload
 
 
+def _score_promedio_simulaciones(par_ref, score_nuevo=None):
+    """Promedia el score de TODAS las simulaciones guardadas para este par
+    (la del match original al hacerse match + cualquiera pedida después
+    desde el chat con el gemelo) -- así el % que se muestra en
+    conexiones/{parId}.ultimo_score representa la compatibilidad GENERAL
+    entre los dos, no solo la última situación puntual que se simuló.
+
+    El score de una charla individual puede variar bastante según el
+    escenario (una charla de "discutimos por plata" da un número más bajo
+    que una charla liviana de conocerse, por ejemplo) sin que eso
+    signifique que en general sean más o menos compatibles -- es
+    justamente lo esperable que suba, baje o se mantenga según la
+    situación puntual. Promediar contra el resto de simulaciones ya
+    corridas amortigua esa variación normal en vez de que el número que ve
+    el usuario salte de una simulación a la otra.
+
+    score_nuevo: si se pasa, se suma al promedio aunque el doc de esa
+    simulación todavía no se haya guardado en Firestore (evita depender del
+    orden de escritura -- no importa si esto se llama antes o después de
+    agregar el nuevo doc a la subcolección)."""
+    scores = [
+        doc.to_dict().get("score", {}).get("compatibilidad_total")
+        for doc in par_ref.collection("simulaciones").stream()
+    ]
+    scores = [s for s in scores if isinstance(s, (int, float))]
+    if score_nuevo is not None:
+        scores.append(score_nuevo)
+    if not scores:
+        return score_nuevo
+    return sum(scores) / len(scores)
+
+
 def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombre=None, accion=None):
     """Todas las notificaciones reales (nuevo match, interés en común,
     recordatorio de retomar chat, gemelo inactivo) pasan por acá -- ver
@@ -551,12 +583,22 @@ def simular_situacion(request: https_fn.CallableRequest):
         )
 
     par_ref = db.collection("conexiones").document(registro["par_id"])
+
+    # El score de ESTA simulación puntual (registro["score"]) no se muestra
+    # solo -- se promedia con el resto de simulaciones ya corridas para este
+    # par (la del match original incluida), para que ultimo_score refleje
+    # la compatibilidad general y no salte de una situación puntual a la
+    # otra. Ver _score_promedio_simulaciones.
+    score_promedio = _score_promedio_simulaciones(
+        par_ref, score_nuevo=registro["score"]["compatibilidad_total"]
+    )
+
     payload = {
         "usuario_1": registro["usuario_1"],
         "usuario_2": registro["usuario_2"],
         "participantes": [uid1, uid2],
-        "ultimo_score": registro["score"]["compatibilidad_total"],
-        "supera_umbral": registro["supera_umbral"],
+        "ultimo_score": score_promedio,
+        "supera_umbral": score_promedio >= motor.UMBRAL_MATCH,
         "actualizado": registro["fecha"],
     }
     payload = _con_creado(par_ref, payload)
