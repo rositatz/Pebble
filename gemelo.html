@@ -1758,6 +1758,41 @@
         );
       }
 
+      // Si en un solo mensaje se piden VARIAS simulaciones ("simulá la
+      // primera cita y también una pelea por celos"), correrlas todas de
+      // una sería varios minutos de espera de una sola vez y encima ninguna
+      // se ve reflejada hasta que termine la última. En vez de eso: se
+      // corre solo la primera ahora, y el resto queda pendiente para
+      // preguntarle al usuario con cuál seguir después (ver
+      // pedidosSimulacionPendientes).
+      //
+      // Heurística simple, no un llamado a IA aparte (encarecería CADA
+      // mensaje, no solo los que piden varias) -- 2+ menciones de palabras
+      // disparadoras es la señal de que hay más de un pedido junto; separar
+      // por las conjunciones típicas entre pedidos ("y también", "y otra",
+      // " y ", " o ") arma las partes candidatas. Con una sola mención,
+      // nunca separa nada -- así una frase normal con un "y" suelto
+      // ("simulá cuando discutimos y no llegamos a un acuerdo") no se
+      // corta a la mitad.
+      function separarPedidosDeSimulacion(text) {
+        const disparador = /\b(escenario|simul\w*|situaci[oó]n|cita|salida)\b/gi;
+        const ocurrencias = (text.match(disparador) || []).length;
+        if (ocurrencias < 2) return [text];
+        const partes = text
+          .split(
+            /\s*(?:,?\s*y\s+tambi[eé]n\s+|,?\s*y\s+otra(?:\s+de)?\s+|,\s*y\s+|\s+y\s+|\s+o\s+)\s*/i,
+          )
+          .map((p) => p.trim())
+          .filter(Boolean);
+        return partes.length > 1 ? partes : [text];
+      }
+
+      // Cola de pedidos de simulación de ESTE mismo mensaje que todavía no
+      // se corrieron -- se le pregunta al usuario con cuál seguir en vez de
+      // correrlas todas de una. Se vacía sola apenas se elige uno (ver
+      // continuarConPedidoPendiente) o si el usuario manda otra cosa.
+      let pedidosSimulacionPendientes = [];
+
       // Corre la simulación real con el match detectado, usando el mensaje
       // tal cual como "situación" en texto libre (armar_escenario_
       // personalizado la convierte en un escenario). Mismo resultado que
@@ -1791,7 +1826,14 @@
               addTwinMsg(
                 `Corrí una simulación real con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}<br><br>La conversación completa (todo lo que se dijeron de verdad, no un resumen) la podés ver en el chat con ${nombreSafe}.`,
               );
-              setQuickReplies(QUICK_REPLIES_DEFAULT);
+              // Si en el mismo mensaje se habían pedido más simulaciones,
+              // ofrecer seguir con la próxima en vez de correrlas todas de
+              // una -- ver separarPedidosDeSimulacion.
+              if (pedidosSimulacionPendientes.length) {
+                mostrarPedidosPendientes();
+              } else {
+                setQuickReplies(QUICK_REPLIES_DEFAULT);
+              }
             })
             .catch((err) => {
               removeTyping();
@@ -1803,6 +1845,51 @@
             })
             .finally(() => _bloquearEnvio(false));
         }, 300);
+      }
+
+      // Le pregunta al usuario, con chips (no texto libre -- ya sabemos
+      // exactamente qué match y qué texto usar para cada una, no hace
+      // falta volver a detectarlo), con cuál de las simulaciones que
+      // quedaron pendientes de este mismo mensaje seguir.
+      function mostrarPedidosPendientes() {
+        const restantes = pedidosSimulacionPendientes.length;
+        addTwinMsg(
+          `Che, pediste ${restantes + 1} simulaciones juntas -- ya corrí la primera. ¿Con cuál seguimos${restantes > 1 ? " ahora" : ""}?`,
+        );
+        const qr = document.getElementById("quickReplies");
+        if (!qr) return;
+        qr.innerHTML = "";
+        pedidosSimulacionPendientes.forEach((p, i) => {
+          const btn = document.createElement("button");
+          btn.className = "qr-chip";
+          const corto =
+            p.texto.length <= 40 ? p.texto : p.texto.slice(0, 37) + "...";
+          btn.textContent = corto;
+          btn.onclick = () => continuarConPedidoPendiente(i);
+          qr.appendChild(btn);
+        });
+        const btnNinguna = document.createElement("button");
+        btnNinguna.className = "qr-chip";
+        btnNinguna.textContent = "Ninguna, gracias";
+        btnNinguna.onclick = () => {
+          pedidosSimulacionPendientes = [];
+          setQuickReplies(QUICK_REPLIES_DEFAULT);
+        };
+        qr.appendChild(btnNinguna);
+      }
+
+      // Saca de la cola el pedido elegido y corre esa simulación -- los que
+      // no se eligieron siguen pendientes por si hay más de dos.
+      function continuarConPedidoPendiente(indice) {
+        const elegido = pedidosSimulacionPendientes[indice];
+        if (!elegido) return;
+        pedidosSimulacionPendientes = pedidosSimulacionPendientes.filter(
+          (_, i) => i !== indice,
+        );
+        setQuickReplies([]);
+        addUserMsg(elegido.texto);
+        _bloquearEnvio(true);
+        correrSimulacionDesdeChat(elegido.uid, elegido.nombre, elegido.texto);
       }
 
       function sendMessage() {
@@ -1817,9 +1904,18 @@
 
         const matchPedido = detectarPedidoDeSimulacion(text);
         if (matchPedido) {
-          correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, text);
+          // Un mensaje nuevo del usuario reemplaza cualquier cola de
+          // pedidos pendientes del mensaje anterior -- si no eligió
+          // ninguno y pidió otra cosa, no tiene sentido seguir
+          // ofreciéndole los viejos.
+          const partes = separarPedidosDeSimulacion(text);
+          pedidosSimulacionPendientes = partes
+            .slice(1)
+            .map((texto) => ({ uid: matchPedido.uid, nombre: matchPedido.nombre, texto }));
+          correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, partes[0]);
           return;
         }
+        pedidosSimulacionPendientes = [];
 
         setTimeout(() => {
           addTyping();
