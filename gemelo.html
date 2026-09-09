@@ -1906,7 +1906,7 @@
       ];
 
       function elegirMatchParaConsejo(otroUid, nombre) {
-        // Este picker dispara simular_situacion por afuera de sendMessage()
+        // Este picker dispara dar_consejo_match por afuera de sendMessage()
         // -- sin este chequeo, el candado de "un mensaje a la vez" no lo
         // cubría, así que se podía elegir un match acá mientras otra
         // respuesta del gemelo todavía estaba en camino.
@@ -1915,10 +1915,12 @@
         setQuickReplies([]); // oculta los nombres del picker apenas se elige uno, sin esperar la respuesta
         _bloquearEnvio(true);
         setTimeout(() => {
-          addTyping(
-            "Simulando una conversación completa con su gemelo -- puede tardar uno o dos minutos.",
-          );
-          if (typeof window._llamarSimularSituacion !== "function") {
+          // Consejo directo (dar_consejo_match): UN llamado a OpenAI que
+          // mira los datos reales de la otra persona, no una simulación
+          // completa -- por eso alcanza el indicador normal, sin el aviso
+          // de "puede tardar minutos" que sí necesita simular_situacion.
+          addTyping();
+          if (typeof window._llamarConsejoMatch !== "function") {
             removeTyping();
             addTwinMsg(
               "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
@@ -1927,27 +1929,20 @@
             return;
           }
           window
-            ._llamarSimularSituacion(otroUid)
+            ._llamarConsejoMatch(otroUid)
             .then((res) => {
               removeTyping();
-              const pct = Math.round(
-                ((res.score && res.score.compatibilidad_total) || 0) * 100,
-              );
-              const resumen = escHtml(
-                res.resumen || "No hubo un resumen para esta simulación.",
-              );
-              const escenario = escHtml(res.escenario || "");
-              const nombreSafe = escHtml(nombre);
-              addTwinMsg(
-                `Simulé una situación con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}`,
-              );
+              const consejo = escHtml(
+                res.consejo || "No pude armar un consejo esta vez.",
+              ).replace(/\n/g, "<br>");
+              addTwinMsg(consejo);
               setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
             .catch((err) => {
               removeTyping();
-              console.error("Error en simular_situacion:", err);
+              console.error("Error en dar_consejo_match:", err);
               addTwinMsg(
-                `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
+                `No pude armar el consejo: ${mensajeErrorGemelo(err)}`,
               );
               setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
@@ -2065,8 +2060,25 @@
         functionsInstance,
         "chatear_con_gemelo",
       );
+      // dar_consejo_match es UN solo llamado a OpenAI (no una charla
+      // simulada completa), así que le alcanza con el timeout default del
+      // SDK -- no hace falta el override de 520s que sí necesita
+      // simularSituacionCallable arriba.
+      const darConsejoMatchCallable = httpsCallable(
+        functionsInstance,
+        "dar_consejo_match",
+      );
 
       // Bridge para el script clásico de más abajo (elegirMatchParaConsejo):
+      // "Dame un consejo" ya no corre una simulación completa -- llama
+      // directo a dar_consejo_match, que da un consejo concreto en un solo
+      // llamado a OpenAI.
+      window._llamarConsejoMatch = async function (otroUid) {
+        const res = await darConsejoMatchCallable({ otroUid });
+        return res.data;
+      };
+
+      // Bridge para el script clásico de más abajo (correrSimulacionDesdeChat):
       // llama a la Cloud Function real simular_situacion, que corre una
       // simulación nueva entre tu gemelo y el de "otroUid" (con la situación
       // en texto libre si se pasa una) y devuelve resumen + score reales.
