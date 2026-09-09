@@ -1557,13 +1557,20 @@
       }
 
       // Muestra el indicador de "escribiendo..." (tres puntos animados) mientras el gemelo procesa la respuesta
-      function addTyping() {
+      // texto opcional: para pedidos que tardan mucho más que un mensaje normal
+      // (simular_situacion corre una conversación completa, varios llamados
+      // seguidos a OpenAI -- puede tardar más de un minuto). Sin ningún aviso,
+      // los puntitos se ven IGUAL que una respuesta rápida normal, así que
+      // después de unos segundos parece trabado aunque siga funcionando bien
+      // atrás -- esto le agrega contexto de que es una espera larga y normal.
+      function addTyping(texto) {
         const div = document.createElement("div");
         div.className = "msg twin";
         div.id = "typing";
         div.innerHTML = `
     <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-    <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+    <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+    ${texto ? `<div class="typing-note" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${escHtml(texto)}</div>` : ""}`;
         messagesEl.appendChild(div);
         scrollBottom();
       }
@@ -1758,7 +1765,9 @@
       // disparado desde texto libre en vez del picker.
       function correrSimulacionDesdeChat(otroUid, nombre, situacionTexto) {
         setTimeout(() => {
-          addTyping();
+          addTyping(
+            "Simulando una conversación completa con su gemelo -- puede tardar uno o dos minutos.",
+          );
           if (typeof window._llamarSimularSituacion !== "function") {
             removeTyping();
             addTwinMsg(
@@ -1906,7 +1915,9 @@
         setQuickReplies([]); // oculta los nombres del picker apenas se elige uno, sin esperar la respuesta
         _bloquearEnvio(true);
         setTimeout(() => {
-          addTyping();
+          addTyping(
+            "Simulando una conversación completa con su gemelo -- puede tardar uno o dos minutos.",
+          );
           if (typeof window._llamarSimularSituacion !== "function") {
             removeTyping();
             addTwinMsg(
