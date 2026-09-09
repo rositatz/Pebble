@@ -99,16 +99,100 @@ escenarios_db = [
 
 def armar_escenario_personalizado(texto):
     """El usuario pidió simular algo puntual (ej: "simulá que discutimos por
-    plata") -- se arma un escenario al vuelo con ese texto en vez de usar uno
-    de escenarios_db. No hace un llamado extra a OpenAI para esto: el texto
-    del usuario ya es suficiente contexto para el prompt del escenario."""
+    plata", "simulá la primera cita") -- se arma un escenario al vuelo con
+    ese texto en vez de usar uno de escenarios_db. No hace un llamado extra
+    a OpenAI para esto: el texto del usuario ya es suficiente contexto para
+    el prompt del escenario.
+
+    El texto crudo del usuario, sin nada más, terminaba jugándose MAL: un
+    pedido como "la primera cita" el modelo lo entendía como "hablemos SOBRE
+    nuestra primera cita" (coordinar día/lugar, como si todavía no hubiera
+    pasado) en vez de "actuemos como si YA estuviéramos en la primera cita,
+    ahora mismo" -- exactamente lo que "IMPORTANTE sobre cómo jugar este
+    escenario" en simular_y_registrar ya le pide en general, pero sin un
+    ejemplo concreto atado a ESTE pedido puntual, la instrucción abstracta
+    no alcanzaba para que el modelo reinterprete un texto tan corto y
+    ambiguo. Envolver el texto explícitamente como "ya están viviendo esto"
+    fuerza la lectura correcta antes de que la instrucción genérica entre en
+    juego."""
     texto = texto.strip()
     titulo = texto if len(texto) <= 60 else texto[:57] + "..."
     return {
         "titulo": titulo,
-        "contexto": texto,
+        "contexto": (
+            f"Están viviendo esto AHORA MISMO, ya en curso -- NO es algo que "
+            f"vayan a coordinar, planear o que todavía no pasó: {texto}\n"
+            "Por ejemplo, si el pedido es \"la primera cita\", NO están "
+            "poniéndose de acuerdo en cuándo/dónde verse -- ya están ahí, en "
+            "medio de la cita, charlando como charlarían en ese momento "
+            "puntual. Métanse directo en la escena, como si ya estuviera "
+            "pasando en este preciso momento, no como algo futuro o "
+            "hipotético."
+        ),
         "tono": "Natural, como si fuera una conversación real entre dos personas conociéndose.",
     }
+
+
+def generar_consejo_match(perfil_propio, perfil_match, nombre_match, diferencias=None):
+    """"Dame un consejo para hablar con X" corría una simulación completa
+    (simular_relacion_completa: hasta ~11 llamados seguidos a OpenAI, varios
+    minutos) para terminar devolviendo un resumen -- pero pedir consejo no
+    necesita actuar una charla entera, alcanza con UN llamado que mire los
+    datos reales de la otra persona y diga algo concreto. Mucho más rápido
+    y bastante más barato que simular_situacion para este pedido puntual."""
+
+    intereses_propios = set(perfil_propio.get("intereses") or [])
+    intereses_match = perfil_match.get("intereses") or []
+    compartidos = [i for i in intereses_match if i in intereses_propios]
+
+    datos = f"""
+    SOBRE VOS (quien pide el consejo):
+    Intereses: {", ".join(perfil_propio.get("intereses") or []) or "no especificados"}
+
+    SOBRE {nombre_match} (la persona con la que quiere hablar):
+    Intereses: {", ".join(intereses_match) or "no especificados"}
+    Bio: {perfil_match.get("bio") or "no especificada"}
+    Notas personales: {"; ".join(perfil_match.get("notas_personales") or []) or "no hay"}
+
+    Intereses que tienen EN COMÚN: {", ".join(compartidos) or "ninguno registrado"}
+    """
+
+    if diferencias:
+        datos += "\n    Diferencias reales de personalidad entre ustedes:\n" + "\n".join(
+            f"    - {d}" for d in diferencias
+        )
+
+    prompt = f"""
+    Sos un amigo/a que conoce bien a {nombre_match} y le va a dar un consejo
+    concreto y honesto a quien te lo pide sobre cómo arrancar una
+    conversación con ella/él.
+
+    Datos reales (NUNCA inventes nada que no esté acá -- si falta un dato,
+    no lo menciones, no lo completes con algo inventado):
+    {datos}
+
+    Escribí un consejo breve (4-6 líneas, en español, tono cercano y
+    directo, nunca genérico tipo "sé vos mismo/a" o "solo tenés que ser
+    auténtico/a") que cubra:
+    1. Un ejemplo CONCRETO de mensaje para arrancar la charla, basado en
+       algo real de sus intereses o gustos -- si hay algo en común, mejor
+       arrancar por ahí.
+    2. 1-2 cosas puntuales que le importan/gustan a {nombre_match}, útiles
+       para tener en cuenta en la charla.
+    3. Si hay una diferencia de personalidad relevante en los datos de
+       arriba, un tip corto de cómo tenerla en cuenta (ej: "es bastante
+       reservada, no la abrumes con preguntas seguidas").
+
+    Nada de HTML ni markdown -- texto plano, como si se lo estuvieras
+    escribiendo a un amigo por chat.
+    """
+
+    response = client().chat.completions.create(
+        model="gpt-5.6-terra",
+        messages=[{"role": "system", "content": prompt}],
+    )
+    return response.choices[0].message.content.strip()
+
 
 def _directiva(valor, texto_alto, texto_bajo, umbral=0.58):
     """Traduce un valor numérico 0-1 (ej: personalidad.introversion) en una

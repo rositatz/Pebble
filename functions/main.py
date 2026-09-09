@@ -572,6 +572,84 @@ def simular_situacion(request: https_fn.CallableRequest):
 
 
 @https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+def dar_consejo_match(request: https_fn.CallableRequest):
+    """"Dame un consejo para hablar con X" (picker de gemelo.html) -- antes
+    disparaba simular_situacion entera (una conversación completa simulada,
+    varios minutos) solo para devolver un resumen. Esto es lo que
+    específicamente se pidió: consejo directo y concreto, UN solo llamado a
+    OpenAI, sin actuar ninguna charla. simular_situacion sigue existiendo
+    tal cual para cuando alguien pide de verdad "simulá tal situación"."""
+
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado para pedir un consejo."
+        )
+
+    uid1 = request.auth.uid
+    data = request.data or {}
+    uid2 = (data.get("otroUid") or "").strip()
+
+    if not uid2:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "Falta indicar sobre quién (otroUid)."
+        )
+    if uid2 == uid1:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "No podés pedir consejo sobre vos mismo/a."
+        )
+
+    db = firestore.client()
+
+    perfil1 = _obtener_o_generar_perfil(db, uid1)
+    perfil2 = _obtener_o_generar_perfil(db, uid2)
+
+    if perfil1 is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Todavía no generaste tu gemelo (completá el onboarding primero)."
+        )
+    if perfil2 is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.NOT_FOUND,
+            "Esa persona todavía no tiene su gemelo generado."
+        )
+
+    # Mismo chequeo que simular_situacion -- exigir un match confirmado en
+    # vez de solo repetir los filtros de género/edad/hijos, ver el comentario
+    # de ahí para el motivo completo.
+    par_id = motor._par_id(uid1, uid2)
+    par_doc = db.collection("conexiones").document(par_id).get()
+    if not par_doc.exists or not par_doc.to_dict().get("supera_umbral"):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Todavía no sos match con esa persona."
+        )
+
+    # Las diferencias reales de personalidad ya se calcularon y guardaron
+    # cuando se procesó este match (procesar_parejas_pendientes) -- se
+    # reusan acá en vez de recalcularlas, es el mismo dato que ya se
+    # muestra en matches.html.
+    diferencias = ((par_doc.to_dict().get("diferencias_personalidad") or {}).get(uid1)) or []
+
+    perfil2_priv = _con_privacidad(db, uid2, perfil2)
+    nombre2 = perfil2.get("nombre") or "esa persona"
+
+    try:
+        consejo = motor.generar_consejo_match(perfil1, perfil2_priv, nombre2, diferencias)
+    except Exception as e:
+        print(f"dar_consejo_match: error generando el consejo: {e}")
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            "No se pudo generar el consejo en este momento. Probá de nuevo en un rato."
+        )
+
+    return {"consejo": consejo, "nombre": nombre2}
+
+
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
 def chatear_con_gemelo(request: https_fn.CallableRequest):
     """Chat DIRECTO entre el usuario y su propio gemelo (gemelo.html) -- a
     diferencia de simular_situacion (que simula una charla con el gemelo de
@@ -1583,6 +1661,7 @@ def limpiar_flags_viejas(request: https_fn.CallableRequest):
 # hay parejas pendientes, porque todas dieron un score por debajo del
 # umbral (comportamiento esperado: si no superan el umbral, no se gasta en
 # una simulación real de OpenAI), o porque algo tiró una excepción real.
+# ─────────────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(timeout_sec=120, memory=MemoryOption.MB_512)
 def diagnostico_matches(request: https_fn.CallableRequest):
