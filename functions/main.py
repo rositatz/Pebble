@@ -1661,6 +1661,7 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
 # riesgo (solo borra un campo puntual y regenera perfiles, nunca borra
 # cuentas ni expone datos de nadie) y que se borra apenas se corre.
 # ─────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(timeout_sec=300, memory=MemoryOption.MB_512)
 def limpiar_flags_viejas(request: https_fn.CallableRequest):
     if request.auth is None:
