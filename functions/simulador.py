@@ -26,6 +26,49 @@ def client():
     return _client
 
 
+# gpt-5.6-terra es un modelo de razonamiento (usa reasoning_tokens internos,
+# ver usage.completion_tokens_details) que normalmente separa esa
+# deliberación del mensaje final solo -- pero se vio en producción que a
+# veces la filtra COMO SI FUERA el mensaje final (una nota en inglés,
+# telegráfica, tipo "We need answer as X likely... Must not use emoji...").
+# Esta heurística detecta ese patrón (mensaje real en español no debería
+# tener esta forma) y, si lo detecta, reintenta UNA vez insistiendo en el
+# punto antes de dejar pasar el texto -- así nunca le llega a la usuaria un
+# mensaje que nunca debería haber sido visible.
+_PALABRAS_RAZONAMIENTO = (
+    "we need", "must not", "need to", "let's ", "should ", "therefore",
+    "the user", "no invent", "must mandate", "one sentence", "good.",
+)
+
+
+def _parece_razonamiento_filtrado(texto):
+    if not texto:
+        return True
+    baja = texto.lower()
+    return len(texto) > 220 and sum(m in baja for m in _PALABRAS_RAZONAMIENTO) >= 2
+
+
+def _completar_chat_gemelo(messages, model="gpt-5.6-terra", **kwargs):
+    """Wrapper de client().chat.completions.create para las charlas con un
+    gemelo (simulaciones y chats en vivo) -- ver _parece_razonamiento_filtrado.
+    Reintenta como máximo una vez, así el costo extra queda acotado al caso
+    (raro) en que de verdad hace falta."""
+    response = client().chat.completions.create(model=model, messages=messages, **kwargs)
+    if _parece_razonamiento_filtrado(response.choices[0].message.content):
+        print("motor: la respuesta parecía razonamiento filtrado, reintentando una vez")
+        refuerzo = {
+            "role": "system",
+            "content": (
+                "\n    RECORDATORIO: tu respuesta tiene que ser SOLO el mensaje de"
+                " chat en español que le escribirías a la otra persona -- nunca tu"
+                " razonamiento interno, notas en inglés, ni una explicación de qué"
+                " vas a decir. Directo al mensaje, nada más."
+            ),
+        }
+        response = client().chat.completions.create(model=model, messages=messages + [refuerzo], **kwargs)
+    return response
+
+
 # Un solo lugar para no tener que cambiarlo en cada función por separado.
 UMBRAL_MATCH = 0.70
 
@@ -201,10 +244,7 @@ def generar_consejo_match(perfil_propio, perfil_match, nombre_match, diferencias
     escribiendo a un amigo por chat.
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[{"role": "system", "content": prompt}],
-    )
+    response = _completar_chat_gemelo([{"role": "system", "content": prompt}])
     return response.choices[0].message.content.strip()
 
 
@@ -1644,11 +1684,7 @@ def generar_resumen_gemelo(perfil):
     explicaciones tuyas.
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=1.0,
-    )
+    response = _completar_chat_gemelo([{"role": "user", "content": prompt}], temperature=1.0)
     return response.choices[0].message.content.strip()
 
 
@@ -1767,12 +1803,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         f" conociste. {random.choice(_ANGULOS_APERTURA)}"
     )
 
-    response_inicio = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[
-            {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
-        ]
-    )
+    response_inicio = _completar_chat_gemelo([
+        {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
+    ])
     ultimo_mensaje, _ = _extraer_cierre(response_inicio.choices[0].message.content)
     partes_inicio = _dividir_mensajes(ultimo_mensaje)
 
@@ -1825,23 +1858,17 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # PERFIL 2 RESPONDE
         # =================================================
 
-        response_2 = client().chat.completions.create(
+        response_2 = _completar_chat_gemelo([
+            {
+                "role": "system",
+                "content":
+                    contexto_escenario +
+                    prompt_2 +
+                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
+            },
 
-            model="gpt-5.6-terra",
-
-            messages=[
-
-                {
-                    "role": "system",
-                    "content":
-                        contexto_escenario +
-                        prompt_2 +
-                        (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
-                },
-
-                *vista_2
-            ]
-        )
+            *vista_2
+        ])
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
         partes_2 = _dividir_mensajes(msg_2)
@@ -1871,23 +1898,17 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # PERFIL 1 RESPONDE
         # =================================================
 
-        response_1 = client().chat.completions.create(
+        response_1 = _completar_chat_gemelo([
+            {
+                "role": "system",
+                "content":
+                    contexto_escenario +
+                    prompt_1 +
+                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
+            },
 
-            model="gpt-5.6-terra",
-
-            messages=[
-
-                {
-                    "role": "system",
-                    "content":
-                        contexto_escenario +
-                        prompt_1 +
-                        (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
-                },
-
-                *vista_1
-            ]
-        )
+            *vista_1
+        ])
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
         partes_1 = _dividir_mensajes(msg_1)

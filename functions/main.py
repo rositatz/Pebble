@@ -785,10 +785,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
     mensajes.append({"role": "user", "content": mensaje})
 
     try:
-        response = motor.client().chat.completions.create(
-            model="gpt-5.6-terra",
-            messages=mensajes,
-        )
+        response = motor._completar_chat_gemelo(mensajes)
     except Exception as e:
         # Sin este try/except, cualquier falla acá (red, cuota de la API,
         # etc.) se propagaba sin atrapar y el cliente solo veía "INTERNAL"
@@ -906,10 +903,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     mensajes.append({"role": "user", "content": mensaje})
 
     try:
-        response = motor.client().chat.completions.create(
-            model="gpt-5.6-terra",
-            messages=mensajes,
-        )
+        response = motor._completar_chat_gemelo(mensajes)
     except Exception as e:
         print(f"chatear_con_gemelo_match: error llamando a OpenAI: {e}")
         raise https_fn.HttpsError(
