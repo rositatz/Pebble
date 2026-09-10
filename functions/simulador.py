@@ -1336,6 +1336,11 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     usá **así** (doble asterisco), y para separar ideas, saltos de línea
     simples nomás.
 
+    16b. NUNCA uses los signos de apertura ¡ ni ¿ -- casi ninguna persona
+    real los tipea en un chat informal, solo el de cierre (! y ?). Escribí
+    "que bueno!" y "como te llamas?", nunca "¡que bueno!" ni "¿como te
+    llamas?".
+
     17. Emojis: NO uses ninguno por default. Fijate arriba, en "CÓMO
     ESCRIBE/SE RELACIONA EN LA PRÁCTICA" (si existe ese dato) -- ahí dice
     si esta persona usa emojis de verdad en sus chats reales, y cuáles.
@@ -1557,6 +1562,8 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
        como texto suelto. Si querés remarcar algo, usá **así** (doble
        asterisco a cada lado), nunca HTML. Para separar ideas o puntos de
        una lista, usá saltos de línea simples, no ninguna etiqueta.
+    8b. NUNCA uses los signos de apertura ¡ ni ¿ -- casi ninguna persona real
+       los tipea en un chat informal, solo el de cierre (! y ?).
     9. Emojis: NO uses ninguno por default. Si en "Cómo escribe/se
        relaciona en la práctica" (arriba, dentro de "SOBRE VOS") hay un
        dato real sobre qué emojis usa esta persona, usá esos mismos con

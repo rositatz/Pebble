@@ -2304,6 +2304,36 @@
               </button>
             </div>
           </div>
+
+          <div class="q">
+            <div class="ql">🤖 Opcional: que tu gemelo aprenda cómo escribís</div>
+            <p class="s-sub" style="margin-bottom: 16px">
+              Subí el archivo que exportaste de ChatGPT (o de otro chat de
+              IA) y tu gemelo va a sumar tu forma real de escribir e
+              intereses reales a como habla. Solo se analizan TUS mensajes,
+              nunca las respuestas de la IA -- y el archivo no se guarda en
+              ningún lado, se analiza una sola vez y se descarta. Esto es
+              solo para TU gemelo: el gemelo de nadie más accede a esto.
+            </p>
+            <input
+              type="file"
+              id="chatgptFileInput"
+              accept="application/json,.json"
+              onchange="window.subirExportChatgpt(event)"
+              style="display: none"
+            />
+            <button
+              type="button"
+              class="pill"
+              onclick="document.getElementById('chatgptFileInput').click()"
+            >
+              📎 Subir export de ChatGPT
+            </button>
+            <p
+              id="chatgptEstado"
+              style="margin-top: 10px; font-size: 0.88rem; color: var(--text-m)"
+            ></p>
+          </div>
         </div>
       </section>
 
@@ -3059,6 +3089,85 @@
         functionsInstance,
         "generar_resumen_gemelo_ia",
       );
+      const importarEstiloChatgptCallable = httpsCallable(
+        functionsInstance,
+        "importar_estilo_chatgpt",
+      );
+
+      // Export de ChatGPT (Configuración > Controles de datos > Exportar
+      // datos) es un .json con, por conversación, un árbol "mapping" de
+      // nodos encadenados -- cada nodo puede tener message.author.role
+      // "user"/"assistant"/"system" y message.content.parts (array de
+      // strings). Acá se recorren TODOS los nodos de TODAS las
+      // conversaciones y se quedan solo con las partes de texto de role
+      // "user" -- nunca las respuestas de la IA, y nada de esto sale del
+      // navegador salvo la lista final de mensajes propios.
+      function _extraerMensajesPropiosChatgpt(json) {
+        const conversaciones = Array.isArray(json) ? json : [json];
+        const mensajes = [];
+        for (const conv of conversaciones) {
+          const mapping = conv && conv.mapping;
+          if (!mapping || typeof mapping !== "object") continue;
+          for (const nodo of Object.values(mapping)) {
+            const msg = nodo && nodo.message;
+            const role = msg && msg.author && msg.author.role;
+            const partes = msg && msg.content && msg.content.parts;
+            if (role !== "user" || !Array.isArray(partes)) continue;
+            for (const parte of partes) {
+              if (typeof parte === "string" && parte.trim()) {
+                mensajes.push(parte.trim());
+              }
+            }
+          }
+        }
+        return mensajes;
+      }
+
+      window.subirExportChatgpt = async function (event) {
+        const input = event.target;
+        const archivo = input.files && input.files[0];
+        const estadoEl = document.getElementById("chatgptEstado");
+        if (!archivo || !estadoEl) return;
+
+        estadoEl.textContent = "Leyendo el archivo...";
+        try {
+          const texto = await archivo.text();
+          const json = JSON.parse(texto);
+          const mensajes = _extraerMensajesPropiosChatgpt(json)
+            .slice(-500) // los más recientes representan mejor cómo escribe HOY
+            .map((m) => m.slice(0, 2000));
+
+          if (mensajes.length < 10) {
+            estadoEl.textContent =
+              "Encontramos muy pocos mensajes tuyos en ese archivo (mínimo 10) -- probá con un export más completo.";
+            input.value = "";
+            return;
+          }
+
+          estadoEl.textContent = `Encontramos ${mensajes.length} mensajes tuyos, analizando...`;
+          const res = await importarEstiloChatgptCallable({ mensajes });
+          const nuevos = (res.data && res.data.intereses_nuevos) || [];
+          estadoEl.textContent =
+            nuevos.length > 0
+              ? `Listo -- tu gemelo sumó tu forma de escribir y descubrió: ${nuevos.join(", ")}.`
+              : "Listo -- tu gemelo sumó tu forma real de escribir.";
+        } catch (e) {
+          console.error("Error importando export de ChatGPT:", e);
+          const codigo = e && e.code;
+          if (codigo === "functions/failed-precondition") {
+            estadoEl.textContent =
+              "Primero tenés que aceptar que tu gemelo aprenda de tus mensajes reales (lo podés activar en Perfil).";
+          } else if (e instanceof SyntaxError) {
+            estadoEl.textContent =
+              "Ese archivo no parece un export válido de ChatGPT (tiene que ser el .json que descargás desde Configuración > Controles de datos > Exportar datos).";
+          } else {
+            estadoEl.textContent =
+              "No se pudo analizar el archivo. Probá de nuevo en un rato.";
+          }
+        } finally {
+          input.value = "";
+        }
+      };
 
       let uid = null,
         userPlan = "free",

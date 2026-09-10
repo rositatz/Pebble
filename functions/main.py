@@ -2057,6 +2057,99 @@ def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
     )
 
 
+@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=120, memory=MemoryOption.MB_512)
+def importar_estilo_chatgpt(request: https_fn.CallableRequest):
+    """Analiza mensajes que el usuario escribió en ChatGPT (u otro chat de
+    IA) para que SU gemelo aprenda su forma de escribir e intereses reales
+    -- mismo mecanismo que actualizar_aprendizaje_gemelo usa todos los días
+    con los chats dentro de la app, reutilizando extraer_aprendizaje_chats
+    tal cual, solo que acá la fuente es un archivo que el usuario exportó de
+    otro lado (ver gemelo-setup.html, etapa de comunicación).
+
+    request.data espera {"mensajes": [str, ...]} -- SOLO los mensajes que
+    el usuario mismo escribió, ya extraídos en el navegador del archivo de
+    export (nunca las respuestas de la IA del otro lado, y el archivo
+    completo nunca llega a este backend).
+
+    Privacidad: esto se guarda en perfil.estilo_aprendido/intereses, exactamente
+    igual que el aprendizaje de chats de la app -- generar_prompt_gemelo
+    arma el prompt de CADA persona leyendo únicamente SU PROPIO perfil, así
+    que esto nunca es visible para el gemelo de la otra persona en una
+    simulación o match. Y los mensajes que llegan en request.data NUNCA se
+    guardan en ningún lado -- se usan una sola vez en esta llamada para
+    calcular estilo/intereses y se descartan apenas termina la función; lo
+    único que persiste es el resultado compacto (una descripción de estilo,
+    un puñado de ejemplos, la lista de intereses), no los mensajes crudos."""
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED, "Hay que estar logueado."
+        )
+    uid = request.auth.uid
+    data = request.data or {}
+    mensajes_in = data.get("mensajes")
+    if not isinstance(mensajes_in, list) or not mensajes_in:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT, "Faltan mensajes para analizar."
+        )
+
+    # Topes defensivos -- el navegador ya filtra y recorta antes de mandar
+    # esto, pero nunca hay que confiar solo en el cliente.
+    mensajes = [str(m).strip()[:2000] for m in mensajes_in if str(m).strip()][:500]
+    if len(mensajes) < MIN_MENSAJES_APRENDIZAJE:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            f"Hacen falta al menos {MIN_MENSAJES_APRENDIZAJE} mensajes para que sirva de algo."
+        )
+
+    db = firestore.client()
+
+    datos_usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
+    if datos_usuario.get("consentimientoAprendizajeChats") is not True:
+        # Mismo consentimiento que ya existe para el aprendizaje de chats de
+        # la app (ver perfil.html) -- esto es la misma categoría de dato, no
+        # tiene sentido un consentimiento aparte.
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Primero tenés que aceptar que tu gemelo aprenda de tus mensajes reales (Perfil > tu gemelo está aprendiendo)."
+        )
+
+    perfil_ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+    perfil_snap = perfil_ref.get()
+    if not perfil_snap.exists:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION, "Todavía no generaste tu gemelo."
+        )
+    perfil = perfil_snap.to_dict()
+
+    try:
+        resultado = extraer_aprendizaje_chats(mensajes, intereses_actuales=perfil.get("intereses") or [])
+    except Exception as e:
+        print(f"importar_estilo_chatgpt: error analizando mensajes de {uid}: {e}")
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE, "No se pudo analizar el archivo en este momento. Probá de nuevo."
+        )
+
+    intereses_actuales = perfil.get("intereses") or []
+    vistos = {i.casefold() for i in intereses_actuales}
+    intereses_nuevos = [i for i in (resultado.get("intereses_nuevos") or []) if i.casefold() not in vistos]
+
+    cambios = {}
+    if resultado.get("estilo"):
+        cambios["estilo_aprendido"] = resultado["estilo"]
+    if resultado.get("ejemplos_textuales"):
+        cambios["estilo_ejemplos"] = resultado["ejemplos_textuales"]
+    if intereses_nuevos:
+        cambios["intereses"] = intereses_actuales + intereses_nuevos
+
+    if cambios:
+        perfil_ref.set(cambios, merge=True)
+
+    return {
+        "estilo": resultado.get("estilo") or "",
+        "intereses_nuevos": intereses_nuevos,
+    }
+
+
 def _borrar_coleccion(ref):
     for doc in ref.stream():
         doc.reference.delete()
