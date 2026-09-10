@@ -1964,6 +1964,239 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
 
 # =====================================================
+# SIMULACIONES POR LOTE (Batch API)
+#
+# procesar_parejas_pendientes (main.py) arma cada conversación de la corrida
+# nocturna con la Batch API de OpenAI en vez de llamadas en vivo -- ~50% más
+# barata, pero asincrónica y solo acepta pedidos independientes entre sí. Una
+# conversación completa (simular_cita) es turno tras turno, cada uno
+# dependiendo de la respuesta anterior -- no se puede mandar entera como un
+# solo pedido de batch. Por eso acá se parte en "olas": una ola = un batch
+# con UN turno de cada pareja activa esa noche. Estas funciones NO llaman a
+# OpenAI directamente -- arman el pedido (armar_solicitud_batch) y aplican la
+# respuesta que ya llegó (aplicar_respuesta_batch); quien manda/recibe el
+# batch de verdad es continuar_lote_batch_nocturno en main.py.
+#
+# simular_cita/simular_situacion/chatear_con_gemelo(_match) siguen 100%
+# síncronos a propósito -- ahí hay alguien esperando la respuesta en el
+# momento, y la Batch API (hasta 24hs de demora) no sirve para eso.
+# =====================================================
+
+def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, distancia_km, escenario=0, memoria1=None, memoria2=None, turnos=None):
+    """Arma el estado inicial de la conversación de una pareja para
+    procesarla ola por ola -- mismo setup que el arranque de simular_cita,
+    pero como dict serializable (se guarda en Firestore entre olas)."""
+    escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
+    turnos = turnos if turnos is not None else escenario_actual.get("turnos", 5)
+
+    instruccion_compat = instruccion_nivel_compatibilidad(
+        perfil1, perfil2, UMBRAL_MATCH,
+        nombre1=perfil1.get("nombre", "ALPHA"), nombre2=perfil2.get("nombre", "BETA"),
+    )
+    promedio_compat_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+    if promedio_compat_previo >= 0.70:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR
+    elif promedio_compat_previo >= UMBRAL_MATCH:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 2
+    else:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 4
+
+    contexto_escenario = f"""
+    ESCENARIO:
+
+    Titulo:
+    {escenario_actual["titulo"]}
+
+    Contexto:
+    {escenario_actual["contexto"]}
+
+    Tono:
+    {escenario_actual["tono"]}
+    {instruccion_compat}
+    IMPORTANTE sobre cómo jugar este escenario: esto es una SIMULACIÓN de
+    la situación pasando ahora mismo, en tiempo real, dentro de esta
+    charla -- no es una conversación EN LA QUE HABLAN SOBRE la situación
+    de forma hipotética o abstracta. Actúen la situación, no la
+    describan ni la planeen desde afuera. Por ejemplo: si el escenario es
+    sobre convivencia, no hablen de "cómo sería" vivir juntos en el
+    futuro -- actúen como si YA estuvieran conviviendo, en un momento
+    puntual de esa convivencia (una mañana, una decisión del día a día)
+    pasando ahora. Metanse directo en la escena.
+    """
+
+    nombre1 = perfil1.get("nombre", "ALPHA")
+    nombre2 = perfil2.get("nombre", "BETA")
+    apodo1 = perfil1.get("apodo") or nombre1
+    apodo2 = perfil2.get("apodo") or nombre2
+
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1)
+
+    return {
+        "uid1": uid1, "uid2": uid2,
+        "nombre1": nombre1, "nombre2": nombre2,
+        "usuario_1": usuario_1, "usuario_2": usuario_2,
+        "distancia_km": distancia_km,
+        "escenario": escenario_actual,
+        "contexto_escenario": contexto_escenario,
+        "prompt_1": prompt_1, "prompt_2": prompt_2,
+        "turnos_max": turnos,
+        "min_turnos_efectivo": min_turnos_efectivo,
+        "turno_idx": 0,
+        "fase": "inicio",  # "inicio" -> "turno_2" -> "turno_1" -> "turno_2" -> ... -> "listo"
+        "historial_chat": [],
+        "vista_1": [], "vista_2": [],
+        "estado": "activo",  # "activo" | "cerrado"
+    }
+
+
+_INSTRUCCION_CIERRE_FORZADO_BATCH = (
+    "\n\n    Esta es tu ÚLTIMA respuesta posible de esta charla puntual (se"
+    " corta acá, no por decisión tuya, simplemente termina). Cerrala de forma"
+    " natural -- un comentario, una reacción, algo que redondee lo que se"
+    " venía hablando. NO termines con una pregunta nueva ni le pidas algo al"
+    " otro que quedaría sin respuesta."
+)
+
+
+def armar_solicitud_batch(par_id, estado, model="gpt-5.6-terra"):
+    """Arma UNA request ({custom_id, method, url, body}) para el JSONL de la
+    Batch API, según en qué fase está la conversación de esta pareja.
+    Devuelve None si la charla ya cerró (nada más para pedir)."""
+    if estado["estado"] != "activo":
+        return None
+
+    fase = estado["fase"]
+    turno_idx = estado["turno_idx"]
+    es_ultimo_turno_posible = turno_idx == estado["turnos_max"] - 1
+
+    if fase == "inicio":
+        mensajes = [{
+            "role": "system",
+            "content": estado["contexto_escenario"] + estado["prompt_1"] + (
+                "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
+                " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
+                " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
+                " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
+                " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
+                " natural, como si le escribieras por primera vez a alguien que recién"
+                f" conociste. {random.choice(_ANGULOS_APERTURA)}"
+            ),
+        }]
+    elif fase == "turno_2":
+        mensajes = [{
+            "role": "system",
+            "content": (
+                estado["contexto_escenario"] + estado["prompt_2"] +
+                (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
+            ),
+        }, *estado["vista_2"]]
+    elif fase == "turno_1":
+        mensajes = [{
+            "role": "system",
+            "content": (
+                estado["contexto_escenario"] + estado["prompt_1"] +
+                (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
+            ),
+        }, *estado["vista_1"]]
+    else:
+        return None
+
+    return {
+        "custom_id": par_id,
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": {"model": model, "messages": mensajes},
+    }
+
+
+def aplicar_respuesta_batch(estado, contenido):
+    """Actualiza el estado de la pareja con la respuesta de esta ola (un
+    turno) y decide si la charla sigue o ya está lista para cerrarse -- mismo
+    criterio que el loop síncrono de simular_cita, procesando una respuesta
+    por vez en vez de todo el loop junto."""
+    fase = estado["fase"]
+
+    if fase == "inicio":
+        ultimo_mensaje, _ = _extraer_cierre(contenido)
+        partes = _dividir_mensajes(ultimo_mensaje)
+        for parte in partes:
+            estado["historial_chat"].append({
+                "role": "user", "name": estado["nombre1"], "uid": estado["uid1"], "content": parte
+            })
+        estado["vista_2"] = [{"role": "user", "content": parte} for parte in partes]
+        estado["fase"] = "turno_2"
+        return estado
+
+    quien = 2 if fase == "turno_2" else 1
+    nombre = estado["nombre1"] if quien == 1 else estado["nombre2"]
+    uid = estado["uid1"] if quien == 1 else estado["uid2"]
+    vista_propia = "vista_1" if quien == 1 else "vista_2"
+    vista_ajena = "vista_2" if quien == 1 else "vista_1"
+
+    msg, cierre = _extraer_cierre(contenido)
+    partes = _dividir_mensajes(msg)
+    repetitivo = any(
+        _es_repetitivo(parte, [m["content"] for m in estado["historial_chat"]]) for parte in partes
+    )
+
+    for parte in partes:
+        estado["historial_chat"].append({
+            "role": "assistant", "name": nombre, "uid": uid, "content": parte
+        })
+        estado[vista_propia].append({"role": "assistant", "content": parte})
+        estado[vista_ajena].append({"role": "user", "content": parte})
+
+    cerro_natural = cierre and estado["turno_idx"] >= estado["min_turnos_efectivo"]
+
+    if cerro_natural or repetitivo:
+        estado["estado"] = "cerrado"
+        estado["fase"] = "listo"
+        return estado
+
+    if quien == 2:
+        estado["fase"] = "turno_1"
+    else:
+        estado["turno_idx"] += 1
+        if estado["turno_idx"] >= estado["turnos_max"]:
+            estado["estado"] = "cerrado"
+            estado["fase"] = "listo"
+        else:
+            estado["fase"] = "turno_2"
+
+    return estado
+
+
+def finalizar_par_batch(perfil1, perfil2, estado, umbral=UMBRAL_MATCH):
+    """Una vez que estado['estado'] == 'cerrado', arma el mismo registro que
+    simular_y_registrar (listo para guardar en conexiones/{par_id}/simulaciones,
+    igual que la vía síncrona)."""
+    historial_chat = estado["historial_chat"]
+    analisis = analizar_conversacion(historial_chat)
+    promedio, similitud, pref_a_b, pref_b_a, score_conversacional, desglose = calcular_compatibilidad(perfil1, perfil2, analisis)
+    score = {
+        "compatibilidad_total": promedio,
+        "similitud": similitud,
+        "pref_a_b": pref_a_b,
+        "pref_b_a": pref_b_a,
+        "score_conversacional": score_conversacional,
+        "score_psicologico": desglose["psicologico"],
+        "score_valores": desglose["valores"],
+        "score_intereses": desglose["intereses"],
+        "score_creencias": desglose["creencias"],
+        "score_comunicacion": desglose["comunicacion"],
+    }
+    diferencias_personalidad = (
+        _diferencias_personalidad(perfil1, perfil2, perfil2.get("nombre", "la otra persona"), top_n=3)
+        + _diferencias_personalidad(perfil2, perfil1, perfil1.get("nombre", "la otra persona"), top_n=3)
+    )
+    return registro_simulacion(
+        estado["uid1"], perfil1, estado["uid2"], perfil2, estado["escenario"],
+        historial_chat, analisis, score, umbral, diferencias_personalidad=diferencias_personalidad,
+    )
+
+
+# =====================================================
 # GUARDADO DE SIMULACIONES
 #
 # Las simulaciones las tiene que poder ver el usuario después (en gemelo.html /

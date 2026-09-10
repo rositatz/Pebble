@@ -1096,15 +1096,24 @@ def _elegir_lote_diverso(pool, tamano_lote):
     memory=MemoryOption.MB_512,
 )
 def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
-    """Fase 2: toma un lote de 'parejas_pendientes' (las más cercanas
-    geográficamente primero) y corre la simulación real para cada una --
-    esto es lo que realmente llama a OpenAI, por eso corre de noche y en
-    lotes chicos en vez de todas juntas.
+    _procesar_parejas_pendientes_logica()
 
-    LOTE_NOCTURNO pares por corrida -- si queda cola, la siguiente corrida
-    (mañana) sigue con las que falten. Cada par se procesa en su propio
-    try/except para que un error puntual (ej: un timeout de OpenAI) no tire
-    abajo el resto del lote.
+
+def _procesar_parejas_pendientes_logica() -> None:
+    """Fase 2 (arranque): toma un lote de 'parejas_pendientes' (las más
+    cercanas geográficamente primero) y para cada una calcula compatibilidad
+    SOLO con matemática del onboarding (gratis, sin OpenAI). Los pares que NO
+    llegan al umbral se resuelven ACÁ MISMO, no hace falta gastar nada más.
+
+    Los que SÍ llegan al umbral necesitan la simulación de charla real -- en
+    vez de correrla en el momento (llamadas en vivo a OpenAI, una por turno),
+    se arma el estado inicial de cada conversación y se manda como Batch API
+    de OpenAI (~50% más barata que la API en vivo, ver motor.armar_estado_par_batch/
+    armar_solicitud_batch). Por eso esta función YA NO deja el resultado final
+    escrito para esos pares -- solo arma y dispara el primer batch ("ola 0") y
+    termina; continuar_lote_batch_nocturno (corre cada 15 min) es quien va
+    completando cada conversación ola por ola y guarda el resultado cuando
+    cierra.
 
     La elección de CUÁLES pares entran en el lote de esta noche prioriza
     diversidad de cuentas (ver _elegir_lote_diverso): si hay más de
@@ -1117,6 +1126,17 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
     db = firestore.client()
 
+    # Si ya hay un lote de batch en curso de una corrida anterior, no arranca
+    # uno nuevo encima -- se espera a que continuar_lote_batch_nocturno lo
+    # termine. Evita mandar dos Batch jobs pisándose (y perder el seguimiento
+    # de uno de los dos).
+    en_curso = list(
+        db.collection("lotes_batch").where("estado", "in", ["armando", "esperando_batch"]).limit(1).stream()
+    )
+    if en_curso:
+        print(f"procesar_parejas_pendientes: ya hay un lote de batch en curso ({en_curso[0].id}), no arranco uno nuevo -- espero a que termine.")
+        return
+
     pool = list(
         db.collection("parejas_pendientes")
         .where("estado", "==", "PENDIENTE")
@@ -1126,7 +1146,11 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     )
     pendientes = _elegir_lote_diverso(pool, LOTE_NOCTURNO)
 
-    procesadas, con_error, descartados = 0, 0, 0
+    resueltos_sin_match, con_error, descartados, encolados = 0, 0, 0, 0
+    lote_id = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%Y%m%d_%H%M%S")
+    lote_ref = db.collection("lotes_batch").document(lote_id)
+    solicitudes = []
+    estados_por_par = {}
 
     for doc in pendientes:
         data = doc.to_dict()
@@ -1160,115 +1184,67 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 descartados += 1
                 continue
 
-            # simular_relacion_completa calcula compatibilidad solo con el
-            # onboarding (gratis) y, únicamente si supera motor.UMBRAL_MATCH,
-            # corre los escenarios preestablecidos de verdad (con OpenAI) --
-            # por eso "simulaciones" puede venir vacía (par no compatible).
             perfil1_data = _con_privacidad(db, uid1, doc1.to_dict())
             perfil2_data = _con_privacidad(db, uid2, doc2.to_dict())
-            resultado = motor.simular_relacion_completa(
-                uid1, perfil1_data,
-                uid2, perfil2_data,
-            )
 
-            par_ref = db.collection("conexiones").document(data["par_id"])
-            payload = {
-                "usuario_1": data["usuario_1"],
-                "usuario_2": data["usuario_2"],
-                "participantes": [uid1, uid2],
-                "ultimo_score": resultado["compatibilidad_promedio"],
-                "ultimo_sim": resultado["similitud"],
-                "ultimo_pref_a_b":resultado["pref_a_b"],
-                "ultimo_pref_b_a":resultado["pref_b_a"],
-                "ultimo_conv": resultado["score_conversacional"],
-                # Desglose por eje + diferencias concretas de personalidad --
-                # se guardan siempre (independiente de si hubo simulación o
-                # no) para que matches.html pueda mostrar POR QUÉ es el score
-                # que es, apenas hay match, sin depender de una simulación.
-                "desglose": {
-                    "psicologico": resultado["score_psicologico"],
-                    "valores": resultado["score_valores"],
-                    "intereses": resultado["score_intereses"],
-                    "creencias": resultado["score_creencias"],
-                    "comunicacion": resultado["score_comunicacion"],
-                },
-                # Antes esto era una sola lista combinada (frases sobre los
-                # DOS, mezcladas) -- así, cuando alguien abría el perfil del
-                # otro en matches.html, veía también frases sobre sí mismo,
-                # lo cual no tiene sentido en una sección que se supone que
-                # describe a la otra persona. Ahora es un dict por uid: cada
-                # lista son las frases que describen A ESE uid puntual (con
-                # un mínimo de 3, ver minimo= en _diferencias_personalidad),
-                # así matches.html puede mostrar solo diferencias_personalidad
-                # [otroId] -- las del otro, nunca las propias.
-                "diferencias_personalidad": {
-                    uid1: motor._diferencias_personalidad(
-                        perfil2_data, perfil1_data, data["usuario_1"]["nombre"] or "Usuario", top_n=3, minimo=3
-                    ),
-                    uid2: motor._diferencias_personalidad(
-                        perfil1_data, perfil2_data, data["usuario_2"]["nombre"] or "Usuario", top_n=3, minimo=3
-                    ),
-                },
-                "supera_umbral": resultado["supera_umbral"],
-                "distancia_km": data.get("distancia_km"),
-                "actualizado": (
-                    resultado["simulaciones"][-1]["fecha"]
-                    if resultado["simulaciones"] else firestore.SERVER_TIMESTAMP
+            # Compatibilidad matemática del onboarding, gratis (sin OpenAI) --
+            # mismo cálculo que antes hacía simular_relacion_completa antes de
+            # decidir si corría o no la simulación.
+            promedio, s, pref_a_b, pref_b_a, score_conversacional, desglose = motor.calcular_compatibilidad(perfil1_data, perfil2_data)
+            supera = promedio >= motor.UMBRAL_MATCH
+
+            diferencias = {
+                uid1: motor._diferencias_personalidad(
+                    perfil2_data, perfil1_data, data["usuario_1"]["nombre"] or "Usuario", top_n=3, minimo=3
+                ),
+                uid2: motor._diferencias_personalidad(
+                    perfil1_data, perfil2_data, data["usuario_2"]["nombre"] or "Usuario", top_n=3, minimo=3
                 ),
             }
-            payload = _con_creado(par_ref, payload)
 
-            par_ref.set(payload, merge=True)
-            for registro in resultado["simulaciones"]:
-                par_ref.collection("simulaciones").add(registro)
+            if not supera:
+                # No hace falta simulación -- se resuelve gratis, ahora mismo.
+                par_ref = db.collection("conexiones").document(data["par_id"])
+                payload = {
+                    "usuario_1": data["usuario_1"],
+                    "usuario_2": data["usuario_2"],
+                    "participantes": [uid1, uid2],
+                    "ultimo_score": round(promedio, 2),
+                    "ultimo_sim": s,
+                    "ultimo_pref_a_b": pref_a_b,
+                    "ultimo_pref_b_a": pref_b_a,
+                    "ultimo_conv": score_conversacional,
+                    "desglose": {
+                        "psicologico": desglose["psicologico"],
+                        "valores": desglose["valores"],
+                        "intereses": desglose["intereses"],
+                        "creencias": desglose["creencias"],
+                        "comunicacion": desglose["comunicacion"],
+                    },
+                    "diferencias_personalidad": diferencias,
+                    "supera_umbral": False,
+                    "distancia_km": data.get("distancia_km"),
+                    "actualizado": firestore.SERVER_TIMESTAMP,
+                }
+                payload = _con_creado(par_ref, payload)
+                par_ref.set(payload, merge=True)
+                doc.reference.update({"estado": "COMPLETADO"})
+                resueltos_sin_match += 1
+                continue
 
-            # Como cada pareja llega acá una sola vez (buscar_parejas_pendientes
-            # ya descarta pares que ya tienen conexión), supera_umbral==True acá
-            # siempre significa "match nuevo" -- no hace falta comparar contra
-            # un score anterior. El umbral (motor.UMBRAL_MATCH) lo define
-            # simular_relacion_completa/registro_simulacion, no algo hardcodeado
-            # acá: supera_umbral ya viene calculado con ese piso.
-            if resultado["supera_umbral"]:
-                nombre1 = data["usuario_1"]["nombre"] or "Usuario"
-                nombre2 = data["usuario_2"]["nombre"] or "Usuario"
-                pct = round(resultado["compatibilidad_promedio"] * 100)
-
-                # El match en sí siempre se crea -- lo que se puede silenciar
-                # es solo el aviso (Notificaciones > Nuevos matches).
-                if _quiere_notif(db, uid1, "matches"):
-                    _crear_notificacion(
-                        db, uid1, "match", f"¡Nuevo match con {nombre2}!",
-                        f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
-                        otro_uid=uid2, otro_nombre=nombre2, accion="matches",
-                    )
-                if _quiere_notif(db, uid2, "matches"):
-                    _crear_notificacion(
-                        db, uid2, "match", f"¡Nuevo match con {nombre1}!",
-                        f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
-                        otro_uid=uid1, otro_nombre=nombre1, accion="matches",
-                    )
-
-                # Interés real en común (no un evento inventado) -- solo si
-                # ambos perfiles comparten al menos uno de verdad. Es parte
-                # del aviso de match, así que respeta la misma preferencia.
-                comunes = set(doc1.to_dict().get("intereses") or []) & set(doc2.to_dict().get("intereses") or [])
-                if comunes:
-                    interes = sorted(comunes)[0]
-                    if _quiere_notif(db, uid1, "matches"):
-                        _crear_notificacion(
-                            db, uid1, "interes", f"Vos y {nombre2} tienen algo en común",
-                            f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
-                            otro_uid=uid2, otro_nombre=nombre2, accion="chats",
-                        )
-                    if _quiere_notif(db, uid2, "matches"):
-                        _crear_notificacion(
-                            db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
-                            f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
-                            otro_uid=uid1, otro_nombre=nombre1, accion="chats",
-                        )
-
-            doc.reference.update({"estado": "COMPLETADO"})
-            procesadas += 1
+            # Supera el umbral: hace falta la simulación real de charla --
+            # se arma el estado inicial y se encola para la Batch API en vez
+            # de correrla ahora mismo.
+            estado_par = motor.armar_estado_par_batch(
+                uid1, perfil1_data, uid2, perfil2_data,
+                data["usuario_1"], data["usuario_2"], data.get("distancia_km"),
+            )
+            par_id = data["par_id"]
+            estados_por_par[par_id] = estado_par
+            solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+            if solicitud:
+                solicitudes.append(solicitud)
+            encolados += 1
 
         except Exception as e:
             # traceback completo, no solo str(e) -- un mensaje como
@@ -1277,7 +1253,326 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             doc.reference.update({"estado": "ERROR", "error": traceback.format_exc()})
             con_error += 1
 
-    print(f"procesar_parejas_pendientes: {procesadas} procesadas, {con_error} con error, {descartados} descartadas por cambio de datos.")
+    print(
+        f"procesar_parejas_pendientes: {resueltos_sin_match} resueltos sin match (gratis), "
+        f"{encolados} encolados para simulación por batch, {con_error} con error, "
+        f"{descartados} descartados por cambio de datos."
+    )
+
+    if not solicitudes:
+        return
+
+    # Guarda el estado de cada pareja ANTES de mandar el batch -- así, si algo
+    # falla mandando el batch, el trabajo de armar los prompts no se pierde.
+    escritura = db.batch()
+    for par_id, estado_par in estados_por_par.items():
+        escritura.set(lote_ref.collection("pares").document(par_id), estado_par)
+    escritura.commit()
+
+    jsonl = "\n".join(json.dumps(s, ensure_ascii=False) for s in solicitudes).encode("utf-8")
+    archivo = motor.client().files.create(file=("lote.jsonl", jsonl), purpose="batch")
+    batch_job = motor.client().batches.create(
+        input_file_id=archivo.id,
+        endpoint="/v1/chat/completions",
+        completion_window="24h",
+        metadata={"lote_id": lote_id},
+    )
+
+    lote_ref.set({
+        "estado": "esperando_batch",
+        "ola": 0,
+        "openai_batch_id": batch_job.id,
+        "creado": firestore.SERVER_TIMESTAMP,
+    })
+    print(f"procesar_parejas_pendientes: lote {lote_id} mandado a Batch API ({batch_job.id}), {len(solicitudes)} pares en la ola 0.")
+
+
+def _finalizar_par_de_batch(db, estado_par):
+    """Cuando la charla de una pareja terminó (ver continuar_lote_batch_nocturno):
+    recalcula el score final con la conversación completa y lo guarda en
+    conexiones -- mismo resultado que antes dejaba la vía síncrona."""
+    uid1, uid2 = estado_par["uid1"], estado_par["uid2"]
+    doc1 = db.collection("usuarios").document(uid1).collection("gemelo").document("perfil").get()
+    doc2 = db.collection("usuarios").document(uid2).collection("gemelo").document("perfil").get()
+    if not doc1.exists or not doc2.exists:
+        print(f"_finalizar_par_de_batch: ya no existe el perfil de {uid1} o {uid2}, se descarta el resultado.")
+        return
+    perfil1_data = _con_privacidad(db, uid1, doc1.to_dict())
+    perfil2_data = _con_privacidad(db, uid2, doc2.to_dict())
+
+    registro = motor.finalizar_par_batch(perfil1_data, perfil2_data, estado_par)
+
+    par_id = motor._par_id(uid1, uid2)
+    par_ref = db.collection("conexiones").document(par_id)
+    payload = {
+        "usuario_1": estado_par["usuario_1"],
+        "usuario_2": estado_par["usuario_2"],
+        "participantes": [uid1, uid2],
+        "ultimo_score": registro["score"]["compatibilidad_total"],
+        "ultimo_sim": registro["score"]["similitud"],
+        "ultimo_pref_a_b": registro["score"]["pref_a_b"],
+        "ultimo_pref_b_a": registro["score"]["pref_b_a"],
+        "ultimo_conv": registro["score"]["score_conversacional"],
+        "desglose": {
+            "psicologico": registro["score"]["score_psicologico"],
+            "valores": registro["score"]["score_valores"],
+            "intereses": registro["score"]["score_intereses"],
+            "creencias": registro["score"]["score_creencias"],
+            "comunicacion": registro["score"]["score_comunicacion"],
+        },
+        "diferencias_personalidad": {
+            uid1: motor._diferencias_personalidad(
+                perfil2_data, perfil1_data, estado_par["usuario_1"]["nombre"] or "Usuario", top_n=3, minimo=3
+            ),
+            uid2: motor._diferencias_personalidad(
+                perfil1_data, perfil2_data, estado_par["usuario_2"]["nombre"] or "Usuario", top_n=3, minimo=3
+            ),
+        },
+        "supera_umbral": registro["supera_umbral"],
+        "distancia_km": estado_par.get("distancia_km"),
+        "actualizado": firestore.SERVER_TIMESTAMP,
+    }
+    payload = _con_creado(par_ref, payload)
+    par_ref.set(payload, merge=True)
+    par_ref.collection("simulaciones").add(registro)
+
+    nombre1 = estado_par["usuario_1"]["nombre"] or "Usuario"
+    nombre2 = estado_par["usuario_2"]["nombre"] or "Usuario"
+
+    if registro["supera_umbral"]:
+        pct = round(registro["score"]["compatibilidad_total"] * 100)
+        if _quiere_notif(db, uid1, "matches"):
+            _crear_notificacion(
+                db, uid1, "match", f"¡Nuevo match con {nombre2}!",
+                f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
+                otro_uid=uid2, otro_nombre=nombre2, accion="matches",
+            )
+        if _quiere_notif(db, uid2, "matches"):
+            _crear_notificacion(
+                db, uid2, "match", f"¡Nuevo match con {nombre1}!",
+                f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
+                otro_uid=uid1, otro_nombre=nombre1, accion="matches",
+            )
+
+        comunes = set((perfil1_data.get("intereses") or [])) & set((perfil2_data.get("intereses") or []))
+        if comunes:
+            interes = sorted(comunes)[0]
+            if _quiere_notif(db, uid1, "matches"):
+                _crear_notificacion(
+                    db, uid1, "interes", f"Vos y {nombre2} tienen algo en común",
+                    f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                    otro_uid=uid2, otro_nombre=nombre2, accion="chats",
+                )
+            if _quiere_notif(db, uid2, "matches"):
+                _crear_notificacion(
+                    db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
+                    f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                    otro_uid=uid1, otro_nombre=nombre1, accion="chats",
+                )
+
+    db.collection("parejas_pendientes").document(par_id).update({"estado": "COMPLETADO"})
+
+
+@scheduler_fn.on_schedule(
+    schedule="every 2 minutes",
+    timezone="America/Argentina/Buenos_Aires",
+    secrets=["OPENAI_API_KEY"],
+    timeout_sec=540,
+    memory=MemoryOption.MB_512,
+)
+def continuar_lote_batch_nocturno(event: scheduler_fn.ScheduledEvent) -> None:
+    _continuar_lote_batch_nocturno_logica()
+
+
+def _continuar_lote_batch_nocturno_logica() -> None:
+    """Fase 2 (continuación): revisa si el lote de Batch API en curso (ver
+    procesar_parejas_pendientes) ya terminó. Si terminó, aplica la respuesta
+    de cada pareja (una ola = un turno de charla), guarda a las que ya
+    cerraron (_finalizar_par_de_batch), y si quedan pares activos manda la
+    siguiente ola como un nuevo batch. Corre cada 15 min porque una
+    conversación puede necesitar varias olas -- cuanto más rápido se detecta
+    que un batch terminó, más rápido avanza la charla completa."""
+    db = firestore.client()
+
+    lotes = list(db.collection("lotes_batch").where("estado", "==", "esperando_batch").stream())
+    if not lotes:
+        return
+
+    for lote_doc in lotes:
+        lote_id = lote_doc.id
+
+        # Traba de concurrencia: esta función corre cada 15 min, pero una
+        # corrida puede tardar (esperar OpenAI, mandar el siguiente batch) --
+        # si la siguiente corrida programada arranca antes de que la anterior
+        # termine (o si se dispara una prueba manual mientras el scheduler
+        # también corre), las dos procesarían el mismo lote a la vez y se
+        # pisan (una pareja podía procesarse dos veces, o perderse una
+        # escritura). @firestore.transactional hace el chequeo-y-marcado
+        # atómico: solo UNA corrida puede "tomar" el lote. Si una corrida
+        # anterior se cortó a mitad de camino (crash, timeout) y dejó la
+        # traba puesta, se considera vencida después de 10 minutos y se
+        # puede volver a tomar.
+        @firestore.transactional
+        def _tomar_lote(transaccion, ref=lote_doc.reference):
+            snap = ref.get(transaction=transaccion)
+            if not snap.exists:
+                return None
+            data = snap.to_dict()
+            if data.get("estado") != "esperando_batch":
+                return None
+            procesando_desde = data.get("procesando_desde")
+            if data.get("procesando") and procesando_desde:
+                vencida = (
+                    datetime.datetime.now(datetime.timezone.utc) - procesando_desde
+                ) > datetime.timedelta(minutes=10)
+                if not vencida:
+                    return None
+            transaccion.update(ref, {"procesando": True, "procesando_desde": firestore.SERVER_TIMESTAMP})
+            return data
+
+        lote = _tomar_lote(db.transaction())
+        if lote is None:
+            print(f"continuar_lote_batch_nocturno: lote {lote_id} ya lo está procesando otra corrida, se salta.")
+            continue
+
+        batch_id = lote.get("openai_batch_id")
+        if not batch_id:
+            lote_doc.reference.update({"procesando": False})
+            continue
+
+        try:
+            batch_job = motor.client().batches.retrieve(batch_id)
+        except Exception as e:
+            print(f"continuar_lote_batch_nocturno: error consultando batch {batch_id} del lote {lote_id}: {e}")
+            lote_doc.reference.update({"procesando": False})
+            continue
+
+        if batch_job.status in ("validating", "in_progress", "finalizing"):
+            print(f"continuar_lote_batch_nocturno: lote {lote_id} todavía en curso ({batch_job.status}).")
+            lote_doc.reference.update({"procesando": False})
+            continue
+
+        if batch_job.status in ("failed", "expired", "cancelled", "cancelling"):
+            print(f"continuar_lote_batch_nocturno: lote {lote_id} terminó en estado {batch_job.status} -- se abandona, las parejas vuelven a PENDIENTE para la próxima corrida.")
+            for par_doc in lote_doc.reference.collection("pares").stream():
+                db.collection("parejas_pendientes").document(par_doc.id).update({"estado": "PENDIENTE"})
+                par_doc.reference.delete()
+            lote_doc.reference.update({"estado": "error", "procesando": False})
+            continue
+
+        # status == "completed"
+        if not batch_job.output_file_id:
+            lote_doc.reference.update({"estado": "error", "procesando": False})
+            continue
+
+        try:
+            contenido = motor.client().files.content(batch_job.output_file_id).text
+            respuestas_por_par = {}
+            for linea in contenido.splitlines():
+                if not linea.strip():
+                    continue
+                item = json.loads(linea)
+                par_id = item.get("custom_id")
+                body = (item.get("response") or {}).get("body") or {}
+                choices = body.get("choices") or []
+                respuestas_por_par[par_id] = choices[0]["message"]["content"] if choices else ""
+        except Exception as e:
+            # Si esto falla no hay forma de saber qué le tocaba a cada
+            # pareja en esta ola -- se libera la traba y se reintenta en el
+            # próximo tick (el batch_id ya está guardado, no se pierde nada).
+            print(f"continuar_lote_batch_nocturno: error bajando/parseando el resultado del batch {batch_id} del lote {lote_id}: {e}")
+            lote_doc.reference.update({"procesando": False})
+            continue
+
+        pares_ref = lote_doc.reference.collection("pares")
+        siguientes_solicitudes = []
+
+        for par_doc in pares_ref.stream():
+            par_id = par_doc.id
+            try:
+                estado_par = par_doc.to_dict()
+                contenido_msg = respuestas_por_par.get(par_id)
+
+                if contenido_msg is None:
+                    # No vino respuesta para este par en este batch (no
+                    # debería pasar) -- se reintenta la misma fase en la
+                    # próxima ola.
+                    solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+                    if solicitud:
+                        siguientes_solicitudes.append(solicitud)
+                    continue
+
+                if motor._parece_razonamiento_filtrado(contenido_msg):
+                    # Reintento SÍNCRONO puntual (una sola llamada normal) en
+                    # vez de gastar otra ola entera de batch solo por esta
+                    # pareja.
+                    print(f"continuar_lote_batch_nocturno: respuesta con pinta de razonamiento filtrado en {par_id}, reintento síncrono.")
+                    solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+                    try:
+                        resp = motor.client().chat.completions.create(**solicitud["body"])
+                        contenido_msg = resp.choices[0].message.content
+                    except Exception as e:
+                        print(f"continuar_lote_batch_nocturno: reintento síncrono también falló para {par_id}: {e}")
+                        contenido_msg = ""
+
+                if not contenido_msg:
+                    # Sin respuesta usable ni con el reintento -- se deja la
+                    # pareja en la misma fase, se reintenta en la próxima ola
+                    # en vez de perderla o guardar un mensaje vacío.
+                    solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+                    if solicitud:
+                        siguientes_solicitudes.append(solicitud)
+                    continue
+
+                estado_par = motor.aplicar_respuesta_batch(estado_par, contenido_msg)
+
+                if estado_par["estado"] == "cerrado":
+                    _finalizar_par_de_batch(db, estado_par)
+                    par_doc.reference.delete()
+                else:
+                    par_doc.reference.set(estado_par)
+                    solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+                    if solicitud:
+                        siguientes_solicitudes.append(solicitud)
+
+            except Exception as e:
+                # Una pareja puntual no puede tirar abajo el resto de la ola
+                # (ni dejar la traba de concurrencia pisada para siempre) --
+                # se marca su parejas_pendientes como ERROR (mismo criterio
+                # que ya usaba la vía síncrona) y se la saca del lote; el
+                # resto de las parejas sigue procesándose normal.
+                print(f"continuar_lote_batch_nocturno: error procesando {par_id} en el lote {lote_id}: {traceback.format_exc()}")
+                db.collection("parejas_pendientes").document(par_id).update({
+                    "estado": "ERROR", "error": traceback.format_exc(),
+                })
+                par_doc.reference.delete()
+
+        if not siguientes_solicitudes:
+            lote_doc.reference.update({"estado": "completo", "procesando": False})
+            print(f"continuar_lote_batch_nocturno: lote {lote_id} completo, todas las parejas cerradas.")
+            continue
+
+        try:
+            jsonl = "\n".join(json.dumps(s, ensure_ascii=False) for s in siguientes_solicitudes).encode("utf-8")
+            archivo = motor.client().files.create(file=("ola.jsonl", jsonl), purpose="batch")
+            nuevo_batch = motor.client().batches.create(
+                input_file_id=archivo.id,
+                endpoint="/v1/chat/completions",
+                completion_window="24h",
+                metadata={"lote_id": lote_id, "ola": str(lote.get("ola", 0) + 1)},
+            )
+        except Exception as e:
+            # El estado de cada pareja activa ya quedó guardado arriba (antes
+            # de este punto) -- si esto falla no se pierde nada, solo no se
+            # manda la siguiente ola todavía. Se libera la traba para
+            # reintentar en el próximo tick.
+            print(f"continuar_lote_batch_nocturno: error mandando la siguiente ola del lote {lote_id}: {e}")
+            lote_doc.reference.update({"procesando": False})
+            continue
+
+        nueva_ola = lote.get("ola", 0) + 1
+        lote_doc.reference.update({"ola": nueva_ola, "openai_batch_id": nuevo_batch.id, "procesando": False})
+        print(f"continuar_lote_batch_nocturno: lote {lote_id} pasa a la ola {nueva_ola} con {len(siguientes_solicitudes)} pares activos.")
 
 
 @scheduler_fn.on_schedule(schedule="0 1 1 * *", timezone="America/Argentina/Buenos_Aires")
