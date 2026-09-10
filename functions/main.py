@@ -104,11 +104,7 @@ def generar_enlace_app(accion, otro_uid=None):
         # Por defecto, los mandamos a notificaciones
         return f"{base_url}/notificacion.html"
 def _mandar_correo(correo, titulo, texto, enlace_url):
-    # 1. Cargar las credenciales (exactamente como te funcionó)
-    directorio_actual = os.path.dirname(__file__)
-    ruta_secreto = os.path.join(directorio_actual, ".secret.local")
-    load_dotenv(dotenv_path=ruta_secreto)
-    
+
     remitente = "pebble@pebble.ar"
     password = os.getenv("CONTRASEÑA_PEBBLE")
 
