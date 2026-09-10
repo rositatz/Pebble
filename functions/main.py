@@ -3,6 +3,10 @@ import datetime
 import hashlib
 import json
 import traceback
+import os
+import smtplib
+from email.message import EmailMessage
+from dotenv import load_dotenv
 
 import firebase_admin
 from firebase_admin import firestore, auth
@@ -27,6 +31,76 @@ def _con_creado(par_ref, payload):
         payload["creado"] = firestore.SERVER_TIMESTAMP
     return payload
 
+def generar_enlace_app(accion, otro_uid=None):
+    # IMPORTANTE: Cambia esto por tu dominio real en producción
+    # Si estás probando en tu compu, podría ser "http://localhost:5500"
+    base_url = "https://pebble.ar" 
+    
+    if accion == "matches":
+        if otro_uid:
+            return f"{base_url}/matches.html?persona={otro_uid}"
+        else:
+            return f"{base_url}/matches.html"
+            
+    elif accion == "chats":
+        if otro_uid:
+            return f"{base_url}/chats.html?persona={otro_uid}"
+        else:
+            return f"{base_url}/chats.html"
+            
+    elif accion == "gemelo":
+        return f"{base_url}/gemelo.html"
+        
+    else:
+        # Por defecto, los mandamos a notificaciones
+        return f"{base_url}/notificacion.html"
+def _mandar_correo(correo, titulo, texto, enlace_url):
+    # 1. Cargar las credenciales (exactamente como te funcionó)
+    directorio_actual = os.path.dirname(__file__)
+    ruta_secreto = os.path.join(directorio_actual, ".secret.local")
+    load_dotenv(dotenv_path=ruta_secreto)
+    
+    remitente = "pebble@pebble.ar"
+    password = os.getenv("CONTRASEÑA_PEBBLE")
+
+    # 2. Configurar el mensaje
+    msg = EmailMessage()
+    msg["Subject"] = titulo
+    msg["From"] = remitente
+    msg["To"] = correo
+
+    # 3. Construir el cuerpo del correo
+    # Primero el texto plano (fallback por si el cliente de correo no lee HTML)
+    cuerpo_plano = f"{texto}\n\nEnlace: {enlace_url}"
+    msg.set_content(cuerpo_plano)
+
+    # Luego agregamos la versión HTML con la etiqueta <a> para que el link sea clickeable
+    cuerpo_html = f"""
+    <html>
+        <body>
+            <p>{texto}</p>
+            <p>
+                <a href="{enlace_url}" style="padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+                    Haz clic aquí
+                </a>
+            </p>
+            <br>
+            <p><small>Si el botón no funciona, copia y pega este enlace en tu navegador: {enlace_url}</small></p>
+        </body>
+    </html>
+    """
+    msg.add_alternative(cuerpo_html, subtype='html')
+
+    # 4. Enviar usando el puerto 587 y starttls() que ya comprobaste que funciona
+    try:
+        # Usamos 'with' para que la conexión se cierre automáticamente al terminar
+        with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+            servidor.starttls()
+            servidor.login(remitente, password)
+            servidor.send_message(msg)
+        print("Correo enviado con éxito")
+    except Exception as e:
+        print(f"Error al enviar: {e}")
 
 def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombre=None, accion=None):
     """Todas las notificaciones reales (nuevo match, interés en común,
@@ -174,6 +248,8 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
     uid2 = (despues_dict.get("usuario_2") or {}).get("uid")
     nombre1 = (despues_dict.get("usuario_1") or {}).get("nombre") or "Usuario"
     nombre2 = (despues_dict.get("usuario_2") or {}).get("nombre") or "Usuario"
+    correo1=(despues_dict.get("usuario_1") or {}).get("email")
+    correo2=(despues_dict.get("usuario_2") or {}).get("email")
     if not uid1 or not uid2:
         return
 
@@ -184,6 +260,7 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             continue  # mensaje mal formado, no debería pasar
         destinatario = uid2 if remitente == uid1 else uid1
         nombre_remitente = nombre1 if remitente == uid1 else nombre2
+        correo_destinatario = correo2 if remitente == uid1 else correo1
         if not _quiere_notif(db, destinatario, "mensajes"):
             continue
         texto = (msg.get("text") or "").strip()
@@ -193,6 +270,19 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             preview or "Te escribió en Pebble.",
             otro_uid=remitente, otro_nombre=nombre_remitente, accion="chats",
         )
+        if correo_destinatario:
+            # Generamos el enlace para que el botón lo lleve directo al chat con esta persona
+            enlace_chat = generar_enlace_app(accion="chats", otro_uid=remitente)
+            
+            titulo_mail = f"Tienes un nuevo mensaje de {nombre_remitente}"
+            cuerpo_mail = f"{nombre_remitente} te escribió:\n\n\"{preview}\"\n\nEntra a Pebble para responderle."
+            
+            _mandar_correo(
+                correo=correo_destinatario, 
+                titulo=titulo_mail, 
+                texto=cuerpo_mail, 
+                enlace_url=enlace_chat
+            )
 
 
 @https_fn.on_call()
@@ -1138,12 +1228,20 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                         f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
                         otro_uid=uid2, otro_nombre=nombre2, accion="matches",
                     )
+                    enlace1=generar_enlace_app("matches",uid2 )
+                    correo1=data["usuario_1"]["email"]
+                    _mandar_correo(correo1, f"¡Nuevo match con {nombre2}!",f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.", enlace1 )
+                    
                 if _quiere_notif(db, uid2, "matches"):
                     _crear_notificacion(
                         db, uid2, "match", f"¡Nuevo match con {nombre1}!",
                         f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
                         otro_uid=uid1, otro_nombre=nombre1, accion="matches",
                     )
+                    enlace2=generar_enlace_app("matches",uid1 )
+                    correo2=data["usuario_2"]["email"]
+                    _mandar_correo(correo2, f"¡Nuevo match con {nombre1}!",f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.", enlace2 )
+                   
 
                 # Interés real en común (no un evento inventado) -- solo si
                 # ambos perfiles comparten al menos uno de verdad. Es parte
@@ -1157,6 +1255,7 @@ def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                             f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
                             otro_uid=uid2, otro_nombre=nombre2, accion="chats",
                         )
+                        _mandar_correo(db)
                     if _quiere_notif(db, uid2, "matches"):
                         _crear_notificacion(
                             db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
