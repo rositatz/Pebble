@@ -26,6 +26,49 @@ def client():
     return _client
 
 
+# gpt-5.6-terra es un modelo de razonamiento (usa reasoning_tokens internos,
+# ver usage.completion_tokens_details) que normalmente separa esa
+# deliberación del mensaje final solo -- pero se vio en producción que a
+# veces la filtra COMO SI FUERA el mensaje final (una nota en inglés,
+# telegráfica, tipo "We need answer as X likely... Must not use emoji...").
+# Esta heurística detecta ese patrón (mensaje real en español no debería
+# tener esta forma) y, si lo detecta, reintenta UNA vez insistiendo en el
+# punto antes de dejar pasar el texto -- así nunca le llega a la usuaria un
+# mensaje que nunca debería haber sido visible.
+_PALABRAS_RAZONAMIENTO = (
+    "we need", "must not", "need to", "let's ", "should ", "therefore",
+    "the user", "no invent", "must mandate", "one sentence", "good.",
+)
+
+
+def _parece_razonamiento_filtrado(texto):
+    if not texto:
+        return True
+    baja = texto.lower()
+    return len(texto) > 220 and sum(m in baja for m in _PALABRAS_RAZONAMIENTO) >= 2
+
+
+def _completar_chat_gemelo(messages, model="gpt-5.6-terra", **kwargs):
+    """Wrapper de client().chat.completions.create para las charlas con un
+    gemelo (simulaciones y chats en vivo) -- ver _parece_razonamiento_filtrado.
+    Reintenta como máximo una vez, así el costo extra queda acotado al caso
+    (raro) en que de verdad hace falta."""
+    response = client().chat.completions.create(model=model, messages=messages, **kwargs)
+    if _parece_razonamiento_filtrado(response.choices[0].message.content):
+        print("motor: la respuesta parecía razonamiento filtrado, reintentando una vez")
+        refuerzo = {
+            "role": "system",
+            "content": (
+                "\n    RECORDATORIO: tu respuesta tiene que ser SOLO el mensaje de"
+                " chat en español que le escribirías a la otra persona -- nunca tu"
+                " razonamiento interno, notas en inglés, ni una explicación de qué"
+                " vas a decir. Directo al mensaje, nada más."
+            ),
+        }
+        response = client().chat.completions.create(model=model, messages=messages + [refuerzo], **kwargs)
+    return response
+
+
 # Un solo lugar para no tener que cambiarlo en cada función por separado.
 UMBRAL_MATCH = 0.70
 
@@ -99,16 +142,111 @@ escenarios_db = [
 
 def armar_escenario_personalizado(texto):
     """El usuario pidió simular algo puntual (ej: "simulá que discutimos por
-    plata") -- se arma un escenario al vuelo con ese texto en vez de usar uno
-    de escenarios_db. No hace un llamado extra a OpenAI para esto: el texto
-    del usuario ya es suficiente contexto para el prompt del escenario."""
+    plata", "simulá la primera cita") -- se arma un escenario al vuelo con
+    ese texto en vez de usar uno de escenarios_db. No hace un llamado extra
+    a OpenAI para esto: el texto del usuario ya es suficiente contexto para
+    el prompt del escenario.
+
+    El texto crudo del usuario, sin nada más, terminaba jugándose MAL: un
+    pedido como "la primera cita" el modelo lo entendía como "hablemos SOBRE
+    nuestra primera cita" (coordinar día/lugar, como si todavía no hubiera
+    pasado) en vez de "actuemos como si YA estuviéramos en la primera cita,
+    ahora mismo" -- exactamente lo que "IMPORTANTE sobre cómo jugar este
+    escenario" en simular_y_registrar ya le pide en general, pero sin un
+    ejemplo concreto atado a ESTE pedido puntual, la instrucción abstracta
+    no alcanzaba para que el modelo reinterprete un texto tan corto y
+    ambiguo. Envolver el texto explícitamente como "ya están viviendo esto"
+    fuerza la lectura correcta antes de que la instrucción genérica entre en
+    juego.
+
+    El primer ejemplo (una cita puntual) no alcanzaba para pedidos como "el
+    primer viaje juntos": un evento así tiene una fase previa real de
+    organizarlo, así que "ya en curso" seguía siendo ambiguo -- el modelo
+    podía leer "ya estamos organizando el viaje" (el trámite en sí) como
+    una lectura válida de "en curso", cuando lo que se pide es estar
+    VIVIENDO el viaje. Se agrega un segundo ejemplo específico para ese
+    caso, nombrando "planeando/organizando" como la lectura incorrecta a
+    evitar explícitamente, no solo "algo futuro"."""
     texto = texto.strip()
     titulo = texto if len(texto) <= 60 else texto[:57] + "..."
     return {
         "titulo": titulo,
-        "contexto": texto,
+        "contexto": (
+            f"Están viviendo esto AHORA MISMO, ya en curso -- NO es algo que "
+            f"vayan a coordinar, planear o que todavía no pasó: {texto}\n"
+            "Por ejemplo, si el pedido es \"la primera cita\", NO están "
+            "poniéndose de acuerdo en cuándo/dónde verse -- ya están ahí, en "
+            "medio de la cita, charlando como charlarían en ese momento "
+            "puntual. Si el pedido es algo con una fase previa real (ej: "
+            "\"nuestro primer viaje juntos\"), NO están planeándolo ni "
+            "organizando los detalles antes de que pase -- ya están DE "
+            "VIAJE, en un momento puntual de ese viaje (caminando por algún "
+            "lado, en un cuarto, decidiendo qué hacer ese día), no en la "
+            "etapa de prepararlo. Métanse directo en la escena, como si ya "
+            "estuviera pasando en este preciso momento, no como algo futuro, "
+            "hipotético, o que todavía se está organizando."
+        ),
         "tono": "Natural, como si fuera una conversación real entre dos personas conociéndose.",
     }
+
+
+def generar_consejo_match(perfil_propio, perfil_match, nombre_match, diferencias=None):
+    """"Dame un consejo para hablar con X" corría una simulación completa
+    (simular_relacion_completa: hasta ~11 llamados seguidos a OpenAI, varios
+    minutos) para terminar devolviendo un resumen -- pero pedir consejo no
+    necesita actuar una charla entera, alcanza con UN llamado que mire los
+    datos reales de la otra persona y diga algo concreto. Mucho más rápido
+    y bastante más barato que simular_situacion para este pedido puntual."""
+
+    intereses_propios = set(perfil_propio.get("intereses") or [])
+    intereses_match = perfil_match.get("intereses") or []
+    compartidos = [i for i in intereses_match if i in intereses_propios]
+
+    datos = f"""
+    SOBRE VOS (quien pide el consejo):
+    Intereses: {", ".join(perfil_propio.get("intereses") or []) or "no especificados"}
+
+    SOBRE {nombre_match} (la persona con la que quiere hablar):
+    Intereses: {", ".join(intereses_match) or "no especificados"}
+    Bio: {perfil_match.get("bio") or "no especificada"}
+    Notas personales: {"; ".join(perfil_match.get("notas_personales") or []) or "no hay"}
+
+    Intereses que tienen EN COMÚN: {", ".join(compartidos) or "ninguno registrado"}
+    """
+
+    if diferencias:
+        datos += "\n    Diferencias reales de personalidad entre ustedes:\n" + "\n".join(
+            f"    - {d}" for d in diferencias
+        )
+
+    prompt = f"""
+    Sos un amigo/a que conoce bien a {nombre_match} y le va a dar un consejo
+    concreto y honesto a quien te lo pide sobre cómo arrancar una
+    conversación con ella/él.
+
+    Datos reales (NUNCA inventes nada que no esté acá -- si falta un dato,
+    no lo menciones, no lo completes con algo inventado):
+    {datos}
+
+    Escribí un consejo breve (4-6 líneas, en español, tono cercano y
+    directo, nunca genérico tipo "sé vos mismo/a" o "solo tenés que ser
+    auténtico/a") que cubra:
+    1. Un ejemplo CONCRETO de mensaje para arrancar la charla, basado en
+       algo real de sus intereses o gustos -- si hay algo en común, mejor
+       arrancar por ahí.
+    2. 1-2 cosas puntuales que le importan/gustan a {nombre_match}, útiles
+       para tener en cuenta en la charla.
+    3. Si hay una diferencia de personalidad relevante en los datos de
+       arriba, un tip corto de cómo tenerla en cuenta (ej: "es bastante
+       reservada, no la abrumes con preguntas seguidas").
+
+    Nada de HTML ni markdown -- texto plano, como si se lo estuvieras
+    escribiendo a un amigo por chat.
+    """
+
+    response = _completar_chat_gemelo([{"role": "system", "content": prompt}])
+    return response.choices[0].message.content.strip()
+
 
 def _directiva(valor, texto_alto, texto_bajo, umbral=0.58):
     """Traduce un valor numérico 0-1 (ej: personalidad.introversion) en una
@@ -209,11 +347,21 @@ def _ahora_argentina_txt():
     usa UTC-3 todo el año, sin horario de verano, así que alcanza con un
     offset fijo -- no hace falta la base de datos de husos horarios
     (zoneinfo/tzdata), que no siempre está disponible en el runtime de
-    Cloud Functions."""
+    Cloud Functions.
+
+    Minuto redondeado a bloques de 15 (en vez de exacto): chatear_con_gemelo/
+    chatear_con_gemelo_match arman este prompt de nuevo en CADA mensaje, y
+    OpenAI cachea automáticamente (más barato) el prefijo del prompt system
+    solo si es byte a byte igual a una llamada reciente -- con el minuto
+    exacto, ese prefijo cambiaba en casi todos los mensajes de una misma
+    charla y nunca cacheaba. Redondeado, los mensajes seguidos de una charla
+    comparten el mismo prefijo y sí cachean, sin perder precisión real
+    (sigue alcanzando para saber si algo está abierto o qué día/año es)."""
     ahora = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
     dia = _DIAS_ES[ahora.weekday()]
     mes = _MESES_ES[ahora.month - 1]
-    return f"{dia} {ahora.day} de {mes} de {ahora.year}, {ahora.strftime('%H:%M')} (hora Argentina)"
+    minuto = (ahora.minute // 15) * 15
+    return f"{dia} {ahora.day} de {mes} de {ahora.year}, {ahora.hour:02d}:{minuto:02d} (hora Argentina)"
 
 
 # Los rasgos numéricos (personalidad.introversion=0.8, etc.) traducidos uno
@@ -474,50 +622,35 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     )
     checklist_final = f"""
     ─────────────────────────────
-    ANTES DE MANDAR EL MENSAJE, CHEQUEO RÁPIDO:
-    - Repaso TODO el mensaje que estoy por mandar, palabra por palabra: cada
-      adjetivo/participio que uso sobre MÍ ("segura/o", "cansada/o",
-      "sorprendida/o") o sobre LOS DOS JUNTOS ("distintas/os",
-      "parecidas/os") -- ¿está en el género correcto? (arriba, en "Género").
-      Sobre mí: mi propio género. Sobre los dos juntos: masculino, salvo que
-      sepa con certeza que las dos personas son mujeres. Este es un error
-      grave y frecuente, no solo al arrancar el mensaje.
-    - ¿Ya saludé antes en esta charla? Si sí, no vuelvo a saludar.
-    - ¿El mensaje que respondo termina en "?"? Si soy bastante introvertido/a
-      (arriba), evito cerrar el mío también en pregunta -- pero si soy
-      extrovertido/a o abierto/a a ideas nuevas, encadenar otra pregunta es
-      natural en mí, no hace falta frenarme.
-    - ¿Llevo varios mensajes seguidos sin preguntar nada Y sin mostrar
-      curiosidad/interés real por lo que dice el otro? Si sí, esto suena
-      frío o como si solo estuviera tirando información -- sumo algo que
-      muestre que me importa lo que me está contando (una pregunta genuina,
-      una reacción con más entusiasmo/calidez, no solo un dato mío suelto).
-    - ¿Estoy por inventar un dato, anécdota o detalle (de mi trabajo, un
-      recuerdo, un título) que no está arriba? Si sí, no lo escribo.
-    - ¿Uso emojis? Solo si "estilo_aprendido" arriba lo confirma explícitamente -- si no, cero.
-    - ¿Ya usé "jaja"/"jeje" en mi mensaje anterior? Si sí, este no lo uso de nuevo.
-    - ¿No hay mensajes previos en la charla? Si es así, esta es la primera
-      vez que hablo con esta persona -- nada de "eso suena a vos" ni "como
-      siempre", todavía no la conozco de nada.
-    - ¿Usé ":" para armar la frase (tipo "mi punto: ...")? Si sí, la reescribo como oración normal.
-    - ¿Mis últimos mensajes tuvieron todos la misma forma (reacción +
-      algo mío + cierre lindo + pregunta)? Si sí, este va con otra forma.
-    - ¿Llevamos 3+ intercambios seguidos sobre el mismo tema/interés? Si
-      sí, este mensaje cambia de tema.
-    - ¿Ya quedó claro si un plan/propuesta se acepta o no? Si sí, no sigo
-      re-confirmándolo -- avanzo a otra cosa.
-    - ¿Ya tocamos los TEMAS QUE ESTA CHARLA TIENE QUE TOCAR SÍ O SÍ (si hay
-      alguno arriba)? Si todavía no, priorizo llevar la charla para ese
-      lado en vez de quedarme en algo secundario.
+    CHEQUEO RÁPIDO antes de mandar el mensaje (ya vimos el detalle de cada
+    punto arriba, esto es solo el repaso final):
+    - Género correcto en cada adjetivo/participio: sobre mí, mi propio
+      género; sobre "los dos juntos", masculino salvo certeza de que son
+      dos mujeres. Error grave y frecuente, revisar en TODO el mensaje.
+    - ¿Ya saludé antes en esta charla? No repito saludo.
+    - ¿El otro terminó en "?"? Si soy introvertido/a, cierro con
+      afirmación/reacción en vez de otra pregunta; si soy extrovertido/a o
+      abierto/a a ideas nuevas, encadenar está bien.
+    - ¿Vengo varios mensajes sin preguntar ni mostrar interés real? Sumo
+      algo genuino (pregunta, reacción con más calidez).
+    - ¿Estoy por inventar un dato/anécdota/título que no está en mi perfil?
+      No lo escribo.
+    - Emojis solo si "estilo_aprendido" arriba los confirma explícitamente.
+    - ¿Usé "jaja"/"jeje" en mi mensaje anterior? No lo repito ahora.
+    - ¿No hay mensajes previos? Es la primera vez que hablo con esta
+      persona, no doy a entender lo contrario.
+    - ¿Usé ":" para armar la frase? Lo reescribo como oración normal.
+    - ¿Mis últimos mensajes tuvieron la misma estructura (reacción + algo
+      mío + cierre lindo + pregunta)? Uso otra forma para este.
+    - ¿3+ intercambios seguidos sobre el mismo tema? Cambio de tema.
+    - ¿Ya quedó claro si un plan se acepta o no? No sigo re-confirmando.
+    - ¿Faltan TEMAS QUE ESTA CHARLA TIENE QUE TOCAR SÍ O SÍ (si hay)? Los priorizo.
     - {linea_cierre_checklist}{linea_plan_checklist}
-    - La compatibilidad real de fondo con esta persona está indicada más
-      arriba (si aplica) -- mi mensaje tiene que sentirse acorde a eso, no
-      más compinche de lo que sería realista.
-    - ¿Estoy siendo más educado/a, formal o complaciente de lo que mis
-      rasgos reales (arriba, en PERFIL PSICOLÓGICO / TU VOZ) sugieren? Si
-      mis datos dicen baja empatía, alto sarcasmo, baja tolerancia al
-      conflicto o alta independencia, tiene que notarse -- no sonar
-      educado/a por default tapa quién soy de verdad.
+    - Mi tono es acorde a la compatibilidad real de fondo con esta persona
+      (si aplica), no más compinche de lo realista.
+    - ¿Sueno más educado/a, formal o complaciente de lo que mis rasgos
+      reales (empatía, sarcasmo, tolerancia al conflicto, independencia)
+      sugieren? Tiene que notarse quién soy de verdad.
     ─────────────────────────────
     """
 
@@ -781,10 +914,9 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     digas que hiciste, viviste o tenés algo (una anécdota, un concierto,
     un viaje, un detalle de tu trabajo o proyecto, un título de peli/
     serie/canción) que no esté escrito tal cual más abajo en tus datos
-    reales. Ni un solo dato de más. Esto se repite en detalle más abajo
-    (reglas 6 y 6b) porque es el error más grave y más frecuente que
-    podés cometer -- inventar aunque sea un detalle chico sobre la
-    persona real que representás es mentir sobre ella.
+    reales. Ni un solo dato de más -- es el error más grave y más frecuente
+    que podés cometer: inventar aunque sea un detalle chico sobre la
+    persona real que representás es mentir sobre ella (ver reglas 6 y 6b).
 
     Tu objetivo real no es "actuar" una charla ni cumplir un guion --
     arrancá siempre desde un punto neutral (recién se están conociendo) e
@@ -803,15 +935,12 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     y real -- no fuerces la confianza ni la apertura si no le sale
     genuinamente a la persona que representás.
 
-    AHORA MISMO ES: {_ahora_argentina_txt()}. Si en la charla surge una
-    fecha futura (coordinar un plan, una salida, "nos vemos tal día/mes"),
-    calculá bien si tiene sentido respecto a HOY -- no propongas ni
-    aceptes una fecha que ya pasó este año (si estamos en agosto, "enero"
-    a secas ya pasó, tendría que ser el año que viene y hay que decirlo
-    así de claro, no dejarlo ambiguo). Además, Argentina está en el
-    hemisferio SUR: diciembre/enero/febrero es verano, marzo/abril/mayo es
-    otoño, junio/julio/agosto es invierno, septiembre/octubre/noviembre es
-    primavera -- nunca uses las estaciones del hemisferio norte.
+    AHORA MISMO ES: {_ahora_argentina_txt()}. Si surge una fecha futura
+    (un plan, "nos vemos tal día/mes"), calculá si tiene sentido respecto a
+    HOY -- no propongas ni aceptes una fecha que ya pasó este año (decilo
+    claro: "enero que viene", no un "enero" ambiguo si ya pasó). Argentina
+    es hemisferio SUR: dic/ene/feb verano, mar/abr/may otoño, jun/jul/ago
+    invierno, sep/oct/nov primavera -- nunca estaciones del hemisferio norte.
 
     =====================================================
     IDENTIDAD
@@ -1010,34 +1139,19 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     esto, una persona real la mayoría de las veces la capta.
 
     11. Sobre encadenar preguntas cuando el último mensaje del otro ya
-    terminaba en "?": cuánto te frena esto depende de TU propia
-    personalidad, no es una regla pareja para cualquiera.
-    - Si sos bastante extrovertido/a y/o abierto/a a ideas nuevas (arriba):
-      encadenar una pregunta después de otra es real y natural en vos --
-      así habla la gente sociable de verdad, un "y vos?" o una pregunta
-      nueva que te surgió puede ir perfecto aunque el otro también haya
-      preguntado. No te autolimites por esto.
-    - Si sos bastante introvertido/a: ahí sí, evitá cerrar en pregunta
-      cuando el otro ya preguntó -- cerrá con una afirmación, opinión,
-      comentario, anécdota o reacción; te sale más natural responder antes
-      de, eventualmente, preguntar algo propio en otro momento.
-    - Si tu personalidad no está marcada para ningún lado, usalo como guía
-      suave, no como regla dura.
-    En cualquier caso, una frecuencia natural ronda 1 de cada 3-4 mensajes
-    tuyos terminando en pregunta -- ESO ES UN PISO, no un techo a acercarse
-    a cero. Tan poco realista es preguntar todo el tiempo como no preguntar
-    NUNCA: si te quedaste sin preguntar nada en varios mensajes seguidos,
-    eso rompe el ida y vuelta natural de una charla real y suena frío/
-    desconectado, como si solo estuvieras tirando información en vez de
-    charlando de verdad. NO uses una pregunta como mecanismo automático
-    para "seguir la conversación" o "no dejarla morir", pero SÍ hacé una
-    cuando de verdad te surge curiosidad genuina por algo que dijo el otro,
-    querés saber su opinión sobre algo puntual, o es la forma más natural
-    de reaccionar a lo que acaba de pasar en la charla -- no te frenes por
-    esta regla si la pregunta es real. El objetivo es variedad y calidez
-    (mezclar afirmaciones, reacciones, anécdotas Y preguntas genuinas,
-    mostrando interés real en el otro), nunca eliminar las preguntas ni
-    sonar como si estuvieras completando un formulario.
+    terminaba en "?": depende de TU personalidad, no es pareja para todos.
+    - Extrovertido/a y/o abierto/a a ideas nuevas: encadenar otra pregunta
+      es natural, no te autolimites.
+    - Introvertido/a: evitá cerrar en pregunta cuando el otro ya preguntó --
+      cerrá con afirmación, opinión, anécdota o reacción en su lugar.
+    - Sin marca clara: usalo como guía suave, no regla dura.
+    Frecuencia natural: 1 de cada 3-4 mensajes tuyos termina en pregunta --
+    ESO ES UN PISO, no un techo a acercarse a cero. Tan poco realista es
+    preguntar siempre como no preguntar nunca: varios mensajes seguidos sin
+    preguntar ni mostrar curiosidad real suena frío, como tirar información
+    en vez de charlar. No preguntes solo por "seguir la charla" -- pero
+    hacelo cuando de verdad te surge curiosidad o es la reacción más
+    natural. El objetivo es variedad y calidez real, nunca sonar a formulario.
 
     12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
     (algo concreto que mencionó, no una reacción genérica tipo "qué
@@ -1050,64 +1164,44 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     repreguntar "¿y vos?" de nuevo -- una conversación real avanza, no gira
     en el mismo lugar.
 
-    13b. REGLA MECÁNICA, esto aplica también a nivel TEMA, no solo pregunta
-    por pregunta: contá mentalmente cuántos de tus últimos mensajes (tuyos
-    y del otro) giraron alrededor del MISMO tema puntual (un interés, un
-    hobby, una anécdota, un plan). Si son 3 o más intercambios seguidos
-    sobre esa misma cosa, tu próximo mensaje TIENE que cambiar de tema --
-    aunque sea de forma un poco abrupta, como hace cualquier persona real
-    en un chat ("che, cambiando de tema..." o directamente saltando a otra
-    cosa sin avisar). No te quedes ahí toda la charla ni lo conviertas en
-    el eje central. Esto vale en especial para música/pelis/series/hobbies:
-    un interés compartido es UN dato más entre muchos (personalidad,
-    valores, forma de vincularse, cómo manejan un plan o un desacuerdo),
-    no el tema principal de una charla real -- si en 20 turnos de charla
-    más de 5-6 fueron sobre el mismo interés cultural, es una señal de que
-    te quedaste enganchado/a en un solo tema en vez de explorar varios
-    puntos del onboarding. Priorizá derivar hacia algo más revelador (cómo
-    son, qué buscan, cómo reaccionan a algo, un plan concreto, una postura)
-    en vez de seguir ahondando en el mismo interés.
+    13b. REGLA MECÁNICA, también a nivel TEMA, no solo pregunta por
+    pregunta: contá cuántos de tus últimos mensajes (tuyos y del otro)
+    giraron sobre el MISMO tema (un interés, hobby, anécdota, plan). Si son
+    3+ intercambios seguidos, tu próximo mensaje TIENE que cambiar de tema
+    -- aunque sea abrupto ("che, cambiando de tema..." o saltando directo).
+    Vale en especial para música/pelis/series/hobbies: un interés
+    compartido es UN dato más entre muchos (personalidad, valores, cómo
+    manejan un plan o un desacuerdo), no el eje de una charla real.
+    Priorizá derivar hacia algo más revelador (cómo son, qué buscan, un
+    plan concreto, una postura) en vez de seguir ahondando en el mismo interés.
 
-    14. Hablá como se escribe de verdad en un chat, no como si estuvieras
-    narrando, dando una charla motivacional o escribiendo un ensayo. NADA
-    de metáforas, frases poéticas ni imágenes tipo "mi corazón se abre
-    como...". Y ojo con esto en particular, porque es el error más común:
-    NADA de sonar a terapeuta o coach validando todo lo que dice el otro.
-    Prohibido usar frases hechas tipo "es fundamental", "es hermoso
-    escuchar eso", "valido lo que sentís", "eso puede fortalecer/
-    transformar la relación", "cultivar el vínculo", "construir algo
-    significativo juntos", "tener esa conexión/vulnerabilidad es
+    14. Hablá como se escribe de verdad en un chat, no como si narraras,
+    dieras una charla motivacional o escribieras un ensayo. NADA de
+    metáforas o frases poéticas tipo "mi corazón se abre como...". Ojo en
+    particular (error más común): NADA de sonar a terapeuta o coach
+    validando todo lo que dice el otro. Prohibido: "es fundamental", "es
+    hermoso escuchar eso", "valido lo que sentís", "eso puede
+    fortalecer/transformar la relación", "cultivar el vínculo", "construir
+    algo significativo juntos", "esa conexión/vulnerabilidad es
     increíble", "me alegra mucho que sientas eso", "entiendo
     completamente", "hay algo mágico/especial en...", "eso es hermoso",
-    "compartir X con otros/as" como cierre poético. TAMPOCO arranques
-    mensajes siempre con la misma frase de apertura tipo "Me suena muy
-    real", "Me encanta esa vibra", "Me pasa lo mismo", "Qué bueno
-    escuchar eso" -- si ya usaste una de estas (o algo parecido) en
-    mensajes anteriores de esta charla, para este mensaje entrá directo al
-    contenido, sin ninguna frase de apertura genérica. Si te sale una
-    frase parecida a cualquiera de estas, pará y reescribila más simple.
-    El registro objetivo es CANCHERO Y RELAJADO -- como le escribirías a
-    alguien que te gusta pero recién estás conociendo, sin impostar
-    romanticismo de más ni sonar a carta de amor. Nada de "esa conexión",
-    "compartir algo tan especial", "vivir esa experiencia juntos" -- eso
-    es forzar intimidad que todavía no existe a esta altura de la charla.
-    Tampoco encadenes 3 o 4 ideas seguidas conectadas con "además",
-    "también", "por otro lado" como si fuera una lista prolija -- una
-    persona real en un chat dice UNA cosa por mensaje, no un resumen
-    ejecutivo de todo lo que piensa sobre el tema.
-    Así NO hablás (evitá esto):
-    "Me alegra mucho que te sientas así. Esa disposición para cultivar la
-    relación y construir algo significativo es fundamental. Recuerdo una
-    vez que... Es espectacular cómo eso puede transformar una relación."
-    Así SÍ habla alguien de verdad, más o menos (tomalo como referencia de
-    TONO, no lo copies literal):
-    "jaja re, a mí me pasa lo mismo" / "uh no sé, nunca lo pensé así" /
-    "posta? contame más" / "igual yo soy re desconfiado/a al principio"
-    / "ni idea la verdad, nunca me pasó" / "che pará, ¿en serio?" -- frases
-    cortas, a veces incompletas, sin puntuación perfecta, sin sonar
-    siempre positivo o comprensivo. Podés no tener nada para decir, dudar,
-    cambiar de tema, o directamente no darle mucha bola a algo que dijo el
-    otro -- eso también es realista.
+    "compartir X con otros/as" como cierre poético. Tampoco arranques
+    siempre igual ("Me suena muy real", "Me encanta esa vibra", "Me pasa lo
+    mismo", "Qué bueno escuchar eso") -- si ya usaste una de estas en esta
+    charla, entrá directo al contenido esta vez. Registro objetivo: CANCHERO
+    Y RELAJADO, como a alguien que te gusta pero recién conocés, sin
+    impostar romanticismo ("esa conexión", "vivir esa experiencia juntos" es
+    forzar intimidad que todavía no existe). Tampoco encadenes 3-4 ideas con
+    "además"/"también"/"por otro lado" como lista prolija -- una persona
+    real dice UNA cosa por mensaje.
+    Así NO hablás: "Me alegra mucho que te sientas así. Esa disposición
+    para cultivar la relación y construir algo significativo es
+    fundamental."
+    Así SÍ (referencia de TONO, no copiar literal): "jaja re, a mí me pasa
+    lo mismo" / "uh no sé, nunca lo pensé así" / "posta? contame más" /
+    "ni idea la verdad, nunca me pasó" / "che pará, ¿en serio?" -- frases
+    cortas, a veces incompletas, sin sonar siempre positivo. Podés no tener
+    nada para decir, dudar, cambiar de tema o no darle mucha bola -- también es realista.
 
     14c. NUNCA repitas la misma ESTRUCTURA de mensaje una y otra vez. El
     error más notorio es este patrón fijo: "[reacción positiva a lo que
@@ -1590,11 +1684,7 @@ def generar_resumen_gemelo(perfil):
     explicaciones tuyas.
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=1.0,
-    )
+    response = _completar_chat_gemelo([{"role": "user", "content": prompt}], temperature=1.0)
     return response.choices[0].message.content.strip()
 
 
@@ -1713,12 +1803,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         f" conociste. {random.choice(_ANGULOS_APERTURA)}"
     )
 
-    response_inicio = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[
-            {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
-        ]
-    )
+    response_inicio = _completar_chat_gemelo([
+        {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
+    ])
     ultimo_mensaje, _ = _extraer_cierre(response_inicio.choices[0].message.content)
     partes_inicio = _dividir_mensajes(ultimo_mensaje)
 
@@ -1747,7 +1834,14 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     # cada parte entra como su propio mensaje "user"/"assistant" separado --
     # así el modelo ve la misma sucesión de mensajitos que vería una persona
     # real, no un solo bloque pegado.
-    vista_1 = []
+    # vista_1 arranca con su PROPIO mensaje de apertura como "assistant" --
+    # sin esto, perfil1 llega a su primera respuesta real sin ningún rastro
+    # de que ya habló él/ella misma antes (el mensaje de apertura vive fuera
+    # de este loop, ver arriba), así que no tiene forma de notar que ya
+    # saludó o de qué dijo -- puede volver a saludar como si fuera su primer
+    # mensaje, o directamente repetir lo último que dijo el otro por no
+    # tener su propio hilo para engancharse.
+    vista_1 = [{"role": "assistant", "content": parte} for parte in partes_inicio]
     vista_2 = [{"role": "user", "content": parte} for parte in partes_inicio]
 
     # Instrucción extra SOLO para la última llamada permitida (si se llega al
@@ -1771,23 +1865,17 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # PERFIL 2 RESPONDE
         # =================================================
 
-        response_2 = client().chat.completions.create(
+        response_2 = _completar_chat_gemelo([
+            {
+                "role": "system",
+                "content":
+                    contexto_escenario +
+                    prompt_2 +
+                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
+            },
 
-            model="gpt-5.6-terra",
-
-            messages=[
-
-                {
-                    "role": "system",
-                    "content":
-                        contexto_escenario +
-                        prompt_2 +
-                        (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
-                },
-
-                *vista_2
-            ]
-        )
+            *vista_2
+        ])
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
         partes_2 = _dividir_mensajes(msg_2)
@@ -1817,23 +1905,17 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # PERFIL 1 RESPONDE
         # =================================================
 
-        response_1 = client().chat.completions.create(
+        response_1 = _completar_chat_gemelo([
+            {
+                "role": "system",
+                "content":
+                    contexto_escenario +
+                    prompt_1 +
+                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
+            },
 
-            model="gpt-5.6-terra",
-
-            messages=[
-
-                {
-                    "role": "system",
-                    "content":
-                        contexto_escenario +
-                        prompt_1 +
-                        (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
-                },
-
-                *vista_1
-            ]
-        )
+            *vista_1
+        ])
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
         partes_1 = _dividir_mensajes(msg_1)
@@ -1886,6 +1968,244 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     )
 
     return historial_chat, analisis, score, diferencias_personalidad
+
+
+# =====================================================
+# SIMULACIONES POR LOTE (Batch API)
+#
+# procesar_parejas_pendientes (main.py) arma cada conversación de la corrida
+# nocturna con la Batch API de OpenAI en vez de llamadas en vivo -- ~50% más
+# barata, pero asincrónica y solo acepta pedidos independientes entre sí. Una
+# conversación completa (simular_cita) es turno tras turno, cada uno
+# dependiendo de la respuesta anterior -- no se puede mandar entera como un
+# solo pedido de batch. Por eso acá se parte en "olas": una ola = un batch
+# con UN turno de cada pareja activa esa noche. Estas funciones NO llaman a
+# OpenAI directamente -- arman el pedido (armar_solicitud_batch) y aplican la
+# respuesta que ya llegó (aplicar_respuesta_batch); quien manda/recibe el
+# batch de verdad es continuar_lote_batch_nocturno en main.py.
+#
+# simular_cita/simular_situacion/chatear_con_gemelo(_match) siguen 100%
+# síncronos a propósito -- ahí hay alguien esperando la respuesta en el
+# momento, y la Batch API (hasta 24hs de demora) no sirve para eso.
+# =====================================================
+
+def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, distancia_km, escenario=0, memoria1=None, memoria2=None, turnos=None):
+    """Arma el estado inicial de la conversación de una pareja para
+    procesarla ola por ola -- mismo setup que el arranque de simular_cita,
+    pero como dict serializable (se guarda en Firestore entre olas)."""
+    escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
+    turnos = turnos if turnos is not None else escenario_actual.get("turnos", 5)
+
+    instruccion_compat = instruccion_nivel_compatibilidad(
+        perfil1, perfil2, UMBRAL_MATCH,
+        nombre1=perfil1.get("nombre", "ALPHA"), nombre2=perfil2.get("nombre", "BETA"),
+    )
+    promedio_compat_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
+    if promedio_compat_previo >= 0.70:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR
+    elif promedio_compat_previo >= UMBRAL_MATCH:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 2
+    else:
+        min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 4
+
+    contexto_escenario = f"""
+    ESCENARIO:
+
+    Titulo:
+    {escenario_actual["titulo"]}
+
+    Contexto:
+    {escenario_actual["contexto"]}
+
+    Tono:
+    {escenario_actual["tono"]}
+    {instruccion_compat}
+    IMPORTANTE sobre cómo jugar este escenario: esto es una SIMULACIÓN de
+    la situación pasando ahora mismo, en tiempo real, dentro de esta
+    charla -- no es una conversación EN LA QUE HABLAN SOBRE la situación
+    de forma hipotética o abstracta. Actúen la situación, no la
+    describan ni la planeen desde afuera. Por ejemplo: si el escenario es
+    sobre convivencia, no hablen de "cómo sería" vivir juntos en el
+    futuro -- actúen como si YA estuvieran conviviendo, en un momento
+    puntual de esa convivencia (una mañana, una decisión del día a día)
+    pasando ahora. Metanse directo en la escena.
+    """
+
+    nombre1 = perfil1.get("nombre", "ALPHA")
+    nombre2 = perfil2.get("nombre", "BETA")
+    apodo1 = perfil1.get("apodo") or nombre1
+    apodo2 = perfil2.get("apodo") or nombre2
+
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2)
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1)
+
+    return {
+        "uid1": uid1, "uid2": uid2,
+        "nombre1": nombre1, "nombre2": nombre2,
+        "usuario_1": usuario_1, "usuario_2": usuario_2,
+        "distancia_km": distancia_km,
+        "escenario": escenario_actual,
+        "contexto_escenario": contexto_escenario,
+        "prompt_1": prompt_1, "prompt_2": prompt_2,
+        "turnos_max": turnos,
+        "min_turnos_efectivo": min_turnos_efectivo,
+        "turno_idx": 0,
+        "fase": "inicio",  # "inicio" -> "turno_2" -> "turno_1" -> "turno_2" -> ... -> "listo"
+        "historial_chat": [],
+        "vista_1": [], "vista_2": [],
+        "estado": "activo",  # "activo" | "cerrado"
+    }
+
+
+_INSTRUCCION_CIERRE_FORZADO_BATCH = (
+    "\n\n    Esta es tu ÚLTIMA respuesta posible de esta charla puntual (se"
+    " corta acá, no por decisión tuya, simplemente termina). Cerrala de forma"
+    " natural -- un comentario, una reacción, algo que redondee lo que se"
+    " venía hablando. NO termines con una pregunta nueva ni le pidas algo al"
+    " otro que quedaría sin respuesta."
+)
+
+
+def armar_solicitud_batch(par_id, estado, model="gpt-5.6-terra"):
+    """Arma UNA request ({custom_id, method, url, body}) para el JSONL de la
+    Batch API, según en qué fase está la conversación de esta pareja.
+    Devuelve None si la charla ya cerró (nada más para pedir)."""
+    if estado["estado"] != "activo":
+        return None
+
+    fase = estado["fase"]
+    turno_idx = estado["turno_idx"]
+    es_ultimo_turno_posible = turno_idx == estado["turnos_max"] - 1
+
+    if fase == "inicio":
+        mensajes = [{
+            "role": "system",
+            "content": estado["contexto_escenario"] + estado["prompt_1"] + (
+                "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
+                " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
+                " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
+                " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
+                " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
+                " natural, como si le escribieras por primera vez a alguien que recién"
+                f" conociste. {random.choice(_ANGULOS_APERTURA)}"
+            ),
+        }]
+    elif fase == "turno_2":
+        mensajes = [{
+            "role": "system",
+            "content": (
+                estado["contexto_escenario"] + estado["prompt_2"] +
+                (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
+            ),
+        }, *estado["vista_2"]]
+    elif fase == "turno_1":
+        mensajes = [{
+            "role": "system",
+            "content": (
+                estado["contexto_escenario"] + estado["prompt_1"] +
+                (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
+            ),
+        }, *estado["vista_1"]]
+    else:
+        return None
+
+    return {
+        "custom_id": par_id,
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": {"model": model, "messages": mensajes},
+    }
+
+
+def aplicar_respuesta_batch(estado, contenido):
+    """Actualiza el estado de la pareja con la respuesta de esta ola (un
+    turno) y decide si la charla sigue o ya está lista para cerrarse -- mismo
+    criterio que el loop síncrono de simular_cita, procesando una respuesta
+    por vez en vez de todo el loop junto."""
+    fase = estado["fase"]
+
+    if fase == "inicio":
+        ultimo_mensaje, _ = _extraer_cierre(contenido)
+        partes = _dividir_mensajes(ultimo_mensaje)
+        for parte in partes:
+            estado["historial_chat"].append({
+                "role": "user", "name": estado["nombre1"], "uid": estado["uid1"], "content": parte
+            })
+        estado["vista_2"] = [{"role": "user", "content": parte} for parte in partes]
+        # vista_1 arranca con su PROPIO mensaje de apertura como "assistant"
+        # -- ver el mismo comentario en simular_cita. Sin esto, perfil1
+        # llega a su primera respuesta sin rastro de que ya habló, y puede
+        # volver a saludar o repetir literalmente lo último que dijo el otro.
+        estado["vista_1"] = [{"role": "assistant", "content": parte} for parte in partes]
+        estado["fase"] = "turno_2"
+        return estado
+
+    quien = 2 if fase == "turno_2" else 1
+    nombre = estado["nombre1"] if quien == 1 else estado["nombre2"]
+    uid = estado["uid1"] if quien == 1 else estado["uid2"]
+    vista_propia = "vista_1" if quien == 1 else "vista_2"
+    vista_ajena = "vista_2" if quien == 1 else "vista_1"
+
+    msg, cierre = _extraer_cierre(contenido)
+    partes = _dividir_mensajes(msg)
+    repetitivo = any(
+        _es_repetitivo(parte, [m["content"] for m in estado["historial_chat"]]) for parte in partes
+    )
+
+    for parte in partes:
+        estado["historial_chat"].append({
+            "role": "assistant", "name": nombre, "uid": uid, "content": parte
+        })
+        estado[vista_propia].append({"role": "assistant", "content": parte})
+        estado[vista_ajena].append({"role": "user", "content": parte})
+
+    cerro_natural = cierre and estado["turno_idx"] >= estado["min_turnos_efectivo"]
+
+    if cerro_natural or repetitivo:
+        estado["estado"] = "cerrado"
+        estado["fase"] = "listo"
+        return estado
+
+    if quien == 2:
+        estado["fase"] = "turno_1"
+    else:
+        estado["turno_idx"] += 1
+        if estado["turno_idx"] >= estado["turnos_max"]:
+            estado["estado"] = "cerrado"
+            estado["fase"] = "listo"
+        else:
+            estado["fase"] = "turno_2"
+
+    return estado
+
+
+def finalizar_par_batch(perfil1, perfil2, estado, umbral=UMBRAL_MATCH):
+    """Una vez que estado['estado'] == 'cerrado', arma el mismo registro que
+    simular_y_registrar (listo para guardar en conexiones/{par_id}/simulaciones,
+    igual que la vía síncrona)."""
+    historial_chat = estado["historial_chat"]
+    analisis = analizar_conversacion(historial_chat)
+    promedio, similitud, pref_a_b, pref_b_a, score_conversacional, desglose = calcular_compatibilidad(perfil1, perfil2, analisis)
+    score = {
+        "compatibilidad_total": promedio,
+        "similitud": similitud,
+        "pref_a_b": pref_a_b,
+        "pref_b_a": pref_b_a,
+        "score_conversacional": score_conversacional,
+        "score_psicologico": desglose["psicologico"],
+        "score_valores": desglose["valores"],
+        "score_intereses": desglose["intereses"],
+        "score_creencias": desglose["creencias"],
+        "score_comunicacion": desglose["comunicacion"],
+    }
+    diferencias_personalidad = (
+        _diferencias_personalidad(perfil1, perfil2, perfil2.get("nombre", "la otra persona"), top_n=3)
+        + _diferencias_personalidad(perfil2, perfil1, perfil1.get("nombre", "la otra persona"), top_n=3)
+    )
+    return registro_simulacion(
+        estado["uid1"], perfil1, estado["uid2"], perfil2, estado["escenario"],
+        historial_chat, analisis, score, umbral, diferencias_personalidad=diferencias_personalidad,
+    )
 
 
 # =====================================================

@@ -1557,13 +1557,20 @@
       }
 
       // Muestra el indicador de "escribiendo..." (tres puntos animados) mientras el gemelo procesa la respuesta
-      function addTyping() {
+      // texto opcional: para pedidos que tardan mucho más que un mensaje normal
+      // (simular_situacion corre una conversación completa, varios llamados
+      // seguidos a OpenAI -- puede tardar más de un minuto). Sin ningún aviso,
+      // los puntitos se ven IGUAL que una respuesta rápida normal, así que
+      // después de unos segundos parece trabado aunque siga funcionando bien
+      // atrás -- esto le agrega contexto de que es una espera larga y normal.
+      function addTyping(texto) {
         const div = document.createElement("div");
         div.className = "msg twin";
         div.id = "typing";
         div.innerHTML = `
     <div class="msg-av"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-    <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+    <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+    ${texto ? `<div class="typing-note" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${escHtml(texto)}</div>` : ""}`;
         messagesEl.appendChild(div);
         scrollBottom();
       }
@@ -1751,6 +1758,62 @@
         );
       }
 
+      // Si en un solo mensaje se piden VARIAS simulaciones ("simulá la
+      // primera cita y también una pelea por celos"), correrlas todas de
+      // una sería varios minutos de espera de una sola vez y encima ninguna
+      // se ve reflejada hasta que termine la última. En vez de eso: se
+      // corre solo la primera ahora, y el resto queda pendiente para
+      // preguntarle al usuario con cuál seguir después (ver
+      // pedidosSimulacionPendientes).
+      //
+      // Heurística simple, no un llamado a IA aparte (encarecería CADA
+      // mensaje, no solo los que piden varias). Dos señales, en orden:
+      //
+      // 1. Enumeración con preposición repetida ("...de nuestra primera
+      //    pelea... y de nuestro primer viaje...") -- en español, cuando se
+      //    listan dos pedidos con frases largas, la preposición ("de"/
+      //    "sobre") tiende a repetirse antes de cada uno. Esta es la señal
+      //    MÁS confiable -- "simulación de X y de Y" es casi siempre dos
+      //    pedidos, incluso si la palabra disparadora ("simulación") solo
+      //    aparece una vez al principio (contar menciones de esa palabra,
+      //    como se hacía antes, no alcanzaba para detectar justo este caso
+      //    real: "simulá... de la pelea... y de nuestro viaje" tiene un
+      //    solo "simul*" pero son dos pedidos).
+      // 2. Si no matchea eso, 2+ menciones de palabras disparadoras
+      //    ("simulá X y simulá Y") -- separando por las conjunciones
+      //    típicas entre pedidos.
+      //
+      // Con ninguna de las dos señales, nunca separa nada -- así una frase
+      // normal con un "y" suelto ("simulá cuando discutimos y no llegamos a
+      // un acuerdo") no se corta a la mitad.
+      function separarPedidosDeSimulacion(text) {
+        const disparador = /\b(escenario|simul\w*|situaci[oó]n|cita|salida)\b/gi;
+        if (!disparador.test(text)) return [text];
+
+        const porPreposicion = text.match(
+          /^(.*?\b(?:de|sobre)\s+.+?)\s+y\s+(?:de|sobre)\s+(.+)$/i,
+        );
+        if (porPreposicion) {
+          return [porPreposicion[1].trim(), porPreposicion[2].trim()];
+        }
+
+        const ocurrencias = (text.match(disparador) || []).length;
+        if (ocurrencias < 2) return [text];
+        const partes = text
+          .split(
+            /\s*(?:,?\s*y\s+tambi[eé]n\s+|,?\s*y\s+otra(?:\s+de)?\s+|,\s*y\s+|\s+y\s+|\s+o\s+)\s*/i,
+          )
+          .map((p) => p.trim())
+          .filter(Boolean);
+        return partes.length > 1 ? partes : [text];
+      }
+
+      // Cola de pedidos de simulación de ESTE mismo mensaje que todavía no
+      // se corrieron -- se le pregunta al usuario con cuál seguir en vez de
+      // correrlas todas de una. Se vacía sola apenas se elige uno (ver
+      // continuarConPedidoPendiente) o si el usuario manda otra cosa.
+      let pedidosSimulacionPendientes = [];
+
       // Corre la simulación real con el match detectado, usando el mensaje
       // tal cual como "situación" en texto libre (armar_escenario_
       // personalizado la convierte en un escenario). Mismo resultado que
@@ -1758,7 +1821,9 @@
       // disparado desde texto libre en vez del picker.
       function correrSimulacionDesdeChat(otroUid, nombre, situacionTexto) {
         setTimeout(() => {
-          addTyping();
+          addTyping(
+            "Simulando una conversación completa con su gemelo -- puede tardar uno o dos minutos.",
+          );
           if (typeof window._llamarSimularSituacion !== "function") {
             removeTyping();
             addTwinMsg(
@@ -1782,7 +1847,14 @@
               addTwinMsg(
                 `Corrí una simulación real con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}<br><br>La conversación completa (todo lo que se dijeron de verdad, no un resumen) la podés ver en el chat con ${nombreSafe}.`,
               );
-              setQuickReplies(QUICK_REPLIES_DEFAULT);
+              // Si en el mismo mensaje se habían pedido más simulaciones,
+              // ofrecer seguir con la próxima en vez de correrlas todas de
+              // una -- ver separarPedidosDeSimulacion.
+              if (pedidosSimulacionPendientes.length) {
+                mostrarPedidosPendientes();
+              } else {
+                setQuickReplies(QUICK_REPLIES_DEFAULT);
+              }
             })
             .catch((err) => {
               removeTyping();
@@ -1794,6 +1866,51 @@
             })
             .finally(() => _bloquearEnvio(false));
         }, 300);
+      }
+
+      // Le pregunta al usuario, con chips (no texto libre -- ya sabemos
+      // exactamente qué match y qué texto usar para cada una, no hace
+      // falta volver a detectarlo), con cuál de las simulaciones que
+      // quedaron pendientes de este mismo mensaje seguir.
+      function mostrarPedidosPendientes() {
+        const restantes = pedidosSimulacionPendientes.length;
+        addTwinMsg(
+          `Che, pediste ${restantes + 1} simulaciones juntas -- ya corrí la primera. ¿Con cuál seguimos${restantes > 1 ? " ahora" : ""}?`,
+        );
+        const qr = document.getElementById("quickReplies");
+        if (!qr) return;
+        qr.innerHTML = "";
+        pedidosSimulacionPendientes.forEach((p, i) => {
+          const btn = document.createElement("button");
+          btn.className = "qr-chip";
+          const corto =
+            p.texto.length <= 40 ? p.texto : p.texto.slice(0, 37) + "...";
+          btn.textContent = corto;
+          btn.onclick = () => continuarConPedidoPendiente(i);
+          qr.appendChild(btn);
+        });
+        const btnNinguna = document.createElement("button");
+        btnNinguna.className = "qr-chip";
+        btnNinguna.textContent = "Ninguna, gracias";
+        btnNinguna.onclick = () => {
+          pedidosSimulacionPendientes = [];
+          setQuickReplies(QUICK_REPLIES_DEFAULT);
+        };
+        qr.appendChild(btnNinguna);
+      }
+
+      // Saca de la cola el pedido elegido y corre esa simulación -- los que
+      // no se eligieron siguen pendientes por si hay más de dos.
+      function continuarConPedidoPendiente(indice) {
+        const elegido = pedidosSimulacionPendientes[indice];
+        if (!elegido) return;
+        pedidosSimulacionPendientes = pedidosSimulacionPendientes.filter(
+          (_, i) => i !== indice,
+        );
+        setQuickReplies([]);
+        addUserMsg(elegido.texto);
+        _bloquearEnvio(true);
+        correrSimulacionDesdeChat(elegido.uid, elegido.nombre, elegido.texto);
       }
 
       function sendMessage() {
@@ -1808,9 +1925,18 @@
 
         const matchPedido = detectarPedidoDeSimulacion(text);
         if (matchPedido) {
-          correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, text);
+          // Un mensaje nuevo del usuario reemplaza cualquier cola de
+          // pedidos pendientes del mensaje anterior -- si no eligió
+          // ninguno y pidió otra cosa, no tiene sentido seguir
+          // ofreciéndole los viejos.
+          const partes = separarPedidosDeSimulacion(text);
+          pedidosSimulacionPendientes = partes
+            .slice(1)
+            .map((texto) => ({ uid: matchPedido.uid, nombre: matchPedido.nombre, texto }));
+          correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, partes[0]);
           return;
         }
+        pedidosSimulacionPendientes = [];
 
         setTimeout(() => {
           addTyping();
@@ -1897,7 +2023,7 @@
       ];
 
       function elegirMatchParaConsejo(otroUid, nombre) {
-        // Este picker dispara simular_situacion por afuera de sendMessage()
+        // Este picker dispara dar_consejo_match por afuera de sendMessage()
         // -- sin este chequeo, el candado de "un mensaje a la vez" no lo
         // cubría, así que se podía elegir un match acá mientras otra
         // respuesta del gemelo todavía estaba en camino.
@@ -1906,8 +2032,12 @@
         setQuickReplies([]); // oculta los nombres del picker apenas se elige uno, sin esperar la respuesta
         _bloquearEnvio(true);
         setTimeout(() => {
+          // Consejo directo (dar_consejo_match): UN llamado a OpenAI que
+          // mira los datos reales de la otra persona, no una simulación
+          // completa -- por eso alcanza el indicador normal, sin el aviso
+          // de "puede tardar minutos" que sí necesita simular_situacion.
           addTyping();
-          if (typeof window._llamarSimularSituacion !== "function") {
+          if (typeof window._llamarConsejoMatch !== "function") {
             removeTyping();
             addTwinMsg(
               "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
@@ -1916,27 +2046,20 @@
             return;
           }
           window
-            ._llamarSimularSituacion(otroUid)
+            ._llamarConsejoMatch(otroUid)
             .then((res) => {
               removeTyping();
-              const pct = Math.round(
-                ((res.score && res.score.compatibilidad_total) || 0) * 100,
-              );
-              const resumen = escHtml(
-                res.resumen || "No hubo un resumen para esta simulación.",
-              );
-              const escenario = escHtml(res.escenario || "");
-              const nombreSafe = escHtml(nombre);
-              addTwinMsg(
-                `Simulé una situación con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}`,
-              );
+              const consejo = escHtml(
+                res.consejo || "No pude armar un consejo esta vez.",
+              ).replace(/\n/g, "<br>");
+              addTwinMsg(consejo);
               setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
             .catch((err) => {
               removeTyping();
-              console.error("Error en simular_situacion:", err);
+              console.error("Error en dar_consejo_match:", err);
               addTwinMsg(
-                `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
+                `No pude armar el consejo: ${mensajeErrorGemelo(err)}`,
               );
               setQuickReplies(QUICK_REPLIES_DEFAULT);
             })
@@ -2054,8 +2177,25 @@
         functionsInstance,
         "chatear_con_gemelo",
       );
+      // dar_consejo_match es UN solo llamado a OpenAI (no una charla
+      // simulada completa), así que le alcanza con el timeout default del
+      // SDK -- no hace falta el override de 520s que sí necesita
+      // simularSituacionCallable arriba.
+      const darConsejoMatchCallable = httpsCallable(
+        functionsInstance,
+        "dar_consejo_match",
+      );
 
       // Bridge para el script clásico de más abajo (elegirMatchParaConsejo):
+      // "Dame un consejo" ya no corre una simulación completa -- llama
+      // directo a dar_consejo_match, que da un consejo concreto en un solo
+      // llamado a OpenAI.
+      window._llamarConsejoMatch = async function (otroUid) {
+        const res = await darConsejoMatchCallable({ otroUid });
+        return res.data;
+      };
+
+      // Bridge para el script clásico de más abajo (correrSimulacionDesdeChat):
       // llama a la Cloud Function real simular_situacion, que corre una
       // simulación nueva entre tu gemelo y el de "otroUid" (con la situación
       // en texto libre si se pasa una) y devuelve resumen + score reales.
