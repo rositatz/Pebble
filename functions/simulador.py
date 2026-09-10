@@ -308,6 +308,53 @@ def _instruccion_genero(perfil):
     return _GENERO_INSTRUCCION.get((perfil.get("genero") or "").strip(), "")
 
 
+# La instrucción de género de arriba solo cubre hablar de VOS MISMO/A y de
+# "los dos juntos" -- pero dirigirse a LA OTRA persona en segunda persona con
+# un adjetivo/participio ("¿te ves más instalada?", "te noto cansado") es un
+# tercer caso que necesita el género REAL del otro, no el propio -- sin esto
+# el modelo lo adivina y se equivoca (visto en producción: le dijo
+# "instalada" a un chico). genero_otro llega ya filtrado por privacidad (ver
+# simular_cita/chatear_con_gemelo_match) -- si la otra persona no compartió
+# su género, se cae al mismo default masculino que ya se usa para "género no
+# confirmado" en el plural, nunca "o/a" ni barras.
+_GENERO_SEGUNDA_PERSONA = {
+    "Mujer": "femenino (ej: \"¿te ves más instalada?\", \"te noto cansada\")",
+    "Hombre": "masculino (ej: \"¿te ves más instalado?\", \"te noto cansado\")",
+}
+
+
+def _genero_visible(perfil):
+    """Género de este perfil, pero SOLO si la persona real lo dejó visible en
+    Privacidad (perfil["_privacidad"]["genero"] is True -- ver
+    _instruccion_privacidad/main._con_privacidad) -- si no, None, para que
+    quien arma el prompt de LA OTRA persona use el default de género no
+    confirmado en vez de filtrar un dato que esta persona no compartió."""
+    privacidad = perfil.get("_privacidad") or {}
+    if privacidad.get("genero") is not True:
+        return None
+    return perfil.get("genero")
+
+
+def _instruccion_genero_otro(genero_otro, nombre_otro):
+    if not nombre_otro:
+        return ""
+    rasgo = _GENERO_SEGUNDA_PERSONA.get((genero_otro or "").strip())
+    if rasgo:
+        return (
+            f"\n    Cuando te dirijas a {nombre_otro} en segunda persona con un"
+            f" adjetivo o participio (\"¿te ves...?\", \"te noto...\", \"sos...\"),"
+            f" conjugalo en {rasgo} -- es el género real de {nombre_otro}, tan"
+            " grave equivocarte acá como con el tuyo propio."
+        )
+    return (
+        f"\n    No tenés confirmado el género de {nombre_otro} -- cuando te"
+        f" dirijas a {nombre_otro} en segunda persona con un adjetivo o"
+        " participio (\"¿te ves...?\", \"te noto...\", \"sos...\"), conjugalo en"
+        " masculino por default (mismo criterio que \"los dos juntos\" con"
+        " género no confirmado), nunca \"o/a\" ni barras."
+    )
+
+
 def _instruccion_privacidad(perfil):
     """Género y orientación quedan ocultos por default (perfil.html,
     sección Privacidad -- el toggle nace destildado para los dos) hasta que
@@ -531,7 +578,7 @@ def _es_repetitivo(texto_nuevo, mensajes_previos, ventana=_VENTANA_REPETICION, u
 _MIN_TURNOS_ANTES_DE_CERRAR = 9
 
 
-def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_otro=None):
+def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_otro=None, genero_otro=None):
     # nombre_propio/nombre_otro: antes el prompt nunca decía explícitamente
     # "vos te llamás X" en ningún lado (el nombre propio solo aparecía
     # implícito en los datos, nunca como un hecho declarado) -- apenas se
@@ -626,7 +673,9 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     punto arriba, esto es solo el repaso final):
     - Género correcto en cada adjetivo/participio: sobre mí, mi propio
       género; sobre "los dos juntos", masculino salvo certeza de que son
-      dos mujeres. Error grave y frecuente, revisar en TODO el mensaje.
+      dos mujeres; sobre {nombre_otro or "la otra persona"} en segunda
+      persona ("¿te ves...?", "te noto..."), SU género real, no el mío.
+      Error grave y frecuente, revisar en TODO el mensaje.
     - ¿Ya saludé antes en esta charla? No repito saludo.
     - ¿El otro terminó en "?"? Si soy introvertido/a, cierro con
       afirmación/reacción en vez de otra pregunta; si soy extrovertido/a o
@@ -959,6 +1008,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
     {fisico_prompt}
     {_instruccion_genero(perfil)}
+    {_instruccion_genero_otro(genero_otro, nombre_otro)}
     {instruccion_nombres}
 
     =====================================================
@@ -1784,8 +1834,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     apodo1 = perfil1.get("apodo") or nombre1
     apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2)
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=_genero_visible(perfil2))
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=_genero_visible(perfil1))
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
@@ -2036,8 +2086,8 @@ def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, d
     apodo1 = perfil1.get("apodo") or nombre1
     apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2)
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1)
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=_genero_visible(perfil2))
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=_genero_visible(perfil1))
 
     return {
         "uid1": uid1, "uid2": uid2,

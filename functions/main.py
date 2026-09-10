@@ -881,7 +881,10 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     perfil_propio = _obtener_o_generar_perfil(db, uid)
     nombre_propio = (perfil_propio or {}).get("apodo") or (perfil_propio or {}).get("nombre")
 
-    system_prompt = motor.generar_prompt_gemelo(perfil_otro, nombre_otro=nombre_propio)
+    system_prompt = motor.generar_prompt_gemelo(
+        perfil_otro, nombre_otro=nombre_propio,
+        genero_otro=motor._genero_visible(perfil_propio) if perfil_propio else None,
+    )
     if perfil_propio is not None:
         # Mismo criterio que las simulaciones automáticas: que la charla en
         # vivo también refleje qué tan compatibles son de verdad, no solo
