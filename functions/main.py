@@ -219,7 +219,51 @@ def _parse_fecha(valor):
         return None
 
 
-@firestore_fn.on_document_written(document="usuarios/{uid}/gemelo_setup/data")
+def _aplicar_estilo_desde_onboarding(perfil, respuestas_raw):
+    """Etapa 7 del onboarding (gemelo-setup.html) pide texto libre: cómo
+    arrancás una charla, cómo invitarías a salir a alguien, y cómo
+    responderías a 5 mensajes concretos -- es la forma más directa de
+    entrenar el estilo real de esta persona, sin depender de que ya haya
+    chateado dentro de la app. Reutiliza extraer_aprendizaje_chats, el mismo
+    análisis que ya usan actualizar_aprendizaje_gemelo/importar_estilo_chatgpt
+    -- mismo criterio, mismo resultado compacto (estilo + ejemplos +
+    intereses nuevos). Se llama DESPUÉS de construir_perfil_gemelo (que es
+    pura, sin llamadas a OpenAI) y, en generar_gemelo_ahora, después del
+    merge de intereses -- si se llamara antes, ese merge pisaría los
+    intereses nuevos que salgan de acá."""
+    e7 = respuestas_raw.get("etapa7") or {}
+    campos = [
+        "estiloIniciar", "estiloInvitar",
+        "estiloResp1", "estiloResp2", "estiloResp3", "estiloResp4", "estiloResp5",
+    ]
+    mensajes = [str(e7.get(c) or "").strip() for c in campos]
+    mensajes = [m for m in mensajes if m]
+    if len(mensajes) < 4:
+        # La etapa 7 no es obligatoria -- si dejó casi todo en blanco, no hay
+        # suficiente texto real para un análisis honesto.
+        return perfil
+
+    try:
+        resultado = extraer_aprendizaje_chats(mensajes, intereses_actuales=perfil.get("intereses") or [])
+    except Exception as e:
+        print(f"_aplicar_estilo_desde_onboarding: error analizando etapa7: {e}")
+        return perfil
+
+    if resultado.get("estilo"):
+        perfil["estilo_aprendido"] = resultado["estilo"]
+    if resultado.get("ejemplos_textuales"):
+        perfil["estilo_ejemplos"] = resultado["ejemplos_textuales"]
+
+    intereses_actuales = perfil.get("intereses") or []
+    vistos = {i.casefold() for i in intereses_actuales}
+    intereses_nuevos = [i for i in (resultado.get("intereses_nuevos") or []) if i.casefold() not in vistos]
+    if intereses_nuevos:
+        perfil["intereses"] = intereses_actuales + intereses_nuevos
+
+    return perfil
+
+
+@firestore_fn.on_document_written(document="usuarios/{uid}/gemelo_setup/data", secrets=["OPENAI_API_KEY"])
 def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     """Se dispara solo cada vez que se escribe usuarios/{uid}/gemelo_setup/data
     (que es donde gemelo-setup.html va guardando el onboarding). Cuando detecta
@@ -246,6 +290,7 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     uid = event.params["uid"]
     respuestas_raw = despues.to_dict()
     perfil = construir_perfil_gemelo(respuestas_raw)
+    perfil = _aplicar_estilo_desde_onboarding(perfil, respuestas_raw)
 
     db = firestore.client()
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
@@ -323,7 +368,7 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             )
 
 
-@https_fn.on_call()
+@https_fn.on_call(secrets=["OPENAI_API_KEY"])
 def generar_gemelo_ahora(request: https_fn.CallableRequest):
     """Genera usuarios/{uid}/gemelo/perfil DE FORMA SINCRÓNICA y lo espera
     antes de devolver la respuesta -- generar_perfil_gemelo (arriba) hace lo
@@ -401,6 +446,8 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     # "intereses_slots" queda tal cual lo devolvió construir_perfil_gemelo
     # (los slots NUEVOS) -- es la referencia para la PRÓXIMA regeneración.
 
+    perfil = _aplicar_estilo_desde_onboarding(perfil, doc_setup.to_dict())
+
     perfil_ref.set(perfil)
 
     return {"ok": True}
@@ -409,7 +456,7 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
 @https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
 def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
     """Genera el párrafo de presentación de la última etapa del onboarding
-    (gemelo-setup.html, etapa 7) con IA -- reemplaza la plantilla vieja de
+    (gemelo-setup.html, etapa 8) con IA -- reemplaza la plantilla vieja de
     una sola oración armada en el cliente con motor.generar_resumen_gemelo,
     que usa TODAS las respuestas ya dadas (intereses, notas personales,
     personalidad, etc.), igual que ya se hace para el chat con el propio

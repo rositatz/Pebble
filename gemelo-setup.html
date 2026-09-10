@@ -945,7 +945,7 @@
     <header class="topbar">
       <a href="home.html" class="logo">PE<span>BB</span>LE</a>
       <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
-      <span class="step-lbl" id="step-lbl">1 / 7</span>
+      <span class="step-lbl" id="step-lbl">1 / 8</span>
     </header>
 
     <div class="main">
@@ -3016,6 +3016,86 @@
       <!-- ═══ ETAPA 7 ═══ -->
       <section class="stage" id="stage-7">
         <p class="s-num">Etapa 7</p>
+        <h1 class="s-title">Hablá como vos</h1>
+        <p class="s-sub">
+          Queremos entrenar a tu gemelo para que hable igual que vos, sin
+          diferencias. Respondé estas preguntas con tus propias palabras, tal
+          cual las escribirías de verdad -- no hay respuesta correcta, solo
+          la tuya.
+        </p>
+
+        <div class="sec">
+          <div class="sec-title">💬 Tu forma de arrancar</div>
+          <div class="q">
+            <div class="ql">¿Qué manera usás para iniciar una conversación?</div>
+            <textarea
+              class="txa"
+              id="estiloIniciar"
+              placeholder="Escribí como le escribirías a alguien que te gusta..."
+            ></textarea>
+          </div>
+          <div class="q">
+            <div class="ql">
+              ¿Qué pregunta o manera usarías para invitar a salir a alguien?
+            </div>
+            <textarea
+              class="txa"
+              id="estiloInvitar"
+              placeholder="Tal cual se lo dirías..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-title">
+            📱 Ahora respondé como si la charla ya hubiera arrancado
+          </div>
+          <div class="q">
+            <div class="ql">Te escriben: "Me molesta que siempre tardás en responder"</div>
+            <textarea
+              class="txa"
+              id="estiloResp1"
+              placeholder="¿Qué le contestás?"
+            ></textarea>
+          </div>
+          <div class="q">
+            <div class="ql">Te escriben: "Hoy tuve un día medio bajón la verdad, y vos?"</div>
+            <textarea
+              class="txa"
+              id="estiloResp2"
+              placeholder="¿Qué le contestás?"
+            ></textarea>
+          </div>
+          <div class="q">
+            <div class="ql">Te escriben: "¿Qué me dirías de salir el viernes a cenar?"</div>
+            <textarea
+              class="txa"
+              id="estiloResp3"
+              placeholder="¿Qué le contestás?"
+            ></textarea>
+          </div>
+          <div class="q">
+            <div class="ql">Te escriben: "¿Qué planes tenés para el finde?"</div>
+            <textarea
+              class="txa"
+              id="estiloResp4"
+              placeholder="¿Qué le contestás?"
+            ></textarea>
+          </div>
+          <div class="q">
+            <div class="ql">Te escriben: "¿Cómo estuvo tu semana?"</div>
+            <textarea
+              class="txa"
+              id="estiloResp5"
+              placeholder="¿Qué le contestás?"
+            ></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ ETAPA 8 ═══ -->
+      <section class="stage" id="stage-8">
+        <p class="s-num">Etapa 8</p>
         <h1 class="s-title">Tu Gemelo Digital</h1>
         <p class="s-sub">Esto es lo que construiste. ¿Te representa?</p>
 
@@ -3203,7 +3283,7 @@
         userPlan = "free",
         stageData = {},
         currentStage = 1;
-      const TOTAL = 7;
+      const TOTAL = 8;
 
       /* ─── FLAGS ─── */
       const FLAGS = [
@@ -3294,7 +3374,7 @@
         let total = 0,
           respondidas = 0;
 
-        for (let n = 1; n <= 6; n++) {
+        for (let n = 1; n <= 7; n++) {
           const stage = document.getElementById("stage-" + n);
           if (!stage) continue;
 
@@ -3631,13 +3711,13 @@
    Sin esto, si el usuario salía a mitad del onboarding y volvía, los campos
    aparecían vacíos -- y si avanzaba de etapa así, collectStage() pisaba lo ya
    guardado en Firestore con esos campos vacíos. Se llama una sola vez, apenas
-   se carga stageData desde Firestore, y rellena el DOM de las etapas 1 a 7
+   se carga stageData desde Firestore, y rellena el DOM de las etapas 1 a 8
    para que collectStage() vuelva a incluir las respuestas ya dadas. Incluye
-   la 7 (antes se cortaba en 6) para que el resumen ya confirmado quede
+   la 8 (antes se cortaba en 6) para que el resumen ya confirmado quede
    cargado en #gedit desde el principio, en vez de que solo buildGemelo()
    pueda llenarlo. */
       function repoblarFormulario() {
-        for (let n = 1; n <= 7; n++) {
+        for (let n = 1; n <= 8; n++) {
           const data = stageData["etapa" + n];
           const stage = document.getElementById("stage-" + n);
           if (!data || !stage) continue;
@@ -3958,7 +4038,7 @@
         // para revisar otra respuesta) se perdía el resumen que la persona ya
         // había elegido, con o sin ayuda de la IA.
         const textoGuardado =
-          (stageData.etapa7 && stageData.etapa7.gedit) || "";
+          (stageData.etapa8 && stageData.etapa8.gedit) || "";
         const textoAMostrar = textoGuardado || text;
 
         document.getElementById("gemelo-gen-text").textContent = textoAMostrar;
@@ -4041,10 +4121,10 @@
 
         const snapshotActual = _snapshotRespuestasImportantes();
         const yaTieneResumenGuardado = !!(
-          stageData.etapa7 && stageData.etapa7.gedit
+          stageData.etapa8 && stageData.etapa8.gedit
         );
         const snapshotGuardado =
-          stageData.etapa7 && stageData.etapa7.resumenSnapshot;
+          stageData.etapa8 && stageData.etapa8.resumenSnapshot;
 
         if (yaTieneResumenGuardado) {
           if (!snapshotGuardado) {
@@ -4112,7 +4192,7 @@
         const finalText = document.getElementById("gedit").value.trim();
 
         try {
-          await saveStage(7);
+          await saveStage(8);
           // completed:true acá (en gemelo_setup/data, no en gemelo/perfil --
           // mismo motivo que en saveStage) es lo que dispara el trigger
           // generar_perfil_gemelo en el backend.
@@ -4183,7 +4263,7 @@
         } catch (e) {}
 
         try {
-          // Las respuestas crudas del onboarding (etapa1..etapa7, completed)
+          // Las respuestas crudas del onboarding (etapa1..etapa8, completed)
           // viven en gemelo_setup/data -- gemelo/perfil es el perfil YA
           // PROCESADO (personalidad, valores, etc.), nunca tiene esas claves,
           // así que repoblarFormulario() no encontraba nada para restaurar y

@@ -767,15 +767,22 @@ def _resumir_flags(e5):
 
 
 def construir_perfil_gemelo(respuestas_raw):
-    """Toma el doc completo de usuarios/{uid}/gemelo_setup/data (etapa1..etapa7,
-    gemelo_final, completed) y devuelve el perfil normalizado para prueba.py."""
+    """Toma el doc completo de usuarios/{uid}/gemelo_setup/data (etapa1..etapa8,
+    gemelo_final, completed) y devuelve el perfil normalizado para prueba.py.
+
+    etapa7 (respuestas de texto libre sobre cómo escribe/respondería en una
+    charla real) NO se procesa acá -- esta función es pura (sin llamadas a
+    OpenAI) para poder usarla en tests sin red/API key. El análisis de estilo
+    de esas respuestas lo hace main._aplicar_estilo_desde_onboarding, llamado
+    aparte por generar_perfil_gemelo/generar_gemelo_ahora después de esta
+    función."""
     e1 = respuestas_raw.get("etapa1") or {}
     e2 = respuestas_raw.get("etapa2") or {}
     e3 = respuestas_raw.get("etapa3") or {}
     e4 = respuestas_raw.get("etapa4") or {}
     e5 = respuestas_raw.get("etapa5") or {}
     e6 = respuestas_raw.get("etapa6") or {}
-    e7 = respuestas_raw.get("etapa7") or {}
+    e8 = respuestas_raw.get("etapa8") or {}
 
     personalidad = {k: 0.5 for k in BASE_PERSONALIDAD}
     valores = {k: 0.5 for k in BASE_VALORES}
@@ -841,6 +848,6 @@ def construir_perfil_gemelo(respuestas_raw):
         "plan_futuro": e3.get("futuro5anios", ""),
         "pesos_compatibilidad": _construir_pesos_compatibilidad(respuestas_raw),
         "flags_resumen": _resumir_flags(e5),
-        "bio": (respuestas_raw.get("gemelo_final") or e7.get("gedit") or "").strip(),
+        "bio": (respuestas_raw.get("gemelo_final") or e8.get("gedit") or "").strip(),
     }
     return perfil
