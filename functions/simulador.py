@@ -1834,7 +1834,14 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     # cada parte entra como su propio mensaje "user"/"assistant" separado --
     # así el modelo ve la misma sucesión de mensajitos que vería una persona
     # real, no un solo bloque pegado.
-    vista_1 = []
+    # vista_1 arranca con su PROPIO mensaje de apertura como "assistant" --
+    # sin esto, perfil1 llega a su primera respuesta real sin ningún rastro
+    # de que ya habló él/ella misma antes (el mensaje de apertura vive fuera
+    # de este loop, ver arriba), así que no tiene forma de notar que ya
+    # saludó o de qué dijo -- puede volver a saludar como si fuera su primer
+    # mensaje, o directamente repetir lo último que dijo el otro por no
+    # tener su propio hilo para engancharse.
+    vista_1 = [{"role": "assistant", "content": parte} for parte in partes_inicio]
     vista_2 = [{"role": "user", "content": parte} for parte in partes_inicio]
 
     # Instrucción extra SOLO para la última llamada permitida (si se llega al
@@ -2125,6 +2132,11 @@ def aplicar_respuesta_batch(estado, contenido):
                 "role": "user", "name": estado["nombre1"], "uid": estado["uid1"], "content": parte
             })
         estado["vista_2"] = [{"role": "user", "content": parte} for parte in partes]
+        # vista_1 arranca con su PROPIO mensaje de apertura como "assistant"
+        # -- ver el mismo comentario en simular_cita. Sin esto, perfil1
+        # llega a su primera respuesta sin rastro de que ya habló, y puede
+        # volver a saludar o repetir literalmente lo último que dijo el otro.
+        estado["vista_1"] = [{"role": "assistant", "content": parte} for parte in partes]
         estado["fase"] = "turno_2"
         return estado
 
