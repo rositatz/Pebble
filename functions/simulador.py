@@ -1626,7 +1626,11 @@ def generar_resumen_gemelo(perfil):
     if conflictos:
         partes_datos.append("Cómo maneja los conflictos: " + "; ".join(conflictos.values()))
     if perfil.get("notas_personales"):
-        partes_datos.append("En sus propias palabras:\n" + "\n".join(f"- {n}" for n in perfil["notas_personales"]))
+        partes_datos.append(
+            "En sus propias palabras (MATERIA PRIMA para entenderla, NO texto "
+            "para reescribir con sinónimos -- ver regla de abajo sobre esto):\n"
+            + "\n".join(f"- {n}" for n in perfil["notas_personales"])
+        )
     creencias = perfil.get("creencias") or {}
     if creencias:
         partes_datos.append("Postura frente a política/religión: " + "; ".join(f"{k}: {v}" for k, v in creencias.items()))
@@ -1688,6 +1692,20 @@ def generar_resumen_gemelo(perfil):
     Un resumen que solo reordena las respuestas con otras palabras NO
     cumple con esto -- tiene que sonar a que alguien que la conoce bien
     de verdad se dio cuenta de algo, no a una lista prolija.
+
+    OJO en particular con "En sus propias palabras" (notas_personales) -- ahí
+    abajo la persona ya escribió respuestas largas y bien pensadas, y el
+    error más tentador es ir párrafo por párrafo reescribiéndolas con
+    sinónimos en el mismo orden en que aparecen (eso da un resumen que se
+    SIENTE profundo por el vocabulario pero en realidad es solo un dictado
+    de lo que ya dijo, palabra distinta, misma idea, mismo orden -- exactamente
+    lo que hay que evitar). Usalas para ENTENDER a la persona, después cerrá
+    el archivo de datos y escribí desde esa comprensión, cruzando esas notas
+    con los números, las prioridades y los green/red flags -- nunca sigas el
+    orden en que aparecen las notas ni cubras cada una por separado. Si al
+    releer tu borrador cada oración del texto final corresponde 1 a 1 con una
+    nota o respuesta puntual del onboarding, en el mismo orden, no serviría --
+    tenés que mezclar y priorizar, no recorrer la lista.
 
     NO uses siempre el mismo orden ni la misma estructura (edad, trabajo,
     intereses, personalidad, cierre) -- cada persona arranca por lo que más

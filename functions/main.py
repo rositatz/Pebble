@@ -558,6 +558,11 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     }
     EDAD_MIN_VALIDA, EDAD_MAX_VALIDA = 18, 99
 
+    db = firestore.client()
+    ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
+    perfil_actual_snap = ref.get()
+    perfil_actual = perfil_actual_snap.to_dict() if perfil_actual_snap.exists else None
+
     cambios = {}
     if "genero" in data:
         valor = (data.get("genero") or "").strip()
@@ -592,7 +597,7 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     # estética), así que elegir un interés nuevo acá (ej: Pilates, Stand
     # up) nunca llegaba a afectar el % de compatibilidad ni las charlas
     # simuladas. Se actualizan los dos ("intereses" e "intereses_onboarding")
-    # a lo mismo que la persona eligió a mano en su perfil -- a diferencia
+    # con lo que la persona eligió a mano en su perfil -- a diferencia
     # de personalidad/valores (que si se dejaran editar libremente
     # permitirían "inflar" el match), elegir tus propios intereses reales
     # no tiene ese riesgo: es la persona reportando de sí misma, no su
@@ -608,19 +613,30 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
                     limpio.append(i)
                 if len(limpio) >= 15:
                     break
-            cambios["intereses"] = limpio
-            cambios["intereses_onboarding"] = limpio
+            # MERGE, no reemplazo: si el gemelo ya había sumado intereses por
+            # otro lado (chats reales vía actualizar_aprendizaje_gemelo,
+            # import de ChatGPT, la etapa 7 del onboarding), guardar acá no
+            # puede borrarlos -- se combina lo elegido en el picker con lo ya
+            # guardado, sin duplicar. Antes esto pisaba todo directo, y
+            # cualquier interés aprendido que no fuera también un chip visible
+            # en el picker desaparecía apenas la persona tocaba esta sección.
+            intereses_previos = (perfil_actual or {}).get("intereses") or []
+            vistos_final, combinados = set(), []
+            for i in limpio + list(intereses_previos):
+                clave = i.casefold()
+                if clave not in vistos_final:
+                    vistos_final.add(clave)
+                    combinados.append(i)
+            cambios["intereses"] = combinados
+            cambios["intereses_onboarding"] = combinados
 
     if not cambios:
         return {"ok": True}
 
-    db = firestore.client()
-    ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
-
     # Si todavía no generó su gemelo, no hay nada que actualizar -- cuando
     # complete el onboarding, generar_perfil_gemelo va a crear el perfil con
     # los valores que haya puesto ahí en ese momento.
-    if not ref.get().exists:
+    if perfil_actual is None:
         return {"ok": True}
 
     ref.set(cambios, merge=True)

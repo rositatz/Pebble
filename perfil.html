@@ -5323,22 +5323,17 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               `${perfilGemelo.edad} años`;
           }
 
-          // Bio -- igual que el resto de "Información básica": si nunca se editó
-          // manualmente desde esta pantalla, usuarios/{uid}.bio no existe y se
-          // quedaba con el texto de ejemplo del HTML como si fuera real. Respaldo:
-          // el resumen que ya generó el gemelo (gemelo/perfil.bio, el mismo texto
-          // que arma generar_resumen_gemelo y que se ve en la tarjeta "Mi gemelo
-          // digital").
+          // Bio ("Sobre mí") -- a propósito INDEPENDIENTE del resumen del
+          // gemelo (gemelo/perfil.bio, el que arma generar_resumen_gemelo):
+          // este campo lo escribe la persona a mano, nunca se completa solo
+          // con texto generado. Si todavía no lo editó, queda vacío -- no
+          // hay fallback al bio del gemelo (antes lo había, y mezclaba dos
+          // cosas que tienen que quedar separadas).
           if (d.bio !== undefined) {
             document.getElementById("vBio").textContent =
               d.bio || "Todavía no escribiste nada sobre vos.";
             document.getElementById("eBio").value = d.bio;
             document.getElementById("bioCount").textContent = d.bio.length;
-          } else if (perfilGemelo && perfilGemelo.bio) {
-            document.getElementById("vBio").textContent = perfilGemelo.bio;
-            document.getElementById("eBio").value = perfilGemelo.bio;
-            document.getElementById("bioCount").textContent =
-              perfilGemelo.bio.length;
           } else {
             document.getElementById("vBio").textContent =
               "Todavía no escribiste nada sobre vos.";
