@@ -3,6 +3,10 @@ import datetime
 import hashlib
 import json
 import traceback
+import os
+import smtplib
+from email.message import EmailMessage
+from dotenv import load_dotenv
 
 import firebase_admin
 from firebase_admin import firestore, auth
@@ -76,6 +80,72 @@ def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombr
         "creado": firestore.SERVER_TIMESTAMP,
     })
 
+def generar_enlace_app(accion, otro_uid=None):
+    # IMPORTANTE: Cambia esto por tu dominio real en producción
+    # Si estás probando en tu compu, podría ser "http://localhost:5500"
+    base_url = "https://pebble.ar" 
+    
+    if accion == "matches":
+        if otro_uid:
+            return f"{base_url}/matches.html?persona={otro_uid}"
+        else:
+            return f"{base_url}/matches.html"
+            
+    elif accion == "chats":
+        if otro_uid:
+            return f"{base_url}/chats.html?persona={otro_uid}"
+        else:
+            return f"{base_url}/chats.html"
+            
+    elif accion == "gemelo":
+        return f"{base_url}/gemelo.html"
+        
+    else:
+        # Por defecto, los mandamos a notificaciones
+        return f"{base_url}/notificacion.html"
+def _mandar_correo(correo, titulo, texto, enlace_url):
+
+    remitente = "pebble@pebble.ar"
+    password = os.getenv("CONTRASEÑA_PEBBLE")
+
+    # 2. Configurar el mensaje
+    msg = EmailMessage()
+    msg["Subject"] = titulo
+    msg["From"] = remitente
+    msg["To"] = correo
+
+    # 3. Construir el cuerpo del correo
+    # Primero el texto plano (fallback por si el cliente de correo no lee HTML)
+    cuerpo_plano = f"{texto}\n\nEnlace: {enlace_url}"
+    msg.set_content(cuerpo_plano)
+
+    # Luego agregamos la versión HTML con la etiqueta <a> para que el link sea clickeable
+    cuerpo_html = f"""
+    <html>
+        <body>
+            <p>{texto}</p>
+            <p>
+                <a href="{enlace_url}" style="padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+                    Haz clic aquí
+                </a>
+            </p>
+            <br>
+            <p><small>Si el botón no funciona, copia y pega este enlace en tu navegador: {enlace_url}</small></p>
+        </body>
+    </html>
+    """
+    msg.add_alternative(cuerpo_html, subtype='html')
+
+    # 4. Enviar usando el puerto 587 y starttls() que ya comprobaste que funciona
+    try:
+        # Usamos 'with' para que la conexión se cierre automáticamente al terminar
+        with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+            servidor.starttls()
+            servidor.login(remitente, password)
+            servidor.send_message(msg)
+        print("Correo enviado con éxito")
+    except Exception as e:
+        print(f"Error al enviar: {e}")
 
 def _quiere_notif(db, uid, campo):
     """Preferencias de notificaciones (perfil.html, sheet 'Notificaciones')
@@ -206,6 +276,7 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
     uid2 = (despues_dict.get("usuario_2") or {}).get("uid")
     nombre1 = (despues_dict.get("usuario_1") or {}).get("nombre") or "Usuario"
     nombre2 = (despues_dict.get("usuario_2") or {}).get("nombre") or "Usuario"
+ 
     if not uid1 or not uid2:
         return
 
@@ -216,6 +287,18 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             continue  # mensaje mal formado, no debería pasar
         destinatario = uid2 if remitente == uid1 else uid1
         nombre_remitente = nombre1 if remitente == uid1 else nombre2
+        # 1. Obtener los documentos
+        doc1_snap = db.collection("usuarios").document(uid1).get()
+        doc2_snap = db.collection("usuarios").document(uid2).get()
+
+        # 2. Extraer el diccionario de forma segura
+        dict1 = doc1_snap.to_dict() if doc1_snap.exists else {}
+        dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
+
+        # 3. Obtener el string del correo (probando 'email' o 'correo' por si acaso)
+        correo1 = dict1.get("email") or dict1.get("correo")
+        correo2 = dict2.get("email") or dict2.get("correo")
+        correo_destinatario = correo2 if remitente == uid1 else correo1
         if not _quiere_notif(db, destinatario, "mensajes"):
             continue
         texto = (msg.get("text") or "").strip()
@@ -225,6 +308,19 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             preview or "Te escribió en Pebble.",
             otro_uid=remitente, otro_nombre=nombre_remitente, accion="chats",
         )
+        if correo_destinatario:
+            # Generamos el enlace para que el botón lo lleve directo al chat con esta persona
+            enlace_chat = generar_enlace_app(accion="chats", otro_uid=remitente)
+            
+            titulo_mail = f"Tienes un nuevo mensaje de {nombre_remitente}"
+            cuerpo_mail = f"{nombre_remitente} te escribió:\n\n\"{preview}\"\n\nEntra a Pebble para responderle."
+            
+            _mandar_correo(
+                correo=correo_destinatario, 
+                titulo=titulo_mail, 
+                texto=cuerpo_mail, 
+                enlace_url=enlace_chat
+            )
 
 
 @https_fn.on_call()
@@ -1341,22 +1437,57 @@ def _finalizar_par_de_batch(db, estado_par):
 
     nombre1 = estado_par["usuario_1"]["nombre"] or "Usuario"
     nombre2 = estado_par["usuario_2"]["nombre"] or "Usuario"
+    doc1_snap = db.collection("usuarios").document(uid1).get()
+    doc2_snap = db.collection("usuarios").document(uid2).get()
+
+    # 2. Extraer el diccionario de forma segura
+    dict1 = doc1_snap.to_dict() if doc1_snap.exists else {}
+    dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
+
+    # 3. Obtener el string del correo (probando 'email' o 'correo' por si acaso)
+    correo1 = dict1.get("email") 
+    correo2 = dict2.get("email") 
 
     if registro["supera_umbral"]:
         pct = round(registro["score"]["compatibilidad_total"] * 100)
+        
+        # --- MATCH PARA USUARIO 1 ---
         if _quiere_notif(db, uid1, "matches"):
+            # 1. Notificación In-App
             _crear_notificacion(
                 db, uid1, "match", f"¡Nuevo match con {nombre2}!",
                 f"Tu gemelo alcanzó {pct}% de afinidad con {nombre2}. Ya podés ver la conversación.",
                 otro_uid=uid2, otro_nombre=nombre2, accion="matches",
             )
+            # 2. Correo electrónico
+            if correo1:
+                enlace1 = generar_enlace_app(accion="matches", otro_uid=uid2)
+                _mandar_correo(
+                    correo=correo1,
+                    titulo=f"¡Nuevo match con {nombre2}!",
+                    texto=f"¡Buenas noticias! Tu gemelo virtual alcanzó un {pct}% de afinidad con {nombre2}. Ya podés ingresar a Pebble para ver la conversación.",
+                    enlace_url=enlace1
+                )
+
+        # --- MATCH PARA USUARIO 2 ---
         if _quiere_notif(db, uid2, "matches"):
+            # 1. Notificación In-App
             _crear_notificacion(
                 db, uid2, "match", f"¡Nuevo match con {nombre1}!",
                 f"Tu gemelo alcanzó {pct}% de afinidad con {nombre1}. Ya podés ver la conversación.",
                 otro_uid=uid1, otro_nombre=nombre1, accion="matches",
             )
+            # 2. Correo electrónico
+            if correo2:
+                enlace2 = generar_enlace_app(accion="matches", otro_uid=uid1)
+                _mandar_correo(
+                    correo=correo2,
+                    titulo=f"¡Nuevo match con {nombre1}!",
+                    texto=f"¡Buenas noticias! Tu gemelo virtual alcanzó un {pct}% de afinidad con {nombre1}. Ya podés ingresar a Pebble para ver la conversación.",
+                    enlace_url=enlace2
+                )
 
+        # Intereses en común (solo genera notificación in-app para sugerir conversación)
         comunes = set((perfil1_data.get("intereses") or [])) & set((perfil2_data.get("intereses") or []))
         if comunes:
             interes = sorted(comunes)[0]
@@ -1366,13 +1497,28 @@ def _finalizar_par_de_batch(db, estado_par):
                     f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
                     otro_uid=uid2, otro_nombre=nombre2, accion="chats",
                 )
+                if correo1:
+                    enlace1 = generar_enlace_app(accion="matches", otro_uid=uid2)
+                    _mandar_correo(
+                        correo=correo1,
+                        titulo=f"Vos y {nombre2} tienen algo en común",
+                        texto=f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                        enlace_url=enlace1
+                    )
             if _quiere_notif(db, uid2, "matches"):
                 _crear_notificacion(
                     db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
                     f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
                     otro_uid=uid1, otro_nombre=nombre1, accion="chats",
                 )
-
+                if correo2:
+                    enlace2 = generar_enlace_app(accion="matches", otro_uid=uid1)
+                    _mandar_correo(
+                        correo=correo2,
+                        titulo=f"Vos y {nombre1} tienen algo en común",
+                        texto=f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
+                        enlace_url=enlace2
+                    )
     db.collection("parejas_pendientes").document(par_id).update({"estado": "COMPLETADO"})
 
 
@@ -1653,13 +1799,17 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
 
     for doc in db.collection("conexiones").where("supera_umbral", "==", True).stream():
         data = doc.to_dict()
+        
         participantes = data.get("participantes") or []
         if len(participantes) != 2:
             continue
         uid1, uid2 = participantes
         nombre1 = data.get("usuario_1", {}).get("nombre", "Usuario")
         nombre2 = data.get("usuario_2", {}).get("nombre", "Usuario")
-
+        doc_user1=db.collection("usuarios").document(uid1).get()
+        data_user1=doc_user1.to_dict()
+        doc_user2=db.collection("usuarios").document(uid2).get()
+        data_user2=doc_user2.to_dict()
         fecha_sim = _parse_fecha(data.get("actualizado"))
         if fecha_sim:
             for u in (uid1, uid2):
@@ -1683,12 +1833,40 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
                         f"La conversación quedó abierta hace {dias_inactivo} días.",
                         otro_uid=uid2, otro_nombre=nombre2, accion="chats",
                     )
+                    correo1 = data_user1.get("email")
+                    if not correo1: # Fallback: buscar en el documento del usuario si no está en la conexión
+                        doc1_snap = db.collection("usuarios").document(uid1).get()
+                        dict1 = doc1_snap.to_dict() if doc1_snap.exists else {}
+                        correo1 = dict1.get("email") or dict1.get("correo")
+                        
+                    if correo1:
+                        enlace1 = generar_enlace_app(accion="chats", otro_uid=uid2)
+                        _mandar_correo(
+                            correo=correo1,
+                            titulo=f"¿Retomás tu charla con {nombre2}?",
+                            texto=f"Hola, tu conversación con {nombre2} quedó en pausa hace {dias_inactivo} días. ¡Entrá a Pebble y fíjate en qué andan!",
+                            enlace_url=enlace1
+                        )
                 if _quiere_notif(db, uid2, "mensajes"):
                     _crear_notificacion(
                         db, uid2, "retomar", f"¿Retomás con {nombre1}?",
                         f"La conversación quedó abierta hace {dias_inactivo} días.",
                         otro_uid=uid1, otro_nombre=nombre1, accion="chats",
                     )
+                    correo2 = data_user2.get("email")
+                    if not correo2:
+                        doc2_snap = db.collection("usuarios").document(uid2).get()
+                        dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
+                        correo2 = dict2.get("email") or dict2.get("correo")
+                        
+                    if correo2:
+                        enlace2 = generar_enlace_app(accion="chats", otro_uid=uid1)
+                        _mandar_correo(
+                            correo=correo2,
+                            titulo=f"¿Retomás tu charla con {nombre1}?",
+                            texto=f"Hola, tu conversación con {nombre1} quedó en pausa hace {dias_inactivo} días. ¡Entrá a Pebble y fíjate en qué andan!",
+                            enlace_url=enlace2
+                        )
                 doc.reference.update({"real.recordatorioRetomarEn": firestore.SERVER_TIMESTAMP})
                 avisos_retomar += 2
 
@@ -1700,6 +1878,7 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
 
         ref_usuario = db.collection("usuarios").document(uid)
         doc_usuario = ref_usuario.get()
+        datos_usuario = doc_usuario.to_dict() if doc_usuario.exists else {}
         recordado_en = doc_usuario.to_dict().get("recordatorioInactivoEn") if doc_usuario.exists else None
         if recordado_en and (ahora - recordado_en).days < DIAS_INACTIVIDAD_GEMELO:
             continue
@@ -1710,6 +1889,15 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
                 "Ajustar su personalidad o tus preferencias puede mejorar los resultados.",
                 accion="gemelo",
             )
+            correo_inactivo = datos_usuario.get("email") or datos_usuario.get("correo")
+            if correo_inactivo:
+                enlace_gemelo = generar_enlace_app(accion="gemelo")
+                _mandar_correo(
+                    correo=correo_inactivo,
+                    titulo="Tu gemelo virtual necesita ajustes",
+                    texto=f"Tu gemelo virtual lleva {dias_inactivo} días sin interacciones en Pebble. Ajustar su personalidad o actualizar tus preferencias puede ayudarte a mejorar los resultados y obtener nuevos matches.",
+                    enlace_url=enlace_gemelo
+                )
         ref_usuario.set({"recordatorioInactivoEn": firestore.SERVER_TIMESTAMP}, merge=True)
         avisos_inactivo += 1
 
