@@ -3874,6 +3874,15 @@
         const next = document.getElementById("btn-next");
         if (n === TOTAL) {
           next.style.display = "none";
+          // Dispara acá (no solo desde goNext) para que el resumen se arme
+          // sin importar CÓMO se llegó a esta etapa -- antes solo corría al
+          // avanzar con "Siguiente", así que volver acá directo (recargar la
+          // página, "Volver" y adelante de nuevo, o el hash #etapa-8 al
+          // entrar) dejaba "Cargando tu gemelo..." trabado para siempre, sin
+          // que nada lo reemplazara por el texto real. El textarea ya está
+          // visible acá (display:block), que es lo que necesita
+          // autoGrowTextarea para medir bien.
+          window.generarResumenConIA();
         } else {
           next.style.display = "";
           next.textContent =
@@ -3925,9 +3934,6 @@
         await saveStage(currentStage);
         const next = currentStage + 1;
         showStage(next);
-        // Se arma después de mostrar la etapa 7: el textarea necesita estar visible
-        // (display:block) para que autoGrowTextarea pueda medir su alto real.
-        if (next === TOTAL) generarResumenConIA();
       };
       window.goBack = function () {
         if (currentStage === 1) return;
