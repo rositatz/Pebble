@@ -4014,7 +4014,10 @@
         // lo escribe la IA con todas las respuestas), así que alcanza con
         // el primero que haya elegido. "vibeAtrae" se unificó con
         // "atraeMas" (ver etapa6, sec "Tu tipo") -- ya no existe aparte.
-        const vibe = (Array.isArray(e6.atraeMas) ? e6.atraeMas[0] : e6.atraeMas) || "especial";
+        const vibe = resolverGenero(
+          (Array.isArray(e6.atraeMas) ? e6.atraeMas[0] : e6.atraeMas) || "especial",
+          genero,
+        );
         // planIdeal también pasó a multi-select -- el primero alcanza para
         // esta plantilla de respaldo.
         const plan =
@@ -4025,12 +4028,12 @@
 
         const amorLine = amor ? `, ${amor.toLowerCase()}` : "";
         const esteticaLine = estetica
-          ? ` Tu estética es ${estetica.toLowerCase()}.`
+          ? ` Mi estética es ${estetica.toLowerCase()}.`
           : "";
         // "plan" ya viene como oración completa con mayúscula y punto (ver
         // gemelo-setup.html data-field="planIdeal"), así que no se le agrega
         // puntuación extra ni se pasa a minúscula.
-        const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Mi plan ideal para una tarde libre: ${plan} Y no puede faltar ${artista} de fondo.${esteticaLine} Cuando algo me importa, se nota en todo.`;
+        const text = `Soy ${nombre}${amorLine}. Me definirían como alguien ${relacion}, que busca una conexión ${vibe.toLowerCase()}. Mi plan ideal para una tarde libre: ${plan} Y no puede faltar ${artista} de fondo.${esteticaLine}`;
 
         // Si ya hay un resumen guardado de una vuelta anterior (confirmado con
         // "Este soy yo ✓"), se muestra ESE en vez de pisarlo con la plantilla --
@@ -4120,26 +4123,20 @@
         buildGemelo();
 
         const snapshotActual = _snapshotRespuestasImportantes();
-        const yaTieneResumenGuardado = !!(
-          stageData.etapa8 && stageData.etapa8.gedit
-        );
         const snapshotGuardado =
           stageData.etapa8 && stageData.etapa8.resumenSnapshot;
 
-        if (yaTieneResumenGuardado) {
-          if (!snapshotGuardado) {
-            // Resumen de antes de este cambio, todavía sin snapshot guardado
-            // -- se adopta el estado actual como línea de base sin gastar una
-            // llamada a la IA (si no, la primera visita de cada persona
-            // después de este cambio dispararía una regeneración "gratis").
-            document.getElementById("resumenSnapshot").value = snapshotActual;
-            return;
-          }
-          // Ninguna respuesta profunda cambió desde que se generó -- se
-          // mantiene tal cual (buildGemelo ya lo dejó mostrado). Si sí
-          // cambió algo profundo, se regenera solo, más abajo.
-          if (snapshotGuardado === snapshotActual) return;
-        }
+        // Si el snapshot coincide, es un resumen ya generado con IA para
+        // este mismo estado exacto de respuestas -- no hace falta gastar
+        // otra llamada, se mantiene tal cual (buildGemelo ya lo dejó
+        // mostrado). Cualquier otro caso (sin snapshot, o snapshot viejo)
+        // SIEMPRE regenera con IA -- antes, sin snapshot guardado, se
+        // adoptaba el texto tal cual sin llamar a la IA nunca (pensado para
+        // no gastar una regeneración "gratis" apenas se sumó esta función),
+        // pero eso dejaba cuentas viejas para siempre con la plantilla corta
+        // de buildGemelo() en vez del resumen real, sin ninguna forma de
+        // que se actualizara solo.
+        if (snapshotGuardado && snapshotGuardado === snapshotActual) return;
 
         const textEl = document.getElementById("gemelo-gen-text");
         const geditEl = document.getElementById("gedit");
