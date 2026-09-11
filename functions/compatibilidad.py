@@ -201,6 +201,68 @@ def extraer_correcciones_gemelo(mensajes_a_gemelo):
     return [str(c).strip() for c in (resultado.get("correcciones") or []) if str(c).strip()]
 
 
+def extraer_matices_personales(mensajes_a_gemelo):
+    """Analiza mensajes que la persona le escribió a SU PROPIO gemelo (mismo
+    origen que extraer_correcciones_gemelo) y detecta aclaraciones FÁCTICAS
+    que la persona hizo sobre sí misma -- no sobre cómo debe comportarse el
+    gemelo (eso es extraer_correcciones_gemelo), sino matices que afinan o
+    contradicen un dato ya cargado en el onboarding (ej: "soy de River pero
+    solo por mi familia, no sé nada del equipo ni miro los partidos" matiza
+    el interés "River" que ya está en la lista plana de intereses; sin este
+    matiz el gemelo improvisa entusiasmo/conocimiento que la persona no
+    tiene, en cualquier charla -- simulaciones, matches o consigo misma).
+
+    A propósito separado de extraer_aprendizaje_chats/intereses_nuevos: ese
+    solo agrega intereses que TODAVÍA no están en la lista, nunca matiza uno
+    que ya está. Nunca inventa un matiz que no esté dicho tal cual."""
+
+    if not mensajes_a_gemelo:
+        return []
+
+    texto_mensajes = "\n".join(f"- {m}" for m in mensajes_a_gemelo)
+
+    prompt = f"""
+    Estos son mensajes reales que una persona le escribió a su propio
+    asistente de IA (su "gemelo digital") dentro de una app de citas.
+
+    Buscá ÚNICAMENTE aclaraciones FÁCTICAS que la persona dio sobre SÍ
+    MISMA -- que afinan, matizan o contradicen un dato suyo (interés, gusto,
+    opinión, nivel de involucramiento en algo) de forma más precisa que una
+    etiqueta suelta. Ejemplos: "soy hincha de River pero no sé nada del
+    equipo ni miro los partidos" (matiza el interés "River"), "la política
+    me importa pero no sé mucho, solo que compartamos valores similares"
+    (matiza cuánto sabe de política). NO cuentan instrucciones sobre cómo
+    debe comportarse o hablar EL GEMELO (eso es otra cosa), ni preguntas, ni
+    comentarios sobre otras personas.
+
+    Devolvé únicamente JSON válido:
+    {{
+      "matices": ["lista de aclaraciones tal cual se pueden aplicar, en
+        tercera persona y cortas (ej: 'Le gusta River solo por tradición
+        familiar: no sigue al equipo ni mira los partidos') -- lista vacía
+        si no hay ninguna, nunca inventes ni exageres lo que se dijo"]
+    }}
+
+    Mensajes:
+    {texto_mensajes}
+    """
+
+    response = client().chat.completions.create(
+        model="gpt-5.6-terra",
+        messages=[
+            {
+                "role": "system",
+                "content": "Detectás aclaraciones fácticas que alguien dio sobre sí misma/o. Nunca inventás ni exagerás una que no esté dicha tal cual."
+            },
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+
+    resultado = json.loads(response.choices[0].message.content)
+    return [str(m).strip() for m in (resultado.get("matices") or []) if str(m).strip()]
+
+
 def actualizar_memoria(memoria, analisis):
     """Si es la primera interacción entre este par de gemelos, memoria
     todavía no existe (None) -- se crea acá. Si ya existía, se le hace append

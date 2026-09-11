@@ -16,7 +16,7 @@ from firebase_functions.options import set_global_options, MemoryOption
 from gemelo_perfil import construir_perfil_gemelo
 import simulador as motor
 from geolocalizacion import distancia_entre_perfiles
-from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats, extraer_correcciones_gemelo, instruccion_nivel_compatibilidad
+from compatibilidad import compatible_por_genero, compatible_por_edad, compatible_por_hijos, extraer_aprendizaje_chats, extraer_correcciones_gemelo, extraer_matices_personales, instruccion_nivel_compatibilidad
 
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
@@ -2046,9 +2046,19 @@ def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
     compatibilidad real (compatibilidad.calcular_compatibilidad), y siguen
     viniendo solo de lo que la persona contestó a conciencia en el
     onboarding. Lo que se actualiza acá (estilo_aprendido + intereses
-    nuevos) solo afecta CÓMO habla el gemelo, no CON QUIÉN matchea. Ver
+    nuevos + correcciones_gemelo + matices_aprendidos) solo afecta CÓMO
+    habla el gemelo, no CON QUIÉN matchea. Ver
     simulador.generar_prompt_gemelo/generar_prompt_gemelo_personal, que ya
-    usan estilo_aprendido si está presente."""
+    usan estos campos si están presentes."""
+    _actualizar_aprendizaje_gemelo_logica()
+
+
+def _actualizar_aprendizaje_gemelo_logica() -> None:
+    """Lógica real de actualizar_aprendizaje_gemelo, separada del trigger
+    programado para poder invocarla directo (ver forzar_par_rosa_tomas y
+    otras funciones temporales de diagnóstico usadas durante esta sesión --
+    llamar a una función decorada con @scheduler_fn.on_schedule directo con
+    (None) explota con 'NoneType' object has no attribute headers)."""
 
     db = firestore.client()
 
@@ -2104,6 +2114,20 @@ def actualizar_aprendizaje_gemelo(event: scheduler_fn.ScheduledEvent) -> None:
                 a_agregar = [c for c in correcciones_nuevas if c.casefold() not in vistas_corr]
                 if a_agregar:
                     cambios["correcciones_gemelo"] = (correcciones_actuales + a_agregar)[-15:]
+
+                # Aclaraciones fácticas sobre sí misma que le dio a su propio
+                # gemelo (ver extraer_matices_personales) -- distinto de una
+                # corrección de comportamiento: matiza un dato que ya está en
+                # el onboarding (ej: "soy de River pero no sé nada del
+                # equipo") para que el gemelo no improvise entusiasmo o
+                # conocimiento que la persona no tiene, en NINGUNA charla
+                # (simulaciones, matches o consigo misma).
+                matices_actuales = perfil.get("matices_aprendidos") or []
+                matices_nuevos = extraer_matices_personales(mensajes_gemelo)
+                vistos_matiz = {m.casefold() for m in matices_actuales}
+                matices_a_agregar = [m for m in matices_nuevos if m.casefold() not in vistos_matiz]
+                if matices_a_agregar:
+                    cambios["matices_aprendidos"] = (matices_actuales + matices_a_agregar)[-15:]
 
             if cambios:
                 perfil_ref.set(cambios, merge=True)

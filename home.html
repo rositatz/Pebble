@@ -1266,10 +1266,200 @@
         border-radius: 100px;
         flex-shrink: 0;
       }
+
+      /* ── CONSENTIMIENTO AL CREAR CUENTA (términos + aprendizaje del gemelo) ──
+      Aparece una sola vez, apenas se crea la cuenta (email o Google), antes
+      de ir a armar el gemelo. Reusa el mismo lenguaje visual que el tutorial
+      de bienvenida (.tut-*) para no duplicar estilos. */
+      #accountConsentOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .ac-card {
+        width: 100%;
+        max-width: 420px;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 32px 28px 26px;
+        text-align: left;
+        animation: tut-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .ac-title {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+      }
+      .ac-text {
+        font-family: var(--font-body);
+        font-size: 0.86rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 14px;
+      }
+      .ac-text a {
+        color: var(--orange);
+        font-weight: 600;
+      }
+      .ac-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 18px 0 16px;
+      }
+      .ac-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-family: var(--font-body);
+        font-size: 0.84rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        margin-bottom: 20px;
+      }
+      .ac-check input {
+        margin-top: 2px;
+        width: 17px;
+        height: 17px;
+        accent-color: var(--orange);
+        flex-shrink: 0;
+        cursor: pointer;
+      }
+      .ac-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .ac-toggle-label {
+        font-family: var(--font-body);
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .ac-switch {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .ac-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .ac-switch-track {
+        position: absolute;
+        inset: 0;
+        background: var(--border2);
+        border-radius: 100px;
+        transition: background 0.2s;
+        cursor: pointer;
+      }
+      .ac-switch-track::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      }
+      .ac-switch input:checked + .ac-switch-track {
+        background: var(--orange);
+      }
+      .ac-switch input:checked + .ac-switch-track::before {
+        transform: translateX(18px);
+      }
+      .ac-btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 100px;
+        border: none;
+        background: var(--orange);
+        color: #fff;
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      }
+      .ac-btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 117, 31, 0.35);
+      }
+      .ac-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
     <div id="loadingOverlay"><div class="loading-spinner"></div></div>
+
+    <!-- Consentimiento al crear la cuenta: términos y condiciones (obligatorio)
+    + aprendizaje del gemelo a partir de tus chats (opcional, se puede
+    cambiar después desde el perfil). Aparece una sola vez, apenas se crea
+    la cuenta (email o Google), antes de ir a armar el gemelo. Ver
+    mostrarConsentimientoCuenta/continuarConsentimientoCuenta más abajo. -->
+    <div id="accountConsentOverlay" style="display: none">
+      <div class="ac-card">
+        <div class="ac-title">Términos y condiciones</div>
+        <p class="ac-text">
+          Para crear tu cuenta necesitamos que aceptes nuestros
+          <a href="./terminos.html" target="_blank" rel="noopener"
+            >Términos y Condiciones y Política de Privacidad</a
+          >.
+        </p>
+        <label class="ac-check">
+          <input type="checkbox" id="acTermsCheckbox" onchange="window._acActualizarBoton()" />
+          <span>He leído y acepto los Términos y Condiciones y la Política de Privacidad</span>
+        </label>
+
+        <div class="ac-divider"></div>
+
+        <p class="ac-text">
+          Dejá que tu gemelo aprenda de tus conversaciones (con vos mismo/a y
+          con tus matches) para representarte mejor: tu estilo de escritura y
+          tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad
+          con otras personas, que siguen siendo los que contestaste en el
+          onboarding. Podés cambiar esta decisión cuando quieras desde tu
+          perfil.
+        </p>
+        <div class="ac-toggle-row">
+          <span class="ac-toggle-label">Que mi gemelo aprenda de mis chats</span>
+          <label class="ac-switch">
+            <input type="checkbox" id="acLearnToggle" />
+            <span class="ac-switch-track"></span>
+          </label>
+        </div>
+
+        <button
+          type="button"
+          class="ac-btn"
+          id="acContinueBtn"
+          disabled
+          onclick="window.continuarConsentimientoCuenta()"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
 
     <!-- Tutorial de bienvenida -- solo la primera vez, apenas se crea la
     cuenta (ver tutorial_visto en usuarios/{uid} y el chequeo dentro de
@@ -2272,6 +2462,7 @@
         getDocs,
         query,
         where,
+        serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Mismo esquema de id que usa el backend (motor._par_id en Python) y
@@ -2750,6 +2941,60 @@
       };
 
       // ── REGISTRO con email/contraseña ──
+      // ── Consentimiento al crear la cuenta (términos + aprendizaje del
+      // gemelo) -- ver overlay #accountConsentOverlay en el body. Se muestra
+      // una sola vez, justo después de crear la cuenta (cualquiera de los 3
+      // métodos: email, Google o Facebook), antes de ir a gemelo-setup.html.
+      window._acActualizarBoton = function () {
+        const chk = document.getElementById("acTermsCheckbox");
+        const btn = document.getElementById("acContinueBtn");
+        if (btn) btn.disabled = !(chk && chk.checked);
+      };
+
+      function mostrarConsentimientoCuenta() {
+        const chk = document.getElementById("acTermsCheckbox");
+        const toggle = document.getElementById("acLearnToggle");
+        const btn = document.getElementById("acContinueBtn");
+        if (chk) chk.checked = false;
+        if (toggle) toggle.checked = false;
+        if (btn) btn.disabled = true;
+        const overlay = document.getElementById("accountConsentOverlay");
+        if (overlay) overlay.style.display = "flex";
+      }
+
+      // Guarda la aceptación de términos (obligatoria) y la decisión sobre
+      // aprendizaje del gemelo (opcional, default false -- se puede activar
+      // después desde el perfil) y recién ahí redirige a armar el gemelo.
+      window.continuarConsentimientoCuenta = async function () {
+        const uid = auth.currentUser?.uid;
+        const aprenderChats =
+          document.getElementById("acLearnToggle")?.checked || false;
+        const btn = document.getElementById("acContinueBtn");
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Guardando…";
+        }
+        try {
+          if (uid) {
+            await setDoc(
+              doc(db, "usuarios", uid),
+              {
+                terminosAceptados: true,
+                terminosAceptadosFecha: serverTimestamp(),
+                consentimientoAprendizajeChats: aprenderChats,
+                consentimientoAprendizajeChatsFecha: aprenderChats
+                  ? serverTimestamp()
+                  : null,
+              },
+              { merge: true },
+            );
+          }
+        } catch (e) {
+          console.error("Error guardando consentimiento de cuenta:", e);
+        }
+        window.location.href = "./gemelo-setup.html";
+      };
+
       window.doSignup = async function () {
         const nombre = document.getElementById("su-name").value.trim();
         const email = document.getElementById("su-email").value.trim();
@@ -2773,7 +3018,7 @@
           // salta directo a armar el gemelo. El default userPlan = d.plan ||
           // "premium" (gemelo-setup.html) ya cubre que esta cuenta, sin
           // "plan" seteado todavía, vea las preguntas premium igual.
-          window.location.href = "./gemelo-setup.html";
+          mostrarConsentimientoCuenta();
         } catch (err) {
           showAuthError(signupMsg(err.code));
           setBtnLoading(btn, false);
@@ -2787,7 +3032,7 @@
           const result = await signInWithPopup(auth, googleProvider);
           localStorage.setItem("pebble_login_time", Date.now().toString());
           const isNew = result._tokenResponse?.isNewUser;
-          if (isNew) window.location.href = "./gemelo-setup.html";
+          if (isNew) mostrarConsentimientoCuenta();
           // Si ya tenía cuenta, onAuthStateChanged lo lleva a la app
         } catch (err) {
           if (err.code !== "auth/popup-closed-by-user")
@@ -2802,7 +3047,7 @@
           const result = await signInWithPopup(auth, facebookProvider);
           localStorage.setItem("pebble_login_time", Date.now().toString());
           const isNew = result._tokenResponse?.isNewUser;
-          if (isNew) window.location.href = "./gemelo-setup.html";
+          if (isNew) mostrarConsentimientoCuenta();
         } catch (err) {
           console.error("Facebook login error:", err.code, err.message);
           if (err.code === "auth/popup-closed-by-user") return;

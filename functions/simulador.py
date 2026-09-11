@@ -852,6 +852,18 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     if bio:
         bio_prompt = f"\n    CÓMO SE DESCRIBE A SÍ MISMO/A:\n    {bio}\n"
 
+    # Aclaraciones que la persona le dio a SU PROPIO gemelo sobre un dato ya
+    # cargado en el onboarding (ver main.actualizar_aprendizaje_gemelo /
+    # compatibilidad.extraer_matices_personales) -- sin esto, la lista plana
+    # de "Intereses" de arriba no distingue entre un interés genuino y uno
+    # nominal, y el modelo improvisa entusiasmo/conocimiento que la persona
+    # no tiene (ej: trata "River" como si siguiera al equipo de verdad).
+    matices_prompt = ""
+    matices = perfil.get("matices_aprendidos") or []
+    if matices:
+        puntos_matiz = "\n".join(f"    - {m}" for m in matices)
+        matices_prompt = f"\n    ACLARACIONES REALES SOBRE ALGUNOS DE SUS DATOS (dichas por ella/él mismo/a, respetalas SIEMPRE -- no inventes más entusiasmo o conocimiento del que indican):\n{puntos_matiz}\n"
+
     # Igual que en generar_prompt_gemelo_personal: estilo_aprendido viene de
     # mensajes reales (con consentimiento) y solo afecta CÓMO habla acá, no
     # los números de personalidad/valores de arriba -- esos siguen siendo
@@ -1006,6 +1018,7 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
 
     Intereses:
     {", ".join(perfil.get('intereses', [])) or "no especificados"}
+    {matices_prompt}
     {fisico_prompt}
     {_instruccion_genero(perfil)}
     {_instruccion_genero_otro(genero_otro, nombre_otro)}
@@ -1428,6 +1441,13 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
         identidad_txt += f"    - Situación actual: {perfil['profesion']}\n"
     if perfil.get("intereses"):
         identidad_txt += f"    - Intereses: {', '.join(perfil['intereses'])}\n"
+    if perfil.get("matices_aprendidos"):
+        puntos_matiz = "\n".join(f"      - {m}" for m in perfil["matices_aprendidos"])
+        identidad_txt += (
+            "    - Aclaraciones reales que ya te dio sobre algunos de estos "
+            f"datos (respetalas SIEMPRE, no inventes más entusiasmo o "
+            f"conocimiento del que indican):\n{puntos_matiz}\n"
+        )
     if perfil.get("bio"):
         identidad_txt += f"    - Cómo se describe: {perfil['bio']}\n"
     # estilo_aprendido lo arma actualizar_aprendizaje_gemelo (main.py) a partir
