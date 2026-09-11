@@ -3284,6 +3284,12 @@
         stageData = {},
         currentStage = 1;
       const TOTAL = 8;
+      // Promesa de la regeneración del resumen en curso (ver
+      // generarResumenConIA) -- guardarYSalir/finalizarGemelo la esperan
+      // antes de guardar, para que un "Seguir después" a mitad de la
+      // llamada a la IA no persista el texto provisorio de buildGemelo()
+      // como si fuera el resumen final.
+      let resumenEnCursoPromise = null;
 
       /* ─── FLAGS ─── */
       const FLAGS = [
@@ -3943,6 +3949,11 @@
         const btn = document.getElementById("btn-skip");
         btn.textContent = "Guardando…";
         btn.disabled = true;
+        // Si el resumen todavía se está generando con IA, se espera a que
+        // termine antes de guardar -- si no, collectStage() podía leer el
+        // texto provisorio de buildGemelo() (mostrado mientras se espera la
+        // IA) y guardarlo como si fuera el resumen final.
+        if (resumenEnCursoPromise) await resumenEnCursoPromise;
         await saveStage(currentStage);
         // Si ya se había completado el onboarding antes (se está editando,
         // no haciéndolo por primera vez), hay que regenerar gemelo/perfil
@@ -4144,6 +4155,16 @@
         // que se actualizara solo.
         if (snapshotGuardado && snapshotGuardado === snapshotActual) return;
 
+        const promesa = _generarResumenConIAInterno(snapshotActual);
+        resumenEnCursoPromise = promesa;
+        try {
+          await promesa;
+        } finally {
+          if (resumenEnCursoPromise === promesa) resumenEnCursoPromise = null;
+        }
+      };
+
+      async function _generarResumenConIAInterno(snapshotActual) {
         const textEl = document.getElementById("gemelo-gen-text");
         const geditEl = document.getElementById("gedit");
         const plantillaPrevia = geditEl.value;
@@ -4191,6 +4212,12 @@
           window.location.href = "home.html";
           return;
         }
+
+        // Mismo motivo que en guardarYSalir: si la IA todavía está
+        // generando el resumen, se espera a que termine antes de leer
+        // #gedit -- si no, se podía confirmar el texto provisorio de
+        // buildGemelo() en vez del resumen real.
+        if (resumenEnCursoPromise) await resumenEnCursoPromise;
 
         const finalText = document.getElementById("gedit").value.trim();
 
