@@ -543,18 +543,11 @@
         flex-shrink: 0;
       }
       .pmsg-av-ai {
+        background-image: url("./images/naranja2.png");
+        background-size: cover;
+        background-position: center;
         outline: 2px solid var(--orange);
         outline-offset: 1px;
-      }
-      .pmsg-av-ai svg {
-        width: 14px;
-        height: 14px;
-        fill: none;
-        stroke: #fff;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        display: block;
       }
 
       .panel-messages {
@@ -1505,14 +1498,11 @@
         width: 28px;
         height: 28px;
         border-radius: 50%;
+        overflow: hidden;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-display);
-        font-size: 0.65rem;
-        font-weight: 800;
-        color: #fff;
         align-self: flex-end;
         margin-bottom: 2px;
       }
@@ -2506,9 +2496,7 @@
           div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${_bubbleContent(msg)}</div>`;
         } else if (isG) {
           div.innerHTML = `
-      <div class="pmsg-av pmsg-av-ai" style="background:${p.color}">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-      </div>
+      <div class="pmsg-av pmsg-av-ai"></div>
       <div class="pbubble"><span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>${_bubbleContent(msg)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
         } else {
@@ -2771,7 +2759,7 @@
         div.id = "ptyping";
         div.className = `pmsg them${isG ? " is-gemelo" : ""}`;
         const av = isG
-          ? `<div class="pmsg-av pmsg-av-ai" style="background:${p.color}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>`
+          ? `<div class="pmsg-av pmsg-av-ai"></div>`
           : `<div class="pmsg-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>`;
         div.innerHTML = `${av}<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
         con.appendChild(div);
@@ -3013,11 +3001,11 @@
               html += `<div class="smsg me">
         <span class="smsg-time">${msg.time}</span>
         <div class="sbubble"><span class="smsg-label">Tu gemelo</span>${esc(msg.text)}</div>
-        <div class="smsg-av" style="background:#2a2a2a;outline:2px solid rgba(255,160,60,0.45);outline-offset:1px">G</div>
+        <div class="smsg-av" style="background-image:url('./images/naranja1.png');outline:2px solid rgba(255,160,60,0.45);outline-offset:1px"></div>
       </div>`;
             } else {
               html += `<div class="smsg them">
-        <div class="smsg-av" style="background:${p.color};outline:2px solid var(--orange);outline-offset:1px">G</div>
+        <div class="smsg-av" style="background-image:url('./images/naranja2.png');outline:2px solid var(--orange);outline-offset:1px"></div>
         <div class="sbubble"><span class="smsg-label">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
         <span class="smsg-time">${msg.time}</span>
       </div>`;
