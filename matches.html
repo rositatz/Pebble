@@ -1076,17 +1076,23 @@
         pointer-events: none;
       }
       .loading-spinner {
+        position: relative;
         width: 54px;
         height: 54px;
+      }
+      .loading-spinner-ring {
+        position: absolute;
+        inset: 0;
         border-radius: 50%;
         border: 4px solid rgba(0, 0, 0, 0.1);
         border-top-color: var(--orange);
         animation: spin 0.7s linear infinite;
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
       .loading-spinner-img {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -1161,7 +1167,7 @@
     </style>
   </head>
   <body>
-    <div id="loadingOverlay"><div class="loading-spinner"><div class="loading-spinner-img"></div></div></div>
+    <div id="loadingOverlay"><div class="loading-spinner"><div class="loading-spinner-ring"></div><div class="loading-spinner-img"></div></div></div>
 
     <!-- Top nav -->
     <nav class="app-nav" aria-label="Navegación">
