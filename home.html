@@ -1166,7 +1166,9 @@
         height: 7px;
         border-radius: 50%;
         background: var(--border2);
-        transition: background 0.25s, width 0.25s;
+        transition:
+          background 0.25s,
+          width 0.25s;
       }
       .tut-dot.active {
         background: var(--orange);
@@ -1184,7 +1186,9 @@
         font-weight: 700;
         font-size: 0.95rem;
         cursor: pointer;
-        transition: transform 0.15s, box-shadow 0.15s;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
       }
       .tut-btn:hover {
         transform: translateY(-1px);
@@ -1415,7 +1419,10 @@
         font-weight: 700;
         font-size: 0.95rem;
         cursor: pointer;
-        transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s,
+          opacity 0.15s;
       }
       .ac-btn:hover:not(:disabled) {
         transform: translateY(-1px);
@@ -1428,7 +1435,12 @@
     </style>
   </head>
   <body>
-    <div id="loadingOverlay"><div class="loading-spinner"><div class="loading-spinner-ring"></div><div class="loading-spinner-img"></div></div></div>
+    <div id="loadingOverlay">
+      <div class="loading-spinner">
+        <div class="loading-spinner-ring"></div>
+        <div class="loading-spinner-img"></div>
+      </div>
+    </div>
 
     <!-- Consentimiento al crear la cuenta: términos y condiciones (obligatorio)
     + aprendizaje del gemelo a partir de tus chats (opcional, se puede
@@ -1445,8 +1457,15 @@
           >.
         </p>
         <label class="ac-check">
-          <input type="checkbox" id="acTermsCheckbox" onchange="window._acActualizarBoton()" />
-          <span>He leído y acepto los Términos y Condiciones y la Política de Privacidad</span>
+          <input
+            type="checkbox"
+            id="acTermsCheckbox"
+            onchange="window._acActualizarBoton()"
+          />
+          <span
+            >He leído y acepto los Términos y Condiciones y la Política de
+            Privacidad</span
+          >
         </label>
 
         <div class="ac-divider"></div>
@@ -1454,13 +1473,15 @@
         <p class="ac-text">
           Dejá que tu gemelo aprenda de tus conversaciones (con vos mismo/a y
           con tus matches) para representarte mejor: tu estilo de escritura y
-          tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad
-          con otras personas, que siguen siendo los que contestaste en el
+          tus gustos reales. Esto nunca cambia tus rasgos de compatibilidad con
+          otras personas, que siguen siendo los que contestaste en el
           onboarding. Podés cambiar esta decisión cuando quieras desde tu
           perfil.
         </p>
         <div class="ac-toggle-row">
-          <span class="ac-toggle-label">Que mi gemelo aprenda de mis chats</span>
+          <span class="ac-toggle-label"
+            >Que mi gemelo aprenda de mis chats</span
+          >
           <label class="ac-switch">
             <input type="checkbox" id="acLearnToggle" />
             <span class="ac-switch-track"></span>
@@ -1490,7 +1511,14 @@
 
         <div class="tut-step active" data-tut-step="1">
           <div class="tut-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
             </svg>
@@ -1502,7 +1530,16 @@
             versión con IA que piensa y habla como vos.
           </div>
           <div class="tut-where">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
             Lo hacés apenas cierres esto
           </div>
         </div>
@@ -1511,7 +1548,9 @@
           <div class="tut-mock" aria-hidden="true">
             <div class="tut-mock-chat">
               <div class="tut-mock-bubble a">holaa, ¿qué venís escuchando?</div>
-              <div class="tut-mock-bubble b">metido con cosas de tecnología últimamente</div>
+              <div class="tut-mock-bubble b">
+                metido con cosas de tecnología últimamente
+              </div>
               <div class="tut-mock-bubble a">jaja banco eso 👀</div>
             </div>
           </div>
@@ -1521,7 +1560,17 @@
             una charla con el gemelo de ella para ver si de verdad conectan.
           </div>
           <div class="tut-where">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
             Pasa solo, de noche -- vos no tenés que hacer nada
           </div>
         </div>
@@ -1538,18 +1587,30 @@
           </div>
           <div class="tut-title">Si conecta, aparece el match</div>
           <div class="tut-text">
-            Si la charla simulada sale bien, se los mostramos a los dos: es
-            un match real, no un perfil más para deslizar.
+            Si la charla simulada sale bien, se los mostramos a los dos: es un
+            match real, no un perfil más para deslizar.
           </div>
           <div class="tut-where">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+            </svg>
             Así, mismo lugar donde estás ahora, en "Matches recientes"
           </div>
         </div>
 
         <div class="tut-step" data-tut-step="4">
           <div class="tut-mock" aria-hidden="true">
-            <div class="tut-mock-chat" style="display: flex; align-items: center; gap: 10px">
+            <div
+              class="tut-mock-chat"
+              style="display: flex; align-items: center; gap: 10px"
+            >
               <div class="tut-mock-bubble a" style="margin: 0; flex: 1">
                 ¿te gustaría vernos un día de estos?
               </div>
@@ -1558,11 +1619,22 @@
           </div>
           <div class="tut-title">Ahí entrás vos</div>
           <div class="tut-text">
-            Podés chatear de verdad con esa persona cuando quieras -- tu
-            gemelo ya rompió el hielo por vos.
+            Podés chatear de verdad con esa persona cuando quieras -- tu gemelo
+            ya rompió el hielo por vos.
           </div>
           <div class="tut-where">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"
+              />
+            </svg>
             Tocás el match, después "Chats"
           </div>
         </div>
@@ -1574,7 +1646,12 @@
           <span class="tut-dot" data-tut-dot="4"></span>
         </div>
 
-        <button class="tut-btn" type="button" onclick="tutorialSiguiente()" id="tutBtn">
+        <button
+          class="tut-btn"
+          type="button"
+          onclick="tutorialSiguiente()"
+          id="tutBtn"
+        >
           Siguiente
         </button>
       </div>
@@ -1833,13 +1910,9 @@
       <main class="app-main">
         <!-- 1. Greeting -->
         <section class="home-section fu" aria-label="Saludo">
-          <p class="greeting-eyebrow">Bienvenido/a de vuelta</p>
           <h1 class="greeting-title">
             Hola, <span id="user-name">Usuario</span>
           </h1>
-          <p class="greeting-sub">
-            Tu gemelo estuvo trabajando mientras no estabas.
-          </p>
         </section>
 
         <!-- 2. Gemelo banner -->
@@ -2655,7 +2728,12 @@
       // Arma la tira de "Matches recientes" (hasta 5, ordenados por mayor
       // afinidad) con fotos y nombres reales -- reemplaza los 5 items fijos
       // de antes. Reusa mostrarPip/ocultarPip vía el mismo id "mav-{id}".
-      async function cargarMatchesRecientes(user, data, candidatos, miInvocacion) {
+      async function cargarMatchesRecientes(
+        user,
+        data,
+        candidatos,
+        miInvocacion,
+      ) {
         const strip = document.getElementById("matchesStrip");
         const emptyEl = document.getElementById("matchesStripEmpty");
         if (!candidatos.length) {
@@ -2814,7 +2892,8 @@
                 gemeloLive.innerHTML = `<span class="live-label" style="color:var(--orange-light)">${pct}%</span>`;
             } else {
               gemeloBannerDestino = "gemelo";
-              if (gemeloInfoTitle) gemeloInfoTitle.textContent = "Tu gemelo está activo";
+              if (gemeloInfoTitle)
+                gemeloInfoTitle.textContent = "Tu gemelo está activo";
               if (gemeloLive)
                 gemeloLive.innerHTML = `<span class="live-dot" aria-label="Activo"></span><span class="live-label">Live</span>`;
             }
