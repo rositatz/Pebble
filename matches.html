@@ -2035,18 +2035,11 @@
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
           const edad =
             typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null;
-          // Nombre y edad siempre se muestran -- el resto respeta lo que la
-          // otra persona eligió en Privacidad (perfil.html). Ciudad/fotos/bio
-          // nacen visibles (solo se ocultan si puso === false); género y
-          // orientación nacen ocultos (solo se muestran si puso === true).
-          const priv = c.otro.privacidad || {};
-          const ciudad = priv.ciudad === false ? "" : c.otro.ciudad || "";
-          const fotosVisibles = priv.fotos !== false;
-          const foto = fotosVisibles
-            ? c.otro.avatarFoto ||
-              (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
-              ""
-            : "";
+          const ciudad = c.otro.ciudad || "";
+          const foto =
+            c.otro.avatarFoto ||
+            (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
+            "";
           const score = Math.round((c.data.ultimo_score || 0) * 100);
           const isNew = !mis[`match_visto_${c.otroId}`];
           const tags = interesesCompartidos(misIntereses, c.otro.intereses);
@@ -2062,10 +2055,7 @@
             c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)
               ? c.ultimaSim.historial_chat
               : [];
-          const identidadTxt = [
-            priv.genero === true ? c.otro.genero : "",
-            priv.orientacion === true ? c.otro.orientacion : "",
-          ]
+          const identidadTxt = [c.otro.genero, c.otro.orientacion]
             .filter(Boolean)
             .join(" · ");
 
@@ -2077,12 +2067,10 @@
             identidad: identidadTxt,
             score,
             photo: foto,
-            photos: fotosVisibles
-              ? (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
-                  Boolean,
-                )
-              : [],
-            bio: priv.bio === false ? "" : c.otro.bio || "",
+            photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
+              Boolean,
+            ),
+            bio: c.otro.bio || "",
             compat: ejes,
             diferencias,
             interests: (c.otro.intereses || []).slice(0, 10),

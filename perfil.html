@@ -572,32 +572,6 @@
         color: var(--text-muted);
         font-style: italic;
       }
-      .field-lock {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        padding: 3px 8px;
-        border-radius: 20px;
-        flex-shrink: 0;
-      }
-      .field-lock.visible {
-        background: #e8f5e9;
-        color: #2e7d32;
-      }
-      .field-lock.hidden {
-        background: var(--surf-2);
-        color: var(--text-muted);
-      }
-      .field-lock svg {
-        width: 10px;
-        height: 10px;
-        fill: none;
-        stroke: currentColor;
-        flex-shrink: 0;
-      }
 
       /* Edit form */
       .edit-form {
@@ -726,51 +700,6 @@
         font-size: 0.7rem;
         color: var(--text-muted);
         text-align: right;
-      }
-
-      /* ── Privacy toggles ── */
-      .privacy-section {
-        padding: 24px;
-      }
-      .privacy-intro {
-        font-size: 0.82rem;
-        color: var(--text-secondary);
-        line-height: 1.55;
-        margin-bottom: 20px;
-        padding: 12px 14px;
-        border-radius: var(--r-md);
-        background: var(--surf-2);
-        border-left: 3px solid var(--orange);
-      }
-      .privacy-list {
-        display: flex;
-        flex-direction: column;
-      }
-      .privacy-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 15px 0;
-        border-bottom: 1px solid var(--border);
-        gap: 16px;
-      }
-      .privacy-row:last-child {
-        border-bottom: none;
-      }
-      .privacy-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .privacy-label {
-        font-size: 0.88rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        display: block;
-        margin-bottom: 2px;
-      }
-      .privacy-desc {
-        font-size: 0.73rem;
-        color: var(--text-muted);
       }
 
       /* Toggle switch */
@@ -2027,7 +1956,6 @@
         .card-pad,
         .photo-section,
         .info-section,
-        .privacy-section,
         .interests-section {
           padding: 16px;
         }
@@ -2286,98 +2214,26 @@
             <div class="field-row">
               <span class="field-label">Nombre</span>
               <span class="field-value" id="vNombre"></span>
-              <span class="field-lock visible" id="lockNombre">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Visible
-              </span>
             </div>
             <div class="field-row">
               <span class="field-label">Edad</span>
               <span class="field-value" id="vEdad">23 años</span>
-              <span class="field-lock visible" id="lockEdad">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Visible
-              </span>
             </div>
             <div class="field-row">
               <span class="field-label">Ciudad</span>
               <span class="field-value" id="vCiudad">Buenos Aires</span>
-              <span class="field-lock visible" id="lockCiudad">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Visible
-              </span>
             </div>
             <div class="field-row">
               <span class="field-label">Género</span>
               <span class="field-value" id="vGenero">Mujer</span>
-              <span class="field-lock hidden" id="lockGenero">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Al conectar
-              </span>
             </div>
             <div class="field-row">
               <span class="field-label">Pronombres</span>
               <span class="field-value" id="vPronombres">—</span>
-              <span class="field-lock hidden" id="lockPronombres">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Al conectar
-              </span>
             </div>
             <div class="field-row">
               <span class="field-label">Orientación</span>
               <span class="field-value" id="vOrientacion">Bisexual</span>
-              <span class="field-lock hidden" id="lockOrientacion">
-                <svg
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                Al conectar
-              </span>
             </div>
             <div class="field-row">
               <span class="field-label">Rango de edad</span>
@@ -2812,137 +2668,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             Tus intereses se comparten con tu gemelo digital y ayudan a
             encontrar personas compatibles.
           </p>
-        </div>
-      </div>
-
-      <!-- ⑥ Privacidad -->
-      <div class="card fu">
-        <div class="privacy-section">
-          <div class="section-header">
-            <div>
-              <h2 class="section-title">Privacidad</h2>
-              <p class="section-sub">
-                Qué información ven antes de que conecten sus gemelos
-              </p>
-            </div>
-          </div>
-          <div class="privacy-intro">
-            En Pebble tu información se revela de forma progresiva. Controlá qué
-            ven los demás desde el primer momento y qué queda reservado para
-            cuando la conexión entre gemelos lo justifique.
-          </div>
-          <div class="privacy-list">
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar mi ciudad</span>
-                <span class="privacy-desc"
-                  >Tu ciudad aparece en tu tarjeta en el feed</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privCiudad"
-                  checked
-                  onchange="handlePrivacyToggle('Ciudad', this)"
-                />
-                <label class="toggle-label" for="privCiudad"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar mis fotos</span>
-                <span class="privacy-desc"
-                  >Si lo desactivás, los demás ven solo tu inicial hasta
-                  conectar</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privFotos"
-                  checked
-                  onchange="handlePrivacyToggle('Fotos', this)"
-                />
-                <label class="toggle-label" for="privFotos"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar mi bio</span>
-                <span class="privacy-desc"
-                  >Tu descripción es visible en tu perfil antes de
-                  conectar</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privBio"
-                  checked
-                  onchange="handlePrivacyToggle('Bio', this)"
-                />
-                <label class="toggle-label" for="privBio"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar género e identidad</span>
-                <span class="privacy-desc"
-                  >Solo visible para personas con las que tu gemelo ya
-                  conectó</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privGenero"
-                  onchange="handlePrivacyToggle('Genero', this)"
-                />
-                <label class="toggle-label" for="privGenero"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar orientación</span>
-                <span class="privacy-desc"
-                  >Solo visible para personas con las que tu gemelo ya
-                  conectó</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privOrientacion"
-                  onchange="handlePrivacyToggle('Orientacion', this)"
-                />
-                <label class="toggle-label" for="privOrientacion"></label>
-              </div>
-            </div>
-            <div class="privacy-row">
-              <div class="privacy-info">
-                <span class="privacy-label">Mostrar mis pronombres</span>
-                <span class="privacy-desc"
-                  >Solo visible para personas con las que tu gemelo ya
-                  conectó</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="privPronombres"
-                  onchange="handlePrivacyToggle('Pronombres', this)"
-                />
-                <label class="toggle-label" for="privPronombres"></label>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -4556,51 +4281,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       }
 
       /* ══════════════════════════════
-   PRIVACY BADGES
-══════════════════════════════ */
-      const privacyFieldMap = {
-        Ciudad: "lockCiudad",
-        Genero: "lockGenero",
-        Orientacion: "lockOrientacion",
-        Pronombres: "lockPronombres",
-      };
-
-      // Actualiza el badge de privacidad (visible / al conectar) para un campo del perfil
-      // Se llama al cambiar los toggles de privacidad de cada campo
-      function updatePrivacyBadge(field, isVisible) {
-        const lockId = privacyFieldMap[field];
-        if (!lockId) return;
-        const lock = document.getElementById(lockId);
-        if (!lock) return;
-        lock.className = "field-lock " + (isVisible ? "visible" : "hidden");
-        lock.querySelector("svg").outerHTML =
-          `<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;fill:none;stroke:currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
-        lock.lastChild.textContent = isVisible ? " Visible" : " Al conectar";
-      }
-
-      // Se llama al tocar cualquiera de los 6 toggles de "Privacidad" (ciudad,
-      // fotos, bio, género, orientación, pronombres): actualiza el badge visual
-      // (si ese campo tiene uno) y persiste el estado en Firestore. Nombre y
-      // edad no tienen toggle -- siempre son visibles, no hay nada que ocultar.
-      function handlePrivacyToggle(field, checkbox) {
-        updatePrivacyBadge(field, checkbox.checked);
-        savePrivacidad();
-      }
-
-      function savePrivacidad() {
-        const data = {
-          ciudad: document.getElementById("privCiudad").checked,
-          fotos: document.getElementById("privFotos").checked,
-          bio: document.getElementById("privBio").checked,
-          genero: document.getElementById("privGenero").checked,
-          orientacion: document.getElementById("privOrientacion").checked,
-          pronombres: document.getElementById("privPronombres").checked,
-        };
-        if (typeof window._db_savePrivacidad === "function")
-          window._db_savePrivacidad(data);
-      }
-
-      /* ══════════════════════════════
    TOAST
 ══════════════════════════════ */
       // Muestra una notificación temporal en pantalla con el mensaje dado
@@ -5440,39 +5120,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               document.getElementById("privPausar").checked = p.pausada;
           }
 
-          // Privacidad de campos del perfil (mostrar ciudad/fotos/bio/género/orientación/pronombres)
-          if (d.privacidad) {
-            const pr = d.privacidad;
-            const campos = {
-              ciudad: "privCiudad",
-              fotos: "privFotos",
-              bio: "privBio",
-              genero: "privGenero",
-              orientacion: "privOrientacion",
-              pronombres: "privPronombres",
-            };
-            Object.entries(campos).forEach(([key, elId]) => {
-              if (pr[key] !== undefined)
-                document.getElementById(elId).checked = pr[key];
-            });
-            updatePrivacyBadge(
-              "Ciudad",
-              document.getElementById("privCiudad").checked,
-            );
-            updatePrivacyBadge(
-              "Genero",
-              document.getElementById("privGenero").checked,
-            );
-            updatePrivacyBadge(
-              "Orientacion",
-              document.getElementById("privOrientacion").checked,
-            );
-            updatePrivacyBadge(
-              "Pronombres",
-              document.getElementById("privPronombres").checked,
-            );
-          }
-
           // Fotos guardadas
           if (Array.isArray(d.fotos) && d.fotos.length) {
             photos = [...d.fotos, ...new Array(MAX_PHOTOS).fill(null)].slice(
@@ -5615,16 +5262,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           // falla igual redirigimos, no tiene sentido bloquear acá.
         }
         window.location.href = "./index.html";
-      };
-
-      // Guardar privacidad de campos del perfil (nombre/edad/ciudad/fotos/bio/género/orientación)
-      window._db_savePrivacidad = async (data) => {
-        if (!uid) return;
-        await setDoc(
-          doc(db, "usuarios", uid),
-          { privacidad: data },
-          { merge: true },
-        );
       };
 
       // Guardar el array de fotos (ya comprimidas a data URL) en Firestore

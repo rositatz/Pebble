@@ -1447,8 +1447,14 @@
       // puede escribirlo.
       var matchesReales = [];
 
+      // Cada entrada del log solo guardaba "hora" (HH:MM, sin día) -- para
+      // análisis después hace falta la fecha completa, así que acá (el
+      // único lugar por el que pasan las 5 formas de entrada: mensaje,
+      // recomendación, feedback, progreso) se estampa un Timestamp real
+      // antes de persistir.
       function logChatEntry(entry) {
         if (replayingChat) return;
+        entry.fecha = new Date();
         chatLog.push(entry);
         if (typeof window._db_saveGemeloChat !== "function") return;
         clearTimeout(_saveChatTimer);

@@ -3423,42 +3423,29 @@
                   .slice(gemelo.vistoHasta || 0)
                   .filter((m) => m.from === "them").length;
 
-                // Nombre y edad siempre se muestran -- el resto respeta lo
-                // que la otra persona eligió en Privacidad (perfil.html).
-                // Ciudad/fotos/bio nacen visibles (solo se ocultan si puso
-                // === false); género/orientación nacen ocultos (solo se
-                // muestran si puso === true).
-                const privOtro = c.otro.privacidad || {};
-                const fotosVisiblesOtro = privOtro.fotos !== false;
-                const identidadOtro = [
-                  privOtro.genero === true ? c.otro.genero : "",
-                  privOtro.orientacion === true ? c.otro.orientacion : "",
-                ]
+                const identidadOtro = [c.otro.genero, c.otro.orientacion]
                   .filter(Boolean)
                   .join(" · ");
 
                 people[id] = {
                   name: nombre,
                   color: "linear-gradient(135deg,#FF9700,#FF751F)",
-                  photo: fotosVisiblesOtro
-                    ? c.otro.avatarFoto ||
-                      (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
-                      ""
-                    : "",
+                  photo:
+                    c.otro.avatarFoto ||
+                    (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
+                    "",
                   age: calcAge(c.otro.fechaNac),
-                  city: privOtro.ciudad === false ? "" : c.otro.ciudad || "",
+                  city: c.otro.ciudad || "",
                   identidad: identidadOtro,
                   afinidad: Math.round((c.data.ultimo_score || 0) * 100),
-                  bio: privOtro.bio === false ? "" : c.otro.bio || "",
+                  bio: c.otro.bio || "",
                   interests: susIntereses,
                   sharedInterests: misIntereses.filter((i) =>
                     susIntereses.includes(i),
                   ),
-                  photos: fotosVisiblesOtro
-                    ? (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
-                        Boolean,
-                      )
-                    : [],
+                  photos: (Array.isArray(c.otro.fotos) ? c.otro.fotos : []).filter(
+                    Boolean,
+                  ),
                   realUnlocked: true,
                   currentMode:
                     (people[id] && people[id].currentMode) ||

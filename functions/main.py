@@ -163,24 +163,6 @@ def _quiere_notif(db, uid, campo):
         return True
 
 
-def _con_privacidad(db, uid, perfil):
-    """Agrega las preferencias de 'Privacidad' (perfil.html -- qué campos
-    del perfil real, no del gemelo, dejó visibles) al perfil que arma el
-    prompt del gemelo, como perfil["_privacidad"]. Es lo único que le
-    permite a generar_prompt_gemelo saber qué NO tiene que revelar en una
-    conversación aunque se lo pregunten directamente (género, orientación).
-    No se persiste -- se recalcula cada vez que se arma un prompt."""
-    if perfil is None:
-        return perfil
-    try:
-        datos = db.collection("usuarios").document(uid).get().to_dict() or {}
-        perfil["_privacidad"] = datos.get("privacidad") or {}
-    except Exception as e:
-        print(f"_con_privacidad: error leyendo privacidad de {uid}: {e}")
-        perfil["_privacidad"] = {}
-    return perfil
-
-
 def _obtener_o_generar_perfil(db, uid):
     """Lee usuarios/{uid}/gemelo/perfil -- si todavía no existe pero el
     onboarding ya está completed:true, lo genera ahí mismo en vez de
@@ -196,7 +178,7 @@ def _obtener_o_generar_perfil(db, uid):
     ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
     snap = ref.get()
     if snap.exists:
-        return _con_privacidad(db, uid, snap.to_dict())
+        return snap.to_dict()
 
     doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
     if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
@@ -204,7 +186,7 @@ def _obtener_o_generar_perfil(db, uid):
 
     perfil = construir_perfil_gemelo(doc_setup.to_dict())
     ref.set(perfil)
-    return _con_privacidad(db, uid, perfil)
+    return perfil
 
 
 def _parse_fecha(valor):
@@ -835,11 +817,10 @@ def dar_consejo_match(request: https_fn.CallableRequest):
     # muestra en matches.html.
     diferencias = ((par_doc.to_dict().get("diferencias_personalidad") or {}).get(uid1)) or []
 
-    perfil2_priv = _con_privacidad(db, uid2, perfil2)
     nombre2 = perfil2.get("nombre") or "esa persona"
 
     try:
-        consejo = motor.generar_consejo_match(perfil1, perfil2_priv, nombre2, diferencias)
+        consejo = motor.generar_consejo_match(perfil1, perfil2, nombre2, diferencias)
     except Exception as e:
         print(f"dar_consejo_match: error generando el consejo: {e}")
         raise https_fn.HttpsError(
@@ -1042,7 +1023,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
 
     system_prompt = motor.generar_prompt_gemelo(
         perfil_otro, nombre_otro=nombre_propio,
-        genero_otro=motor._genero_visible(perfil_propio) if perfil_propio else None,
+        genero_otro=(perfil_propio or {}).get("genero"),
     )
     if perfil_propio is not None:
         # Mismo criterio que las simulaciones automáticas: que la charla en
@@ -1346,8 +1327,8 @@ def _procesar_parejas_pendientes_logica() -> None:
                 descartados += 1
                 continue
 
-            perfil1_data = _con_privacidad(db, uid1, doc1.to_dict())
-            perfil2_data = _con_privacidad(db, uid2, doc2.to_dict())
+            perfil1_data = doc1.to_dict()
+            perfil2_data = doc2.to_dict()
 
             # Compatibilidad matemática del onboarding, gratis (sin OpenAI) --
             # mismo cálculo que antes hacía simular_relacion_completa antes de
@@ -1459,8 +1440,8 @@ def _finalizar_par_de_batch(db, estado_par):
     if not doc1.exists or not doc2.exists:
         print(f"_finalizar_par_de_batch: ya no existe el perfil de {uid1} o {uid2}, se descarta el resultado.")
         return
-    perfil1_data = _con_privacidad(db, uid1, doc1.to_dict())
-    perfil2_data = _con_privacidad(db, uid2, doc2.to_dict())
+    perfil1_data = doc1.to_dict()
+    perfil2_data = doc2.to_dict()
 
     registro = motor.finalizar_par_batch(perfil1_data, perfil2_data, estado_par)
 

@@ -313,26 +313,14 @@ def _instruccion_genero(perfil):
 # un adjetivo/participio ("¿te ves más instalada?", "te noto cansado") es un
 # tercer caso que necesita el género REAL del otro, no el propio -- sin esto
 # el modelo lo adivina y se equivoca (visto en producción: le dijo
-# "instalada" a un chico). genero_otro llega ya filtrado por privacidad (ver
-# simular_cita/chatear_con_gemelo_match) -- si la otra persona no compartió
-# su género, se cae al mismo default masculino que ya se usa para "género no
-# confirmado" en el plural, nunca "o/a" ni barras.
+# "instalada" a un chico). genero_otro es el género real de la otra persona
+# (perfil.get("genero")) -- si no está cargado, se cae al mismo default
+# masculino que ya se usa para "género no confirmado" en el plural, nunca
+# "o/a" ni barras.
 _GENERO_SEGUNDA_PERSONA = {
     "Mujer": "femenino (ej: \"¿te ves más instalada?\", \"te noto cansada\")",
     "Hombre": "masculino (ej: \"¿te ves más instalado?\", \"te noto cansado\")",
 }
-
-
-def _genero_visible(perfil):
-    """Género de este perfil, pero SOLO si la persona real lo dejó visible en
-    Privacidad (perfil["_privacidad"]["genero"] is True -- ver
-    _instruccion_privacidad/main._con_privacidad) -- si no, None, para que
-    quien arma el prompt de LA OTRA persona use el default de género no
-    confirmado en vez de filtrar un dato que esta persona no compartió."""
-    privacidad = perfil.get("_privacidad") or {}
-    if privacidad.get("genero") is not True:
-        return None
-    return perfil.get("genero")
 
 
 def _instruccion_genero_otro(genero_otro, nombre_otro):
@@ -355,33 +343,7 @@ def _instruccion_genero_otro(genero_otro, nombre_otro):
     )
 
 
-def _instruccion_privacidad(perfil):
-    """Género y orientación quedan ocultos por default (perfil.html,
-    sección Privacidad -- el toggle nace destildado para los dos) hasta que
-    la persona real decide mostrarlos. perfil["_privacidad"] lo agrega
-    main._con_privacidad justo antes de armar el prompt -- si no está (ej.
-    algún llamado viejo que no pasó por ahí), se trata como "todo oculto",
-    la opción más conservadora."""
-    privacidad = perfil.get("_privacidad") or {}
-    ocultos = []
-    if privacidad.get("genero") is not True:
-        ocultos.append("tu género / identidad de género")
-    if privacidad.get("orientacion") is not True:
-        ocultos.append("tu orientación sexual")
-    if not ocultos:
-        return ""
-    return (
-        "\n    IMPORTANTE -- PRIVACIDAD: " + " y ".join(ocultos) + " todavía no "
-        "los compartís (así lo eligió la persona real en Privacidad). Si te "
-        "preguntan directamente por eso, no lo reveles ni te lo inventes -- "
-        "esquivalo con algo natural (\"eso lo cuento más adelante\", \"prefiero "
-        "que nos conozcamos un poco más primero\") y seguí la charla por otro "
-        "lado, sin sonar evasivo/a de más ni mencionar que es \"privado\" o la "
-        "app.\n"
-    )
-
-
-_DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_DIAS_ES =["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 _MESES_ES = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
@@ -646,8 +608,6 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     vez que decidís despedirte, la marca es obligatoria en ese mensaje."""
         if permitir_cierre else ""
     )
-
-    instruccion_privacidad = _instruccion_privacidad(perfil)
 
     # Recap corto al final del prompt (después de TODAS las reglas
     # detalladas) -- en prompts largos como este, lo que está más cerca de
@@ -1369,7 +1329,6 @@ def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_ot
     fijate si ya lo usaste en tu mensaje anterior: si sí, esta vez
     reaccioná de otra forma (una afirmación, un comentario, una pregunta
     directa, un "posta" o "en serio" seco) en vez de sumar otro "jaja".
-    {instruccion_privacidad}
     {instruccion_plan_final}
     {instruccion_cierre_natural}
     {checklist_final}
@@ -1879,8 +1838,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     apodo1 = perfil1.get("apodo") or nombre1
     apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=_genero_visible(perfil2))
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=_genero_visible(perfil1))
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
@@ -2131,8 +2090,8 @@ def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, d
     apodo1 = perfil1.get("apodo") or nombre1
     apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=_genero_visible(perfil2))
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=_genero_visible(perfil1))
+    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
+    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
 
     return {
         "uid1": uid1, "uid2": uid2,
