@@ -1797,10 +1797,6 @@
         background: var(--orange);
         color: #fff;
       }
-      .tut-mock-badge.online {
-        background: rgba(34, 197, 94, 0.18);
-        color: #16a34a;
-      }
       .tut-mock-sim {
         display: flex;
         align-items: center;
@@ -1934,7 +1930,6 @@
           <div class="tut-mock-bar real" aria-hidden="true">
             <span class="tut-mock-dot"></span>
             <span style="flex: 1">Chat real con <strong>Abril</strong></span>
-            <span class="tut-mock-badge online">En línea</span>
           </div>
           <div class="tut-title">Modo Real</div>
           <div class="tut-text">
@@ -2428,7 +2423,7 @@
 
       // Actualiza la barra de contexto del panel según el modo activo
       // En modo gemelo muestra "Hablás con el gemelo de X · Modo práctica"
-      // En modo real muestra "Chat real con X · En línea"
+      // En modo real muestra "Chat real con X"
       function updateModeBar() {
         const p = people[curPerson];
         const bar = document.getElementById("panelModeBar");
@@ -2448,8 +2443,7 @@
           bar.className = "panel-mode-bar real-bar";
           bar.innerHTML = `
       <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;display:inline-block"></span>
-      <span style="flex:1">Chat real con <strong>${esc(p.name)}</strong></span>
-      <span class="mode-bar-badge" style="background:rgba(34,197,94,0.15);color:#16a34a">En línea</span>`;
+      <span style="flex:1">Chat real con <strong>${esc(p.name)}</strong></span>`;
           inp.placeholder = `Escribile a ${p.name}...`;
         }
       }
