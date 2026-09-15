@@ -1822,10 +1822,6 @@ def resetear_no_compatibles_mensual(event: scheduler_fn.ScheduledEvent) -> None:
 # pero es la misma ventana de tiempo conceptualmente.
 DIAS_RETOMAR_CHAT = 7
 
-# Cuántos días sin que le corran una simulación nueva antes de avisarle que
-# su gemelo está inactivo.
-DIAS_INACTIVIDAD_GEMELO = 3
-
 # Mínimo de mensajes propios (chat con el gemelo + chats reales con
 # matches, combinados) para que valga la pena una llamada a OpenAI -- con
 # menos que esto no hay suficiente texto para sacar nada real.
@@ -1842,27 +1838,29 @@ VENTANA_MENSAJES_APRENDIZAJE = 40
 @scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires")
 def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
     """Corre una vez por día (separado del batch pesado de las 3am) y genera
-    los dos tipos de aviso que no dependen de que corra una simulación
-    nueva:
+    el único tipo de aviso que queda acá:
 
     - "¿Retomás con X?": un chat real que ya arrancó pero no tiene mensajes
-      nuevos hace DIAS_RETOMAR_CHAT días.
-    - "Tu gemelo lleva N días sin interacciones": a este usuario no se le
-      corrió ninguna simulación nueva en DIAS_INACTIVIDAD_GEMELO días.
+      nuevos hace DIAS_RETOMAR_CHAT días -- depende únicamente de que las
+      DOS PERSONAS REALES no se hayan escrito, nunca de si corrió o no una
+      simulación entre gemelos.
 
-    Cada aviso se throttlea con un timestamp guardado -- sin eso, correr
-    todos los días generaría una notificación nueva todos los días mientras
-    la situación no cambie."""
+    (Antes también avisaba "Tu gemelo lleva N días sin interacciones" cuando
+    no corría una simulación nueva -- se sacó por pedido explícito: generaba
+    ruido sin relación con si las personas reales seguían hablando o no.)
+
+    El aviso se throttlea con un timestamp guardado -- sin eso, correr todos
+    los días generaría una notificación nueva todos los días mientras la
+    situación no cambie."""
 
     db = firestore.client()
     ahora = datetime.datetime.now(datetime.timezone.utc)
 
-    ultima_actividad_por_usuario = {}
     avisos_retomar = 0
 
     for doc in db.collection("conexiones").where("supera_umbral", "==", True).stream():
         data = doc.to_dict()
-        
+
         participantes = data.get("participantes") or []
         if len(participantes) != 2:
             continue
@@ -1873,12 +1871,6 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
         data_user1=doc_user1.to_dict()
         doc_user2=db.collection("usuarios").document(uid2).get()
         data_user2=doc_user2.to_dict()
-        fecha_sim = _parse_fecha(data.get("actualizado"))
-        if fecha_sim:
-            for u in (uid1, uid2):
-                actual = ultima_actividad_por_usuario.get(u)
-                if actual is None or fecha_sim > actual:
-                    ultima_actividad_por_usuario[u] = fecha_sim
 
         real = data.get("real") or {}
         msgs = real.get("msgs") or []
@@ -1933,40 +1925,8 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
                 doc.reference.update({"real.recordatorioRetomarEn": firestore.SERVER_TIMESTAMP})
                 avisos_retomar += 2
 
-    avisos_inactivo = 0
-    for uid, fecha_sim in ultima_actividad_por_usuario.items():
-        dias_inactivo = (ahora - fecha_sim).days
-        if dias_inactivo < DIAS_INACTIVIDAD_GEMELO:
-            continue
-
-        ref_usuario = db.collection("usuarios").document(uid)
-        doc_usuario = ref_usuario.get()
-        datos_usuario = doc_usuario.to_dict() if doc_usuario.exists else {}
-        recordado_en = doc_usuario.to_dict().get("recordatorioInactivoEn") if doc_usuario.exists else None
-        if recordado_en and (ahora - recordado_en).days < DIAS_INACTIVIDAD_GEMELO:
-            continue
-
-        if _quiere_notif(db, uid, "gemelo"):
-            _crear_notificacion(
-                db, uid, "inactivo", f"Tu gemelo lleva {dias_inactivo} días sin interacciones",
-                "Ajustar su personalidad o tus preferencias puede mejorar los resultados.",
-                accion="gemelo",
-            )
-            correo_inactivo = datos_usuario.get("email") or datos_usuario.get("correo")
-            if correo_inactivo:
-                enlace_gemelo = generar_enlace_app(accion="gemelo")
-                _mandar_correo(
-                    correo=correo_inactivo,
-                    titulo="Tu gemelo virtual necesita ajustes",
-                    texto=f"Tu gemelo virtual lleva {dias_inactivo} días sin interacciones en Pebble. Ajustar su personalidad o actualizar tus preferencias puede ayudarte a mejorar los resultados y obtener nuevos matches.",
-                    enlace_url=enlace_gemelo
-                )
-        ref_usuario.set({"recordatorioInactivoEn": firestore.SERVER_TIMESTAMP}, merge=True)
-        avisos_inactivo += 1
-
     print(
-        f"generar_recordatorios_diarios: {avisos_retomar} avisos de retomar chat, "
-        f"{avisos_inactivo} avisos de gemelo inactivo (sobre {len(ultima_actividad_por_usuario)} usuarios con conexiones)."
+        f"generar_recordatorios_diarios: {avisos_retomar} avisos de retomar chat."
     )
 
 

@@ -1731,6 +1731,13 @@
         if (err.code === "functions/unavailable") {
           return `${escHtml(err.message || "Tu gemelo no pudo responder ahora.")} `;
         }
+        if (err.code === "functions/invalid-argument") {
+          // Nuestro propio backend arma este mensaje a propósito (ver
+          // chatear_con_gemelo en main.py) -- ya avisa de la longitud sin
+          // mencionar tokens, así que se muestra tal cual en vez de caer en
+          // el genérico de abajo.
+          return escHtml(err.message || "Ese mensaje es muy largo. Probá acortarlo.");
+        }
         return "Tuvimos un problema para responder ahora. Probá de nuevo en un rato.";
       }
 

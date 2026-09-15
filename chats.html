@@ -2455,20 +2455,16 @@
       }
 
       /* ── Render messages ── */
-      // Limpia y redibuja todos los mensajes del chat abierto según la persona y modo activos
-      // Agrega el separador "Hoy" y, en modo gemelo, la tarjeta de simulación al tope
+      // Limpia y redibuja todos los mensajes del chat abierto según la persona y modo activos.
+      // Agrega un separador de día/mes/año cada vez que cambia el día real de
+      // un mensaje (ver _fechaMsg/_etiquetaDia) y, en modo gemelo, la tarjeta
+      // de simulación al tope.
       function renderMessages() {
         const p = people[curPerson];
         const md = p[curMode];
         const con = document.getElementById("panelMsgsInner");
         const isG = curMode === "gemelo";
         con.innerHTML = "";
-
-        const sep = document.createElement("div");
-        sep.className = "day-sep";
-        sep.innerHTML =
-          '<div class="day-sep-line"></div><span class="day-sep-text">Hoy</span><div class="day-sep-line"></div>';
-        con.appendChild(sep);
 
         // Tarjeta de simulación al tope del chat gemelo
         if (isG && p.simulacion && p.simulacion.length) {
@@ -2487,7 +2483,21 @@
           con.appendChild(card);
         }
 
-        (md.msgs || []).forEach((msg) => addMsgEl(con, msg, p, isG));
+        let ultimaEtiqueta;
+        (md.msgs || []).forEach((msg) => {
+          const fecha = _fechaMsg(msg);
+          if (fecha) {
+            const etiqueta = _etiquetaDia(fecha);
+            if (etiqueta !== ultimaEtiqueta) {
+              const sep = document.createElement("div");
+              sep.className = "day-sep";
+              sep.innerHTML = `<div class="day-sep-line"></div><span class="day-sep-text">${etiqueta}</span><div class="day-sep-line"></div>`;
+              con.appendChild(sep);
+              ultimaEtiqueta = etiqueta;
+            }
+          }
+          addMsgEl(con, msg, p, isG);
+        });
       }
 
       // Contenido de una burbuja: si el mensaje trae foto (solo pasa en modo
@@ -2562,6 +2572,7 @@
           from: mode === "real" ? window._uid : "me",
           text,
           time: t,
+          fecha: new Date(),
         };
         md.msgs.push(msg);
         md.lastTime = t;
@@ -2616,7 +2627,15 @@
               );
             } catch (err) {
               console.error("Error en chatear_con_gemelo_match:", err);
-              partes = ["No pude responder ahora mismo. Probá de nuevo en un rato."];
+              // "invalid-argument" es el límite de longitud que arma nuestro
+              // propio backend (ver chatear_con_gemelo_match en main.py) --
+              // ya avisa de la longitud sin mencionar tokens, se muestra tal
+              // cual en vez del genérico de abajo.
+              partes = [
+                err.code === "functions/invalid-argument"
+                  ? err.message || "Ese mensaje es muy largo. Probá acortarlo."
+                  : "No pude responder ahora mismo. Probá de nuevo en un rato.",
+              ];
             }
             removeTyping();
             // El gemelo puede partir su turno en varios mensajitos cortos
@@ -2624,7 +2643,7 @@
             // como una burbuja separada, no todas pegadas con saltos de
             // línea dentro de un solo mensaje.
             (partes || []).forEach((parte) => {
-              md.msgs.push({ from: "them", text: parte, time: nowTime() });
+              md.msgs.push({ from: "them", text: parte, time: nowTime(), fecha: new Date() });
             });
             md.lastTime = nowTime();
             // Si seguís mirando esta misma conversación cuando llega la
@@ -2754,6 +2773,7 @@
           text: "",
           photo: dataUrl,
           time: t,
+          fecha: new Date(),
         };
         md.msgs.push(msg);
         md.lastTime = t;
@@ -3060,6 +3080,30 @@
           hour: "2-digit",
           minute: "2-digit",
         });
+      }
+
+      // "time" (HH:MM) nunca guardó de qué DÍA era un mensaje -- todos los
+      // separadores mostraban "Hoy" siempre, sin importar cuándo se mandó
+      // en realidad. Los mensajes nuevos ya guardan "fecha" (Timestamp real,
+      // ver los 3 lugares donde se arma un msg en sendPanelMsg/
+      // sendPanelPhoto); esto la recupera como Date, tanto si viene de
+      // Firestore (Timestamp con .toDate()) como recién creada en el
+      // cliente (ya es Date). Mensajes viejos que todavía no tengan "fecha"
+      // devuelven null -- no se les inventa una fecha, se agrupan sin
+      // separador propio en vez de mostrar algo potencialmente falso.
+      function _fechaMsg(msg) {
+        if (!msg) return null;
+        if (msg.fecha && typeof msg.fecha.toDate === "function") return msg.fecha.toDate();
+        if (msg.fecha instanceof Date) return msg.fecha;
+        return null;
+      }
+
+      // Formato pedido: día/mes/año siempre, sin "Hoy"/"Ayer" -- así no hay
+      // ambigüedad posible sobre qué día fue en realidad cada mensaje.
+      function _etiquetaDia(fecha) {
+        const dd = String(fecha.getDate()).padStart(2, "0");
+        const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+        return `${dd}/${mm}/${fecha.getFullYear()}`;
       }
       // Escapa caracteres especiales de HTML para evitar inyección de código en los mensajes
       function esc(t) {
