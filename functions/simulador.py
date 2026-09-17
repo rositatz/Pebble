@@ -220,6 +220,35 @@ def _parece_razonamiento_filtrado(texto):
         return True
 
     return False
+# Acumula tokens de todos los llamados a _completar_chat_gemelo dentro de
+# esta invocación de función -- simulador.py no tiene acceso a Firestore a
+# propósito (para poder testear sin credenciales), así que no persiste esto
+# él mismo. main.py lee y resetea esto con obtener_y_resetear_uso_tokens()
+# al final de cada Cloud Function y lo guarda en metricas_diarias/{fecha}.
+_uso_tokens_acumulado = {"prompt": 0, "cached": 0, "completion": 0, "llamadas": 0}
+
+
+def obtener_y_resetear_uso_tokens():
+    global _uso_tokens_acumulado
+    datos = _uso_tokens_acumulado
+    _uso_tokens_acumulado = {"prompt": 0, "cached": 0, "completion": 0, "llamadas": 0}
+    return datos
+
+
+def _registrar_uso_tokens(usage):
+    if usage is None:
+        return 0
+    cached_tokens = 0
+    details = getattr(usage, "prompt_tokens_details", None)
+    if details is not None:
+        cached_tokens = getattr(details, "cached_tokens", 0) or 0
+    _uso_tokens_acumulado["prompt"] += getattr(usage, "prompt_tokens", 0) or 0
+    _uso_tokens_acumulado["cached"] += cached_tokens
+    _uso_tokens_acumulado["completion"] += getattr(usage, "completion_tokens", 0) or 0
+    _uso_tokens_acumulado["llamadas"] += 1
+    return cached_tokens
+
+
 def _completar_chat_gemelo(
     messages,
     model="gpt-5.6-terra",
@@ -244,23 +273,7 @@ def _completar_chat_gemelo(
 
     try:
         usage = response.usage
-
-        cached_tokens = 0
-
-        if usage is not None:
-            details = getattr(
-                usage,
-                "prompt_tokens_details",
-                None
-            )
-
-            if details is not None:
-                cached_tokens = getattr(
-                    details,
-                    "cached_tokens",
-                    0
-                ) or 0
-
+        cached_tokens = _registrar_uso_tokens(usage)
         print(
             f"gemelo usage | "
             f"input={getattr(usage, 'prompt_tokens', 0)} | "
@@ -293,6 +306,10 @@ def _completar_chat_gemelo(
             messages=messages + [refuerzo],
             **kwargs,
         )
+        try:
+            _registrar_uso_tokens(response.usage)
+        except Exception as e:
+            print(f"No se pudo leer usage del reintento: {e}")
 
     return response
 

@@ -200,6 +200,31 @@ def _mezclar_pronombres(db, uid, perfil):
         perfil["pronombres"] = datos_usuario["pronombres"]
 
 
+def _guardar_metricas_uso(db, feature):
+    """Persiste en metricas_diarias/{fecha} los tokens acumulados por
+    motor._completar_chat_gemelo durante esta invocación (ver
+    motor.obtener_y_resetear_uso_tokens) -- colección separada de las que
+    usa la app para funcionar, pensada solo para análisis de costo/uso,
+    nunca se lee en el camino de abrir un chat o un perfil.
+
+    feature identifica qué función gastó esto (chat_propio, chat_match,
+    simulacion, consejo) para poder ver el costo desglosado por tipo."""
+    datos = motor.obtener_y_resetear_uso_tokens()
+    if not datos["llamadas"]:
+        return
+    fecha = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%Y-%m-%d")
+    ref = db.collection("metricas_diarias").document(fecha)
+    try:
+        ref.set({
+            f"tokens_prompt_{feature}": firestore.Increment(datos["prompt"]),
+            f"tokens_cached_{feature}": firestore.Increment(datos["cached"]),
+            f"tokens_completion_{feature}": firestore.Increment(datos["completion"]),
+            f"llamadas_{feature}": firestore.Increment(datos["llamadas"]),
+        }, merge=True)
+    except Exception as e:
+        print(f"_guardar_metricas_uso: error guardando métricas de {feature}: {e}")
+
+
 def _parse_fecha(valor):
     """'actualizado' en conexiones se guarda como string ISO (ver
     registro_simulacion), no como Timestamp nativo -- hay que parsearlo a
@@ -757,6 +782,8 @@ def simular_situacion(request: https_fn.CallableRequest):
     par_ref.collection("simulaciones").add(registro)
     par_ref.set(payload, merge=True)
 
+    _guardar_metricas_uso(db, "simulacion")
+
     return {
         "resumen": registro["analisis"].get("resumen_interaccion", ""),
         "score": registro["score"],
@@ -839,6 +866,7 @@ def dar_consejo_match(request: https_fn.CallableRequest):
             "No se pudo generar el consejo en este momento. Probá de nuevo en un rato."
         )
 
+    _guardar_metricas_uso(db, "consejo")
     return {"consejo": consejo, "nombre": nombre2}
 
 
@@ -953,6 +981,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
             "Tu gemelo no pudo responder en este momento. Probá de nuevo en un rato."
         )
 
+    _guardar_metricas_uso(db, "chat_propio")
     return {"respuesta": response.choices[0].message.content}
 
 
@@ -1094,6 +1123,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     # verdad con _dividir_mensajes y se devuelve la lista -- el frontend
     # (chats.html) tiene que agregar cada parte como un mensaje separado.
     partes = motor._dividir_mensajes(response.choices[0].message.content)
+    _guardar_metricas_uso(db, "chat_match")
     return {"partes": partes}
 
 
