@@ -1142,168 +1142,54 @@ def _temas_obligatorios(perfil1, perfil2, nombre1=None, nombre2=None, top_n=3):
 
 
 def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nombre2=None):
-    """Texto para inyectar en el prompt de generar_prompt_gemelo/
-    contexto_escenario -- sin esto, una charla podía fluir perfecta entre
-    dos perfiles que en los datos reales (onboarding) comparten poco,
-    porque nada le decía al modelo que calibrara la facilidad de la
-    charla contra la compatibilidad real. No se le pasa el % exacto (para
-    que no lo actúe/mencione literal) -- solo un nivel cualitativo, que
-    sirve de guía de qué tan fácil o difícil tiene que sentirse fluir.
-    Usa compatibilidad SOLO de onboarding (analisis=None) -- la charla en
-    cuestión todavía no pasó, no se puede analizar a sí misma."""
     promedio_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
-
-    # 4 escalones, no 3 -- antes "MEDIA" era un solo balde entre el umbral y
-    # 0.70, así que un 53% y un 68% recibían EXACTAMENTE la misma exigencia
-    # de fricción, aunque haya casi 15 puntos de diferencia real entre
-    # ellos. El nivel de conflicto tiene que escalar junto con el score, no
-    # ser binario (hay conflicto / no hay conflicto).
-    # 0.70 estaba hardcodeado acá como corte de "ALTA" -- si UMBRAL_MATCH
-    # (el piso real de match) llega a subir hasta igualar o superar ese
-    # número, los 4 niveles se aplanaban a 2 (punto_medio quedaba pegado al
-    # umbral). Por eso el corte de ALTA se calcula relativo al umbral real
-    # en vez de fijo, dejando siempre lugar arriba para 3 escalones
-    # distintos de compatibilidad "de match para arriba".
     umbral_alto = min(0.95, umbral + 0.15)
     punto_medio = (umbral + umbral_alto) / 2
-    if promedio_previo >= umbral_alto:
-        nivel = "ALTA -- comparten bastante de verdad en valores, forma de ser y de comunicarse"
-    elif promedio_previo >= punto_medio:
-        nivel = "MEDIA-ALTA -- comparten bastante, pero no todo -- hay alguna diferencia real de fondo"
-    elif promedio_previo >= umbral:
-        nivel = "MEDIA-BAJA -- comparten algunas cosas pero también hay diferencias reales de peso"
-    else:
-        nivel = "BAJA -- en los datos reales de los dos hay bastante poco en común"
 
-    # Puntos de fricción CONCRETOS (no solo "no estén siempre de acuerdo"
-    # en abstracto) -- en la práctica, la instrucción cualitativa sola no
-    # alcanzaba para evitar que dos perfiles con 53% de compatibilidad
-    # terminaran reflejándose el uno al otro como calcados. Con diferencias
-    # de personalidad puntuales y nombradas, el modelo tiene algo real y
-    # específico para chocar, no solo la orden genérica de "generar
-    # fricción" (mucho más fácil de ignorar).
-    # OJO: antes esto se gateaba con "promedio_previo < 0.70", un umbral
-    # hardcodeado que por casualidad coincidía con el UMBRAL_MATCH viejo.
-    # Al subir UMBRAL_MATCH a 0.70, un match justo en MEDIA-BAJA (ej: 75%)
-    # dejaba de calificar (0.75 no es < 0.70) y se quedaba SIN estas
-    # semillas concretas de fricción -- el modelo tenía que inventar el
-    # roce de la nada, sin nada real en qué anclarlo, lo que en la
-    # práctica generaba conflictos más largos/difusos que un roce puntual
-    # y contenido. El gate correcto es "no es ALTA" (mismos 3 escalones
-    # que sí piden fricción más abajo), no un número de score fijo.
+    # 1. Definir Nivel e Intensidad de forma directa
+    if promedio_previo >= umbral_alto:
+        nivel = "ALTA (valores y comunicación alineados)"
+        intensidad = ""
+    elif promedio_previo >= punto_medio:
+        nivel = "MEDIA-ALTA (diferencias menores)"
+        intensidad = "- FRICCIÓN EXIGIDA: LEVE. Incluir al menos un roce sutil (ej. diferencia de opinión puntual o silencio corto) sin escalar el conflicto."
+    elif promedio_previo >= umbral:
+        nivel = "MEDIA-BAJA (diferencias marcadas)"
+        intensidad = "- FRICCIÓN EXIGIDA: MODERADA. Incluir al menos un desacuerdo claro y directo. Contener el conflicto: superado el momento, la charla debe fluir normal."
+    else:
+        nivel = "BAJA (incompatibilidad alta)"
+        intensidad = "- FRICCIÓN EXIGIDA: FUERTE. Obligatorio incluir un desacuerdo serio, respuestas evasivas o incomodidad sostenida durante la charla."
+
+    # 2. Diferencias de Personalidad
     friccion_txt = ""
     if not nivel.startswith("ALTA") and nombre1 and nombre2:
         diffs_1_ve_2 = _diferencias_personalidad(perfil1, perfil2, nombre2)
         diffs_2_ve_1 = _diferencias_personalidad(perfil2, perfil1, nombre1)
         if diffs_1_ve_2 or diffs_2_ve_1:
-            puntos = "\n    ".join(f"- {d}" for d in (diffs_1_ve_2 + diffs_2_ve_1))
-            friccion_txt = f"""
-    DIFERENCIAS REALES DE PERSONALIDAD ENTRE USTEDES DOS (usalas como
-    semillas de fricción real -- si sale un tema donde esto aplica, que SE
-    NOTE la diferencia en cómo reaccionan, no la disimulen ni la
-    suavicen):
-    {puntos}
-    Por ejemplo: si uno tolera mal el conflicto y el otro no, uno se va a
-    sentir incómodo/a con algo que el otro dice con total naturalidad. Si
-    uno necesita mucha más cercanía afectiva, puede sentir que el otro es
-    frío/a. USEN esto quien corresponda -- no lo ignoren para llevarse
-    bien porque sí."""
+            puntos = "\n  ".join(f"* {d}" for d in (diffs_1_ve_2 + diffs_2_ve_1))
+            friccion_txt = f"\n- DIFERENCIAS REALES (actuar según estos rasgos, sin suavizarlos):\n  {puntos}"
 
-    # Que sean opuestos en personalidad no implica por sí solo más
-    # fricción: si además cada uno busca justamente eso (una personalidad
-    # distinta a la propia -- ver _fit_psicologico_direccion, que compara
-    # preferencias_pareja_personalidad de uno contra los rasgos reales del
-    # otro), esa diferencia es en parte POR QUÉ este par matchea, no solo
-    # un motivo de choque. Sin esto, dos perfiles opuestos-que-se-buscan
-    # (como el mecanismo real de atraeMas) solo mostraban fricción, nunca
-    # la atracción real por la diferencia que la propia preferencia indica.
-    atraccion_diferencia_txt = ""
+    # 3. Atracción por la Diferencia
+    atraccion_txt = ""
     if nombre1 and nombre2:
         atrae_1 = _atrae_diferencia_real(perfil1, perfil2)
         atrae_2 = _atrae_diferencia_real(perfil2, perfil1)
         if atrae_1 or atrae_2:
             quien = [n for n, atrae in ((nombre1, atrae_1), (nombre2, atrae_2)) if atrae]
-            verbo = "buscan" if len(quien) == 2 else "busca"
-            atraccion_diferencia_txt = f"""
-    ADEMÁS DE LA FRICCIÓN: {" y ".join(quien)} {verbo} justamente a alguien
-    con una personalidad distinta a la propia -- no es casualidad que
-    hagan match pese a ser tan diferentes en esto. En algún momento de la
-    charla que se note también ESO, no solo el choque: un comentario
-    genuino tipo "me gusta que seas tan distinto/a a mí en esto" o una
-    reacción de curiosidad/atracción real ante la diferencia (no un
-    cumplido vacío ni algo forzado) -- para que se entienda por qué el
-    match funciona a pesar de la diferencia, no solo que chocan por ella."""
+            atraccion_txt = f"\n- ATRACCIÓN POR OPUESTOS: {' y '.join(quien)} busca perfiles distintos al propio. Mostrar interés genuino en la diferencia (ej. 'me gusta que seas distinto/a en esto')."
 
-    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2, top_n=4)
+    # 4. Temas Obligatorios
     temas_txt = ""
+    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2, top_n=4)
     if temas:
-        puntos_temas = "\n    ".join(f"- {t}" for t in temas)
-        temas_txt = f"""
-    TEMAS QUE ESTA CHARLA TIENE QUE TOCAR SÍ O SÍ (sacados directo de datos
-    reales del onboarding de los dos -- no los reemplacen por otros
-    inventados, y no hace falta anunciarlos, que salgan con naturalidad en
-    algún punto de la charla):
-    {puntos_temas}"""
+        puntos_temas = "\n  ".join(f"* {t}" for t in temas)
+        temas_txt = f"\n- TEMAS OBLIGATORIOS (integrar orgánicamente sin anunciar):\n  {puntos_temas}"
+        
+    # 5. Regla de Longitud (Solo si no es ALTA)
+    regla_longitud = "" if nivel.startswith("ALTA") else "\n- REGLA DE LONGITUD: Menor compatibilidad NO significa charlas más cortas ni menos temas. Mantener la duración estándar."
 
-    # La intensidad de la fricción exigida escala junto con el nivel --
-    # antes MEDIA-ALTA (ej: 68%) y MEDIA-BAJA (ej: 53%) recibían la MISMA
-    # exigencia ("al menos una pelea/desacuerdo notorio"), así que subir de
-    # 53% a 60% no cambiaba en nada qué tan fuerte tenía que ser el choque.
-    if nivel.startswith("ALTA"):
-        intensidad_txt = ""
-    elif nivel.startswith("MEDIA-ALTA"):
-        intensidad_txt = """
-    Como la compatibilidad es MEDIA-ALTA, la fricción tiene que ser LEVE --
-    nada de pelea seria ni de ponerse frío/a de golpe, eso EXAGERARÍA la
-    incompatibilidad real. Alcanza con un roce chico: una diferencia de
-    opinión puntual que no escala, un comentario que incomoda un toque,
-    un "che, no sé si estoy de acuerdo con eso" sin más drama, o un
-    silencio corto antes de seguir. EXIGENCIA CONCRETA: al menos UN roce
-    así tiene que pasar, pero manteniéndose liviano -- no lo conviertan en
-    el eje de la charla."""
-    elif nivel.startswith("MEDIA-BAJA"):
-        intensidad_txt = """
-    Como la compatibilidad es MEDIA-BAJA, la fricción tiene que notarse de
-    verdad, más que un roce chico -- un desacuerdo real donde uno dice
-    derecho que no está de acuerdo, algo parecido a una discusión corta,
-    o un ambiente notoriamente más incómodo/con menos onda en algún tramo
-    de la charla. No hace falta que sea una pelea grande, pero sí algo
-    más que un comentario suelto. EXIGENCIA CONCRETA: al menos UNA de
-    estas formas tiene que pasar de manera clara, no sutil -- pero
-    CONTENIDA: una discusión corta, no una pelea que se extiende varios
-    mensajes ni que domina el resto de la charla. Después de ese momento,
-    la conversación sigue fluyendo normal -- MEDIA-BAJA sigue siendo
-    match, no es lo mismo que BAJA."""
-    else:
-        intensidad_txt = """
-    Como la compatibilidad es BAJA, la fricción tiene que ser fuerte y
-    real: un desacuerdo serio, algo parecido a una pelea de verdad, o muy
-    poca confianza para abrirse (respuestas cortas/evasivas en temas
-    personales) combinado con un ambiente incómodo sostenido, no solo un
-    momento puntual. EXIGENCIA CONCRETA, no opcional: en algún punto de
-    esta charla tiene que pasar al menos UNA de estas formas de manera
-    clara y notoria."""
-
-    return f"""
-    COMPATIBILIDAD REAL ENTRE USTEDES DOS (según sus datos reales de
-    fondo, no esta charla puntual): {nivel}. Esto NO es algo que tengan
-    que mencionar ni actuar de forma literal -- es una guía para qué tan
-    fácil o difícil tiene que fluir la charla. NUNCA repitan o parafraseen
-    lo que acaba de decir el otro como si fuera lo mismo que ustedes
-    piensan/sienten/hacen -- eso es el error más grave posible acá,
-    literalmente actuar como si fueran la misma persona cuando NO comparten
-    tanto en los datos reales.
-    {"" if nivel.startswith("ALTA") else '''
-    OJO: compatibilidad no-ALTA no significa una charla más corta ni con
-    menos temas -- la charla dura lo mismo y toca la misma cantidad de
-    temas que cualquier otra. La diferencia se nota en CÓMO SE SIENTEN esos
-    temas y en la intensidad de la fricción (ver abajo), nunca en cuántos
-    hay ni cuánto dura la charla. Lo que NO sirve para mostrar esto: cortar
-    la charla antes, evitar cambiar de tema, o simplemente hablar menos en
-    general -- eso no se lee como incompatibilidad, se lee como una charla
-    mal actuada.'''}
-    {intensidad_txt}
-    {friccion_txt}
-    {atraccion_diferencia_txt}
-    {temas_txt}
-    """
+    # 6. Ensamblaje Final Estructurado
+    return f"""[DINÁMICA DE COMPATIBILIDAD]
+- NIVEL: {nivel}
+- REGLA ESTRICTA: PROHIBIDO hacer "espejo" (no repetir ni parafrasear al otro simulando pensar igual).{regla_longitud}
+{intensidad}{friccion_txt}{atraccion_txt}{temas_txt}"""

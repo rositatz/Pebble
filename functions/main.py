@@ -1021,28 +1021,44 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     perfil_propio = _obtener_o_generar_perfil(db, uid)
     nombre_propio = (perfil_propio or {}).get("apodo") or (perfil_propio or {}).get("nombre")
 
-    system_prompt = motor.generar_prompt_gemelo(
-        perfil_otro, nombre_otro=nombre_propio,
+    system_fijo, contexto_gemelo = motor.generar_prompt_gemelo(
+        perfil_otro,
+        nombre_otro=nombre_propio,
         genero_otro=(perfil_propio or {}).get("genero"),
+        permitir_cierre=False,
     )
+
     if perfil_propio is not None:
-        # Mismo criterio que las simulaciones automáticas: que la charla en
-        # vivo también refleje qué tan compatibles son de verdad, no solo
-        # que ya pasaron el umbral para ser match -- un 51% no debería
-        # sentirse como un 95%.
-        system_prompt += instruccion_nivel_compatibilidad(
-            perfil_propio, perfil_otro, motor.UMBRAL_MATCH,
-            nombre1=nombre_propio, nombre2=perfil_otro.get("nombre", "la otra persona"),
+        contexto_gemelo += instruccion_nivel_compatibilidad(
+            perfil_propio,
+            perfil_otro,
+            motor.UMBRAL_MATCH,
+            nombre1=nombre_propio,
+            nombre2=perfil_otro.get("nombre", "la otra persona"),
         )
 
-    mensajes = [{"role": "system", "content": system_prompt}]
-    for h in historial[-20:]:
+    mensajes = [
+        {
+            "role": "system",
+            "content": system_fijo,
+        },
+        {
+            "role": "system",
+            "content": contexto_gemelo,
+        },
+    ]
+    for h in historial[-15:]:
         if not isinstance(h, dict):
             continue
+
         role = h.get("role")
-        content = (h.get("content") or "").strip()[:2000]
+        content = (h.get("content") or "").strip()[:1000]
+
         if role in ("user", "assistant") and content:
-            mensajes.append({"role": role, "content": content})
+            mensajes.append({
+                "role": role,
+                "content": content,
+            })
     mensajes.append({"role": "user", "content": mensaje})
 
     try:

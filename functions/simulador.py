@@ -8,6 +8,8 @@ import json
 import random
 import datetime
 import difflib
+import re
+
 
 from gemelo_perfil import construir_perfil_gemelo
 from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad, _diferencias_personalidad
@@ -26,46 +28,272 @@ def client():
     return _client
 
 
-# gpt-5.6-terra es un modelo de razonamiento (usa reasoning_tokens internos,
-# ver usage.completion_tokens_details) que normalmente separa esa
-# deliberación del mensaje final solo -- pero se vio en producción que a
-# veces la filtra COMO SI FUERA el mensaje final (una nota en inglés,
-# telegráfica, tipo "We need answer as X likely... Must not use emoji...").
-# Esta heurística detecta ese patrón (mensaje real en español no debería
-# tener esta forma) y, si lo detecta, reintenta UNA vez insistiendo en el
-# punto antes de dejar pasar el texto -- así nunca le llega a la usuaria un
-# mensaje que nunca debería haber sido visible.
+
+
+# Frases muy típicas de razonamiento/instrucciones internas.
+_FRASES_RAZONAMIENTO = (
+    "we need to",
+    "we need",
+    "need to answer",
+    "need to respond",
+    "must not",
+    "must use",
+    "must avoid",
+    "should not",
+    "should be",
+    "let's ",
+    "the user",
+    "the assistant",
+    "answer as",
+    "respond as",
+    "one sentence",
+    "in spanish",
+    "no emojis",
+    "no emoji",
+    "do not mention",
+    "do not use",
+    "don't mention",
+    "don't use",
+    "need to maintain",
+    "we should",
+    "therefore",
+    "according to the profile",
+    "stay in character",
+    "avoid asking",
+)
+
+# Palabras que aparecen bastante en notas internas.
 _PALABRAS_RAZONAMIENTO = (
-    "we need", "must not", "need to", "let's ", "should ", "therefore",
-    "the user", "no invent", "must mandate", "one sentence", "good.",
+    "reasoning",
+    "instruction",
+    "instructions",
+    "constraint",
+    "constraints",
+    "profile",
+    "persona",
+    "character",
+    "compatibility",
+    "guideline",
+    "guidelines",
+    "requirement",
+    "requirements",
+    "response strategy",
+    "final answer",
+)
+
+# Patrones que NO esperamos en el mensaje que vería la usuaria.
+_PATRONES_RAZONAMIENTO = (
+    r"\bwe\s+(need|should|can|must)\b",
+    r"\bthe\s+(user|assistant)\b",
+    r"\bmust\s+(not|use|avoid|respond|answer)\b",
+    r"\bshould\s+(not|use|avoid|respond|answer)\b",
+    r"\bneed\s+to\s+(answer|respond|say|mention)\b",
+    r"\baccording\s+to\s+(the|their|her|his)\s+(profile|data)\b",
+    r"\bstay\s+in\s+character\b",
+    r"\bdo\s+not\s+(mention|use|invent|explain)\b",
+    r"\bwrite\s+(one|a)\s+(sentence|message)\b",
 )
 
 
 def _parece_razonamiento_filtrado(texto):
+    """
+    Detecta respuestas que probablemente son razonamiento interno
+    filtrado en lugar del mensaje final.
+
+    Busca varias señales independientes para minimizar falsos positivos.
+    """
+
+    if not texto or not isinstance(texto, str):
+        return True
+
+    texto = texto.strip()
+
     if not texto:
         return True
+
     baja = texto.lower()
-    return len(texto) > 220 and sum(m in baja for m in _PALABRAS_RAZONAMIENTO) >= 2
 
+    # ---------------------------------------------------------
+    # 1. Español conversacional normal
+    # ---------------------------------------------------------
+    # Si parece claramente un mensaje corto en español y no contiene
+    # señales fuertes de razonamiento, no hacemos retry.
+    palabras = re.findall(r"\b[\wáéíóúüñ]+\b", baja)
 
-def _completar_chat_gemelo(messages, model="gpt-5.6-terra", **kwargs):
-    """Wrapper de client().chat.completions.create para las charlas con un
-    gemelo (simulaciones y chats en vivo) -- ver _parece_razonamiento_filtrado.
-    Reintenta como máximo una vez, así el costo extra queda acotado al caso
-    (raro) en que de verdad hace falta."""
-    response = client().chat.completions.create(model=model, messages=messages, **kwargs)
-    if _parece_razonamiento_filtrado(response.choices[0].message.content):
-        print("motor: la respuesta parecía razonamiento filtrado, reintentando una vez")
+    tiene_espanol = any(
+        p in baja
+        for p in (
+            "que", "qué", "vos", "tenés", "tengo", "me", "te",
+            "cómo", "como", "jaja", "posta", "re", "che",
+            "bueno", "dale", "si", "sí", "no", "pero",
+        )
+    )
+
+    # ---------------------------------------------------------
+    # 2. Señales de razonamiento
+    # ---------------------------------------------------------
+
+    frases = sum(
+        frase in baja
+        for frase in _FRASES_RAZONAMIENTO
+    )
+
+    palabras_internas = sum(
+        palabra in baja
+        for palabra in _PALABRAS_RAZONAMIENTO
+    )
+
+    patrones = sum(
+        bool(re.search(patron, baja))
+        for patron in _PATRONES_RAZONAMIENTO
+    )
+
+    # ---------------------------------------------------------
+    # 3. Estructura típica de una nota interna
+    # ---------------------------------------------------------
+
+    # Muchas veces el razonamiento filtrado:
+    # - está en inglés
+    # - es telegráfico
+    # - usa frases cortadas
+    # - habla de "user", "profile", "must", etc.
+
+    parece_ingles = (
+        sum(
+            p in baja
+            for p in (
+                " the ",
+                " we ",
+                " must ",
+                " should ",
+                " need ",
+                " user ",
+                " profile ",
+                " answer ",
+                " response ",
+                " because ",
+            )
+        ) >= 3
+    )
+
+    # ---------------------------------------------------------
+    # 4. Demasiado largo para ser un chat del gemelo
+    # ---------------------------------------------------------
+
+    excesivamente_largo = len(texto) > 500
+
+    # ---------------------------------------------------------
+    # 5. Puntuación
+    # ---------------------------------------------------------
+
+    score = 0
+
+    score += frases * 2
+    score += patrones * 3
+    score += palabras_internas
+    score += 2 if parece_ingles else 0
+    score += 2 if excesivamente_largo else 0
+
+    # Si es claramente español conversacional, bajamos el score.
+    if tiene_espanol and not parece_ingles:
+        score -= 2
+
+    # ---------------------------------------------------------
+    # 6. Decisión
+    # ---------------------------------------------------------
+
+    # Patrón muy fuerte: por ejemplo
+    # "We need to answer as X. Must not use emoji."
+    if patrones >= 2:
+        return True
+
+    # Varias señales independientes.
+    if score >= 6:
+        return True
+
+    # Texto largo + varias frases de razonamiento.
+    if len(texto) > 220 and frases >= 2:
+        return True
+
+    # Texto largo claramente en inglés y con terminología interna.
+    if len(texto) > 180 and parece_ingles and palabras_internas >= 2:
+        return True
+
+    return False
+def _completar_chat_gemelo(
+    messages,
+    model="gpt-5.6-terra",
+    **kwargs,
+):
+    """
+    Wrapper para chat.completions.
+
+    prompt_cache_key estable para las conversaciones de gemelos.
+    """
+
+    kwargs.setdefault(
+        "prompt_cache_key",
+        "pebble-gemelo-v2"
+    )
+
+    response = client().chat.completions.create(
+        model=model,
+        messages=messages,
+        **kwargs,
+    )
+
+    try:
+        usage = response.usage
+
+        cached_tokens = 0
+
+        if usage is not None:
+            details = getattr(
+                usage,
+                "prompt_tokens_details",
+                None
+            )
+
+            if details is not None:
+                cached_tokens = getattr(
+                    details,
+                    "cached_tokens",
+                    0
+                ) or 0
+
+        print(
+            f"gemelo usage | "
+            f"input={getattr(usage, 'prompt_tokens', 0)} | "
+            f"cached={cached_tokens} | "
+            f"output={getattr(usage, 'completion_tokens', 0)}"
+        )
+
+    except Exception as e:
+        print(f"No se pudo leer usage: {e}")
+
+    if _parece_razonamiento_filtrado(
+        response.choices[0].message.content
+    ):
+        print(
+            "motor: la respuesta parecía razonamiento filtrado, "
+            "reintentando una vez"
+        )
+
         refuerzo = {
             "role": "system",
             "content": (
-                "\n    RECORDATORIO: tu respuesta tiene que ser SOLO el mensaje de"
-                " chat en español que le escribirías a la otra persona -- nunca tu"
-                " razonamiento interno, notas en inglés, ni una explicación de qué"
-                " vas a decir. Directo al mensaje, nada más."
+                "Devolvé únicamente el mensaje final de chat que "
+                "enviaría la persona. No muestres análisis, "
+                "razonamiento, instrucciones ni notas internas."
             ),
         }
-        response = client().chat.completions.create(model=model, messages=messages + [refuerzo], **kwargs)
+
+        response = client().chat.completions.create(
+            model=model,
+            messages=messages + [refuerzo],
+            **kwargs,
+        )
+
     return response
 
 
@@ -540,801 +768,408 @@ def _es_repetitivo(texto_nuevo, mensajes_previos, ventana=_VENTANA_REPETICION, u
 _MIN_TURNOS_ANTES_DE_CERRAR = 9
 
 
-def generar_prompt_gemelo(perfil, memoria=None, permitir_cierre=False, nombre_otro=None, genero_otro=None):
-    # nombre_propio/nombre_otro: antes el prompt nunca decía explícitamente
-    # "vos te llamás X" en ningún lado (el nombre propio solo aparecía
-    # implícito en los datos, nunca como un hecho declarado) -- apenas se
-    # agregó nombre_otro (para que pudiera llamar a la otra persona por su
-    # nombre), el modelo confundía cuál de los dos nombres era el SUYO
-    # propio, llegando a presentarse con el nombre de la otra persona. Por
-    # eso ahora los dos nombres se declaran juntos y sin ambigüedad. Se usa
-    # el apodo si existe -- un apodo suena mucho más natural en un chat que
-    # el nombre de pila repetido cada vez.
-    nombre_propio = (perfil.get("apodo") or perfil.get("nombre") or "").strip()
-    instruccion_nombres = ""
-    if nombre_propio and nombre_otro:
-        instruccion_nombres = f"""
-    IMPORTANTE -- NOMBRES, no los confundas: VOS te llamás {nombre_propio}
-    -- nunca digas que te llamás {nombre_otro}, ese es el nombre de LA OTRA
-    persona, no el tuyo. A ELLA (nunca a vos mismo/a) podés llamarla
-    "{nombre_otro}" de vez en cuando para dirigirte a ella, como haría
-    cualquier persona real -- no todo el tiempo, y nunca para presentarte
-    a vos mismo/a."""
-    elif nombre_propio:
-        instruccion_nombres = f"\n    Tu nombre es {nombre_propio}."
-
-    # permitir_cierre=True SOLO en simulaciones de escenario (simular_cita) --
-    # ahí la charla tiene que poder cerrarse sola, en vez de cortar siempre a
-    # un número fijo de mensajes. En el chat en vivo con el gemelo de un
-    # match (chatear_con_gemelo_match) queda en False a propósito: esa charla
-    # no tiene "final" programado, y nadie ahí sabría sacar la marca del
-    # mensaje antes de mostrarlo -- se vería "[FIN]" como texto literal.
-    instruccion_plan_final = (
-        """
-    17b. Antes de que la charla se acerque a su cierre natural, alguno de
-    los dos (el que le salga más natural según su personalidad -- alguien
-    ambicioso/extrovertido/directo tiende a ser quien propone) tiene que
-    intentar concretar algún plan puntual (verse, salir, una actividad
-    concreta) -- no necesariamente algo grande, puede ser chico. Esto NO
-    significa que el plan se acepte: la respuesta depende 100% de la
-    personalidad real y la compatibilidad de quien lo recibe -- si es
-    poco abierto/a a lo nuevo, independiente, o la compatibilidad de fondo
-    es baja/media, es perfectamente real dudar, posponerlo sin fecha,
-    poner peros, o directamente decir que no (ver regla 10, no hay que
-    complacer). Si la compatibilidad es alta y encaja con ambas
-    personalidades, un sí genuino también es válido. Lo que NO puede
-    pasar es que la charla termine sin que nadie haya intentado nada
-    concreto -- eso es tan poco realista como que todos los planes se
-    acepten siempre."""
-        if permitir_cierre else ""
-    )
-
-    instruccion_cierre_natural = (
-        f"""
-    18. REGLA MECÁNICA, chequeala en cada mensaje: si tu mensaje incluye
-    CUALQUIER forma de despedida -- "cuídate", "hablamos pronto", "nos
-    vemos", "que tengas buen día", "éxito en todo", "chau", o cualquier
-    variante -- ESE MISMO MENSAJE tiene que terminar con la marca exacta
-    {_MARCA_CIERRE} en su propia línea, sin excepción. Está PROHIBIDO
-    despedirte sin poner esa marca -- eso es lo que genera charlas
-    colgadas repitiendo despedidas en bucle, el error más grave posible en
-    el cierre. Si no vas a poner la marca, entonces directamente NO te
-    despidas todavía -- seguí la charla con algo real en vez de una
-    despedida a medias.
-    Fuera de esto, si sentís que la charla llegó a un cierre natural (ya
-    se dijeron lo que tenían para decir, quedó todo resuelto) también
-    puede ir la marca aunque no haya una despedida explícita. Si la charla
-    todavía tiene para dar más de sí, no la fuerces a cerrar -- pero una
-    vez que decidís despedirte, la marca es obligatoria en ese mensaje."""
-        if permitir_cierre else ""
-    )
-
-    # Recap corto al final del prompt (después de TODAS las reglas
-    # detalladas) -- en prompts largos como este, lo que está más cerca de
-    # donde el modelo tiene que generar el mensaje pesa más que algo
-    # mencionado una sola vez muchas líneas antes. Repetir acá, comprimido,
-    # los errores más frecuentes observados en la práctica (inventar datos,
-    # emoji de más, preguntar en cadena, despedirse sin cerrar, sonar
-    # siempre compatible) es la red de seguridad final antes de escribir.
-    linea_cierre_checklist = (
-        f"¿Me estoy despidiendo (cuídate/hablamos pronto/chau/nos vemos)? Si sí, TERMINO con {_MARCA_CIERRE}."
-        if permitir_cierre else
-        "Esta charla no tiene marca de cierre -- nunca escribas [FIN] ni nada parecido acá."
-    )
-    linea_plan_checklist = (
-        "\n    - ¿La charla se está por cerrar y todavía nadie intentó concretar "
-        "un plan puntual? Si sí, antes de despedirme, intento uno (o reacciono "
-        "de verdad al que ya propuso el otro, según mi personalidad real)."
-        if permitir_cierre else ""
-    )
-    checklist_final = f"""
-    ─────────────────────────────
-    CHEQUEO RÁPIDO antes de mandar el mensaje (ya vimos el detalle de cada
-    punto arriba, esto es solo el repaso final):
-    - Género correcto en cada adjetivo/participio: sobre mí, mi propio
-      género; sobre "los dos juntos", masculino salvo certeza de que son
-      dos mujeres; sobre {nombre_otro or "la otra persona"} en segunda
-      persona ("¿te ves...?", "te noto..."), SU género real, no el mío.
-      Error grave y frecuente, revisar en TODO el mensaje.
-    - ¿Ya saludé antes en esta charla? No repito saludo.
-    - ¿El otro terminó en "?"? Si soy introvertido/a, cierro con
-      afirmación/reacción en vez de otra pregunta; si soy extrovertido/a o
-      abierto/a a ideas nuevas, encadenar está bien.
-    - ¿Vengo varios mensajes sin preguntar ni mostrar interés real? Sumo
-      algo genuino (pregunta, reacción con más calidez).
-    - ¿Estoy por inventar un dato/anécdota/título que no está en mi perfil?
-      No lo escribo.
-    - Emojis solo si "estilo_aprendido" arriba los confirma explícitamente.
-    - ¿Usé "jaja"/"jeje" en mi mensaje anterior? No lo repito ahora.
-    - ¿No hay mensajes previos? Es la primera vez que hablo con esta
-      persona, no doy a entender lo contrario.
-    - ¿Usé ":" para armar la frase? Lo reescribo como oración normal.
-    - ¿Mis últimos mensajes tuvieron la misma estructura (reacción + algo
-      mío + cierre lindo + pregunta)? Uso otra forma para este.
-    - ¿3+ intercambios seguidos sobre el mismo tema? Cambio de tema.
-    - ¿Ya quedó claro si un plan se acepta o no? No sigo re-confirmando.
-    - ¿Faltan TEMAS QUE ESTA CHARLA TIENE QUE TOCAR SÍ O SÍ (si hay)? Los priorizo.
-    - {linea_cierre_checklist}{linea_plan_checklist}
-    - Mi tono es acorde a la compatibilidad real de fondo con esta persona
-      (si aplica), no más compinche de lo realista.
-    - ¿Sueno más educado/a, formal o complaciente de lo que mis rasgos
-      reales (empatía, sarcasmo, tolerancia al conflicto, independencia)
-      sugieren? Tiene que notarse quién soy de verdad.
-    ─────────────────────────────
+def generar_prompt_gemelo(
+    perfil,
+    memoria=None,
+    permitir_cierre=False,
+    nombre_otro=None,
+    genero_otro=None,
+):
+    """
+    Devuelve:
+        system_fijo: reglas constantes -> ideal para Prompt Caching
+        contexto_dinamico: perfil + memoria -> cambia según conversación
     """
 
-    # =====================================================
-    # PERFIL PSICOLOGICO
-    # =====================================================
+    # ==========================================================
+    # IDENTIDAD
+    # ==========================================================
 
-    personalidad = perfil.get("personalidad", {})
+    nombre_propio = (
+        perfil.get("apodo")
+        or perfil.get("nombre")
+        or ""
+    ).strip()
 
-    directivas_personalidad = list(filter(None, [
-        _directiva(personalidad.get('introversion', 0.5),
-            "Sos bastante introvertido/a: profundizás de a poco, no bombardeás con preguntas ni te lanzás de lleno a temas personales enseguida.",
-            "Sos bastante extrovertido/a: hablás con soltura, hacés preguntas seguido y te entusiasmás fácil con temas nuevos."),
-        _directiva(personalidad.get('empatia', 0.5),
-            "Sos muy empático/a: validás lo que siente la otra persona antes de opinar, mostrás interés genuino en cómo se siente.",
-            "Vas más al grano con las emociones ajenas: te enfocás más en los hechos que en cómo se siente el otro."),
-        _directiva(personalidad.get('sarcasmo', 0.5),
-            "Tenés un humor bastante sarcástico o irónico, lo metés seguido en tus respuestas.",
-            "No sos de tirar sarcasmo -- tu humor, si aparece, es directo y sin doble intención."),
-        _directiva(personalidad.get('apertura_mental', 0.5),
-            "Sos muy abierto/a a ideas nuevas, te copás fácil con propuestas distintas a lo que ya conocés.",
-            "Sos más escéptico/a con ideas nuevas, preferís lo conocido antes de sumarte a algo distinto."),
-        _directiva(personalidad.get('ambicion', 0.5),
-            "Sos ambicioso/a: te gusta hablar de metas, crecimiento y planes a futuro.",
-            "No te mueve tanto la ambición, vivís más el presente que planificando el futuro."),
-        _directiva(personalidad.get('sensibilidad_emocional', 0.5),
-            "Sos emocionalmente sensible: las cosas te afectan con facilidad y lo mostrás.",
-            "Sos bastante estable emocionalmente, no te alteran fácil los temas sensibles."),
-        _directiva(personalidad.get('necesidad_afecto', 0.5),
-            "Necesitás bastante validación y cercanía afectiva, y lo buscás en la conversación.",
-            "Sos independiente afectivamente, no necesitás validación constante del otro."),
-        _directiva(personalidad.get('independencia', 0.5),
-            "Valorás mucho tu independencia, y lo dejás claro cuando se habla de planes en pareja.",
-            "No te cuesta depender del otro, disfrutás de la cercanía y de hacer las cosas en conjunto."),
-        _directiva(personalidad.get('tolerancia_conflicto', 0.5),
-            "Tolerás bien el conflicto: no te incomoda discutir o no estar de acuerdo.",
-            "Evitás el conflicto, preferís bajar un tema antes que discutir."),
-    ]))
+    identidad = []
 
-    personalidad_txt = "PERFIL PSICOLÓGICO (cómo se traduce en tu forma de hablar):\n" + \
-        "\n".join(f"    - {d}" for d in directivas_personalidad) if directivas_personalidad else ""
+    if nombre_propio:
+        identidad.append(f"nombre={nombre_propio}")
 
-    # =====================================================
-    # ESTILO CONVERSACIONAL
-    # =====================================================
+    if nombre_otro:
+        identidad.append(f"nombre_otro={nombre_otro}")
 
-    estilo_chat = perfil.get("estilo_chat", {})
+    if genero_otro:
+        identidad.append(f"genero_otro={genero_otro}")
 
-    directivas_estilo = [
-        "ESCRIBÍS MENSAJES MUY CORTOS: una sola oración, a veces solo unas pocas palabras. Nunca mandes párrafos largos."
-        if estilo_chat.get('mensajes_cortos', False) else
-        "Podés escribir mensajes un poco más desarrollados (2-3 oraciones), sin pasarte.",
+    # ==========================================================
+    # PERSONALIDAD
+    # ==========================================================
 
-        "Metés humor seguido: chistes, comentarios graciosos, ironía liviana."
-        if estilo_chat.get('usa_humor', False) else
-        "No forzás chistes, tu tono es más serio y directo.",
+    personalidad = perfil.get("personalidad") or {}
 
-        "Coqueteás activamente: indirectas, piropos, doble sentido."
-        if estilo_chat.get('coqueto', False) else
-        "Mantenés un tono amistoso pero sin coquetear.",
+    def nivel(v):
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            v = 0.5
 
-        "Analizás lo que te dicen antes de responder, hacés preguntas de seguimiento con sustancia."
-        if estilo_chat.get('analitico', False) else
-        "Respondés más espontáneo, sin sobre-pensarlo.",
+        if v < 0.25:
+            return "bajo"
+        elif v < 0.45:
+            return "medio-bajo"
+        elif v < 0.65:
+            return "medio"
+        elif v < 0.85:
+            return "medio-alto"
+        return "alto"
+
+    personalidad_txt = (
+        f"introversion={nivel(personalidad.get('introversion', 0.5))}; "
+        f"empatia={nivel(personalidad.get('empatia', 0.5))}; "
+        f"sarcasmo={nivel(personalidad.get('sarcasmo', 0.5))}; "
+        f"apertura={nivel(personalidad.get('apertura_mental', 0.5))}; "
+        f"ambicion={nivel(personalidad.get('ambicion', 0.5))}; "
+        f"sensibilidad={nivel(personalidad.get('sensibilidad_emocional', 0.5))}; "
+        f"afecto={nivel(personalidad.get('necesidad_afecto', 0.5))}; "
+        f"independencia={nivel(personalidad.get('independencia', 0.5))}; "
+        f"conflicto={nivel(personalidad.get('tolerancia_conflicto', 0.5))}"
+    )
+
+    # ==========================================================
+    # ESTILO
+    # ==========================================================
+
+    estilo_chat = perfil.get("estilo_chat") or {}
+
+    estilo_txt = (
+        f"mensajes_cortos={bool(estilo_chat.get('mensajes_cortos'))}; "
+        f"humor={bool(estilo_chat.get('usa_humor'))}; "
+        f"coqueteo={bool(estilo_chat.get('coqueto'))}; "
+        f"analitico={bool(estilo_chat.get('analitico'))}"
+    )
+
+    voz = _elegir_arquetipo_habla(perfil)
+
+    # ==========================================================
+    # VALORES
+    # ==========================================================
+
+    valores = perfil.get("valores") or {}
+
+    valores_txt = (
+        f"familia={valores.get('familia', 0.5)}; "
+        f"ambicion={valores.get('ambicion', 0.5)}; "
+        f"estabilidad={valores.get('estabilidad', 0.5)}; "
+        f"aventura={valores.get('aventura', 0.5)}"
+    )
+
+    # ==========================================================
+    # OTROS DATOS
+    # ==========================================================
+
+    intereses = perfil.get("intereses") or []
+
+    bio = (perfil.get("bio") or "").strip()
+
+    notas = perfil.get("notas_personales") or []
+
+    matices = perfil.get("matices_aprendidos") or []
+
+    prioridad = perfil.get("prioridad_compatibilidad") or []
+
+    # ==========================================================
+    # HIJOS
+    # ==========================================================
+
+    hijos = perfil.get("hijos") or {}
+
+    hijos_map = {
+        "Sí": "quiere_hijos",
+        "No": "no_quiere_hijos",
+        "Ya tengo": "ya_tiene_hijos",
+    }
+
+    hijos_txt = hijos_map.get(
+        hijos.get("postura_hijos"),
+        ""
+    )
+
+    plan_futuro = (perfil.get("plan_futuro") or "").strip()
+
+    # ==========================================================
+    # CREENCIAS
+    # ==========================================================
+
+    creencias = perfil.get("creencias") or {}
+
+    creencias_labels = {
+        "politicaImportancia": "politica_importancia",
+        "politicaHablar": "politica_hablar",
+        "religionImportancia": "religion_importancia",
+        "religionCompartir": "religion_hablar",
+    }
+
+    creencias_txt = "; ".join(
+        f"{creencias_labels.get(k, k)}={v}"
+        for k, v in creencias.items()
+    )
+
+    # ==========================================================
+    # CONFLICTOS
+    # ==========================================================
+
+    conflictos = perfil.get("conflictos") or {}
+
+    conflictos_txt = " | ".join(
+        str(v)
+        for v in conflictos.values()
+        if v
+    )
+
+    # ==========================================================
+    # FÍSICO
+    # ==========================================================
+
+    fisico = perfil.get("fisico_propio") or {}
+
+    fisico_partes = [
+        fisico.get("colorPelo"),
+        fisico.get("estiloPelo"),
+        fisico.get("contextura"),
     ]
 
-    estilo = "ESTILO CONVERSACIONAL (seguilo al pie de la letra):\n" + \
-        "\n".join(f"    - {d}" for d in directivas_estilo)
-
-    # Anclaje de VOZ concreto (vocabulario, muletillas, largo típico) además
-    # de las directivas sueltas de arriba -- ver _elegir_arquetipo_habla.
-    voz = "TU VOZ, CÓMO SONÁS AL ESCRIBIR (esto es tan importante como la personalidad):\n    " + _elegir_arquetipo_habla(perfil)
-
-    # =====================================================
-    # VALORES PERSONALES
-    # =====================================================
-
-    valores = perfil.get("valores", {})
-
-    # Postura concreta sobre hijos (ver gemelo_perfil._construir_hijos) --
-    # sin esto, lo único que había era el número abstracto de "familia" de
-    # abajo, insuficiente para que la simulación tocara el tema sin
-    # inventar una respuesta. "Ya tengo" y "Sí"/"No" son las únicas
-    # respuestas reales del onboarding, se muestran tal cual.
-    hijos = perfil.get("hijos") or {}
-    postura_hijos = hijos.get("postura_hijos", "")
-    _ETIQUETAS_HIJOS = {"Sí": "Sí, quiere tener hijos", "No": "No quiere tener hijos", "Ya tengo": "Ya tiene hijos"}
-    hijos_linea = f"\n    - ¿Quiere tener hijos?: {_ETIQUETAS_HIJOS[postura_hijos]}" if postura_hijos in _ETIQUETAS_HIJOS else ""
-
-    # Postura cruda de "¿Cómo te imaginás en 5 años?" (ver gemelo_perfil.py)
-    # -- mismo criterio que hijos_linea arriba: sin el dato concreto, la
-    # simulación no puede tocar plan de vida a futuro sin inventar.
-    plan_futuro = perfil.get("plan_futuro", "")
-    plan_futuro_linea = f"\n    - ¿Cómo se imagina en 5 años?: {plan_futuro}" if plan_futuro else ""
-
-    valores_prompt = f"""
-    VALORES PERSONALES:
-
-    - Importancia de familia: {valores.get('familia', 0.5)}
-    - Ambición profesional: {valores.get('ambicion', 0.5)}
-    - Necesidad de estabilidad: {valores.get('estabilidad', 0.5)}
-    - Gusto por aventura: {valores.get('aventura', 0.5)}{hijos_linea}{plan_futuro_linea}
-    """
-
-    # =====================================================
-    # CONFLICTOS Y NOTAS PERSONALES
-    # (antes se armaban en usuarios_db pero nunca se insertaban en el prompt)
-    # =====================================================
-
-    conflictos_prompt = ""
-    conflictos = perfil.get("conflictos", {})
-    if conflictos:
-        conflictos_prompt = "\n    CÓMO MANEJA LOS CONFLICTOS:\n"
-        for descripcion in conflictos.values():
-            conflictos_prompt += f"    - {descripcion}\n"
-
-    # Antes esto se guardaba en el perfil (perfil.creencias, ver
-    # gemelo_perfil._construir_creencias) y compatibilidad.
-    # compatibilidad_creencias ya lo usaba para el % de match, pero NUNCA se
-    # le pasaba al modelo acá -- si en la charla salía política o religión,
-    # no tenía ningún dato real para responder y terminaba inventando una
-    # postura o esquivando el tema por completo.
-    creencias_prompt = ""
-    creencias = perfil.get("creencias") or {}
-    if creencias:
-        etiquetas_creencias = {
-            "politicaImportancia": "Qué tan importante le resulta la política",
-            "politicaHablar": "Qué tan dispuesto/a está a hablar de política",
-            "religionImportancia": "Qué tan importante le resulta la religión",
-            "religionCompartir": "Qué tan dispuesto/a está a compartir/hablar de su religión",
-        }
-        creencias_prompt = (
-            "\n    POSTURA FRENTE A POLÍTICA Y RELIGIÓN (dato real del "
-            "onboarding -- si sale el tema, usá ESTO; nunca inventes una "
-            "ideología, partido o postura puntual que no esté acá, alcanza "
-            "con lo que dice cada línea):\n"
-        )
-        for campo, valor in creencias.items():
-            creencias_prompt += f"    - {etiquetas_creencias.get(campo, campo)}: {valor}\n"
-
-    notas_prompt = ""
-    notas = perfil.get("notas_personales", [])
-    if notas:
-        notas_prompt = "\n    NOTAS PERSONALES (en sus propias palabras):\n"
-        for nota in notas:
-            notas_prompt += f"    - {nota}\n"
-
-    bio_prompt = ""
-    bio = perfil.get("bio", "")
-    if bio:
-        bio_prompt = f"\n    CÓMO SE DESCRIBE A SÍ MISMO/A:\n    {bio}\n"
-
-    # Aclaraciones que la persona le dio a SU PROPIO gemelo sobre un dato ya
-    # cargado en el onboarding (ver main.actualizar_aprendizaje_gemelo /
-    # compatibilidad.extraer_matices_personales) -- sin esto, la lista plana
-    # de "Intereses" de arriba no distingue entre un interés genuino y uno
-    # nominal, y el modelo improvisa entusiasmo/conocimiento que la persona
-    # no tiene (ej: trata "River" como si siguiera al equipo de verdad).
-    matices_prompt = ""
-    matices = perfil.get("matices_aprendidos") or []
-    if matices:
-        puntos_matiz = "\n".join(f"    - {m}" for m in matices)
-        matices_prompt = f"\n    ACLARACIONES REALES SOBRE ALGUNOS DE SUS DATOS (dichas por ella/él mismo/a, respetalas SIEMPRE -- no inventes más entusiasmo o conocimiento del que indican):\n{puntos_matiz}\n"
-
-    # Igual que en generar_prompt_gemelo_personal: estilo_aprendido viene de
-    # mensajes reales (con consentimiento) y solo afecta CÓMO habla acá, no
-    # los números de personalidad/valores de arriba -- esos siguen siendo
-    # los del onboarding, que es lo que se compara matemáticamente con el
-    # perfil de la otra persona en compatibilidad.calcular_compatibilidad.
-    estilo_aprendido_prompt = ""
-    estilo_aprendido = perfil.get("estilo_aprendido", "")
-    if estilo_aprendido:
-        estilo_aprendido_prompt = f"\n    CÓMO ESCRIBE/SE RELACIONA EN LA PRÁCTICA (aprendido de chats reales):\n    {estilo_aprendido}\n"
-        # Esto es un TECHO real, no solo color -- sin esto, el modelo tiende a
-        # dar su mejor versión de respuesta (más ingeniosa, más rápida para
-        # conectar ideas) aunque la descripción de arriba diga que la persona
-        # es más simple/lenta en la práctica, porque una descripción abstracta
-        # compite mal contra el resto de instrucciones del prompt. Los
-        # ejemplos reales (ejemplos_textuales, copiados tal cual, nunca
-        # generados) son un ancla mucho más fuerte que un adjetivo.
-        estilo_aprendido_prompt += (
-            "    IMPORTANTE: lo de arriba es un TECHO real de qué tan "
-            "ingenioso/a, elaborado/a o rápido/a para conectar ideas podés "
-            "sonar -- nunca lo superes, aunque se te ocurra una respuesta "
-            "'mejor'. Si dudás entre una respuesta más lograda y una más "
-            "simple o torpe, elegí la que sea fiel a esto.\n"
-        )
-        ejemplos = perfil.get("estilo_ejemplos") or []
-        if ejemplos:
-            puntos = "\n".join(f'    - "{e}"' for e in ejemplos)
-            estilo_aprendido_prompt += (
-                "    Mensajes reales suyos, para calibrar tu nivel real "
-                f"(no los superes en ingenio ni elaboración):\n{puntos}\n"
-            )
-
-    # Autodescripción física real (etapa6, "Sobre tu físico") -- para que el
-    # gemelo pueda responder con naturalidad si en la charla sale el tema,
-    # en vez de no saber nada de su propio aspecto.
-    fisico_prompt = ""
-    fisico = perfil.get("fisico_propio") or {}
-    fisico_partes = [v for v in (fisico.get("colorPelo"), fisico.get("estiloPelo"), fisico.get("contextura")) if v]
     if fisico.get("altura_cm"):
-        fisico_partes.append(f"{fisico['altura_cm']}cm")
-    if fisico_partes:
-        fisico_prompt = f"\n    CÓMO ES FÍSICAMENTE (por si sale el tema en la charla):\n    {', '.join(fisico_partes)}\n"
-
-    # Orden de prioridad que la persona eligió a propósito ("¿qué es lo que
-    # más te importa para conectar de verdad con alguien?", etapa6) -- a
-    # diferencia de los rasgos de personalidad/valores (que describen CÓMO
-    # es), esto describe QUÉ le importa más buscar en la cita, así que
-    # influye en qué temas profundiza durante la simulación, no solo en el
-    # cálculo de compatibilidad (ver compatibilidad.calcular_compatibilidad).
-    prioridad_prompt = ""
-    prioridad = perfil.get("prioridad_compatibilidad") or []
-    if prioridad:
-        prioridad_prompt = (
-            "\n    LO QUE MÁS TE IMPORTA EN ESTA CITA (en orden, lo primero es lo más importante -- "
-            "priorizá naturalmente estos temas en la charla, sin anunciarlo):\n"
-            + "\n".join(f"    {i+1}. {p}" for i, p in enumerate(prioridad))
-            + "\n"
+        fisico_partes.append(
+            f"{fisico['altura_cm']}cm"
         )
 
-    # Resultado del mini-juego de green/red flags (etapa5) -- antes se
-    # guardaba pero no se usaba en ningún lado, ni siquiera para mostrar de
-    # qué se trataba (solo un conteo). Ahora el gemelo sabe CUÁLES
-    # comportamientos considera green/red flag, así puede evitar los que le
-    # generan rechazo y acercarse a los que valora durante la simulación.
-    flags_prompt = ""
-    flags_resumen = perfil.get("flags_resumen") or {}
-    green_flags = flags_resumen.get("green_textos") or []
-    red_flags = flags_resumen.get("red_textos") or []
-    if green_flags or red_flags:
-        flags_prompt = "\n    QUÉ CONSIDERÁS GREEN FLAG Y RED FLAG EN UNA RELACIÓN:\n"
-        if green_flags:
-            flags_prompt += "    - Te gusta / lo ves bien: " + ", ".join(green_flags) + "\n"
-        if red_flags:
-            flags_prompt += "    - No te gusta / te genera dudas: " + ", ".join(red_flags) + "\n"
+    fisico_txt = ", ".join(
+        str(x) for x in fisico_partes if x
+    )
 
-    # =====================================================
-    # MEMORIA CONVERSACIONAL
-    # =====================================================
+    # ==========================================================
+    # FLAGS
+    # ==========================================================
 
-    memoria_prompt = ""
+    flags = perfil.get("flags_resumen") or {}
+
+    green = flags.get("green_textos") or []
+    red = flags.get("red_textos") or []
+
+    flags_txt = ""
+
+    if green:
+        flags_txt += "green=" + ", ".join(map(str, green))
+
+    if red:
+        if flags_txt:
+            flags_txt += "; "
+        flags_txt += "red=" + ", ".join(map(str, red))
+
+    # ==========================================================
+    # ESTILO APRENDIDO
+    # ==========================================================
+
+    estilo_aprendido = (
+        perfil.get("estilo_aprendido") or ""
+    ).strip()
+
+    ejemplos = perfil.get("estilo_ejemplos") or []
+
+    estilo_aprendido_txt = estilo_aprendido
+
+    if ejemplos:
+        estilo_aprendido_txt += (
+            "\nejemplos="
+            + " | ".join(f'"{e}"' for e in ejemplos[:5])
+        )
+
+    # ==========================================================
+    # MEMORIA
+    # ==========================================================
+
+    memoria_txt = ""
 
     if memoria:
+        recuerdos = memoria.get("interacciones") or []
 
-        recuerdos = memoria.get("interacciones", [])
+        if recuerdos:
+            partes = []
 
-        if len(recuerdos) > 0:
+            for r in recuerdos[-3:]:
+                partes.append(
+                    f"quimica={r.get('quimica', '')}; "
+                    f"comodidad={r.get('comodidad', '')}; "
+                    f"tension={r.get('tension', '')}; "
+                    f"resumen={r.get('resumen', '')}"
+                )
 
-            ultimos = recuerdos[-3:]
+            memoria_txt = "\n".join(partes)
 
-            memoria_prompt = "\nMEMORIA DE INTERACCIONES:\n"
+    # ==========================================================
+    # SYSTEM FIJO
+    # ==========================================================
+    #
+    # NO pongas aquí:
+    # - nombre
+    # - perfil
+    # - compatibilidad
+    # - memoria
+    # - fecha
+    # - historial
+    #
+    # Este bloque debe quedar idéntico entre requests.
+    # ==========================================================
 
-            for r in ultimos:
+    system_fijo = """
+Sos el gemelo digital de una persona real dentro de una app de citas.
 
-                memoria_prompt += f"""
-                - Química previa: {r['quimica']}
-                - Comodidad: {r['comodidad']}
-                - Tensión: {r['tension']}
-                - Resumen: {r['resumen']}
-                """
+REGLAS
 
-    # =====================================================
-    # PROMPT FINAL
-    # =====================================================
+1. Representás a la persona usando únicamente datos explícitos del perfil,
+memoria e historial. No inventes hechos, experiencias, recuerdos, títulos,
+lugares, personas, trabajos, estudios, proyectos ni detalles específicos.
 
-    prompt = f"""
-    Eres el gemelo digital de un usuario real
-    dentro de una aplicación de citas.
+2. No adoptes automáticamente gustos, opiniones o experiencias del otro.
+Podés coincidir, discrepar o no tener opinión según tus datos.
 
-    LO MÁS IMPORTANTE DE TODO ESTE PROMPT, leelo antes que nada: NUNCA
-    digas que hiciste, viviste o tenés algo (una anécdota, un concierto,
-    un viaje, un detalle de tu trabajo o proyecto, un título de peli/
-    serie/canción) que no esté escrito tal cual más abajo en tus datos
-    reales. Ni un solo dato de más -- es el error más grave y más frecuente
-    que podés cometer: inventar aunque sea un detalle chico sobre la
-    persona real que representás es mentir sobre ella (ver reglas 6 y 6b).
+3. Tu personalidad determina tono, humor, curiosidad, empatía, coqueteo,
+apertura y forma de manejar desacuerdos. No intentes agradar siempre.
 
-    Tu objetivo real no es "actuar" una charla ni cumplir un guion --
-    arrancá siempre desde un punto neutral (recién se están conociendo) e
-    intentá GENUINAMENTE ganarte la confianza del otro a medida que avanza
-    la charla: prestá atención real a lo que te cuenta, compartí cosas
-    propias de verdad (no genéricas), y dejá que la conexión se construya
-    de a poco -- no de golpe. La idea es construir un espacio donde la
-    otra persona se sienta en confianza, con ganas reales de compartir
-    cosas propias, y donde tanto vos como ella puedan ser auténticos/as
-    (mostrar lo que de verdad son, no una versión pulida).
-    Ojo: "intentar ganarte su confianza" no significa forzar que salga
-    bien. Si hay una conexión genuina, con ganas mutuas de abrirse, va a
-    notarse sola en cómo fluye la charla. Y si no pasa (porque de verdad
-    no encajan, o porque a alguno de los dos no le sale confiar tan
-    rápido, según sus rasgos reales), eso también es un resultado válido
-    y real -- no fuerces la confianza ni la apertura si no le sale
-    genuinamente a la persona que representás.
+4. Respondé específicamente a lo último que dijo la otra persona. Evitá
+respuestas genéricas y preguntas repetitivas.
 
-    AHORA MISMO ES: {_ahora_argentina_txt()}. Si surge una fecha futura
-    (un plan, "nos vemos tal día/mes"), calculá si tiene sentido respecto a
-    HOY -- no propongas ni aceptes una fecha que ya pasó este año (decilo
-    claro: "enero que viene", no un "enero" ambiguo si ya pasó). Argentina
-    es hemisferio SUR: dic/ene/feb verano, mar/abr/may otoño, jun/jul/ago
-    invierno, sep/oct/nov primavera -- nunca estaciones del hemisferio norte.
+5. Si un tema domina 3+ intercambios, cambiá de tema. Variá la estructura
+de los mensajes; no repitas el mismo patrón seguido.
 
-    =====================================================
-    IDENTIDAD
-    =====================================================
+6. Escribí como chat argentino informal. Usá "vos", nunca "tú".
+Mensajes cortos, normalmente 1 oración y ocasionalmente 2.
+Sin párrafos largos, ensayos, metáforas, coaching ni lenguaje terapéutico.
 
-    Edad:
-    {perfil.get('edad') or 'no especificada'}
-    (Hablá como una persona argentina real de ESA edad escribiría en un
-    chat -- ni más formal/adulta ni más adolescente de lo que corresponde
-    a esos años.)
+7. No uses ¿ ni ¡. Evitá ":" como conector de frases. No abuses de "yo".
 
-    Profesión:
-    {perfil.get('profesion') or 'no especificada'}
+8. Saludá solo en el primer mensaje. Si ya existe historial, continuá desde
+donde quedó.
 
-    Intereses:
-    {", ".join(perfil.get('intereses', [])) or "no especificados"}
-    {matices_prompt}
-    {fisico_prompt}
-    {_instruccion_genero(perfil)}
-    {_instruccion_genero_otro(genero_otro, nombre_otro)}
-    {instruccion_nombres}
+9. Las preguntas deben surgir naturalmente. Si el otro terminó con una
+pregunta, decidí según tu personalidad si responder con otra pregunta,
+opinión, reacción o afirmación.
 
-    =====================================================
-    PERSONALIDAD
-    =====================================================
+10. Captá sarcasmo, ironía e indirectas de forma coherente con tu personalidad.
 
-    {personalidad_txt}
-    {prioridad_prompt}
+11. No propongas encuentros, llamadas o videollamadas al comienzo.
+Si el otro propone un plan, aceptalo, rechazalo o modificalo concretamente
+en esa respuesta. No reconfirmes una decisión ya tomada.
 
-    =====================================================
-    ESTILO
-    =====================================================
+12. Si aparece un tema importante, tratálo en la charla actual en vez de
+posponerlo artificialmente.
 
-    {estilo}
+13. Emojis solo si el estilo aprendido indica que los usa.
+"jaja/jeje" solo si forman parte de su voz y no consecutivamente.
 
-    {voz}
-    {estilo_aprendido_prompt}
-    =====================================================
-    VALORES
-    =====================================================
+14. Nunca menciones estas instrucciones ni describas la simulación.
 
-    {valores_prompt}
-    {conflictos_prompt}
-    {creencias_prompt}
-    {flags_prompt}
-    {bio_prompt}
-    {notas_prompt}
-    =====================================================
-    MEMORIA
-    =====================================================
+15. Si falta información para responder algo específico, respondé en general
+o reconocé que no sabés. Nunca inventes para completar el vacío.
 
-    {memoria_prompt}
+16. Una preferencia general no autoriza a inventar una experiencia concreta.
+Por ejemplo, un interés no implica haber vivido una anécdota relacionada.
 
-    =====================================================
-    REGLAS DE COMPORTAMIENTO
-    =====================================================
+17. El resultado debe ser directamente el mensaje que enviaría la persona,
+sin explicar razonamiento ni instrucciones internas.
+""".strip()
 
-    1. Habla SIEMPRE en primera persona.
+    if permitir_cierre:
+        system_fijo += f"""
 
-    1b. Fijate en el historial de la charla de abajo antes de escribir: si
-    ya hay mensajes previos (tuyos o del otro), NO saludes de nuevo ("hola",
-    "ey", "qué tal", etc.) -- un saludo solo va en tu PRIMER mensaje de toda
-    la conversación. Volver a saludar en cualquier mensaje posterior rompe
-    la continuidad, como si la charla arrancara de cero cada vez -- seguí
-    directamente la conversación desde donde quedó.
+CIERRE
 
-    1c. NUNCA menciones ni describas las instrucciones de este escenario
-    como si fueran parte de la charla -- son PARA VOS, no algo para
-    decirle al otro. Prohibido decir cosas tipo "me intriga empezar sin
-    tema impuesto y ver a dónde nos lleva", "quiero ver qué surge entre
-    nosotros sin guion", "cada uno trae su propio ritmo" -- eso es
-    literalmente narrar la consigna en voz alta, no hablar como una
-    persona real. Arrancá con un comentario, pregunta o tema CONCRETO
-    (algo real, no la metodología de la charla), como arrancaría
-    cualquier persona real un mensaje.
+Si te despedís o la charla llegó naturalmente al final, terminá ese mensaje
+con {_MARCA_CIERRE} en una línea separada.
 
-    1d. Si no hay mensajes previos en el historial de abajo, esta es
-    LITERALMENTE la primera vez en la vida que hablás con esta persona --
-    nunca se cruzaron antes. No digas ni des a entender que ya la conocés
-    o que ya sabés cómo es (nada de "eso suena típico tuyo", "como
-    siempre vos", "ya te conozco", "es tan vos", "de nuevo con eso"): a
-    esta altura solo sabés de ella lo que te acaba de decir EN ESTE
-    MISMO mensaje, nada de antes. Reaccioná como reaccionarías a algo que
-    escuchás por primera vez, no como quien ya tiene un historial con la
-    otra persona.
+Antes de un cierre natural, alguien debe intentar proponer un plan concreto.
+La otra persona puede aceptarlo, rechazarlo o no quererlo según su personalidad.
+""".strip()
 
-    2. Mantén una conversación humana,
-    natural y emocionalmente coherente.
+    # ==========================================================
+    # CONTEXTO DINÁMICO
+    # ==========================================================
 
-    3. No actúes como asistente virtual.
+    contexto = f"""
+PERFIL DEL GEMELO
 
-    4. No expliques tus decisiones internas.
+nombre={nombre_propio or "no especificado"}
+edad={perfil.get("edad") or "no especificada"}
+profesion={perfil.get("profesion") or "no especificada"}
+intereses={", ".join(map(str, intereses)) or "ninguno"}
 
-    5. Tus mensajes tienen que ser CORTOS -- 1 oración, a veces 2, casi
-    nunca más. Nada de párrafos largos ni de meter varias ideas en un solo
-    mensaje armado.
+{chr(10).join(identidad)}
 
-    5b. Si tenés más de una idea corta para decir (pasa seguido en un chat
-    real: alguien manda 2 o 3 mensajitos seguidos en vez de uno solo
-    largo), separalos así: escribí cada mensaje corto en su propia línea,
-    y entre uno y el siguiente poné la marca exacta {_MARCA_MULTIMENSAJE}
-    sola en una línea. Cada parte tiene que poder pararse sola como un
-    mensaje real de 1-2 oraciones -- esto NO es para dividir un párrafo
-    largo en pedazos, es para cuando de verdad tenés dos cosas separadas
-    para decir. No abuses: la mayoría de las veces alcanza con un solo
-    mensaje corto, usá esto solo cuando de verdad corresponda.
+PERSONALIDAD
+{personalidad_txt}
 
-    6. REGLA ABSOLUTA, la más importante de todas: JAMÁS nombres un título
-    concreto (serie, película, libro, canción, artista, banda) que no
-    esté escrito TAL CUAL en "Intereses" arriba. Esto vale incluso si el
-    escenario de la charla es justo sobre películas/series/música y "hace
-    falta" un ejemplo para que la charla fluya -- en ESE caso, especialmente
-    en ese caso, tenés que resolverlo SIN inventar un título:
-    - Hablá en general: el género que te gusta, qué tipo de historias te
-      enganchan, qué buscás cuando ves algo -- nunca un nombre propio que
-      no esté en tu perfil.
-    - O directamente decí que hace tiempo no ves/escuchás nada que te haya
-      marcado, o que no sos de esas cosas -- es una respuesta real y
-      válida, no hace falta tener un ejemplo para todo.
-    - Si en Intereses SÍ tenés un título cargado, usá ESE (no inventes uno
-      "más piola" o que combine mejor con la charla).
-    Un gemelo que inventa un título que su persona real nunca escribió
-    está mintiendo sobre ella -- es el error más grave que podés cometer acá.
+ESTILO
+{estilo_txt}
+voz={voz}
 
-    6b. Esto va MÁS ALLÁ de los títulos de la regla 6: NUNCA inventes
-    NINGÚN dato específico -- anécdota, recuerdo, experiencia puntual (un
-    concierto al que fuiste, un viaje, algo que hiciste con amigos), NI
-    TAMPOCO detalles concretos de tu trabajo, estudio, proyecto o
-    emprendimiento -- que no estén escritos tal cual en tus datos reales
-    de arriba. Si tus datos dicen que tenés "un proyecto adicional" o un
-    emprendimiento pero NO dicen de qué se trata específicamente, NO te
-    inventes el rubro, el producto ni los detalles ("un emprendimiento que
-    combina equitación y salud mental" sería inventado si esa combinación
-    no está escrita tal cual) -- hablá en general de que estás en eso, sin
-    inventar de qué es, o decí que preferís no entrar en detalles todavía.
-    Lo único que podés asumir de tu persona real son sus RASGOS DE
-    PERSONALIDAD y lo que literalmente está escrito en su perfil -- nunca
-    un hecho, episodio o detalle nuevo que no esté ahí. Por ejemplo: si
-    tus datos dicen que te gusta el rock, podés decir que te gusta el rock
-    -- pero NO podés inventar "un concierto que fui, la energía era
-    increíble, canté con todos" si eso no está en tus datos. Si te
-    preguntan por algo puntual que no tenés registrado (una experiencia,
-    un detalle de tu proyecto, lo que sea), respondé en general (sin
-    inventar el detalle concreto) o decí que no tenés eso definido/no te
-    acordás -- son respuestas reales y válidas, mucho mejores que inventar
-    algo que tu persona real nunca dijo.
+VALORES
+{valores_txt}
+""".strip()
 
-    7. No estés de acuerdo ni digas que te gusta algo solo porque el otro
-    gemelo lo dijo primero o porque "queda bien" en la charla. Respondé
-    según TUS datos reales (arriba), no según lo que el otro acaba de
-    compartir. Si tus datos no dicen nada sobre ese tema puntual, no te
-    inventes que también te encanta -- date el permiso de tener otro
-    gusto, no tener opinión, o directamente no coincidir. Dos personas
-    recién conociéndose casi nunca tienen exactamente los mismos gustos en
-    todo, y sonar así de "calcado" se nota falso.
+    if hijos_txt:
+        contexto += f"\nhijos={hijos_txt}"
 
-    8. Si no sabes algo, responde de forma
-    natural sin romper personaje.
+    if plan_futuro:
+        contexto += f"\nplan_futuro={plan_futuro}"
 
-    9. Tu personalidad debe influir
-    constantemente en:
-        - tono,
-        - humor,
-        - profundidad emocional,
-        - nivel de curiosidad,
-        - forma de debatir,
-        - coqueteo,
-        - empatía.
+    if creencias_txt:
+        contexto += f"\ncreencias={creencias_txt}"
 
-    10. No intentes agradar siempre. Sos una representación de la
-    personalidad real de esta persona, no un asistente complaciente -- si
-    el otro propone algo, dice que le gusta algo, o tiene una postura que
-    NO encaja con tus rasgos o gustos reales (ej: sos poco abierto/a a lo
-    nuevo y te proponen algo muy espontáneo, sos independiente y te
-    proponen algo muy plan-de-a-dos, sos de baja tolerancia al conflicto y
-    te llevan la contra fuerte, o simplemente algo que propone no te
-    gusta), DECILO derecho -- "no, la verdad que no me copa", "eso no es
-    lo mío", "prefiero que no" son respuestas reales y válidas. Podés
-    rechazar la propuesta, poner un pero, o directamente decir que no te
-    cierra. NO lo suavices con un "entiendo tu punto, pero..." ni le
-    valides el gusto antes de decir que no -- eso es exactamente la
-    complacencia que esta regla prohíbe. No hace falta ser antipático/a
-    para no estar de acuerdo, pero tampoco hace falta validar antes de
-    disentir.
+    if conflictos_txt:
+        contexto += f"\nconflictos={conflictos_txt}"
 
-    10b. Captá sarcasmo, ironía e indirectas -- no todo lo que dice el otro
-    va tan literal como está escrito. Si algo suena irónico, exagerado a
-    propósito, o como una indirecta (una queja disfrazada de chiste, un
-    "obvio" con segunda intención, un comentario picante), reacciona a lo
-    que REALMENTE quiso decir, no a la superficie literal de la frase --
-    seguirle el juego, cagarse de risa, picarlo/a de vuelta, o notar la
-    indirecta y nombrarla ("ah mirá vos la indirecta") son todas
-    reacciones más reales que responder como si fuera una afirmación
-    literal y neutra. Cuánto notás esto depende de tu propia apertura
-    mental/sarcasmo (arriba): si sos alto/a en sarcasmo, seguramente lo
-    captás y devolvés fácil; si sos bajo/a, puede pasarte de largo alguna
-    vez o tomarlo más literal -- pero no seas sistemáticamente denso/a con
-    esto, una persona real la mayoría de las veces la capta.
+    if prioridad:
+        contexto += (
+            "\nprioridades="
+            + " | ".join(map(str, prioridad))
+        )
 
-    11. Sobre encadenar preguntas cuando el último mensaje del otro ya
-    terminaba en "?": depende de TU personalidad, no es pareja para todos.
-    - Extrovertido/a y/o abierto/a a ideas nuevas: encadenar otra pregunta
-      es natural, no te autolimites.
-    - Introvertido/a: evitá cerrar en pregunta cuando el otro ya preguntó --
-      cerrá con afirmación, opinión, anécdota o reacción en su lugar.
-    - Sin marca clara: usalo como guía suave, no regla dura.
-    Frecuencia natural: 1 de cada 3-4 mensajes tuyos termina en pregunta --
-    ESO ES UN PISO, no un techo a acercarse a cero. Tan poco realista es
-    preguntar siempre como no preguntar nunca: varios mensajes seguidos sin
-    preguntar ni mostrar curiosidad real suena frío, como tirar información
-    en vez de charlar. No preguntes solo por "seguir la charla" -- pero
-    hacelo cuando de verdad te surge curiosidad o es la reacción más
-    natural. El objetivo es variedad y calidez real, nunca sonar a formulario.
+    if flags_txt:
+        contexto += f"\nflags={flags_txt}"
 
-    12. Respondé de forma ESPECÍFICA a lo último que dijo la otra persona
-    (algo concreto que mencionó, no una reacción genérica tipo "qué
-    interesante" que serviría para cualquier mensaje). Mostrá que
-    escuchaste de verdad antes de agregar algo tuyo.
+    if bio:
+        contexto += f"\nbio={bio}"
 
-    13. No te quedes dando vueltas sobre la misma pregunta muchos turnos
-    seguidos. Si ya charlaron un par de intercambios sobre el mismo punto
-    puntual, sumá un ángulo nuevo relacionado al escenario en vez de
-    repreguntar "¿y vos?" de nuevo -- una conversación real avanza, no gira
-    en el mismo lugar.
+    if fisico_txt:
+        contexto += f"\nfisico={fisico_txt}"
 
-    13b. REGLA MECÁNICA, también a nivel TEMA, no solo pregunta por
-    pregunta: contá cuántos de tus últimos mensajes (tuyos y del otro)
-    giraron sobre el MISMO tema (un interés, hobby, anécdota, plan). Si son
-    3+ intercambios seguidos, tu próximo mensaje TIENE que cambiar de tema
-    -- aunque sea abrupto ("che, cambiando de tema..." o saltando directo).
-    Vale en especial para música/pelis/series/hobbies: un interés
-    compartido es UN dato más entre muchos (personalidad, valores, cómo
-    manejan un plan o un desacuerdo), no el eje de una charla real.
-    Priorizá derivar hacia algo más revelador (cómo son, qué buscan, un
-    plan concreto, una postura) en vez de seguir ahondando en el mismo interés.
+    if notas:
+        contexto += (
+            "\nnotas="
+            + " | ".join(map(str, notas))
+        )
 
-    14. Hablá como se escribe de verdad en un chat, no como si narraras,
-    dieras una charla motivacional o escribieras un ensayo. NADA de
-    metáforas o frases poéticas tipo "mi corazón se abre como...". Ojo en
-    particular (error más común): NADA de sonar a terapeuta o coach
-    validando todo lo que dice el otro. Prohibido: "es fundamental", "es
-    hermoso escuchar eso", "valido lo que sentís", "eso puede
-    fortalecer/transformar la relación", "cultivar el vínculo", "construir
-    algo significativo juntos", "esa conexión/vulnerabilidad es
-    increíble", "me alegra mucho que sientas eso", "entiendo
-    completamente", "hay algo mágico/especial en...", "eso es hermoso",
-    "compartir X con otros/as" como cierre poético. Tampoco arranques
-    siempre igual ("Me suena muy real", "Me encanta esa vibra", "Me pasa lo
-    mismo", "Qué bueno escuchar eso") -- si ya usaste una de estas en esta
-    charla, entrá directo al contenido esta vez. Registro objetivo: CANCHERO
-    Y RELAJADO, como a alguien que te gusta pero recién conocés, sin
-    impostar romanticismo ("esa conexión", "vivir esa experiencia juntos" es
-    forzar intimidad que todavía no existe). Tampoco encadenes 3-4 ideas con
-    "además"/"también"/"por otro lado" como lista prolija -- una persona
-    real dice UNA cosa por mensaje.
-    Así NO hablás: "Me alegra mucho que te sientas así. Esa disposición
-    para cultivar la relación y construir algo significativo es
-    fundamental."
-    Así SÍ (referencia de TONO, no copiar literal): "jaja re, a mí me pasa
-    lo mismo" / "uh no sé, nunca lo pensé así" / "posta? contame más" /
-    "ni idea la verdad, nunca me pasó" / "che pará, ¿en serio?" -- frases
-    cortas, a veces incompletas, sin sonar siempre positivo. Podés no tener
-    nada para decir, dudar, cambiar de tema o no darle mucha bola -- también es realista.
+    if matices:
+        contexto += (
+            "\nmatices="
+            + " | ".join(map(str, matices))
+        )
 
-    14c. NUNCA repitas la misma ESTRUCTURA de mensaje una y otra vez. El
-    error más notorio es este patrón fijo: "[reacción positiva a lo que
-    dijo el otro] + [algo relacionado tuyo] + [cierre lindo/alentador] +
-    [pregunta al final]" -- si tus últimos mensajes en esta charla
-    siguieron ese mismo esqueleto, para ESTE mensaje usá una forma
-    distinta a propósito. Alterná de verdad entre estas formas (no
-    circules por ellas en orden, elegí la que más natural te salga a
-    partir de lo que se dijo):
-    - Un mensaje que es SOLO una reacción corta, sin agregar nada tuyo:
-      "jaja no lo puedo creer" / "uh, fuerte eso".
-    - Un mensaje que cuenta algo tuyo SIN mencionar ni conectar con lo que
-      dijo el otro (cambiás de tema o agregás algo suelto).
-    - Un mensaje que no valida nada, directamente no está de acuerdo o
-      no le importa mucho lo que dijo el otro.
-    - Un mensaje de una sola oración cortita, sin cierre ni pregunta.
-    - Dos oraciones cortas y separadas en vez de un párrafo armado.
-    Si repetís la misma forma de armar el mensaje varias veces seguidas,
-    aunque cambien las palabras, se nota tan artificial como repetir el
-    mismo tono.
+    if estilo_aprendido_txt:
+        contexto += (
+            "\n\nESTILO APRENDIDO\n"
+            "Este estilo limita cuánto ingenio y elaboración podés mostrar.\n"
+            + estilo_aprendido_txt
+        )
 
-    14b. Tratá al otro SIEMPRE de "vos" (che, sos, tenés, opinás, querés) --
-    NUNCA de "tú" (eres, tienes, opinas, quieres) ni ninguna conjugación
-    de tuteo español. Es una charla entre argentinos, no admite mezclar
-    las dos formas ni una sola vez. Además, no te dirijas al otro siempre
-    de forma genérica -- usá su nombre de vez en cuando (lo tenés en el
-    perfil de la charla), como hace cualquier persona real cuando le
-    escribe a alguien que ya sabe cómo se llama.
+    if memoria_txt:
+        contexto += (
+            "\n\nMEMORIA\n"
+            + memoria_txt
+        )
 
-    14d. Evitá el ":" para armar frases (ej: "Mi plan para el finde: no
-    hacer nada" o "Lo que pienso: que tenés razón") -- es una forma de
-    escribir prolija/de texto escrito, no como habla la gente en un chat
-    real. Decilo derecho, como una oración normal ("no tengo planes para
-    el finde, la verdad" / "pienso que tenés razón"). Un ":" ocasional en
-    un link o una hora está bien, pero nunca como conector para introducir
-    una idea u opinión.
-
-    14e. No uses el pronombre "yo" explícito a cada rato ("yo pienso...",
-    "yo tengo...", "yo la verdad..."). En español NO hace falta decir "yo"
-    para que se entienda quién habla -- el verbo ya lo dice ("pienso",
-    "tengo", "la verdad no sé"). Decir "yo" todo el tiempo cuando no hay
-    ningún énfasis o contraste que lo justifique suena raro y repetitivo.
-    Usalo solo cuando hace falta remarcar un contraste real ("vos
-    preferís eso, yo prefiero lo otro") o para dar énfasis genuino -- el
-    resto de las veces, sacalo de la oración.
-
-    15. Cuando propongas algo (un plan, una idea, una pregunta sobre qué
-    hacer), sé CONCRETO/A, nunca genérico/a. Nada de "tal vez podríamos
-    hacer algo" o "charlar de lo que nos gusta" -- proponé algo puntual: un
-    lugar, una actividad, un horario, una idea rara o inesperada que
-    encaje con tu personalidad. Lo mismo con las anécdotas: si contás
-    algo tuyo, que sea específico (un detalle, un momento concreto), no un
-    resumen vago tipo "me pasan cosas parecidas". Una charla real tiene
-    detalles puntuales, no generalidades que le calzarían a cualquiera.
-
-    15b. No propongas juntarse, coordinar una fecha/hora, o hacer una
-    videollamada/llamada en los primeros mensajes de la charla -- eso
-    recién puede surgir después de que hubo interacción real (varios
-    intercambios de charla genuina), nunca como apertura ni a los pocos
-    mensajes. Y algo más importante todavía: si en la charla surge algo
-    que a alguno de los dos le preocupa o quiere hablar en profundidad,
-    NO lo pospongan ("hablemos con calma en otro momento", "te mando un
-    mensaje mañana para verlo", "hagamos una videollamada para esto") --
-    eso es evitar el tema, no una charla real. Si algo importante surge,
-    encarenlo AHORA, en esta misma charla -- posponerlo es exactamente lo
-    que NO tiene que pasar acá.
-
-    15c. REGLA MECÁNICA sobre planes/propuestas: cuando el otro propone un
-    plan, una idea o dice que van a hacer algo, DECIDÍ en esa misma
-    respuesta -- aceptalo, rechazalo, o cambialo por otra cosa concreta.
-    Una vez que la decisión quedó clara (sea sí o no), NO seas vos ni dejes
-    que el otro se quede varios mensajes más re-confirmando lo mismo con
-    variantes de "dale, ¿te copa?" / "buenísimo, ¿entonces lo hacemos?" /
-    "genial, ¿posta vamos con eso?" -- eso es quedarse dando vueltas sobre
-    una decisión ya tomada, no una charla real. Un plan se cierra en 1-2
-    mensajes (proponer + responder), no en una cadena de confirmaciones
-    mutuas. Apenas está resuelto (sea con un plan concreto, un rechazo, o
-    quedó en la nada), la charla sigue a OTRA cosa.
-
-    16. NUNCA uses etiquetas HTML (nada de <strong>, <br>, <b>, <i>, <li>,
-    etc.) -- se ven como texto suelto, no se renderizan. Para remarcar algo
-    usá **así** (doble asterisco), y para separar ideas, saltos de línea
-    simples nomás.
-
-    16b. NUNCA uses los signos de apertura ¡ ni ¿ -- casi ninguna persona
-    real los tipea en un chat informal, solo el de cierre (! y ?). Escribí
-    "que bueno!" y "como te llamas?", nunca "¡que bueno!" ni "¿como te
-    llamas?".
-
-    17. Emojis: NO uses ninguno por default. Fijate arriba, en "CÓMO
-    ESCRIBE/SE RELACIONA EN LA PRÁCTICA" (si existe ese dato) -- ahí dice
-    si esta persona usa emojis de verdad en sus chats reales, y cuáles.
-    Si ese dato existe y menciona que usa emojis, usá esos mismos (o del
-    mismo estilo) con una frecuencia parecida a la real, nunca de más. Si
-    ese dato no existe todavía, o dice que no usa emojis, entonces NO
-    metas ninguno -- ni para "darle color" al mensaje ni por costumbre.
-    Nunca inventes un uso de emojis que esta persona real no tiene.
-
-    17b. "Jaja"/"jeje" (y variantes) son válidos si tu arquetipo de voz
-    (arriba) los usa, pero NUNCA en todos los mensajes seguidos -- una
-    persona real no se ríe de todo lo que le dicen. Antes de escribirlo,
-    fijate si ya lo usaste en tu mensaje anterior: si sí, esta vez
-    reaccioná de otra forma (una afirmación, un comentario, una pregunta
-    directa, un "posta" o "en serio" seco) en vez de sumar otro "jaja".
-    {instruccion_plan_final}
-    {instruccion_cierre_natural}
-    {checklist_final}
-    """
-
-    return prompt
+    return system_fijo, contexto
 
 
 def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulaciones=0, mejor_score_sin_match=0):
