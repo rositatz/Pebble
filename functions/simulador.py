@@ -802,6 +802,15 @@ def generar_prompt_gemelo(
     if genero_otro:
         identidad.append(f"genero_otro={genero_otro}")
 
+    # Concordancia de género: sobre sí mismo/a (_instruccion_genero) y al
+    # dirigirse a la otra persona en segunda persona (_instruccion_genero_otro,
+    # ej. "¿te ves cansada?" vs "cansado?") -- sin esto el modelo adivina y
+    # se equivoca (bug real ya visto en producción: "seguro/a" sin resolver,
+    # o el género incorrecto de la otra persona). Se había dejado de llamar
+    # a estas dos funciones acá al comprimir el prompt para caching.
+    genero_propio_txt = _instruccion_genero(perfil)
+    genero_otro_txt = _instruccion_genero_otro(genero_otro, nombre_otro)
+
     # ==========================================================
     # PERSONALIDAD
     # ==========================================================
@@ -1116,6 +1125,12 @@ voz={voz}
 VALORES
 {valores_txt}
 """.strip()
+
+    if genero_propio_txt:
+        contexto += f"\n\nGÉNERO (concordancia obligatoria, hablando de vos mismo/a):\n{genero_propio_txt}"
+
+    if genero_otro_txt:
+        contexto += f"\n\nGÉNERO DE {(nombre_otro or 'LA OTRA PERSONA').upper()} (concordancia obligatoria al dirigirte a ella/él en segunda persona):{genero_otro_txt}"
 
     if hijos_txt:
         contexto += f"\nhijos={hijos_txt}"
@@ -1673,8 +1688,16 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     apodo1 = perfil1.get("apodo") or nombre1
     apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
+    # generar_prompt_gemelo devuelve (system_fijo, contexto_dinamico) --
+    # system_fijo son las reglas constantes (iguales para cualquier persona,
+    # ideal para que OpenAI las cachee) y contexto_dinamico es lo específico
+    # de ESTE perfil (personalidad, estilo, memoria). Se mandan como DOS
+    # mensajes "system" separados (mismo patrón que chatear_con_gemelo_match
+    # en main.py) para que system_fijo quede como prefijo estable entre
+    # llamadas, en vez de pisarlo con contexto_escenario/instrucciones de
+    # turno que sí cambian.
+    prompt_1_fijo, prompt_1_contexto = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
+    prompt_2_fijo, prompt_2_contexto = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
@@ -1693,7 +1716,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     )
 
     response_inicio = _completar_chat_gemelo([
-        {"role": "system", "content": contexto_escenario + prompt_1 + instruccion_inicio},
+        {"role": "system", "content": prompt_1_fijo},
+        {"role": "system", "content": contexto_escenario + prompt_1_contexto + instruccion_inicio},
     ])
     ultimo_mensaje, _ = _extraer_cierre(response_inicio.choices[0].message.content)
     partes_inicio = _dividir_mensajes(ultimo_mensaje)
@@ -1755,11 +1779,12 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # =================================================
 
         response_2 = _completar_chat_gemelo([
+            {"role": "system", "content": prompt_2_fijo},
             {
                 "role": "system",
                 "content":
                     contexto_escenario +
-                    prompt_2 +
+                    prompt_2_contexto +
                     (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
             },
 
@@ -1795,11 +1820,12 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # =================================================
 
         response_1 = _completar_chat_gemelo([
+            {"role": "system", "content": prompt_1_fijo},
             {
                 "role": "system",
                 "content":
                     contexto_escenario +
-                    prompt_1 +
+                    prompt_1_contexto +
                     (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
             },
 
@@ -1925,8 +1951,13 @@ def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, d
     apodo1 = perfil1.get("apodo") or nombre1
     apodo2 = perfil2.get("apodo") or nombre2
 
-    prompt_1 = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
-    prompt_2 = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
+    # Ver el comentario equivalente en simular_cita: generar_prompt_gemelo
+    # devuelve (system_fijo, contexto_dinamico) -- se guardan por separado
+    # (no concatenados) para poder mandarlos como dos mensajes "system"
+    # distintos en armar_solicitud_batch, mismo patrón que
+    # chatear_con_gemelo_match.
+    prompt_1_fijo, prompt_1_contexto = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
+    prompt_2_fijo, prompt_2_contexto = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
 
     return {
         "uid1": uid1, "uid2": uid2,
@@ -1935,7 +1966,8 @@ def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, d
         "distancia_km": distancia_km,
         "escenario": escenario_actual,
         "contexto_escenario": contexto_escenario,
-        "prompt_1": prompt_1, "prompt_2": prompt_2,
+        "prompt_1_fijo": prompt_1_fijo, "prompt_1_contexto": prompt_1_contexto,
+        "prompt_2_fijo": prompt_2_fijo, "prompt_2_contexto": prompt_2_contexto,
         "turnos_max": turnos,
         "min_turnos_efectivo": min_turnos_efectivo,
         "turno_idx": 0,
@@ -1967,34 +1999,45 @@ def armar_solicitud_batch(par_id, estado, model="gpt-5.6-terra"):
     es_ultimo_turno_posible = turno_idx == estado["turnos_max"] - 1
 
     if fase == "inicio":
-        mensajes = [{
-            "role": "system",
-            "content": estado["contexto_escenario"] + estado["prompt_1"] + (
-                "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
-                " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
-                " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
-                " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
-                " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
-                " natural, como si le escribieras por primera vez a alguien que recién"
-                f" conociste. {random.choice(_ANGULOS_APERTURA)}"
-            ),
-        }]
+        mensajes = [
+            {"role": "system", "content": estado["prompt_1_fijo"]},
+            {
+                "role": "system",
+                "content": estado["contexto_escenario"] + estado["prompt_1_contexto"] + (
+                    "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
+                    " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
+                    " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
+                    " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
+                    " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
+                    " natural, como si le escribieras por primera vez a alguien que recién"
+                    f" conociste. {random.choice(_ANGULOS_APERTURA)}"
+                ),
+            },
+        ]
     elif fase == "turno_2":
-        mensajes = [{
-            "role": "system",
-            "content": (
-                estado["contexto_escenario"] + estado["prompt_2"] +
-                (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
-            ),
-        }, *estado["vista_2"]]
+        mensajes = [
+            {"role": "system", "content": estado["prompt_2_fijo"]},
+            {
+                "role": "system",
+                "content": (
+                    estado["contexto_escenario"] + estado["prompt_2_contexto"] +
+                    (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
+                ),
+            },
+            *estado["vista_2"],
+        ]
     elif fase == "turno_1":
-        mensajes = [{
-            "role": "system",
-            "content": (
-                estado["contexto_escenario"] + estado["prompt_1"] +
-                (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
-            ),
-        }, *estado["vista_1"]]
+        mensajes = [
+            {"role": "system", "content": estado["prompt_1_fijo"]},
+            {
+                "role": "system",
+                "content": (
+                    estado["contexto_escenario"] + estado["prompt_1_contexto"] +
+                    (_INSTRUCCION_CIERRE_FORZADO_BATCH if es_ultimo_turno_posible else "")
+                ),
+            },
+            *estado["vista_1"],
+        ]
     else:
         return None
 
