@@ -1171,28 +1171,15 @@
       </div>
     </div>
 
-    <!-- Quick replies -->
+    <!-- Quick replies: se llenan con los matches reales para elegir con
+    quién simular un escenario (ver abrirPickerEscenario). -->
     <div class="quick-replies-wrap" id="quickRepliesWrap">
-      <div class="quick-replies" id="quickReplies">
-        <button class="qr-chip" onclick="abrirPickerConsejo()">
-          Consejo para un match
-        </button>
-        <button class="qr-chip" onclick="sendQuick('¿Cómo van mis matches?')">
-          ¿Cómo van mis matches?
-        </button>
-        <button class="qr-chip" onclick="sendQuick('Ayudame a romper el hielo')">
-          Ayudame a romper el hielo
-        </button>
-        <button
-          class="qr-chip"
-          onclick="sendQuick('¿Qué podría mejorar de mi perfil?')"
-        >
-          ¿Qué mejorar de mi perfil?
-        </button>
-      </div>
+      <div class="quick-replies" id="quickReplies"></div>
     </div>
 
-    <!-- Input -->
+    <!-- Input: se usa solo para pedir un escenario en texto libre (ej.
+    "Simulá la primera cita con Luciana") -- ver detectarPedidoDeSimulacion.
+    Ya no hay chat libre de cualquier tema. -->
     <div class="input-wrap">
       <button
         class="input-plus-btn"
@@ -1216,7 +1203,7 @@
         <textarea
           class="chat-input"
           id="chatInput"
-          placeholder="Escribile a tu gemelo..."
+          placeholder="Ej: Simulá la primera cita con Luciana..."
           rows="1"
           onkeydown="handleKey(event)"
           oninput="autoResize(this)"
@@ -1245,49 +1232,7 @@
       <div
         class="plus-menu-item"
         onclick="
-          abrirPickerConsejo();
-          togglePlusMenu();
-        "
-      >
-        <div class="plus-menu-icon">
-          <svg
-            viewBox="0 0 24 24"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path
-              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            />
-          </svg>
-        </div>
-        <span class="plus-menu-label">Consejo para un match</span>
-      </div>
-      <div
-        class="plus-menu-item"
-        onclick="
-          sendQuick('¿Cómo van mis matches?');
-          togglePlusMenu();
-        "
-      >
-        <div class="plus-menu-icon">
-          <svg
-            viewBox="0 0 24 24"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </svg>
-        </div>
-        <span class="plus-menu-label">Resumen de mis matches</span>
-      </div>
-      <div
-        class="plus-menu-item"
-        onclick="
-          abrirPickerConsejo();
+          abrirPickerEscenario();
           togglePlusMenu();
         "
       >
@@ -1302,27 +1247,6 @@
           </svg>
         </div>
         <span class="plus-menu-label">Iniciar escenario</span>
-      </div>
-      <div
-        class="plus-menu-item"
-        onclick="
-          sendQuick('Quiero darte feedback');
-          togglePlusMenu();
-        "
-      >
-        <div class="plus-menu-icon">
-          <svg
-            viewBox="0 0 24 24"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path
-              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-            />
-          </svg>
-        </div>
-        <span class="plus-menu-label">Darle feedback</span>
       </div>
     </div>
 
@@ -1709,19 +1633,6 @@
           .replace(/'/g, "&#39;");
       }
 
-      // El modelo devuelve texto con Markdown liviano (negrita **así**) pero
-      // la burbuja del chat no lo interpreta -- sin este paso se veían los
-      // asteriscos literales. Los saltos de línea NO se convierten acá a
-      // <br> (eso generaba "<br>" visible como texto en vez de un salto real
-      // -- ver .bubble { white-space: pre-line } en el CSS, que ya respeta
-      // los \n tal cual sin necesidad de insertar HTML). Recibe el texto YA
-      // escapado por escHtml, así que insertar el resultado como HTML es
-      // seguro: acá solo se agrega <strong> propio, nunca contenido sin
-      // escapar.
-      function formatearMarkdownLite(textoEscapado) {
-        return textoEscapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-      }
-
       // Los callables de Firebase exponen el código del error en err.code
       // (ej: "functions/failed-precondition", "functions/unavailable") --
       // antes se mostraba err.message tal cual, que para cualquier falla no
@@ -1831,7 +1742,7 @@
       // Corre la simulación real con el match detectado, usando el mensaje
       // tal cual como "situación" en texto libre (armar_escenario_
       // personalizado la convierte en un escenario). Mismo resultado que
-      // elegirMatchParaConsejo (picker de "Consejo para un match"), pero
+      // elegirMatchParaEscenario (picker de "Iniciar escenario"), pero
       // disparado desde texto libre en vez del picker.
       function correrSimulacionDesdeChat(otroUid, nombre, situacionTexto) {
         setTimeout(() => {
@@ -1867,7 +1778,7 @@
               if (pedidosSimulacionPendientes.length) {
                 mostrarPedidosPendientes();
               } else {
-                setQuickReplies(QUICK_REPLIES_DEFAULT);
+                setQuickReplies([]);
               }
             })
             .catch((err) => {
@@ -1876,7 +1787,7 @@
               addTwinMsg(
                 `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
               );
-              setQuickReplies(QUICK_REPLIES_DEFAULT);
+              setQuickReplies([]);
             })
             .finally(() => _bloquearEnvio(false));
         }, 300);
@@ -1908,7 +1819,7 @@
         btnNinguna.textContent = "Ninguna, gracias";
         btnNinguna.onclick = () => {
           pedidosSimulacionPendientes = [];
-          setQuickReplies(QUICK_REPLIES_DEFAULT);
+          setQuickReplies([]);
         };
         qr.appendChild(btnNinguna);
       }
@@ -1927,6 +1838,12 @@
         correrSimulacionDesdeChat(elegido.uid, elegido.nombre, elegido.texto);
       }
 
+      // Esta pantalla ya NO tiene chat libre de cualquier tema -- por pedido
+      // explícito, para no gastar tokens en preguntas sin acotar. Lo único
+      // que hace el input es detectar un pedido de escenario (nombre real +
+      // palabra disparadora, ver detectarPedidoDeSimulacion) y correr
+      // simular_situacion. Si no reconoce ninguno de los dos, avisa sin
+      // llamar a ninguna IA.
       function sendMessage() {
         if (esperandoRespuestaGemelo) return; // el gemelo todavía está respondiendo el mensaje anterior
         const text = inputEl.value.trim();
@@ -1935,71 +1852,33 @@
         autoResize(inputEl);
         addUserMsg(text);
         closePlusMenu();
-        _bloquearEnvio(true);
 
         const matchPedido = detectarPedidoDeSimulacion(text);
-        if (matchPedido) {
-          // Un mensaje nuevo del usuario reemplaza cualquier cola de
-          // pedidos pendientes del mensaje anterior -- si no eligió
-          // ninguno y pidió otra cosa, no tiene sentido seguir
-          // ofreciéndole los viejos.
-          const partes = separarPedidosDeSimulacion(text);
-          pedidosSimulacionPendientes = partes
-            .slice(1)
-            .map((texto) => ({ uid: matchPedido.uid, nombre: matchPedido.nombre, texto }));
-          correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, partes[0]);
+        if (!matchPedido) {
+          addTwinMsg(
+            "Para simular un escenario, mencioná con quién (el nombre de un match real) y qué situación -- ej: \"Simulá la primera cita con Luciana\". También podés elegir un match desde el botón + de abajo.",
+          );
           return;
         }
-        pedidosSimulacionPendientes = [];
 
-        setTimeout(() => {
-          addTyping();
-          if (typeof window._llamarChatGemelo !== "function") {
-            setTimeout(() => {
-              removeTyping();
-              addTwinMsg(
-                "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
-              );
-              _bloquearEnvio(false);
-            }, 400);
-            return;
-          }
-          const historial = chatLog
-            .filter((e) => e.tipo === "user" || e.tipo === "twin")
-            .slice(-20)
-            .map((e) => ({
-              role: e.tipo === "user" ? "user" : "assistant",
-              content: e.text,
-            }));
-          window
-            ._llamarChatGemelo(text, historial)
-            .then((respuesta) => {
-              removeTyping();
-              addTwinMsg(formatearMarkdownLite(escHtml(respuesta)));
-            })
-            .catch((err) => {
-              removeTyping();
-              console.error("Error en chatear_con_gemelo:", err);
-              addTwinMsg(`No pude responder: ${mensajeErrorGemelo(err)}`);
-            })
-            .finally(() => _bloquearEnvio(false));
-        }, 300);
-      }
-
-      // Envía un mensaje desde los chips de respuesta rápida
-      // Pone el texto en el input y llama a sendMessage() directamente
-      function sendQuick(text) {
-        inputEl.value = text;
-        sendMessage();
+        _bloquearEnvio(true);
+        // Un mensaje nuevo del usuario reemplaza cualquier cola de pedidos
+        // pendientes del mensaje anterior -- si no eligió ninguno y pidió
+        // otra cosa, no tiene sentido seguir ofreciéndole los viejos.
+        const partes = separarPedidosDeSimulacion(text);
+        pedidosSimulacionPendientes = partes
+          .slice(1)
+          .map((texto) => ({ uid: matchPedido.uid, nombre: matchPedido.nombre, texto }));
+        correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, partes[0]);
       }
 
       // Reemplaza la fila de respuestas rápidas por chips con tus matches
       // reales (window.matchesReales, cargado por el script de Firestore de
-      // más abajo). Elegir uno corre una simulación real (simular_situacion)
-      // contra ese match, no una respuesta armada a mano. Se arma con el DOM
+      // más abajo). Elegir uno pide la situación y corre una simulación real
+      // (simular_situacion) contra ese match. Se arma con el DOM
       // directamente (no innerHTML con texto interpolado) para no tener que
       // lidiar con escapar nombres reales dentro de un atributo onclick.
-      function abrirPickerConsejo() {
+      function abrirPickerEscenario() {
         const qr = document.getElementById("quickReplies");
         if (!qr) return;
         qr.innerHTML = "";
@@ -2016,81 +1895,38 @@
           const btn = document.createElement("button");
           btn.className = "qr-chip";
           btn.textContent = m.nombre;
-          btn.onclick = () => elegirMatchParaConsejo(m.uid, m.nombre);
+          btn.onclick = () => elegirMatchParaEscenario(m.uid, m.nombre);
           qr.appendChild(btn);
         });
       }
 
-      // Corre una simulación real (Cloud Function simular_situacion) contra
-      // el match elegido y muestra el resumen y el score que devuelve de
-      // verdad -- reemplaza el flujo viejo que solo mostraba una respuesta
-      // enlatada mencionando nombres fijos (Sofía, Valentina, etc).
-      // Chips por default de la fila de accesos rápidos -- se usan para
-      // "volver" ahí después de elegir un match en el picker, tanto si la
-      // simulación sale bien como si falla (antes solo se restauraban en el
-      // camino exitoso, así que un error dejaba los nombres de matches
-      // colgados en la fila para siempre).
-      const QUICK_REPLIES_DEFAULT = [
-        "¿Cómo van mis matches?",
-        "Ayudame a romper el hielo",
-        "Quiero darte feedback",
-      ];
-
-      function elegirMatchParaConsejo(otroUid, nombre) {
-        // Este picker dispara dar_consejo_match por afuera de sendMessage()
-        // -- sin este chequeo, el candado de "un mensaje a la vez" no lo
-        // cubría, así que se podía elegir un match acá mientras otra
-        // respuesta del gemelo todavía estaba en camino.
+      // Pide qué situación simular (texto libre, ej. "la primera cita") y
+      // corre simular_situacion contra el match elegido -- mismo backend que
+      // si se escribe el pedido directo en el input de texto.
+      function elegirMatchParaEscenario(otroUid, nombre) {
         if (esperandoRespuestaGemelo) return;
-        addUserMsg(`Dame un consejo para hablar con ${nombre}`);
-        setQuickReplies([]); // oculta los nombres del picker apenas se elige uno, sin esperar la respuesta
+        const situacion = window.prompt(
+          `¿Qué situación querés simular con ${nombre}? (dejalo vacío para que el gemelo elija una)`,
+          "",
+        );
+        if (situacion === null) return; // canceló el picker
+        setQuickReplies([]); // oculta los nombres del picker apenas se elige uno
+        const situacionTexto = situacion.trim();
+        addUserMsg(
+          situacionTexto
+            ? `Simulá "${situacionTexto}" con ${nombre}`
+            : `Simulá una situación con ${nombre}`,
+        );
         _bloquearEnvio(true);
-        setTimeout(() => {
-          // Consejo directo (dar_consejo_match): UN llamado a OpenAI que
-          // mira los datos reales de la otra persona, no una simulación
-          // completa -- por eso alcanza el indicador normal, sin el aviso
-          // de "puede tardar minutos" que sí necesita simular_situacion.
-          addTyping();
-          if (typeof window._llamarConsejoMatch !== "function") {
-            removeTyping();
-            addTwinMsg(
-              "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
-            );
-            _bloquearEnvio(false);
-            return;
-          }
-          window
-            ._llamarConsejoMatch(otroUid)
-            .then((res) => {
-              removeTyping();
-              const consejo = escHtml(
-                res.consejo || "No pude armar un consejo esta vez.",
-              ).replace(/\n/g, "<br>");
-              addTwinMsg(consejo);
-              setQuickReplies(QUICK_REPLIES_DEFAULT);
-            })
-            .catch((err) => {
-              removeTyping();
-              console.error("Error en dar_consejo_match:", err);
-              addTwinMsg(
-                `No pude armar el consejo: ${mensajeErrorGemelo(err)}`,
-              );
-              setQuickReplies(QUICK_REPLIES_DEFAULT);
-            })
-            .finally(() => _bloquearEnvio(false));
-        }, 300);
+        correrSimulacionDesdeChat(otroUid, nombre, situacionTexto);
       }
 
-      // No se loguea/persiste -- son solo accesos rápidos de la UI actual,
-      // no algo dicho en la conversación (ver nota en replayChatLog).
+      // Limpia la fila de accesos rápidos (picker de matches / pedidos
+      // pendientes) -- ya no arma chips de texto libre, esta pantalla no
+      // tiene más ese tipo de accesos.
       function setQuickReplies(opts) {
         const qr = document.getElementById("quickReplies");
-        qr.innerHTML = opts
-          .map(
-            (o) =>
-              `<button class="qr-chip" onclick="sendQuick('${escHtml(o)}')">${escHtml(o)}</button>`,
-          )
-          .join("");
+        qr.innerHTML = "";
       }
 
       // Procesa la elección del usuario en una tarjeta de feedback
@@ -2187,50 +2023,19 @@
         "simular_situacion",
         { timeout: 520000 },
       );
-      const chatearConGemeloCallable = httpsCallable(
-        functionsInstance,
-        "chatear_con_gemelo",
-      );
-      // dar_consejo_match es UN solo llamado a OpenAI (no una charla
-      // simulada completa), así que le alcanza con el timeout default del
-      // SDK -- no hace falta el override de 520s que sí necesita
-      // simularSituacionCallable arriba.
-      const darConsejoMatchCallable = httpsCallable(
-        functionsInstance,
-        "dar_consejo_match",
-      );
-
-      // Bridge para el script clásico de más abajo (elegirMatchParaConsejo):
-      // "Dame un consejo" ya no corre una simulación completa -- llama
-      // directo a dar_consejo_match, que da un consejo concreto en un solo
-      // llamado a OpenAI.
-      window._llamarConsejoMatch = async function (otroUid) {
-        const res = await darConsejoMatchCallable({ otroUid });
-        return res.data;
-      };
 
       // Bridge para el script clásico de más abajo (correrSimulacionDesdeChat):
       // llama a la Cloud Function real simular_situacion, que corre una
       // simulación nueva entre tu gemelo y el de "otroUid" (con la situación
       // en texto libre si se pasa una) y devuelve resumen + score reales.
+      // Es el ÚNICO llamado a IA que queda en esta pantalla -- no hay chat
+      // libre de cualquier tema (ver sendMessage).
       window._llamarSimularSituacion = async function (otroUid, situacion) {
         const res = await simularSituacionCallable({
           otroUid,
           situacion: situacion || "",
         });
         return res.data;
-      };
-
-      // Bridge para sendMessage() (script clásico): chat directo con el
-      // propio gemelo, respuesta real de OpenAI en vez de texto armado a
-      // mano. "historial" son los últimos mensajes de la conversación, para
-      // que tenga contexto de lo que ya se habló.
-      window._llamarChatGemelo = async function (mensaje, historial) {
-        const res = await chatearConGemeloCallable({
-          mensaje,
-          historial: historial || [],
-        });
-        return res.data.respuesta;
       };
 
       // El chat con el propio gemelo (mensajes, tarjetas, quick replies) se
@@ -2290,8 +2095,8 @@
         if (navName) navName.textContent = `Tu gemelo · ${nombreParaMostrar}`;
 
         // Matches reales (conexiones donde supera_umbral es true) -- se usan
-        // para el picker real de "Consejo para un match" (ver
-        // elegirMatchParaConsejo en el script clásico de más arriba) y para
+        // para el picker real de "Iniciar escenario" (ver
+        // elegirMatchParaEscenario en el script clásico de más arriba) y para
         // el contador de "conversaciones abiertas" del header, que antes
         // era un "12" fijo sin relación con los matches reales del usuario.
         // Solo necesitamos id + nombre acá, ya guardados en el propio doc de
