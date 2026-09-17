@@ -509,6 +509,7 @@ def _construir_identidad(e1):
         "ciudad": e1.get("ciudad", ""),
         "ubicacion": _construir_ubicacion(e1),
         "profesion": _construir_situacion(e1),
+        "area_trabajo": _con_otro(e1, "areaTrabajo", "areaTrabajoOtro"),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),
         "genero": genero,
@@ -517,6 +518,35 @@ def _construir_identidad(e1):
         # serio") -- queda por perfiles viejos/editados a mano en perfil.html.
         "busco": e1.get("busco", ""),
     }
+
+
+def _categorizar_intereses(e2):
+    """Igual que _construir_intereses pero agrupado por categoría, para
+    mostrarle al gemelo qué tipo de interés es cada uno (no solo la lista
+    plana) -- ej. "River Plate" como equipo_futbol, no como un interés
+    genérico más. Solo para el prompt (generar_prompt_gemelo); el matching
+    real sigue usando la lista plana (perfil.intereses)."""
+    categorias = {}
+
+    musical = [e2["artista"]] if e2.get("artista") else []
+    musical += _seleccion(e2, "genero")
+    if musical:
+        categorias["gustos_musicales"] = musical
+
+    if e2.get("serie"):
+        categorias["series"] = [e2["serie"]]
+
+    deporte = (e2.get("deporte") or "").strip()
+    if deporte and deporte.casefold() not in ("no hago", "no", "ninguno"):
+        categorias["deporte"] = [deporte]
+
+    if e2.get("equipo"):
+        categorias["equipo_futbol"] = [e2["equipo"]]
+
+    if e2.get("estetica"):
+        categorias["estilo_ropa"] = [e2["estetica"]]
+
+    return categorias
 
 
 def _construir_intereses(e1, e2):
@@ -544,13 +574,10 @@ def _construir_intereses(e1, e2):
 
 
 def _construir_estilo_chat(e3, e4):
-    # No hay pregunta directa sobre longitud de mensajes en el onboarding actual;
-    # queda en False por default hasta que se agregue una pregunta específica.
     coqueteo = (e4.get("coqueteo") or "").strip()
     decision = (e3.get("decision") or "").strip()
     como_soy = _seleccion(e3, "comoSoy")
     return {
-        "mensajes_cortos": False,
         "usa_humor": "Divertido/a" in como_soy or "Espontáneo/a" in como_soy,
         "coqueto": coqueteo in ("Directo/a, lo dejo claro", "Indirecto/a, por actitudes", "Primero espero señales"),
         "analitico": decision == "La pienso un montón, analizo pros y contras",
@@ -818,6 +845,7 @@ def construir_perfil_gemelo(respuestas_raw):
         "intereses": intereses,
         "intereses_onboarding": intereses,
         "intereses_slots": intereses,
+        "intereses_categorias": _categorizar_intereses(e2),
         "personalidad": personalidad,
         "estilo_chat": _construir_estilo_chat(e3, e4),
         "valores": valores,

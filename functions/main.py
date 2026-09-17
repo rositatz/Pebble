@@ -178,15 +178,26 @@ def _obtener_o_generar_perfil(db, uid):
     ref = db.collection("usuarios").document(uid).collection("gemelo").document("perfil")
     snap = ref.get()
     if snap.exists:
-        return snap.to_dict()
+        perfil = snap.to_dict()
+    else:
+        doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+        if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
+            return None
+        perfil = construir_perfil_gemelo(doc_setup.to_dict())
+        ref.set(perfil)
 
-    doc_setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
-    if not doc_setup.exists or not doc_setup.to_dict().get("completed"):
-        return None
-
-    perfil = construir_perfil_gemelo(doc_setup.to_dict())
-    ref.set(perfil)
+    _mezclar_pronombres(db, uid, perfil)
     return perfil
+
+
+def _mezclar_pronombres(db, uid, perfil):
+    """pronombres vive en usuarios/{uid}, no en el perfil del gemelo (se
+    edita desde perfil.html, no se pregunta en el onboarding) -- se mezcla
+    acá para que generar_prompt_gemelo lo lea con perfil.get("pronombres")
+    igual que "genero"."""
+    datos_usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
+    if datos_usuario.get("pronombres"):
+        perfil["pronombres"] = datos_usuario["pronombres"]
 
 
 def _parse_fecha(valor):
@@ -910,11 +921,14 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
     except Exception as e:
         print(f"chatear_con_gemelo: error trayendo matches para el resumen: {e}")
 
-    system_prompt = motor.generar_prompt_gemelo_personal(
+    system_fijo, contexto_gemelo = motor.generar_prompt_gemelo_personal(
         perfil, matches_resumen, total_simulaciones, round(mejor_score_sin_match * 100)
     )
 
-    mensajes = [{"role": "system", "content": system_prompt}]
+    mensajes = [
+        {"role": "system", "content": system_fijo},
+        {"role": "system", "content": contexto_gemelo},
+    ]
     for h in historial[-20:]:
         if not isinstance(h, dict):
             continue
@@ -1025,6 +1039,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
         perfil_otro,
         nombre_otro=nombre_propio,
         genero_otro=(perfil_propio or {}).get("genero"),
+        pronombres_otro=(perfil_propio or {}).get("pronombres"),
         permitir_cierre=False,
     )
 
@@ -1345,6 +1360,8 @@ def _procesar_parejas_pendientes_logica() -> None:
 
             perfil1_data = doc1.to_dict()
             perfil2_data = doc2.to_dict()
+            _mezclar_pronombres(db, uid1, perfil1_data)
+            _mezclar_pronombres(db, uid2, perfil2_data)
 
             # Compatibilidad matemática del onboarding, gratis (sin OpenAI) --
             # mismo cálculo que antes hacía simular_relacion_completa antes de

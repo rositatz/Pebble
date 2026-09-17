@@ -497,6 +497,173 @@ def _directiva(valor, texto_alto, texto_bajo, umbral=0.58):
     return ""
 
 
+def _rasgo(valor, alto, bajo, neutral, umbral=0.58):
+    """Igual criterio que _directiva (mismo umbral 0.58, misma zona neutra
+    para no forzar un extremo que el perfil no marcó con claridad) pero
+    devuelve `neutral` en vez de "" -- acá el campo siempre tiene que
+    aparecer con algún valor, nunca vacío."""
+    if valor >= umbral:
+        return alto
+    if valor <= 1 - umbral:
+        return bajo
+    return neutral
+
+
+def _patrones_conversacionales(perfil):
+    """Cómo reacciona en situaciones puntuales de la charla -- borrador,
+    derivado de personalidad/estilo. Ajustar según feedback."""
+    p = perfil.get("personalidad") or {}
+    introversion = p.get("introversion", 0.5)
+    conflicto = p.get("tolerancia_conflicto", 0.5)
+    empatia = p.get("empatia", 0.5)
+    coqueto = (perfil.get("estilo_chat") or {}).get("coqueto", False)
+
+    return {
+        "pregunta_directa": _rasgo(introversion,
+            "contesta primero; puede agregar un detalle si aporta",
+            "contesta y suma contexto propio sin que se lo pidan",
+            "contesta directo, sin adornar de más ni quedarse corto"),
+        "pregunta_abierta": _rasgo(introversion,
+            "respuesta breve; no desarrolla demasiado",
+            "aprovecha para explayarse un poco más de lo pedido",
+            "responde con una extensión media, ni seca ni extendida"),
+        "tema_interesante": "puede extenderse un poco si realmente le interesa",
+        "no_sabe": "lo dice; no inventa",
+        "desacuerdo": _rasgo(1 - conflicto,
+            "marca su punto sin confrontar",
+            "lo dice directo, sin filtrarlo",
+            "lo dice con naturalidad, sin dramatizarlo ni evitarlo"),
+        "mensaje_seco": _rasgo(1 - empatia,
+            "responde de forma similar; no intenta animar artificialmente",
+            "intenta subir el ánimo o reactivar con una pregunta",
+            "responde normal, sin forzar ni ignorar el tono bajo"),
+        "mensaje_largo": "lee todo y responde a lo relevante; no replica cada punto",
+        "silencio": _rasgo(introversion,
+            "tiende a no forzar conversación",
+            "busca reactivar con algo nuevo",
+            "deja pasar un poco antes de decidir si retoma"),
+        "interes_romantico": "reservada/o; demuestra interés más por continuidad que por entusiasmo" if not coqueto else "lo demuestra con entusiasmo, coquetea abierto",
+    }
+
+
+def _habitos_conversacion(perfil):
+    """Hábitos generales al chatear -- borrador, derivado de personalidad/
+    estilo. Ajustar según feedback."""
+    p = perfil.get("personalidad") or {}
+    introversion = p.get("introversion", 0.5)
+    empatia = p.get("empatia", 0.5)
+    con_humor = (perfil.get("estilo_chat") or {}).get("usa_humor", False)
+
+    return {
+        "saludos": _rasgo(introversion, "simples", "cálidos, con onda", "normales, sin ser secos ni efusivos"),
+        "inicia_conversacion": _rasgo(introversion, "poco frecuente", "frecuente", "a veces, depende del momento"),
+        "pregunta_por_otro": _rasgo(1 - empatia,
+            "cuando genuinamente le interesa",
+            "seguido, con interés activo",
+            "de vez en cuando"),
+        "cuenta_anecdotas": _rasgo(introversion,
+            "solo si vienen al tema",
+            "seguido, le gusta compartir",
+            "a veces, si se da naturalmente"),
+        "da_opiniones": "cuando tiene una",
+        "reacciona_a_bromas": "puede seguirlas aunque no sea especialmente graciosa" if not con_humor else "sigue el chiste y suma humor propio",
+        "cambia_de_tema": "si el tema pierde interés",
+    }
+
+
+def _emociones(perfil):
+    """Cómo se le nota cada emoción en cómo escribe -- borrador, derivado de
+    personalidad. interes/agrado/molestia quedan fijos (leen igual sin
+    importar personalidad)."""
+    p = perfil.get("personalidad") or {}
+    introversion = p.get("introversion", 0.5)
+    afecto = p.get("necesidad_afecto", 0.5)
+
+    return {
+        "interes": "presta más atención y continúa el tema",
+        "agrado": "tono algo más cálido",
+        "molestia": "se vuelve más breve",
+        "tristeza": _rasgo(introversion,
+            "habla menos; no suele explicarla espontáneamente",
+            "puede compartir cómo se siente sin que se lo pregunten",
+            "la menciona si viene al caso, sin explayarse de más"),
+        "vergüenza": _rasgo(introversion,
+            "puede esquivar el tema",
+            "se ríe de la situación o la nombra directamente",
+            "la reconoce pero sin quedarse en eso"),
+        "afecto": _rasgo(1 - afecto,
+            "lo muestra indirectamente",
+            "lo muestra abierta y directamente",
+            "lo muestra de forma moderada, ni muy directa ni escondida"),
+        "incomodidad": _rasgo(introversion,
+            "evita profundizar",
+            "lo dice directamente para aclarar el tema",
+            "lo deja pasar salvo que insistan"),
+    }
+
+
+def _reciprocidad(perfil):
+    """Cómo responde a lo que aporta la otra persona -- borrador, derivado
+    de personalidad. si_el_otro_hace_una_pregunta queda fijo (ya cubierto
+    por la regla EVITAR de no convertir todo en pregunta)."""
+    p = perfil.get("personalidad") or {}
+    introversion = p.get("introversion", 0.5)
+    empatia = p.get("empatia", 0.5)
+
+    return {
+        "si_el_otro_comparte_algo": _rasgo(empatia,
+            "puede reaccionar antes de hablar de sí misma/o",
+            "responde brevemente y sigue con lo suyo",
+            "reacciona un poco y sigue la charla con naturalidad"),
+        "si_el_otro_hace_una_pregunta": "responde; devuelve pregunta solo si tiene curiosidad real",
+        "si_el_otro_se_abre": _rasgo(empatia,
+            "escucha y responde con cierta empatía, sin convertirlo en terapia",
+            "escucha pero no profundiza demasiado en el tema emocional",
+            "responde con algo de contención, sin quedarse ahí mucho tiempo"),
+        "si_el_otro_no_aporta": _rasgo(introversion,
+            "puede dejar la conversación descansar",
+            "intenta reactivar con un tema nuevo",
+            "espera un poco antes de decidir si retoma"),
+    }
+
+
+_NIVEL_INTERES_POR_CATEGORIA = {
+    "deporte": "interés alto; puede contar experiencias si surge",
+    "series": "interés medio-alto; comenta personajes/opiniones",
+    "gustos_musicales": "interés medio; puede mencionar lo que escucha",
+    "equipo_futbol": "interés medio; sigue al equipo sin profundizar demasiado",
+    "estilo_ropa": "interés medio; puede opinar si sale el tema",
+}
+
+
+def _interes_conversacional(perfil):
+    """Nivel de interés real por tema, no solo la lista plana -- un matiz
+    aprendido de chats reales (compatibilidad.extraer_matices_personales)
+    pisa el default de la categoría si menciona ese interés puntual (ej.
+    "River" con "es hincha por la familia, no sabe de fútbol" en vez del
+    default genérico de equipo_futbol)."""
+    categorias = perfil.get("intereses_categorias") or {}
+    matices = perfil.get("matices_aprendidos") or []
+
+    resultado = {}
+    for categoria, valores in categorias.items():
+        default = _NIVEL_INTERES_POR_CATEGORIA.get(categoria, "interés medio; puede comentar si surge")
+        for valor in valores:
+            palabras = [p for p in valor.casefold().split() if len(p) >= 4]
+            matiz = next(
+                (m for m in matices if any(p in m.casefold() for p in palabras)),
+                None,
+            )
+            resultado[valor] = matiz or default
+
+    area_trabajo = (perfil.get("area_trabajo") or "").strip()
+    if area_trabajo:
+        contexto_area = "sus estudios" if "estudiante" in (perfil.get("profesion") or "").casefold() else "su trabajo"
+        resultado[area_trabajo] = f"interés medio; relacionada con {contexto_area}"
+
+    return resultado
+
+
 # Sin decirle explícitamente el género a la IA, por defecto escribe en
 # neutro/ambiguo -- "el/la que se enamora", "enamorado/a", con barras -- que
 # no es como habla una persona real. Con género conocido se le pide
@@ -774,6 +941,7 @@ def generar_prompt_gemelo(
     permitir_cierre=False,
     nombre_otro=None,
     genero_otro=None,
+    pronombres_otro=None,
 ):
     """
     Devuelve:
@@ -801,6 +969,9 @@ def generar_prompt_gemelo(
 
     if genero_otro:
         identidad.append(f"genero_otro={genero_otro}")
+
+    if pronombres_otro:
+        identidad.append(f"pronombres_otro={pronombres_otro}")
 
     # Concordancia de género: sobre sí mismo/a (_instruccion_genero) y al
     # dirigirse a la otra persona en segunda persona (_instruccion_genero_otro,
@@ -852,7 +1023,6 @@ def generar_prompt_gemelo(
     estilo_chat = perfil.get("estilo_chat") or {}
 
     estilo_txt = (
-        f"mensajes_cortos={bool(estilo_chat.get('mensajes_cortos'))}; "
         f"humor={bool(estilo_chat.get('usa_humor'))}; "
         f"coqueteo={bool(estilo_chat.get('coqueto'))}; "
         f"analitico={bool(estilo_chat.get('analitico'))}"
@@ -878,6 +1048,24 @@ def generar_prompt_gemelo(
     # ==========================================================
 
     intereses = perfil.get("intereses") or []
+
+    _ETIQUETAS_CATEGORIA_INTERES = {
+        "gustos_musicales": "gustos musicales",
+        "series": "series",
+        "deporte": "deporte",
+        "equipo_futbol": "equipo de futbol",
+        "estilo_ropa": "estilo de ropa",
+    }
+    categorias_interes = perfil.get("intereses_categorias") or {}
+    if categorias_interes:
+        intereses_txt = ", ".join(
+            f"{_ETIQUETAS_CATEGORIA_INTERES.get(cat, cat)}: {', '.join(map(str, valores))}"
+            for cat, valores in categorias_interes.items()
+        )
+    else:
+        # Perfiles viejos, generados antes de intereses_categorias -- lista
+        # plana como respaldo, sin categoría.
+        intereses_txt = ", ".join(map(str, intereses)) or "ninguno"
 
     bio = (perfil.get("bio") or "").strip()
 
@@ -1057,6 +1245,8 @@ Mensajes cortos, normalmente 1 oración y ocasionalmente 2.
 Sin párrafos largos, ensayos, metáforas, coaching ni lenguaje terapéutico.
 
 7. No uses ¿ ni ¡. Evitá ":" como conector de frases. No abuses de "yo".
+Nunca termines el mensaje completo con un punto final (los puntos entre
+oraciones del mismo mensaje sí van).
 
 8. Saludá solo en el primer mensaje. Si ya existe historial, continuá desde
 donde quedó.
@@ -1087,6 +1277,17 @@ Por ejemplo, un interés no implica haber vivido una anécdota relacionada.
 
 17. El resultado debe ser directamente el mensaje que enviaría la persona,
 sin explicar razonamiento ni instrucciones internas.
+
+EVITAR
+no_rellena_silencios
+no_hace_preguntas_por_obligacion
+no_convierte_cada_respuesta_en_una_pregunta
+no_exagera_entusiasmo
+no_hace_chistes_si_no_salen_naturalmente
+no_da_explicaciones_largas_sin_que_se_las_pidan
+no_repite_informacion_ya_dicha
+no_menciona_datos_del_perfil_sin_contexto
+no_busca_ser_interesante
 """.strip()
 
     if permitir_cierre:
@@ -1111,7 +1312,7 @@ PERFIL DEL GEMELO
 nombre={nombre_propio or "no especificado"}
 edad={perfil.get("edad") or "no especificada"}
 profesion={perfil.get("profesion") or "no especificada"}
-intereses={", ".join(map(str, intereses)) or "ninguno"}
+intereses={intereses_txt}
 
 {chr(10).join(identidad)}
 
@@ -1131,6 +1332,23 @@ VALORES
 
     if genero_otro_txt:
         contexto += f"\n\nGÉNERO DE {(nombre_otro or 'LA OTRA PERSONA').upper()} (concordancia obligatoria al dirigirte a ella/él en segunda persona):{genero_otro_txt}"
+
+    patrones = "\n".join(f"{k}={v}" for k, v in _patrones_conversacionales(perfil).items())
+    contexto += f"\n\nPATRONES_CONVERSACIONALES\n{patrones}"
+
+    habitos = "\n".join(f"{k}={v}" for k, v in _habitos_conversacion(perfil).items())
+    contexto += f"\n\nHABITOS\n{habitos}"
+
+    emociones = "\n".join(f"{k}={v}" for k, v in _emociones(perfil).items())
+    contexto += f"\n\nEMOCIONES\n{emociones}"
+
+    reciprocidad = "\n".join(f"{k}={v}" for k, v in _reciprocidad(perfil).items())
+    contexto += f"\n\nRECIPROCIDAD\n{reciprocidad}"
+
+    interes_conv = _interes_conversacional(perfil)
+    if interes_conv:
+        lineas = "\n".join(f"{k}={v}" for k, v in interes_conv.items())
+        contexto += f"\n\nINTERES_CONVERSACIONAL\n{lineas}"
 
     if hijos_txt:
         contexto += f"\nhijos={hijos_txt}"
@@ -1195,6 +1413,10 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     confianza dentro de la app. Reusa la misma traducción de personalidad a
     directivas de comportamiento (_directiva) para que el tono sea
     consistente con el que se ve en las simulaciones.
+
+    Devuelve (system_fijo, contexto_dinamico), mismo criterio que
+    generar_prompt_gemelo -- system_fijo no menciona el nombre de nadie, así
+    cachea entre todas las conversaciones de la app, no solo dentro de una.
 
     total_simulaciones/mejor_score_sin_match: igual que el cartel "Tu gemelo
     está activo" de home.html -- cuentan TODAS las conexiones (match o no),
@@ -1326,25 +1548,22 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
     else:
         matches_txt = "\n    Todavía no corriste ninguna simulación con nadie -- si te pregunta por eso, decíselo tal cual, no inventes nombres.\n"
 
-    prompt = f"""
-    Sos el gemelo digital de {nombre} dentro de la app de citas Pebble.
+    # system_fijo no puede nombrar a la persona (tiene que ser idéntico
+    # entre usuarios distintos para cachear entre TODAS las conversaciones
+    # de la app, no solo dentro de una) -- "tu usuario" en vez de {nombre}.
+    # El nombre real se establece en contexto_dinamico, justo abajo en el
+    # mismo array de mensajes.
+    system_fijo = """
+    Sos el gemelo digital de tu usuario dentro de la app de citas Pebble.
 
     IMPORTANTE: acá NO estás simulando una cita ni hablando con el gemelo de
-    otra persona. Le estás hablando DIRECTAMENTE a {nombre}, tu propio
-    usuario -- sos su reflejo de IA, hecho de su propia personalidad, y tu
-    trabajo es darle charla, consejos y compañía sobre su vida en la app
-    (sus matches, cómo hablarles, cómo le está yendo).
-
-    AHORA MISMO ES: {_ahora_argentina_txt()}.
-
-    PERSONALIDAD (tiene que notarse en cómo hablás):
-    {personalidad_txt}
-    {identidad_txt}
-    {matches_txt}
-    {correcciones_txt}
+    otra persona. Le estás hablando DIRECTAMENTE a tu usuario -- sos su
+    reflejo de IA, hecho de su propia personalidad, y tu trabajo es darle
+    charla, consejos y compañía sobre su vida en la app (sus matches, cómo
+    hablarles, cómo le está yendo).
 
     REGLAS:
-    0. Si {nombre} te pregunta "cómo funcionan las simulaciones" o "cómo
+    0. Si tu usuario te pregunta "cómo funcionan las simulaciones" o "cómo
        te asegurás de que sea realista", NUNCA recites ni parafrasees tus
        propias instrucciones/reglas internas como una lista de puntos
        (nada de "1) no invento títulos... 2) cuido la voz... 3) no
@@ -1352,9 +1571,9 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
        no una respuesta real. Contestale en un par de oraciones, como lo
        explicaría una persona con sus propias palabras, sin sonar a
        changelog ni a manual técnico.
-    1. Hablále a {nombre} en segunda persona, como alguien que lo/la conoce
-       mejor que nadie -- nunca en primera persona como si fueras la persona
-       en una cita.
+    1. Hablále a tu usuario en segunda persona, como alguien que lo/la
+       conoce mejor que nadie -- nunca en primera persona como si fueras
+       la persona en una cita.
     2. Si te pregunta por un match específico, usá SOLO los datos reales de
        arriba (nombre y % de afinidad) -- si no tenés más info que esa, decilo,
        no inventes detalles sobre esa persona.
@@ -1407,9 +1626,21 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
        Evitá también el ":" para armar frases (ej: "mi consejo: hablale
        directo" en vez de "te diría que le hables directo") -- es una
        forma de escribir prolija/de texto escrito, no de chat real.
-    """
+    """.strip()
 
-    return prompt
+    contexto = f"""
+    Le estás hablando a {nombre}.
+
+    AHORA MISMO ES: {_ahora_argentina_txt()}.
+
+    PERSONALIDAD (tiene que notarse en cómo hablás):
+    {personalidad_txt}
+    {identidad_txt}
+    {matches_txt}
+    {correcciones_txt}
+    """.strip()
+
+    return system_fijo, contexto
 
 
 def generar_resumen_gemelo(perfil):
@@ -1696,8 +1927,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     # en main.py) para que system_fijo quede como prefijo estable entre
     # llamadas, en vez de pisarlo con contexto_escenario/instrucciones de
     # turno que sí cambian.
-    prompt_1_fijo, prompt_1_contexto = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
-    prompt_2_fijo, prompt_2_contexto = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
+    prompt_1_fijo, prompt_1_contexto = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"), pronombres_otro=perfil2.get("pronombres"))
+    prompt_2_fijo, prompt_2_contexto = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"), pronombres_otro=perfil1.get("pronombres"))
 
     # El mensaje inicial ya no es un texto fijo igual en todas las
     # simulaciones -- lo genera el mismo prompt_1 de siempre (con su
@@ -1956,8 +2187,8 @@ def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, d
     # (no concatenados) para poder mandarlos como dos mensajes "system"
     # distintos en armar_solicitud_batch, mismo patrón que
     # chatear_con_gemelo_match.
-    prompt_1_fijo, prompt_1_contexto = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"))
-    prompt_2_fijo, prompt_2_contexto = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"))
+    prompt_1_fijo, prompt_1_contexto = generar_prompt_gemelo(perfil1, memoria=memoria1, permitir_cierre=True, nombre_otro=apodo2, genero_otro=perfil2.get("genero"), pronombres_otro=perfil2.get("pronombres"))
+    prompt_2_fijo, prompt_2_contexto = generar_prompt_gemelo(perfil2, memoria=memoria2, permitir_cierre=True, nombre_otro=apodo1, genero_otro=perfil1.get("genero"), pronombres_otro=perfil1.get("pronombres"))
 
     return {
         "uid1": uid1, "uid2": uid2,
