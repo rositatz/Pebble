@@ -2562,6 +2562,13 @@
         return String(a) < String(b) ? `${a}_${b}` : `${b}_${a}`;
       }
 
+      // Fecha en huso de Argentina (UTC-3), mismo criterio que usa el
+      // backend (_fecha_ar en main.py) para fecha_signup/ultima_actividad_fecha
+      // y los ids de metricas_diarias/{fecha}.
+      function fechaMetricas() {
+        return new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      }
+
       const firebaseConfig = {
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
         authDomain: "pebble-78e95.firebaseapp.com",
@@ -2852,6 +2859,19 @@
             const data = snap.exists() ? snap.data() : {};
             renderNavAvatar(data.avatarFoto);
 
+            // Retención día 1/día 7 (calcular_retencion_diaria en el
+            // backend): a lo sumo una escritura por usuario por día, no en
+            // cada visita -- reusa el doc que ya se acaba de leer arriba en
+            // vez de un getDoc aparte.
+            const hoyMetricas = fechaMetricas();
+            if (data.ultima_actividad_fecha !== hoyMetricas) {
+              setDoc(
+                doc(db, "usuarios", uid),
+                { ultima_actividad_fecha: hoyMetricas },
+                { merge: true },
+              ).catch((e) => console.warn("ultima_actividad_fecha:", e));
+            }
+
             // Tutorial de bienvenida -- se muestra apenas se crea la cuenta,
             // acá en Inicio (no en gemelo-setup.html: si la persona no sabe
             // que tiene que armar su gemelo ni dónde, nunca va a llegar
@@ -3078,6 +3098,11 @@
                 consentimientoAprendizajeChatsFecha: aprenderChats
                   ? serverTimestamp()
                   : null,
+                // Cohorte para retención día 1/día 7 (ver
+                // calcular_retencion_diaria en el backend) -- se fija acá,
+                // el momento real de alta de cuenta, no en createUserWithEmailAndPassword
+                // (ahí todavía podría no completar el consentimiento).
+                fecha_signup: fechaMetricas(),
               },
               { merge: true },
             );

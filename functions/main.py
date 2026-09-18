@@ -200,6 +200,14 @@ def _mezclar_pronombres(db, uid, perfil):
         perfil["pronombres"] = datos_usuario["pronombres"]
 
 
+def _fecha_ar(offset_dias=0):
+    """Fecha YYYY-MM-DD en huso de Argentina (UTC-3), mismo criterio que
+    usa el cliente (fechaMetricas() en chats.html/home.html) para los ids
+    de metricas_diarias/{fecha}. offset_dias negativo da un día pasado."""
+    ahora = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+    return (ahora + datetime.timedelta(days=offset_dias)).strftime("%Y-%m-%d")
+
+
 def _guardar_metricas_uso(db, feature):
     """Persiste en metricas_diarias/{fecha} los tokens acumulados por
     motor._completar_chat_gemelo durante esta invocación (ver
@@ -212,8 +220,7 @@ def _guardar_metricas_uso(db, feature):
     datos = motor.obtener_y_resetear_uso_tokens()
     if not datos["llamadas"]:
         return
-    fecha = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%Y-%m-%d")
-    ref = db.collection("metricas_diarias").document(fecha)
+    ref = db.collection("metricas_diarias").document(_fecha_ar())
     try:
         ref.set({
             f"tokens_prompt_{feature}": firestore.Increment(datos["prompt"]),
@@ -1972,6 +1979,34 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
     print(
         f"generar_recordatorios_diarios: {avisos_retomar} avisos de retomar chat."
     )
+
+
+@scheduler_fn.on_schedule(schedule="0 5 * * *", timezone="America/Argentina/Buenos_Aires")
+def calcular_retencion_diaria(event: scheduler_fn.ScheduledEvent) -> None:
+    """Retención día 1 / día 7 para inversores: de los usuarios que se
+    registraron hace exactamente 1 (o 7) días, cuántos tuvieron actividad
+    hoy (usuarios/{uid}.ultima_actividad_fecha, que actualiza el cliente
+    como mucho una vez por día -- ver home.html). Se recalcula entero cada
+    corrida (no es un contador incremental como el resto de
+    metricas_diarias), así que usa set con valores planos, no Increment."""
+
+    db = firestore.client()
+    hoy = _fecha_ar()
+
+    resultado = {}
+    for dias, sufijo in ((1, "dia1"), (7, "dia7")):
+        fecha_cohorte = _fecha_ar(offset_dias=-dias)
+        cohorte = 0
+        retenidos = 0
+        for doc in db.collection("usuarios").where("fecha_signup", "==", fecha_cohorte).stream():
+            cohorte += 1
+            if doc.to_dict().get("ultima_actividad_fecha") == hoy:
+                retenidos += 1
+        resultado[f"retencion_{sufijo}_cohorte"] = cohorte
+        resultado[f"retencion_{sufijo}_retenidos"] = retenidos
+
+    db.collection("metricas_diarias").document(hoy).set(resultado, merge=True)
+    print(f"calcular_retencion_diaria: {resultado}")
 
 
 def _mensajes_propios_recientes(db, uid, limite=VENTANA_MENSAJES_APRENDIZAJE):
