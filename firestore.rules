@@ -128,6 +128,28 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Analítica de costo/uso (tokens, llamadas, mensajes), separada de las
+    // colecciones que usa la app para funcionar -- nunca se lee acá, ni del
+    // cliente ni del backend en el camino de abrir un chat o un perfil.
+    // Las escribe el backend con Admin SDK (bypasea estas reglas) salvo
+    // mensajes_reales, que el cliente incrementa en cada mensaje real
+    // enviado (chats.html) porque eso no pasa por ninguna Cloud Function.
+    // Solo se permite tocar ESE campo, y solo como incremento de a 1 por
+    // escritura -- así nadie puede pisar ni inflar los contadores de tokens.
+    match /metricas_diarias/{fecha} {
+      allow read: if false;
+
+      allow create: if request.auth != null &&
+        request.resource.data.keys().hasOnly(['mensajes_reales']) &&
+        request.resource.data.mensajes_reales == 1;
+
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mensajes_reales']) &&
+        request.resource.data.mensajes_reales == resource.data.get('mensajes_reales', 0) + 1;
+
+      allow delete: if false;
+    }
+
     // Waitlist pre-registro de index.html (todavía sin cuenta creada).
     match /beta_waitlist/{emailId} {
       allow get: if true;

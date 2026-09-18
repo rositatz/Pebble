@@ -3168,6 +3168,7 @@
         limit,
         serverTimestamp,
         arrayUnion,
+        increment,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       import {
         getFunctions,
@@ -3705,6 +3706,22 @@
       // pueden escribir casi al mismo tiempo, así que se usa arrayUnion:
       // una operación atómica de Firestore que agrega sin pisar lo que la
       // otra cuenta haya guardado un instante antes.
+      // Fecha en huso de Argentina (UTC-3), mismo criterio que usa el
+      // backend para el id de metricas_diarias/{fecha} -- si se usara la
+      // fecha local del dispositivo, alguien con el reloj en otro huso
+      // metería mensajes en el día equivocado.
+      function fechaMetricas() {
+        return new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      }
+
+      function _registrarMensajeReal() {
+        setDoc(
+          doc(db, "metricas_diarias", fechaMetricas()),
+          { mensajes_reales: increment(1) },
+          { merge: true },
+        ).catch((e) => console.error("_registrarMensajeReal:", e));
+      }
+
       window._db_agregarMensajeReal = async (personaId, mensaje) => {
         if (!uid) return;
         const ref = doc(db, "conexiones", parId(uid, personaId));
@@ -3712,6 +3729,7 @@
           "real.msgs": arrayUnion(mensaje),
           "real.ultimaActividad": serverTimestamp(),
         };
+        _registrarMensajeReal();
         try {
           await updateDoc(ref, campos);
         } catch (e) {
