@@ -2554,6 +2554,9 @@
         query,
         where,
         serverTimestamp,
+        initializeFirestore,
+        persistentLocalCache,
+        persistentMultipleTabManager,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       // Mismo esquema de id que usa el backend (motor._par_id en Python) y
@@ -2580,7 +2583,18 @@
 
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
-      const db = getFirestore(app);
+      // Cache local persistente (IndexedDB): la próxima pantalla pinta con
+      // lo último sincronizado en vez de esperar de nuevo la ida y vuelta a
+      // Firestore -- ver fallback si el navegador no lo soporta.
+      let db;
+      try {
+        db = initializeFirestore(app, {
+          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+        });
+      } catch (e) {
+        console.warn("Firestore: cache persistente no disponible, usando memoria.", e);
+        db = getFirestore(app);
+      }
       const googleProvider = new GoogleAuthProvider();
       const facebookProvider = new FacebookAuthProvider();
       let uid = null;
@@ -2804,18 +2818,20 @@
       // ── Sesión persistente: Firebase la maneja sola ──
       onAuthStateChanged(auth, async (user) => {
         if (user) {
-          // Expiración de sesión (24h)
-          const _SESSION_MS = 24 * 60 * 60 * 1000;
+          // Expiración de sesión: 30 días de inactividad, no 30 días fijos
+          // desde el login -- se renueva en cada visita (ver el
+          // setItem de abajo), así que solo cierra sesión sola si la cuenta
+          // estuvo sin usarse todo ese tiempo.
+          const _SESSION_MS = 30 * 24 * 60 * 60 * 1000;
           const _loginTime = parseInt(
             localStorage.getItem("pebble_login_time") || "0",
           );
-          if (!_loginTime) {
-            localStorage.setItem("pebble_login_time", Date.now().toString());
-          } else if (Date.now() - _loginTime > _SESSION_MS) {
+          if (_loginTime && Date.now() - _loginTime > _SESSION_MS) {
             localStorage.removeItem("pebble_login_time");
             await signOut(auth);
             return;
           }
+          localStorage.setItem("pebble_login_time", Date.now().toString());
           showApp(user);
           uid = user.uid;
 
