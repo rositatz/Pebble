@@ -1999,8 +1999,15 @@
             (Array.isArray(data.gemelo?.msgs) && data.gemelo.msgs.length > 0);
           const creadoMs =
             data.creado && data.creado.toMillis ? data.creado.toMillis() : null;
-          // Match nueva sin chat real hace más de una semana: desaparece.
-          if (creadoMs && !tieneChatReal && ahora - creadoMs > SEMANA_MS)
+          const tieneExplicacion = !!(
+            data.desglose && Object.keys(data.desglose).length
+          );
+          // Match nueva sin chat real NI explicación de compatibilidad
+          // (el desglose por categoría, el "por qué" del match) hace más
+          // de una semana: desaparece. Si ya hay desglose, se considera
+          // que hay contenido útil para mostrar aunque todavía nadie
+          // escribió un mensaje real.
+          if (creadoMs && !tieneChatReal && !tieneExplicacion && ahora - creadoMs > SEMANA_MS)
             return;
           candidatos.push({ parId: d.id, otroId, data, hasChat, creadoMs });
         });
