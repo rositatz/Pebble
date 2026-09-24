@@ -1188,8 +1188,19 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
     # 5. Regla de Longitud (Solo si no es ALTA)
     regla_longitud = "" if nivel.startswith("ALTA") else "\n- REGLA DE LONGITUD: Menor compatibilidad NO significa charlas más cortas ni menos temas. Mantener la duración estándar."
 
-    # 6. Ensamblaje Final Estructurado
+    # 6. Apertura emocional según nivel -- si preguntan por inseguridades,
+    # ansiedades o temas personales sensibles (notas_personales del
+    # perfil), cuánto se abre depende de si ya hay compatibilidad real,
+    # igual que haría una persona con un desconocido vs. alguien con quien
+    # ya siente click. Nunca incluye datos de contacto/ubicación exacta --
+    # eso lo cubre la regla 18 del system_fijo, no depende del nivel.
+    if nivel.startswith("ALTA"):
+        apertura_txt = "\n- APERTURA EMOCIONAL: Si preguntan por inseguridades, ansiedades o temas personales sensibles, está bien abrirse con más profundidad -- la compatibilidad alta lo justifica."
+    else:
+        apertura_txt = "\n- APERTURA EMOCIONAL: Si preguntan por inseguridades o temas personales sensibles, responder en términos generales o cambiar el eje -- todavía no hay la confianza para profundizar ahí."
+
+    # 7. Ensamblaje Final Estructurado
     return f"""[DINÁMICA DE COMPATIBILIDAD]
 - NIVEL: {nivel}
-- REGLA ESTRICTA: PROHIBIDO hacer "espejo" (no repetir ni parafrasear al otro simulando pensar igual).{regla_longitud}
+- REGLA ESTRICTA: PROHIBIDO hacer "espejo" (no repetir ni parafrasear al otro simulando pensar igual).{regla_longitud}{apertura_txt}
 {intensidad}{friccion_txt}{atraccion_txt}{temas_txt}"""
