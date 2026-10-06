@@ -9,6 +9,7 @@ import random
 import datetime
 import difflib
 import re
+import threading
 from types import SimpleNamespace
 
 
@@ -227,6 +228,7 @@ def _parece_razonamiento_filtrado(texto):
 # él mismo. main.py lee y resetea esto con obtener_y_resetear_uso_tokens()
 # al final de cada Cloud Function y lo guarda en metricas_diarias/{fecha}.
 _uso_tokens_acumulado = {"prompt": 0, "cached": 0, "completion": 0, "llamadas": 0}
+_uso_tokens_lock = threading.Lock()
 
 
 def obtener_y_resetear_uso_tokens():
@@ -243,10 +245,11 @@ def _registrar_uso_tokens(usage):
     details = getattr(usage, "prompt_tokens_details", None)
     if details is not None:
         cached_tokens = getattr(details, "cached_tokens", 0) or 0
-    _uso_tokens_acumulado["prompt"] += getattr(usage, "prompt_tokens", 0) or 0
-    _uso_tokens_acumulado["cached"] += cached_tokens
-    _uso_tokens_acumulado["completion"] += getattr(usage, "completion_tokens", 0) or 0
-    _uso_tokens_acumulado["llamadas"] += 1
+    with _uso_tokens_lock:
+        _uso_tokens_acumulado["prompt"] += getattr(usage, "prompt_tokens", 0) or 0
+        _uso_tokens_acumulado["cached"] += cached_tokens
+        _uso_tokens_acumulado["completion"] += getattr(usage, "completion_tokens", 0) or 0
+        _uso_tokens_acumulado["llamadas"] += 1
     return cached_tokens
 
 
@@ -257,9 +260,11 @@ def _bedrock_client():
     global _bedrock
     if _bedrock is None:
         import boto3
+        from botocore.config import Config
         _bedrock = boto3.client(
             "bedrock-runtime",
             region_name=os.getenv("BEDROCK_REGION") or "us-east-1",
+            config=Config(retries={"max_attempts": 8, "mode": "adaptive"}, read_timeout=120),
         )
     return _bedrock
 

@@ -4,6 +4,8 @@ import hashlib
 import json
 import traceback
 import os
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
@@ -1343,7 +1345,8 @@ def _procesar_parejas_pendientes_logica() -> None:
     # uno nuevo encima -- se espera a que continuar_lote_batch_nocturno lo
     # termine. Evita mandar dos Batch jobs pisándose (y perder el seguimiento
     # de uno de los dos).
-    en_curso = list(
+    usar_bedrock = (os.getenv("LLM_PROVIDER") or "openai").strip().lower() == "bedrock"
+    en_curso = [] if usar_bedrock else list(
         db.collection("lotes_batch").where("estado", "in", ["armando", "esperando_batch"]).limit(1).stream()
     )
     if en_curso:
@@ -1364,6 +1367,7 @@ def _procesar_parejas_pendientes_logica() -> None:
     lote_ref = db.collection("lotes_batch").document(lote_id)
     solicitudes = []
     estados_por_par = {}
+    pares_sync = []
 
     for doc in pendientes:
         data = doc.to_dict()
@@ -1455,6 +1459,10 @@ def _procesar_parejas_pendientes_logica() -> None:
                 data["usuario_1"], data["usuario_2"], data.get("distancia_km"),
             )
             par_id = data["par_id"]
+            if usar_bedrock:
+                pares_sync.append((par_id, estado_par))
+                encolados += 1
+                continue
             estados_por_par[par_id] = estado_par
             solicitud = motor.armar_solicitud_batch(par_id, estado_par)
             if solicitud:
@@ -1473,6 +1481,10 @@ def _procesar_parejas_pendientes_logica() -> None:
         f"{encolados} encolados para simulación por batch, {con_error} con error, "
         f"{descartados} descartados por cambio de datos."
     )
+
+    if usar_bedrock:
+        _simular_pares_sincronico(db, pares_sync)
+        return
 
     if not solicitudes:
         return
@@ -1500,6 +1512,69 @@ def _procesar_parejas_pendientes_logica() -> None:
         "creado": firestore.SERVER_TIMESTAMP,
     })
     print(f"procesar_parejas_pendientes: lote {lote_id} mandado a Batch API ({batch_job.id}), {len(solicitudes)} pares en la ola 0.")
+
+
+MAX_SEGUNDOS_SIMULACION_NOCTURNA = 1500
+WORKERS_SIMULACION_NOCTURNA = 3
+
+
+def _simular_par_sincrono(db, par_id, estado_par, vence):
+    """Corre la charla completa de una pareja turno por turno (misma máquina
+    de estados que la vía Batch: armar_solicitud_batch / aplicar_respuesta_batch)
+    pero con llamadas directas, para proveedores sin Batch API (Bedrock)."""
+    fallos_seguidos = 0
+    while estado_par["estado"] == "activo":
+        if time.time() > vence:
+            raise TimeoutError("se acabó el tiempo de la corrida nocturna")
+        solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+        if not solicitud:
+            break
+        respuesta = motor._completar_chat_gemelo(solicitud["body"]["messages"])
+        contenido = (respuesta.choices[0].message.content or "").strip()
+        if not contenido:
+            fallos_seguidos += 1
+            if fallos_seguidos >= 3:
+                raise RuntimeError("el modelo devolvió respuesta vacía 3 veces seguidas")
+            continue
+        fallos_seguidos = 0
+        estado_par = motor.aplicar_respuesta_batch(estado_par, contenido)
+    _finalizar_par_de_batch(db, estado_par)
+
+
+def _simular_pares_sincronico(db, pares):
+    """Simula en paralelo (pocos hilos) los pares de la noche. Un par que no
+    llega a terminar por tiempo queda PENDIENTE para la próxima corrida; uno
+    que falla se marca ERROR, igual que en la vía Batch."""
+    if not pares:
+        return
+    vence = time.time() + MAX_SEGUNDOS_SIMULACION_NOCTURNA
+    completados, pendientes_por_tiempo, con_error = 0, 0, 0
+
+    with ThreadPoolExecutor(max_workers=WORKERS_SIMULACION_NOCTURNA) as pool:
+        futuros = {
+            pool.submit(_simular_par_sincrono, db, par_id, estado_par, vence): par_id
+            for par_id, estado_par in pares
+        }
+        for futuro in as_completed(futuros):
+            par_id = futuros[futuro]
+            try:
+                futuro.result()
+                completados += 1
+            except TimeoutError:
+                pendientes_por_tiempo += 1
+                print(f"_simular_pares_sincronico: {par_id} no alcanzó a terminar, queda PENDIENTE.")
+            except Exception:
+                con_error += 1
+                print(f"_simular_pares_sincronico: error en {par_id}: {traceback.format_exc()}")
+                db.collection("parejas_pendientes").document(par_id).update({
+                    "estado": "ERROR", "error": traceback.format_exc(),
+                })
+
+    _guardar_metricas_uso(db, "simulacion_nocturna")
+    print(
+        f"_simular_pares_sincronico: {completados} completados, "
+        f"{pendientes_por_tiempo} pendientes por tiempo, {con_error} con error."
+    )
 
 
 def _finalizar_par_de_batch(db, estado_par):
