@@ -21,6 +21,8 @@ from compatibilidad import compatible_por_genero, compatible_por_edad, compatibl
 set_global_options(max_instances=10)
 firebase_admin.initialize_app()
 
+LLM_SECRETS = ["OPENAI_API_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+
 
 def _con_creado(par_ref, payload):
     """Agrega 'creado' al payload SOLO si el doc de la conexión todavía no
@@ -288,7 +290,7 @@ def _aplicar_estilo_desde_onboarding(perfil, respuestas_raw):
     return perfil
 
 
-@firestore_fn.on_document_written(document="usuarios/{uid}/gemelo_setup/data", secrets=["OPENAI_API_KEY"])
+@firestore_fn.on_document_written(document="usuarios/{uid}/gemelo_setup/data", secrets=LLM_SECRETS)
 def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     """Se dispara solo cada vez que se escribe usuarios/{uid}/gemelo_setup/data
     (que es donde gemelo-setup.html va guardando el onboarding). Cuando detecta
@@ -393,7 +395,7 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             )
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"])
+@https_fn.on_call(secrets=LLM_SECRETS)
 def generar_gemelo_ahora(request: https_fn.CallableRequest):
     """Genera usuarios/{uid}/gemelo/perfil DE FORMA SINCRÓNICA y lo espera
     antes de devolver la respuesta -- generar_perfil_gemelo (arriba) hace lo
@@ -478,7 +480,7 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=60, memory=MemoryOption.MB_512)
 def generar_resumen_gemelo_ia(request: https_fn.CallableRequest):
     """Genera el párrafo de presentación de la última etapa del onboarding
     (gemelo-setup.html, etapa 8) con IA -- reemplaza la plantilla vieja de
@@ -668,7 +670,7 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=540, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=540, memory=MemoryOption.MB_512)
 def simular_situacion(request: https_fn.CallableRequest):
     """Se llama desde el chat con el propio gemelo (gemelo.html): el usuario
     le pide a SU gemelo que simule una situación con el gemelo de otra persona
@@ -799,7 +801,7 @@ def simular_situacion(request: https_fn.CallableRequest):
     }
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=60, memory=MemoryOption.MB_512)
 def dar_consejo_match(request: https_fn.CallableRequest):
     """"Dame un consejo para hablar con X" (picker de gemelo.html) -- antes
     disparaba simular_situacion entera (una conversación completa simulada,
@@ -877,7 +879,7 @@ def dar_consejo_match(request: https_fn.CallableRequest):
     return {"consejo": consejo, "nombre": nombre2}
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=60, memory=MemoryOption.MB_512)
 def chatear_con_gemelo(request: https_fn.CallableRequest):
     """Chat DIRECTO entre el usuario y su propio gemelo (gemelo.html) -- a
     diferencia de simular_situacion (que simula una charla con el gemelo de
@@ -992,7 +994,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
     return {"respuesta": response.choices[0].message.content}
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=60, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=60, memory=MemoryOption.MB_512)
 def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     """Chat en vivo con el gemelo de UN MATCH real (chats.html, pestaña
     "gemelo" del panel de conversación) -- a diferencia de
@@ -1302,7 +1304,7 @@ def _elegir_lote_diverso(pool, tamano_lote):
 @scheduler_fn.on_schedule(
     schedule="0 3 * * *",
     timezone="America/Argentina/Buenos_Aires",
-    secrets=["OPENAI_API_KEY"],
+    secrets=LLM_SECRETS,
     timeout_sec=1800,  # 30 min -- el máximo permitido para funciones programadas
     memory=MemoryOption.MB_512,
 )
@@ -1639,7 +1641,7 @@ def _finalizar_par_de_batch(db, estado_par):
 @scheduler_fn.on_schedule(
     schedule="every 2 minutes",
     timezone="America/Argentina/Buenos_Aires",
-    secrets=["OPENAI_API_KEY"],
+    secrets=LLM_SECRETS,
     timeout_sec=540,
     memory=MemoryOption.MB_512,
 )
@@ -2069,7 +2071,7 @@ def _mensajes_al_propio_gemelo(db, uid, limite=VENTANA_MENSAJES_APRENDIZAJE):
 @scheduler_fn.on_schedule(
     schedule="0 4 * * *",
     timezone="America/Argentina/Buenos_Aires",
-    secrets=["OPENAI_API_KEY"],
+    secrets=LLM_SECRETS,
     timeout_sec=1800,
     memory=MemoryOption.MB_512,
 )
@@ -2183,7 +2185,7 @@ def _actualizar_aprendizaje_gemelo_logica() -> None:
     )
 
 
-@https_fn.on_call(secrets=["OPENAI_API_KEY"], timeout_sec=120, memory=MemoryOption.MB_512)
+@https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=120, memory=MemoryOption.MB_512)
 def importar_estilo_chatgpt(request: https_fn.CallableRequest):
     """Analiza mensajes que el usuario escribió en ChatGPT (u otro chat de
     IA) para que SU gemelo aprenda su forma de escribir e intereses reales

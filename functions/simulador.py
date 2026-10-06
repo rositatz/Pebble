@@ -9,6 +9,7 @@ import random
 import datetime
 import difflib
 import re
+from types import SimpleNamespace
 
 
 from gemelo_perfil import construir_perfil_gemelo
@@ -249,13 +250,108 @@ def _registrar_uso_tokens(usage):
     return cached_tokens
 
 
+_bedrock = None
+
+
+def _bedrock_client():
+    global _bedrock
+    if _bedrock is None:
+        import boto3
+        _bedrock = boto3.client(
+            "bedrock-runtime",
+            region_name=os.getenv("BEDROCK_REGION") or "us-east-1",
+        )
+    return _bedrock
+
+
+def _mensajes_a_converse(messages):
+    """Bedrock Converse separa el system del chat y exige roles alternados
+    que arranquen con user: junta los system, fusiona mensajes seguidos del
+    mismo rol y agrega un user mínimo si no hay ninguno."""
+    sistema, conversacion = [], []
+    for m in messages:
+        texto = (m.get("content") or "").strip()
+        if not texto:
+            continue
+        if m.get("role") == "system":
+            sistema.append(texto)
+            continue
+        rol = "assistant" if m.get("role") == "assistant" else "user"
+        if conversacion and conversacion[-1]["role"] == rol:
+            conversacion[-1]["text"] += "\n" + texto
+        else:
+            conversacion.append({"role": rol, "text": texto})
+
+    if not conversacion:
+        conversacion.append({"role": "user", "text": "Escribí tu próximo mensaje."})
+    elif conversacion[0]["role"] == "assistant":
+        conversacion.insert(0, {"role": "user", "text": "..."})
+    return sistema, conversacion
+
+
+def _completar_bedrock(messages, **kwargs):
+    model_id = os.getenv("BEDROCK_MODEL_ID")
+    if not model_id:
+        raise RuntimeError("Falta BEDROCK_MODEL_ID para usar LLM_PROVIDER=bedrock")
+
+    sistema, conversacion = _mensajes_a_converse(messages)
+
+    params = {
+        "modelId": model_id,
+        "messages": [
+            {"role": c["role"], "content": [{"text": c["text"]}]}
+            for c in conversacion
+        ],
+        "inferenceConfig": {
+            "maxTokens": kwargs.get("max_tokens") or kwargs.get("max_completion_tokens") or 2000,
+        },
+    }
+    if kwargs.get("temperature") is not None:
+        params["inferenceConfig"]["temperature"] = min(float(kwargs["temperature"]), 1.0)
+
+    if sistema:
+        bloques = [{"text": sistema[0]}]
+        if os.getenv("BEDROCK_PROMPT_CACHING") == "1" and len(sistema) > 1:
+            bloques.append({"cachePoint": {"type": "default"}})
+        bloques += [{"text": s} for s in sistema[1:]]
+        params["system"] = bloques
+
+    resp = _bedrock_client().converse(**params)
+
+    partes = resp["output"]["message"]["content"]
+    texto = "".join(p.get("text", "") for p in partes)
+    u = resp.get("usage") or {}
+    cacheado = u.get("cacheReadInputTokens", 0) or 0
+    return SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=texto))],
+        usage=SimpleNamespace(
+            prompt_tokens=(u.get("inputTokens", 0) or 0) + cacheado + (u.get("cacheWriteInputTokens", 0) or 0),
+            completion_tokens=u.get("outputTokens", 0) or 0,
+            prompt_tokens_details=SimpleNamespace(cached_tokens=cacheado),
+        ),
+    )
+
+
+def _llamar_llm(messages, model, kwargs):
+    if (os.getenv("LLM_PROVIDER") or "openai").strip().lower() == "bedrock":
+        return _completar_bedrock(messages, **kwargs)
+    return client().chat.completions.create(
+        model=model,
+        messages=messages,
+        **kwargs,
+    )
+
+
 def _completar_chat_gemelo(
     messages,
     model="gpt-5.6-terra",
     **kwargs,
 ):
     """
-    Wrapper para chat.completions.
+    Wrapper para chat.completions (OpenAI) o Converse (Bedrock, con
+    LLM_PROVIDER=bedrock). Siempre devuelve un objeto con la forma de
+    OpenAI (.choices[0].message.content y .usage) para que los llamadores
+    no cambien.
 
     prompt_cache_key estable para las conversaciones de gemelos.
     """
@@ -265,11 +361,7 @@ def _completar_chat_gemelo(
         "pebble-gemelo-v2"
     )
 
-    response = client().chat.completions.create(
-        model=model,
-        messages=messages,
-        **kwargs,
-    )
+    response = _llamar_llm(messages, model, kwargs)
 
     try:
         usage = response.usage
@@ -301,11 +393,7 @@ def _completar_chat_gemelo(
             ),
         }
 
-        response = client().chat.completions.create(
-            model=model,
-            messages=messages + [refuerzo],
-            **kwargs,
-        )
+        response = _llamar_llm(messages + [refuerzo], model, kwargs)
         try:
             _registrar_uso_tokens(response.usage)
         except Exception as e:
