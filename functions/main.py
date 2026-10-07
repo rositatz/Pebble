@@ -1311,6 +1311,9 @@ def _elegir_lote_diverso(pool, tamano_lote):
     memory=MemoryOption.MB_512,
 )
 def procesar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
+    if os.getenv("SIMULACION_NOCTURNA_ACTIVA") != "1":
+        print("procesar_parejas_pendientes: desactivada (SIMULACION_NOCTURNA_ACTIVA != 1).")
+        return
     _procesar_parejas_pendientes_logica()
 
 
