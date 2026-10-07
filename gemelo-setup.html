@@ -4199,38 +4199,56 @@
       async function _generarResumenConIAInterno(snapshotActual) {
         const textEl = document.getElementById("gemelo-gen-text");
         const geditEl = document.getElementById("gedit");
+        const traitsEl = document.getElementById("gemelo-traits");
         const plantillaPrevia = geditEl.value;
+        const traitsPrevios = traitsEl.innerHTML;
+        const placeholderPrevio = geditEl.placeholder;
+
+        // Mientras la IA arma el resumen no se muestra la plantilla ni las
+        // etiquetas: el cuadro de edición queda vacío y bloqueado.
         textEl.textContent =
           "Espere unos segundos estamos armando tu resumen...";
+        geditEl.value = "";
+        geditEl.placeholder = "";
+        geditEl.disabled = true;
+        autoGrowTextarea(geditEl);
+        traitsEl.innerHTML = "";
 
-        // Un solo reintento antes de resignarse a la plantilla -- la primera
-        // llamada a una función que no se usó hace rato puede fallar por cold
-        // start o un hipo de red puntual, no porque el servicio esté realmente
-        // caído. Sin este reintento, cualquier hipo transitorio dejaba a la
-        // persona viendo la plantilla vieja (más corta y con barras tipo
-        // "Tranquilo/a") en vez del resumen real.
-        for (let intento = 0; intento < 2; intento++) {
-          try {
-            const res = await generarResumenGemeloCallable();
-            const texto = ((res.data && res.data.texto) || "").trim();
-            if (texto) {
-              textEl.textContent = texto;
-              geditEl.value = texto;
-              autoGrowTextarea(geditEl);
-              document.getElementById("resumenSnapshot").value = snapshotActual;
-              return;
+        try {
+          // Un solo reintento antes de resignarse a la plantilla -- la
+          // primera llamada a una función que no se usó hace rato puede
+          // fallar por cold start o un hipo de red puntual, no porque el
+          // servicio esté realmente caído.
+          for (let intento = 0; intento < 2; intento++) {
+            try {
+              const res = await generarResumenGemeloCallable();
+              const texto = ((res.data && res.data.texto) || "").trim();
+              if (texto) {
+                textEl.textContent = texto;
+                geditEl.value = texto;
+                document.getElementById("resumenSnapshot").value =
+                  snapshotActual;
+                return;
+              }
+              break; // respuesta vacía sin error -- no vale la pena reintentar
+            } catch (e) {
+              console.error(
+                `generar_resumen_gemelo_ia (intento ${intento + 1}):`,
+                e,
+              );
             }
-            break; // respuesta vacía sin error -- no vale la pena reintentar
-          } catch (e) {
-            console.error(
-              `generar_resumen_gemelo_ia (intento ${intento + 1}):`,
-              e,
-            );
           }
+          // Sin texto de la IA después del reintento: se muestra la
+          // plantilla de siempre, para no dejar a la persona sin nada que
+          // editar.
+          textEl.textContent = plantillaPrevia;
+          geditEl.value = plantillaPrevia;
+        } finally {
+          traitsEl.innerHTML = traitsPrevios;
+          geditEl.placeholder = placeholderPrevio;
+          geditEl.disabled = false;
+          autoGrowTextarea(geditEl);
         }
-        // Sin texto de la IA después del reintento: se deja la plantilla de
-        // siempre (ya con los géneros resueltos por buildGemelo() de arriba).
-        textEl.textContent = plantillaPrevia;
       }
 
       window.finalizarGemelo = async function () {
