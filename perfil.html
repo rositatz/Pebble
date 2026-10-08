@@ -4780,7 +4780,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           let conexionesDesbloqueadas = 0;
           conexionesSnap.forEach((d) => {
             const c = d.data();
-            if (!c.supera_umbral) return;
+            if (!(c.supera_umbral || c.match_confirmado) || c.match_eliminado) return;
             conexionesDesbloqueadas++;
             mayorAfinidad = Math.max(mayorAfinidad, c.ultimo_score || 0);
             const tieneMsgs = (m) =>

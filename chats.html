@@ -2888,7 +2888,7 @@
     <div class="conv-content">
       <div class="conv-top">
         <span class="conv-name">${esc(p.name)}</span>
-        <span class="conv-afinidad">${p.afinidad}%</span>
+        <span class="conv-afinidad"${p.bajo ? ' style="color:#b45309"' : ""}>${p.afinidad}%${p.bajo ? " · baja" : ""}</span>
         <span class="conv-time" id="${id}-time"></span>
       </div>
       <div class="conv-preview-row">
@@ -3310,7 +3310,7 @@
               const candidatos = [];
               conexionesSnap.forEach((d) => {
                 const data = d.data();
-                if (!data.supera_umbral) return;
+                if (!(data.supera_umbral || data.match_confirmado) || data.match_eliminado) return;
                 const otroId =
                   data.usuario_1.uid === user.uid
                     ? data.usuario_2.uid
@@ -3474,6 +3474,7 @@
                   city: c.otro.ciudad || "",
                   identidad: identidadOtro,
                   afinidad: Math.round((c.data.ultimo_score || 0) * 100),
+                  bajo: !c.data.supera_umbral,
                   bio: c.otro.bio || "",
                   interests: susIntereses,
                   sharedInterests: misIntereses.filter((i) =>

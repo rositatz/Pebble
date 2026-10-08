@@ -26,6 +26,15 @@ firebase_admin.initialize_app()
 LLM_SECRETS = ["OPENAI_API_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
 
 
+def _es_match(datos):
+    """Una pareja es match vigente si superó el umbral alguna vez
+    (match_confirmado) o lo supera hoy, y nadie la quitó (match_eliminado).
+    supera_umbral solo dice si el PROMEDIO actual de simulaciones llega al
+    umbral: puede bajar después de un match y eso no lo deshace."""
+    datos = datos or {}
+    return bool(datos.get("supera_umbral") or datos.get("match_confirmado")) and not datos.get("match_eliminado")
+
+
 def _con_creado(par_ref, payload):
     """Agrega 'creado' al payload SOLO si el doc de la conexión todavía no
     existe -- si no, cada simulación nueva sobre la misma pareja resetearía
@@ -34,6 +43,20 @@ def _con_creado(par_ref, payload):
     if not par_ref.get().exists:
         payload["creado"] = firestore.SERVER_TIMESTAMP
     return payload
+
+
+def _conexiones_match(db):
+    vistos = set()
+    for consulta in (
+        db.collection("conexiones").where("supera_umbral", "==", True),
+        db.collection("conexiones").where("match_confirmado", "==", True),
+    ):
+        for d in consulta.stream():
+            if d.id in vistos:
+                continue
+            vistos.add(d.id)
+            if _es_match(d.to_dict()):
+                yield d
 
 
 def _score_promedio_simulaciones(par_ref, score_nuevo=None):
@@ -766,7 +789,7 @@ def simular_situacion(request: https_fn.CallableRequest):
     # con las respuestas del onboarding -- sin esto, cualquiera podría
     # gastar en OpenAI simulando con alguien con quien ni siquiera hay match.
     par_doc = db.collection("conexiones").document(motor._par_id(uid1, uid2)).get()
-    if not par_doc.exists or not par_doc.to_dict().get("supera_umbral"):
+    if not par_doc.exists or not _es_match(par_doc.to_dict()):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no sos match con esa persona."
@@ -811,6 +834,7 @@ def simular_situacion(request: https_fn.CallableRequest):
         "participantes": [uid1, uid2],
         "ultimo_score": score_promedio,
         "supera_umbral": score_promedio >= motor.UMBRAL_MATCH,
+        "match_confirmado": True,
         "actualizado": registro["fecha"],
     }
     payload = _con_creado(par_ref, payload)
@@ -878,7 +902,7 @@ def dar_consejo_match(request: https_fn.CallableRequest):
     # de ahí para el motivo completo.
     par_id = motor._par_id(uid1, uid2)
     par_doc = db.collection("conexiones").document(par_id).get()
-    if not par_doc.exists or not par_doc.to_dict().get("supera_umbral"):
+    if not par_doc.exists or not _es_match(par_doc.to_dict()):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no sos match con esa persona."
@@ -903,6 +927,39 @@ def dar_consejo_match(request: https_fn.CallableRequest):
 
     _guardar_metricas_uso(db, "consejo")
     return {"consejo": consejo, "nombre": nombre2}
+
+
+@https_fn.on_call()
+def quitar_match(request: https_fn.CallableRequest):
+    """Quita un match de la lista de las dos personas. No borra datos: marca
+    la conexión como eliminada (así buscar_parejas_pendientes y el reseteo
+    mensual tampoco la vuelven a armar) y las pantallas dejan de mostrarla."""
+    if request.auth is None:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAUTHENTICATED,
+            "Hay que estar logueado."
+        )
+    uid = request.auth.uid
+    otro_uid = ((request.data or {}).get("otroUid") or "").strip()
+    if not otro_uid or otro_uid == uid:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.INVALID_ARGUMENT,
+            "Falta indicar con quién quitar el match."
+        )
+    db = firestore.client()
+    par_ref = db.collection("conexiones").document(motor._par_id(uid, otro_uid))
+    snap = par_ref.get()
+    if not snap.exists or uid not in (snap.to_dict().get("participantes") or []):
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.NOT_FOUND,
+            "No encontramos ese match."
+        )
+    par_ref.update({
+        "match_eliminado": True,
+        "eliminado_por": uid,
+        "eliminado_en": firestore.SERVER_TIMESTAMP,
+    })
+    return {"ok": True}
 
 
 @https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=60, memory=MemoryOption.MB_512)
@@ -971,7 +1028,7 @@ def chatear_con_gemelo(request: https_fn.CallableRequest):
         for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
             cd = doc.to_dict()
             total_simulaciones += 1
-            if not cd.get("supera_umbral"):
+            if not _es_match(cd):
                 mejor_score_sin_match = max(mejor_score_sin_match, cd.get("ultimo_score") or 0)
                 continue
             u1 = cd.get("usuario_1", {})
@@ -1080,7 +1137,7 @@ def chatear_con_gemelo_match(request: https_fn.CallableRequest):
     # endpoint para sondear el gemelo de cualquier otro usuario adivinando
     # su uid, sin haber pasado nunca por el matching real.
     par_doc = db.collection("conexiones").document(motor._par_id(uid, otro_uid)).get()
-    if not par_doc.exists or not par_doc.to_dict().get("supera_umbral"):
+    if not par_doc.exists or not _es_match(par_doc.to_dict()):
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
             "Todavía no sos match con esa persona."
@@ -1646,6 +1703,7 @@ def _finalizar_par_de_batch(db, estado_par):
             ),
         },
         "supera_umbral": registro["supera_umbral"],
+        **({"match_confirmado": True} if registro["supera_umbral"] else {}),
         "distancia_km": estado_par.get("distancia_km"),
         "actualizado": firestore.SERVER_TIMESTAMP,
     }
@@ -1962,6 +2020,8 @@ def resetear_no_compatibles_mensual(event: scheduler_fn.ScheduledEvent) -> None:
     db = firestore.client()
     reseteados = 0
     for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
+        if doc.to_dict().get("match_confirmado") or doc.to_dict().get("match_eliminado"):
+            continue
         par_id = doc.id
         for sim_doc in doc.reference.collection("simulaciones").stream():
             sim_doc.reference.delete()
@@ -2013,7 +2073,7 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
 
     avisos_retomar = 0
 
-    for doc in db.collection("conexiones").where("supera_umbral", "==", True).stream():
+    for doc in _conexiones_match(db):
         data = doc.to_dict()
 
         participantes = data.get("participantes") or []

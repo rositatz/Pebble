@@ -1630,7 +1630,7 @@
             const reales = [];
             conexionesSnap.forEach((d) => {
               const data = d.data();
-              if (!data.supera_umbral) return;
+              if (!(data.supera_umbral || data.match_confirmado) || data.match_eliminado) return;
               const esUno = data.usuario_1.uid === uid;
               reales.push({
                 uid: esUno ? data.usuario_2.uid : data.usuario_1.uid,

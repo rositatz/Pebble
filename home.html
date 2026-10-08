@@ -2948,7 +2948,7 @@
             conexionesSnap.forEach((d) => {
               const cdata = d.data();
               totalSimulaciones++;
-              if (!cdata.supera_umbral) {
+              if (!(cdata.supera_umbral || cdata.match_confirmado) || cdata.match_eliminado) {
                 mejorScoreSinMatch = Math.max(
                   mejorScoreSinMatch,
                   cdata.ultimo_score || 0,

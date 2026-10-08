@@ -547,6 +547,34 @@
         color: var(--text-primary);
         background: var(--surf-1);
       }
+      .low-compat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: #fff4e0;
+        color: #8a5200;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border-top: 1px solid var(--border);
+      }
+      .low-compat svg {
+        flex-shrink: 0;
+      }
+      .btn-quitar {
+        background: none;
+        border: 1px solid rgba(185, 28, 28, 0.35);
+        color: #b91c1c;
+        border-radius: 12px;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 9px 14px;
+        cursor: pointer;
+      }
+      .btn-quitar:hover {
+        background: rgba(185, 28, 28, 0.07);
+      }
       .btn-chat {
         flex: 2;
         padding: 10px;
@@ -1764,6 +1792,10 @@
         persistentLocalCache,
         persistentMultipleTabManager,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import {
+        getFunctions,
+        httpsCallable,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
       // Si el usuario tiene foto de perfil (perfil.html), la muestra en el
       // ícono de arriba a la derecha; si no, la inicial real de su nombre
@@ -1802,6 +1834,8 @@
         appId: "1:56434257024:web:3e2625f73bad3d4c004a65",
       });
       const auth = getAuth(app);
+      const quitarMatchCallable = httpsCallable(getFunctions(app), "quitar_match");
+      window._quitarMatch = async (otroUid) => (await quitarMatchCallable({ otroUid })).data;
       // Cache local persistente (IndexedDB): la próxima pantalla pinta con
       // lo último sincronizado en vez de esperar de nuevo la ida y vuelta a
       // Firestore -- ver fallback si el navegador no lo soporta.
@@ -1898,6 +1932,30 @@
       window.marcarMatchVisto = marcarMatchVisto;
       window._db_marcarMatchVisto = marcarMatchVisto;
 
+      // Quita un match de compatibilidad baja (desaparece para las dos
+      // personas; no se borran las conversaciones, solo dejan de mostrarse).
+      async function quitarMatch(id) {
+        const p = profiles[id];
+        const nombre = p ? p.name : "esta persona";
+        if (!confirm(`¿Quitar el match con ${nombre}? Va a dejar de aparecer en Matches y Chats, para los dos.`)) return;
+        try {
+          await window._quitarMatch(id);
+        } catch (e) {
+          console.error("quitar_match:", e);
+          alert("No se pudo quitar el match. Probá de nuevo en un rato.");
+          return;
+        }
+        const card = document.querySelector(`.match-card[data-id="${id}"]`);
+        if (card) card.remove();
+        const restantes = document.querySelectorAll(".match-card").length;
+        const countEl = document.getElementById("match-count");
+        if (countEl) countEl.textContent = `${restantes} match${restantes === 1 ? "" : "es"}`;
+        if (!restantes) {
+          const emptyEl = document.getElementById("matchesEmpty");
+          if (emptyEl) emptyEl.style.display = "flex";
+        }
+      }
+
       function buildMatchCardHTML(m) {
         const circunferencia = 138.2;
         const offset = (circunferencia * (1 - m.score / 100)).toFixed(1);
@@ -1946,6 +2004,7 @@
                 <span class="score-label">Afinidad</span>
               </div>
             </div>
+            ${m.bajo ? `<div class="low-compat"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Compatibilidad baja: las últimas simulaciones bajaron el promedio. Siguen siendo match y podés quitarlo cuando quieras.</div>` : ""}
             <div class="card-reasons">
               <p class="reasons-title">Por qué son compatibles</p>
               ${reasonsHtml}
@@ -1959,6 +2018,7 @@
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 Escribirle a ${esc(m.nombre)}
               </button>
+              ${m.bajo ? `<button class="btn-quitar" onclick="quitarMatch('${m.id}')" aria-label="Quitar match con ${esc(m.nombre)}">Quitar match</button>` : ""}
             </div>
           </div>`;
       }
@@ -1987,7 +2047,7 @@
         const candidatos = [];
         conexionesSnap.forEach((d) => {
           const data = d.data();
-          if (!data.supera_umbral) return;
+          if (!(data.supera_umbral || data.match_confirmado) || data.match_eliminado) return;
           const otroId =
             data.usuario_1.uid === user.uid
               ? data.usuario_2.uid
@@ -2009,7 +2069,7 @@
           // escribió un mensaje real.
           if (creadoMs && !tieneChatReal && !tieneExplicacion && ahora - creadoMs > SEMANA_MS)
             return;
-          candidatos.push({ parId: d.id, otroId, data, hasChat, creadoMs });
+          candidatos.push({ parId: d.id, otroId, data, hasChat, creadoMs, bajo: !data.supera_umbral });
         });
 
         if (!candidatos.length) {
@@ -2122,6 +2182,7 @@
             score,
             isNew,
             hasChat: c.hasChat,
+            bajo: c.bajo,
             tags,
             ejes,
             metaTexto: c.creadoMs ? haceTiempo(c.creadoMs) : "",
