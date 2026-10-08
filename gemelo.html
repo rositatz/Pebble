@@ -180,722 +180,576 @@
         color: var(--text-primary);
       }
 
-      /* ── Chat area ── */
-      .chat-wrap {
+      /* ── Mi gemelo ── */
+      .pinguino {
+        background-color: var(--pg, #ff751f);
+        background-image: url("./images/pinguino-base.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .twin-orb.pinguino {
+        background-color: var(--pg, #ff751f);
+        outline: 2px solid var(--pg, #ff751f);
+        outline-offset: 1px;
+      }
+
+      .gm-main {
+        scroll-behavior: smooth;
         position: fixed;
         top: var(--nav-top);
-        bottom: calc(var(--nav-bot) + var(--input-h));
+        bottom: var(--nav-bot);
         left: 0;
         right: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        scroll-behavior: smooth;
       }
-      .messages {
-        max-width: 720px;
-        width: 100%;
+      .gm-wrap {
+        max-width: 1080px;
         margin: 0 auto;
-        padding: 20px 16px 70px;
+        padding: 20px 16px 48px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .gm-col {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 16px;
+        min-width: 0;
       }
-
-      /* Day separator */
-      .day-sep {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 10px 0 6px;
-      }
-      .day-sep-line {
-        flex: 1;
-        height: 1px;
-        background: var(--border2);
-      }
-      .day-sep-text {
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        white-space: nowrap;
-      }
-
-      /* ── Message rows ── */
-      .msg {
-        display: flex;
-        align-items: flex-end;
-        gap: 8px;
-        max-width: 100%;
-      }
-      .msg.twin {
-        justify-content: flex-start;
-      }
-      .msg.user {
-        justify-content: flex-end;
-      }
-
-      /* Twin avatar (small orb) */
-      .msg-av {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        overflow: hidden;
-        background-image: url("./images/gris2.png");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        flex-shrink: 0;
-        align-self: flex-end;
-        margin-bottom: 2px;
-      }
-      .msg-av-spacer {
-        width: 30px;
-        flex-shrink: 0;
-      }
-
-      /* Bubbles */
-      .bubble {
-        padding: 10px 14px;
-        border-radius: 18px;
-        max-width: min(72%, 460px);
-        font-size: 0.875rem;
-        line-height: 1.6;
-        word-wrap: break-word;
-        white-space: pre-line;
-      }
-      .msg.twin .bubble {
-        background: var(--surf-1);
-        border: 1px solid var(--border);
-        border-bottom-left-radius: 4px;
-        color: var(--text-primary);
-      }
-      .msg.user .bubble {
-        background: var(--surf-dark);
-        border-bottom-right-radius: 4px;
-        color: var(--text-inv);
-      }
-
-      /* Timestamp */
-      .msg-time {
-        font-size: 0.6rem;
-        color: var(--text-muted);
-        align-self: flex-end;
-        margin-bottom: 4px;
-        flex-shrink: 0;
-      }
-      .msg.user .msg-time {
-        order: -1;
-      }
-
-      /* Typing indicator */
-      .typing-bubble {
-        background: var(--surf-1);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        border-bottom-left-radius: 4px;
-        padding: 12px 16px;
-        display: flex;
-        gap: 5px;
-        align-items: center;
-      }
-      .typing-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--text-muted);
-        animation: typing-bounce 1.2s infinite ease-in-out;
-      }
-      .typing-dot:nth-child(2) {
-        animation-delay: 0.2s;
-      }
-      .typing-dot:nth-child(3) {
-        animation-delay: 0.4s;
-      }
-      @keyframes typing-bounce {
-        0%,
-        60%,
-        100% {
-          transform: translateY(0);
-        }
-        30% {
-          transform: translateY(-6px);
-        }
-      }
-
-      /* ── Embedded cards ── */
-      .card-wrap {
-        width: 100%;
-        padding: 4px 0 2px;
-      }
-
-      /* Match card */
-      .match-card {
+      .gm-card {
         background: var(--surf-1);
         border: 1px solid var(--border);
         border-radius: var(--r-xl);
-        overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        padding: 20px;
       }
-      .match-card-header {
-        background: var(--surf-dark);
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .match-card-label {
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--orange);
-      }
-      .match-card-label svg {
-        width: 13px;
-        height: 13px;
-        stroke: var(--orange);
-        fill: none;
-        vertical-align: middle;
-        margin-right: 4px;
-      }
-      .match-card-body {
-        padding: 16px;
-        display: flex;
-        gap: 14px;
-        align-items: center;
-      }
-      .match-av {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-display);
-        font-size: 1.3rem;
-        font-weight: 800;
-        color: #fff;
-      }
-      .match-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .match-name {
-        font-family: var(--font-display);
-        font-size: 1.05rem;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-      }
-      .match-meta {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 1px;
-      }
-      .match-score-wrap {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        flex-shrink: 0;
-      }
-      .score-ring {
-        position: relative;
-        width: 52px;
-        height: 52px;
-      }
-      .score-ring svg {
-        width: 52px;
-        height: 52px;
-        transform: rotate(-90deg);
-      }
-      .score-ring-bg {
-        fill: none;
-        stroke: var(--surf-2);
-        stroke-width: 4;
-      }
-      .score-ring-fill {
-        fill: none;
-        stroke-width: 4;
-        stroke-linecap: round;
-        transition: stroke-dashoffset 1s ease;
-      }
-      .score-num {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-display);
-        font-size: 0.8rem;
-        font-weight: 800;
-        color: var(--text-primary);
-        letter-spacing: -0.02em;
-      }
-      .score-label {
-        font-size: 0.58rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-      }
-
-      .match-reasons {
-        padding: 0 16px 14px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .reason-chip {
-        font-size: 0.7rem;
-        padding: 4px 10px;
-        border-radius: 20px;
-        background: var(--surf-2);
-        border: 1px solid var(--border2);
-        color: var(--text-secondary);
-      }
-      .match-actions {
-        display: flex;
-        gap: 8px;
-        padding: 0 16px 16px;
-      }
-      .match-btn {
-        flex: 1;
-        padding: 9px 12px;
-        border-radius: var(--r-md);
-        font-family: var(--font-body);
-        font-size: 0.8rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.18s;
-        border: none;
-        touch-action: manipulation;
-      }
-      .match-btn-primary {
-        background: var(--surf-dark);
-        color: #fff;
-      }
-      .match-btn-primary:hover {
-        background: var(--orange);
-      }
-      .match-btn-secondary {
-        background: var(--surf-2);
-        border: 1px solid var(--border2);
-        color: var(--text-secondary);
-      }
-      .match-btn-secondary:hover {
-        border-color: var(--text-primary);
-        color: var(--text-primary);
-      }
-
-      /* Recommendation card */
-      .recom-card {
-        background: var(--surf-1);
-        border: 1px solid var(--border);
-        border-left: 3px solid var(--orange);
-        border-radius: var(--r-lg);
-        overflow: hidden;
-        padding: 14px 16px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      }
-      .recom-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 11px;
-      }
-      .recom-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: rgba(255, 117, 31, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-      .recom-icon svg {
-        width: 15px;
-        height: 15px;
-        stroke: var(--orange);
-        fill: none;
-      }
-      .recom-title {
-        font-family: var(--font-display);
-        font-size: 0.88rem;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-      }
-      .recom-context {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-      }
-      .recom-tips {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .recom-tip {
-        display: flex;
-        gap: 9px;
-        align-items: flex-start;
-      }
-      .recom-tip-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--orange);
-        flex-shrink: 0;
-        margin-top: 6px;
-      }
-      .recom-tip-text {
-        font-size: 0.82rem;
-        color: var(--text-secondary);
-        line-height: 1.55;
-      }
-      .recom-tip-text strong {
-        color: var(--text-primary);
-        font-weight: 600;
-      }
-
-      /* Progress card */
-      .progress-card {
-        background: var(--surf-1);
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg);
-        padding: 14px 16px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      }
-      .progress-card-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      .progress-person-av {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-display);
-        font-size: 0.85rem;
-        font-weight: 800;
-        color: #fff;
-        flex-shrink: 0;
-      }
-      .progress-card-info {
-        flex: 1;
-      }
-      .progress-card-name {
-        font-family: var(--font-display);
-        font-size: 0.88rem;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-        line-height: 1.2;
-      }
-      .progress-card-event {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-      }
-      .progress-score-change {
+      .gm-card-title {
         font-family: var(--font-display);
         font-size: 1rem;
         font-weight: 800;
-        color: var(--orange);
-        letter-spacing: -0.02em;
-        flex-shrink: 0;
-      }
-      .progress-bar-wrap {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .progress-bar-labels {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.68rem;
-        color: var(--text-muted);
-      }
-      .progress-bar-labels span:last-child {
-        color: var(--orange);
-        font-weight: 600;
-      }
-      .progress-bar-track {
-        height: 6px;
-        border-radius: 3px;
-        background: var(--surf-2);
-        overflow: hidden;
-      }
-      .progress-bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        background: linear-gradient(90deg, var(--orange), var(--orange-light));
-        transition: width 0.8s ease;
-      }
-      .progress-unlock {
-        margin-top: 10px;
-        padding: 8px 10px;
-        background: rgba(255, 117, 31, 0.06);
-        border-radius: var(--r-md);
-        border: 1px solid rgba(255, 117, 31, 0.15);
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 7px;
-      }
-      .progress-unlock svg {
-        width: 13px;
-        height: 13px;
-        stroke: var(--orange);
-        fill: none;
-        flex-shrink: 0;
-      }
-
-      /* Feedback card */
-      .feedback-card {
-        background: var(--surf-dark);
-        border-radius: var(--r-lg);
-        padding: 14px 16px;
-      }
-      .feedback-question {
-        font-family: var(--font-serif);
-        font-style: italic;
-        font-size: 0.88rem;
-        color: rgba(255, 255, 255, 0.75);
-        line-height: 1.55;
+        letter-spacing: -0.01em;
         margin-bottom: 12px;
       }
-      .feedback-opts {
+      .gm-sub {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin: -6px 0 12px;
+      }
+
+      /* Hero: pingüino + nombre + colores */
+      .gm-hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 6px;
+      }
+      .gm-hero-name {
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .gm-hero-status {
+        font-size: 0.75rem;
+        color: #16a34a;
+        font-weight: 600;
+      }
+      .gm-hero-av {
+        width: 112px;
+        height: 112px;
+        outline: 3px solid var(--pg, #ff751f);
+        outline-offset: 3px;
+        margin: 6px 0 8px;
+        transition: background-color 0.25s, outline-color 0.25s;
+      }
+      .gm-swatch-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-top: 6px;
+      }
+      .gm-swatches {
         display: flex;
         flex-wrap: wrap;
-        gap: 7px;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 4px;
       }
-      .feedback-opt {
-        padding: 7px 13px;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.07);
-        font-size: 0.78rem;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.8);
+      .gm-swatch {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px solid transparent;
         cursor: pointer;
-        transition: all 0.18s;
-        touch-action: manipulation;
-      }
-      .feedback-opt:hover {
-        background: var(--orange);
-        border-color: var(--orange);
-        color: #fff;
-      }
-      .feedback-opt.chosen {
-        background: var(--orange);
-        border-color: var(--orange);
-        color: #fff;
-        pointer-events: none;
-      }
-
-      /* ── Quick replies ── */
-      .quick-replies-wrap {
-        position: fixed;
-        bottom: calc(var(--nav-bot) + var(--input-h));
-        left: 0;
-        right: 0;
-        z-index: 150;
-        background: linear-gradient(to top, var(--bg) 60%, transparent);
-        padding: 10px 16px 6px;
-        pointer-events: none;
-      }
-      .quick-replies {
-        max-width: 720px;
-        margin: 0 auto;
-        display: flex;
-        gap: 7px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        pointer-events: all;
-      }
-      .quick-replies::-webkit-scrollbar {
-        display: none;
-      }
-      .qr-chip {
-        flex-shrink: 0;
-        padding: 7px 14px;
-        border-radius: 20px;
-        background: var(--surf-1);
-        border: 1px solid var(--border2);
-        font-size: 0.78rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.18s;
-        touch-action: manipulation;
-        white-space: nowrap;
-      }
-      .qr-chip:hover {
-        border-color: var(--orange);
-        color: var(--orange);
-      }
-
-      /* ── Input area ── */
-      .input-wrap {
-        position: fixed;
-        bottom: var(--nav-bot);
-        left: 0;
-        right: 0;
-        z-index: 160;
-        height: var(--input-h);
-        background: var(--surf-1);
-        border-top: 1px solid var(--border);
         display: flex;
         align-items: center;
-        padding: 0 12px;
+        justify-content: center;
+        color: #fff;
+        transition: transform 0.15s, border-color 0.15s;
+        touch-action: manipulation;
+      }
+      .gm-swatch:hover {
+        transform: scale(1.08);
+      }
+      .gm-swatch:focus-visible {
+        outline: 2px solid var(--text-primary);
+        outline-offset: 2px;
+      }
+      .gm-swatch svg {
+        width: 18px;
+        height: 18px;
+        opacity: 0;
+      }
+      .gm-swatch.sel {
+        border-color: var(--surf-1);
+        box-shadow: 0 0 0 2px var(--text-primary);
+      }
+      .gm-swatch.sel svg {
+        opacity: 1;
+      }
+
+      /* Editar gemelo */
+      .gm-stages {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+      }
+      .gm-stage {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 4px;
+        border-top: 1px solid var(--border);
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background 0.15s;
+      }
+      .gm-stages li:first-child .gm-stage {
+        border-top: none;
+      }
+      .gm-stage:hover {
+        background: var(--surf-2);
+      }
+      .gm-stage-ic {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #ffedc2;
+        color: var(--orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .gm-stage-ic svg {
+        width: 18px;
+        height: 18px;
+      }
+      .gm-stage-txt {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .gm-stage-n {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+      .gm-stage-t {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .gm-stage-chev {
+        color: var(--text-muted);
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+      }
+
+      /* Chips editables (corregir gemelo, temas, gemelos elegidos) */
+      .gm-group {
+        margin-bottom: 14px;
+      }
+      .gm-group:last-child {
+        margin-bottom: 0;
+      }
+      .gm-group-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .gm-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .gm-link-btn {
+        background: none;
+        border: none;
+        color: var(--orange-mid);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 2px 0;
+      }
+      .gm-link-btn:hover {
+        text-decoration: underline;
+      }
+      .gm-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
         gap: 8px;
       }
-      .input-plus-btn {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        flex-shrink: 0;
+      .gm-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background: var(--surf-2);
         border: 1px solid var(--border2);
+        border-radius: 999px;
+        padding: 5px 6px 5px 12px;
+        font-size: 0.82rem;
+        max-width: 100%;
+      }
+      .gm-chip-txt {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .gm-chip-x {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(0, 0, 0, 0.07);
+        color: var(--text-secondary);
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        touch-action: manipulation;
-        color: var(--text-secondary);
+        font-size: 0.8rem;
+        line-height: 1;
+        flex-shrink: 0;
       }
-      .input-plus-btn:hover {
-        background: var(--surf-dark);
-        color: #fff;
-        border-color: var(--surf-dark);
+      .gm-chip-x:hover {
+        background: rgba(0, 0, 0, 0.14);
       }
-      .input-plus-btn svg {
-        width: 18px;
-        height: 18px;
+      .gm-chip .pinguino {
+        width: 22px;
+        height: 22px;
       }
-      .input-field-wrap {
-        flex: 1;
-      }
-      .chat-input {
-        width: 100%;
-        padding: 10px 14px;
-        border: 1.5px solid var(--border2);
-        border-radius: 22px;
-        font-family: var(--font-body);
-        font-size: 0.88rem;
-        color: var(--text-primary);
+      .gm-add {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid var(--border2);
         background: var(--surf-2);
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gm-add:hover {
+        background: #ffedc2;
+        color: var(--orange);
+      }
+      .gm-add-input {
+        font: inherit;
+        font-size: 0.82rem;
+        border: 1px solid var(--orange-mid);
+        border-radius: 999px;
+        padding: 6px 12px;
         outline: none;
-        resize: none;
-        transition: border-color 0.18s;
-        line-height: 1.4;
-        max-height: 100px;
-        overflow-y: hidden;
-      }
-      .chat-input::placeholder {
-        color: var(--text-muted);
-      }
-      .chat-input:focus {
-        border-color: var(--orange);
+        min-width: 150px;
         background: var(--surf-1);
       }
-      .send-btn {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        background: var(--surf-dark);
+      .gm-empty {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      /* Crear escenario */
+      .gm-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 18px;
+      }
+      .gm-title-input {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
         border: none;
+        border-bottom: 1px solid var(--border2);
+        padding: 4px 0 10px;
+        background: transparent;
+        outline: none;
+        width: 100%;
+      }
+      .gm-title-input:focus {
+        border-bottom-color: var(--orange);
+      }
+      .gm-textarea {
+        font: inherit;
+        font-size: 0.9rem;
+        border: 1px solid var(--border2);
+        border-radius: var(--r-lg);
+        padding: 12px 14px;
+        resize: vertical;
+        min-height: 96px;
+        background: var(--surf-1);
+        outline: none;
+      }
+      .gm-textarea:focus {
+        border-color: var(--orange);
+      }
+      .gm-counter {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+      }
+      .gm-counter b {
+        color: var(--orange-mid);
+      }
+      .gm-cta {
+        width: 100%;
+        border: none;
+        border-radius: 14px;
+        background: var(--orange);
+        color: #fff;
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 15px 18px;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
+        gap: 8px;
+        text-decoration: none;
+        transition: filter 0.15s, transform 0.1s;
         touch-action: manipulation;
       }
-      .send-btn:hover {
-        background: var(--orange);
+      .gm-cta:hover {
+        filter: brightness(1.05);
       }
-      .send-btn svg {
+      .gm-cta:active {
+        transform: scale(0.99);
+      }
+      .gm-cta:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .gm-cta svg {
         width: 18px;
         height: 18px;
-        stroke: #fff;
-        fill: none;
       }
-      .send-btn:disabled {
-        background: var(--surf-2);
-        cursor: not-allowed;
+      .gm-hint {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 8px;
+        text-align: center;
       }
-      .send-btn:disabled svg {
-        stroke: var(--text-muted);
+      .gm-pop-wrap {
+        position: relative;
       }
-
-      /* ── Plus menu ── */
-      .plus-menu {
-        position: fixed;
-        bottom: calc(var(--nav-bot) + var(--input-h) + 4px);
-        left: 12px;
-        z-index: 300;
+      .gm-pop {
+        position: absolute;
+        top: 36px;
+        left: 0;
+        z-index: 20;
+        min-width: 210px;
+        max-height: 240px;
+        overflow-y: auto;
         background: var(--surf-1);
         border: 1px solid var(--border2);
         border-radius: var(--r-lg);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        overflow: hidden;
-        min-width: 220px;
-        transform-origin: bottom left;
-        transition: all 0.2s ease;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+        padding: 6px;
       }
-      .plus-menu.hidden {
-        opacity: 0;
-        pointer-events: none;
-        transform: scale(0.92) translateY(8px);
+      .gm-pop[hidden] {
+        display: none;
       }
-      .plus-menu-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        cursor: pointer;
-        transition: background 0.15s;
-        touch-action: manipulation;
-        border-bottom: 1px solid var(--border);
-      }
-      .plus-menu-item:last-child {
-        border-bottom: none;
-      }
-      .plus-menu-item:hover {
-        background: var(--surf-2);
-      }
-      .plus-menu-icon {
-        width: 32px;
-        height: 32px;
+      .gm-pop-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        font: inherit;
+        font-size: 0.85rem;
+        padding: 9px 10px;
         border-radius: var(--r-md);
+        cursor: pointer;
+      }
+      .gm-pop-item:hover {
         background: var(--surf-2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-      .plus-menu-icon svg {
-        width: 15px;
-        height: 15px;
-        fill: none;
-        stroke: var(--text-secondary);
-      }
-      .plus-menu-label {
-        font-size: 0.84rem;
-        font-weight: 500;
-        color: var(--text-primary);
       }
 
-      /* ── Bottom nav ── */
+      /* Resultados */
+      .gm-res {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .gm-res-card {
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .gm-res-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .gm-pair {
+        display: flex;
+        flex-shrink: 0;
+      }
+      .gm-pair .pinguino {
+        width: 40px;
+        height: 40px;
+        border: 2px solid var(--surf-1);
+      }
+      .gm-pair .pinguino + .pinguino {
+        margin-left: -12px;
+      }
+      .gm-res-who {
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .gm-res-esc {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+      }
+      .gm-res-score {
+        margin-left: auto;
+        text-align: right;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 1.4rem;
+        line-height: 1;
+      }
+      .gm-res-score small {
+        display: block;
+        font-family: var(--font-body);
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-top: 3px;
+      }
+      .gm-res-badge {
+        align-self: flex-start;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+      }
+      .gm-res-badge.no {
+        background: var(--surf-2);
+        color: var(--text-secondary);
+      }
+      .gm-res-txt {
+        font-family: var(--font-serif);
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.55;
+      }
+      .gm-res-link {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--orange);
+        text-decoration: none;
+      }
+      .gm-res-link:hover {
+        text-decoration: underline;
+      }
+      .gm-res-err {
+        color: #b91c1c;
+        font-size: 0.85rem;
+      }
+      .gm-wait {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+      .gm-spin {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-top-color: var(--orange);
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      .gm-toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(var(--nav-bot) + 16px);
+        transform: translateX(-50%) translateY(20px);
+        background: var(--surf-dark);
+        color: var(--text-inv);
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 9px 16px;
+        border-radius: 999px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 300;
+      }
+      .gm-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .gm-only-mobile {
+        display: block;
+      }
+
+      /* Escritorio: dos columnas */
+      @media (min-width: 900px) {
+        .gm-wrap {
+          grid-template-columns: minmax(320px, 380px) 1fr;
+          gap: 24px;
+          padding: 28px 24px 56px;
+        }
+        .gm-only-mobile {
+          display: none;
+        }
+        .gm-card {
+          padding: 24px;
+        }
+      }
+      @media (max-width: 600px) {
+        .app-nav {
+          padding: 0 12px;
+        }
+      }
+
+/* ── Bottom nav ── */
       .app-bottom-nav {
         position: fixed;
         bottom: 0;
@@ -1059,45 +913,6 @@
         }
       }
 
-      /* ══════════════════════════════════════
-   RESPONSIVE — MOBILE
-══════════════════════════════════════ */
-      @media (max-width: 600px) {
-        /* Nav */
-        .app-nav {
-          padding: 0 12px;
-        }
-
-        /* Área de chat — menos padding lateral */
-        .chat-main {
-          padding: 16px 12px 70px;
-        }
-
-        /* Burbujas — max width más generoso en pantallas chicas */
-        .pmsg .pbubble,
-        .pbubble {
-          max-width: min(85%, 360px);
-        }
-
-        /* Input */
-        .input-wrap {
-          padding: 8px 12px;
-        }
-        .input-bar {
-          padding: 8px 10px;
-        }
-
-        /* Tabs del gemelo — texto más chico si no entra */
-        .twin-tab {
-          font-size: 0.72rem;
-          padding: 6px 10px;
-        }
-
-        /* Perfil overlay */
-        .profile-overlay-inner {
-          padding: 16px 12px 28px;
-        }
-      }
     </style>
   </head>
   <body>
@@ -1122,133 +937,96 @@
           </svg>
         </a>
         <div class="nav-twin">
-          <div class="twin-orb">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#fff"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4l3 3" />
-            </svg>
+          <div class="twin-orb pinguino" id="navPinguino" style="--pg: #ff751f">
             <div class="twin-orb-dot"></div>
           </div>
           <div class="nav-twin-info">
             <span class="nav-twin-name" id="navTwinName">Tu gemelo</span>
-            <span class="nav-twin-status" id="navTwinStatus"
-              >Activo · cargando…</span
-            >
+            <span class="nav-twin-status" id="navTwinStatus">Activo · cargando…</span>
           </div>
         </div>
       </div>
       <a href="./home.html" class="nav-logo" aria-label="Pebble">
-        <span class="rest">PE</span><span class="bb">BB</span
-        ><span class="rest">LE</span>
+        <span class="rest">PE</span><span class="bb">BB</span><span class="rest">LE</span>
       </a>
     </nav>
 
-    <!-- Chat area -->
-    <div class="chat-wrap" id="chatWrap">
-      <div class="messages" id="messages">
-        <!-- Day separator -->
-        <div class="day-sep">
-          <div class="day-sep-line"></div>
-          <span class="day-sep-text">Hoy</span>
-          <div class="day-sep-line"></div>
+    <main class="gm-main">
+      <div class="gm-wrap">
+        <!-- Columna izquierda: el gemelo -->
+        <div class="gm-col">
+          <section class="gm-card gm-hero" aria-label="Tu gemelo">
+            <div class="gm-hero-av pinguino" id="heroPinguino" style="--pg: #ff751f" role="img" aria-label="Tu pingüino"></div>
+            <h1 class="gm-hero-name" id="heroNombre">Tu gemelo</h1>
+            <span class="gm-hero-status" id="heroEstado">Activo</span>
+            <span class="gm-swatch-label">Color de fondo</span>
+            <div class="gm-swatches" id="swatches" role="radiogroup" aria-label="Color de fondo del pingüino"></div>
+          </section>
+
+          <section class="gm-card" aria-label="Editar gemelo">
+            <h2 class="gm-card-title">Editar gemelo</h2>
+            <ul class="gm-stages" id="etapas"></ul>
+          </section>
+
+          <section class="gm-card" aria-label="Corregir gemelo">
+            <h2 class="gm-card-title">Corregir gemelo</h2>
+            <p class="gm-sub">Lo que cargues acá lo respeta tu gemelo en todas sus charlas.</p>
+            <div class="gm-group">
+              <div class="gm-group-head"><span class="gm-label">Yo no digo esto…</span></div>
+              <div class="gm-chips" id="chipsNoDigo"></div>
+            </div>
+            <div class="gm-group">
+              <div class="gm-group-head"><span class="gm-label">Yo saludo así…</span></div>
+              <div class="gm-chips" id="chipsSaludos"></div>
+            </div>
+          </section>
+
+          <a href="#escenario" class="gm-cta gm-only-mobile" id="irAEscenario">
+            Crea una simulación
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          </a>
         </div>
 
-        <!-- Twin greeting -->
-        <div class="msg twin" id="m0">
-          <div class="msg-av"></div>
-          <div class="bubble">
-            Hola, soy tu gemelo digital. Represento tu personalidad en Pebble y te voy a ir avisando todo lo que pase: nuevas conexiones, cómo van mis conversaciones y cuándo algo vale la pena que saltes vos.
-          </div>
-          <span class="msg-time">10:14</span>
+        <!-- Columna derecha: escenarios -->
+        <div class="gm-col" id="escenario">
+          <section class="gm-card" aria-label="Crear nuevo escenario">
+            <h2 class="gm-card-title">Crear nuevo escenario</h2>
+
+            <div class="gm-field">
+              <input class="gm-title-input" id="escTitulo" type="text" maxlength="60" placeholder="Primera cita" aria-label="Título del escenario" autocomplete="off" />
+            </div>
+
+            <div class="gm-field">
+              <div class="gm-group-head" style="margin-bottom: 0">
+                <label class="gm-label" for="escDesc">Descripción</label>
+                <span class="gm-counter"><b id="escCuenta">0</b>/250</span>
+              </div>
+              <textarea class="gm-textarea" id="escDesc" maxlength="250" placeholder="Contá qué situación querés que vivan los dos gemelos."></textarea>
+            </div>
+
+            <div class="gm-field">
+              <div class="gm-group-head" style="margin-bottom: 0">
+                <span class="gm-label">Temas a tocar</span>
+                <button type="button" class="gm-link-btn" id="agregarTema">Agregar</button>
+              </div>
+              <div class="gm-chips" id="chipsTemas"></div>
+            </div>
+
+            <div class="gm-field">
+              <span class="gm-label">Con el gemelo de..</span>
+              <div class="gm-chips" id="chipsGemelos"></div>
+            </div>
+
+            <button type="button" class="gm-cta" id="crearSim">Crear simulación</button>
+            <p class="gm-hint">Si dejás título y descripción vacíos, el gemelo elige una situación. Cada simulación puede tardar uno o dos minutos.</p>
+          </section>
+
+          <div class="gm-res" id="resultados" aria-live="polite"></div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- Quick replies: se llenan con los matches reales para elegir con
-    quién simular un escenario (ver abrirPickerEscenario). -->
-    <div class="quick-replies-wrap" id="quickRepliesWrap">
-      <div class="quick-replies" id="quickReplies"></div>
-    </div>
-
-    <!-- Input: se usa solo para pedir un escenario en texto libre (ej.
-    "Simulá la primera cita con Luciana") -- ver detectarPedidoDeSimulacion.
-    Ya no hay chat libre de cualquier tema. -->
-    <div class="input-wrap">
-      <button
-        class="input-plus-btn"
-        id="plusBtn"
-        onclick="togglePlusMenu()"
-        aria-label="Acciones rápidas"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
-      <div class="input-field-wrap">
-        <textarea
-          class="chat-input"
-          id="chatInput"
-          placeholder="Ej: Simulá la primera cita con Luciana..."
-          rows="1"
-          onkeydown="handleKey(event)"
-          oninput="autoResize(this)"
-        ></textarea>
-      </div>
-      <button
-        class="send-btn"
-        id="sendBtn"
-        onclick="sendMessage()"
-        aria-label="Enviar"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="22" y1="2" x2="11" y2="13" />
-          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Plus menu -->
-    <div class="plus-menu hidden" id="plusMenu">
-      <div
-        class="plus-menu-item"
-        onclick="
-          abrirPickerEscenario();
-          togglePlusMenu();
-        "
-      >
-        <div class="plus-menu-icon">
-          <svg
-            viewBox="0 0 24 24"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
-        </div>
-        <span class="plus-menu-label">Iniciar escenario</span>
-      </div>
-    </div>
+    <div class="gm-toast" id="toast" role="status"></div>
 
     <!-- Bottom nav -->
     <nav class="app-bottom-nav" aria-label="Navegación inferior">
@@ -1337,648 +1115,6 @@
       </a>
     </nav>
 
-    <script>
-      // Referencias a los elementos principales del DOM
-      const messagesEl = document.getElementById("messages"); // contenedor donde se agregan los mensajes
-      const chatWrap = document.getElementById("chatWrap"); // área scrolleable del chat
-      const inputEl = document.getElementById("chatInput"); // campo de texto donde el usuario escribe
-      const plusMenu = document.getElementById("plusMenu"); // menú desplegable del botón +
-
-      /* ── Persistencia del chat con el propio gemelo ──
-         El mensaje de bienvenida es fijo (está en el HTML), pero todo lo que
-         se agrega después (mensajes, tarjetas, quick replies) se va anotando
-         acá para poder reconstruirlo si se recarga la página -- antes se
-         perdía todo apenas se refrescaba. */
-      let chatLog = [];
-      let replayingChat = false;
-      let _saveChatTimer = null;
-
-      // Mientras el gemelo está pensando una respuesta, no se puede mandar
-      // otro mensaje -- antes, si mandabas dos mensajes seguidos rápido, el
-      // gemelo terminaba "pensando" para los dos a la vez y el orden de las
-      // respuestas quedaba mezclado/raro. Con esto, sendMessage() se ignora
-      // por completo hasta que la respuesta anterior (o su error) llegó.
-      let esperandoRespuestaGemelo = false;
-      function _bloquearEnvio(bloquear) {
-        esperandoRespuestaGemelo = bloquear;
-        const btn = document.getElementById("sendBtn");
-        if (btn) btn.disabled = bloquear;
-      }
-
-      // Matches reales (id + nombre) para el picker de "Consejo para un
-      // match" -- lo llena el <script type="module"> de más abajo. "var" (no
-      // "let") a propósito: así queda expuesto en window y ese otro script
-      // puede escribirlo.
-      var matchesReales = [];
-
-      // Cada entrada del log solo guardaba "hora" (HH:MM, sin día) -- para
-      // análisis después hace falta la fecha completa, así que acá (el
-      // único lugar por el que pasan las 5 formas de entrada: mensaje,
-      // recomendación, feedback, progreso) se estampa un Timestamp real
-      // antes de persistir.
-      function logChatEntry(entry) {
-        if (replayingChat) return;
-        entry.fecha = new Date();
-        chatLog.push(entry);
-        if (typeof window._db_saveGemeloChat !== "function") return;
-        clearTimeout(_saveChatTimer);
-        _saveChatTimer = setTimeout(
-          () => window._db_saveGemeloChat(chatLog),
-          400,
-        );
-      }
-
-      // Reproduce un log guardado usando las mismas funciones de render de
-      // siempre (addUserMsg, addTwinMsg, etc.) -- replayingChat=true evita
-      // que se vuelvan a loguear mientras se están reconstruyendo.
-      function replayChatLog(log) {
-        replayingChat = true;
-        (log || []).forEach((e) => {
-          if (e.tipo === "user") addUserMsg(e.text, e.hora);
-          else if (e.tipo === "twin") addTwinMsg(e.text, e.hora);
-          else if (e.tipo === "recom")
-            addRecomCard(e.title, e.context, e.tips, e.hora);
-          else if (e.tipo === "feedback")
-            addFeedbackCard(e.question, e.options, e.hora);
-          else if (e.tipo === "progress")
-            addProgressCard(
-              e.name,
-              e.initials,
-              e.color,
-              e.event,
-              e.pct,
-              e.unlockText,
-              e.hora,
-            );
-          // "quickReplies" ya NO se reproduce -- son solo accesos rápidos de
-          // la UI, no algo que haya pasado en la conversación. Reproducir
-          // logs viejos (de antes del chat real) hacía que reaparecieran
-          // chips con nombres de ejemplo ("Consejo para Sofía") tapando los
-          // chips reales de la fila estática.
-        });
-        replayingChat = false;
-        scrollBottom(false);
-      }
-
-      // Hace scroll hasta el último mensaje del chat
-      // Si smooth=true lo hace con animación, si es false va directo (útil al cargar la página)
-      function scrollBottom(smooth = true) {
-        chatWrap.scrollTo({
-          top: chatWrap.scrollHeight,
-          behavior: smooth ? "smooth" : "instant",
-        });
-      }
-      scrollBottom(false); // al cargar, posicionarse al final sin animación
-
-      // Ajusta la altura del textarea automáticamente según el contenido
-      // crece al escribir y tiene un máximo de 100px
-      function autoResize(el) {
-        el.style.height = "auto";
-        el.style.height = Math.min(el.scrollHeight, 100) + "px";
-      }
-
-      // Detecta cuando el usuario presiona Enter para enviar el mensaje
-      // Shift+Enter hace salto de línea en vez de enviar
-      function handleKey(e) {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
-        }
-      }
-
-      // Devuelve la hora actual en formato HH:MM (horario Argentina)
-      // Se usa para mostrar el timestamp en cada mensaje
-      function nowTime() {
-        return new Date().toLocaleTimeString("es-AR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      }
-
-      // Agrega un mensaje del usuario al chat (burbuja alineada a la derecha)
-      // Escapa el HTML del texto para evitar inyección de código
-      function addUserMsg(text, hora) {
-        const t = hora || nowTime();
-        const div = document.createElement("div");
-        div.className = "msg user";
-        div.innerHTML = `<span class="msg-time">${t}</span><div class="bubble">${escHtml(text)}</div>`;
-        messagesEl.appendChild(div);
-        scrollBottom();
-        logChatEntry({ tipo: "user", text, hora: t });
-      }
-
-      // Agrega un mensaje del gemelo al chat (burbuja alineada a la izquierda con ícono)
-      // Retorna el elemento creado por si se necesita modificar después
-      // "hora" es opcional: la pasa replayChatLog para reproducir la hora real
-      // guardada en vez de recalcular "ahora" -- si no, cada vez que se
-      // recargaba la página TODO el historial quedaba con la hora del
-      // momento de la carga, en vez de la hora real en que se mandó cada uno.
-      function addTwinMsg(text, hora) {
-        const t = hora || nowTime();
-        const div = document.createElement("div");
-        div.className = "msg twin";
-        div.innerHTML = `
-    <div class="msg-av"></div>
-    <div class="bubble">${text}</div>
-    <span class="msg-time">${t}</span>`;
-        messagesEl.appendChild(div);
-        scrollBottom();
-        logChatEntry({ tipo: "twin", text, hora: t });
-        return div;
-      }
-
-      // Muestra el indicador de "escribiendo..." (tres puntos animados) mientras el gemelo procesa la respuesta
-      // texto opcional: para pedidos que tardan mucho más que un mensaje normal
-      // (simular_situacion corre una conversación completa, varios llamados
-      // seguidos a OpenAI -- puede tardar más de un minuto). Sin ningún aviso,
-      // los puntitos se ven IGUAL que una respuesta rápida normal, así que
-      // después de unos segundos parece trabado aunque siga funcionando bien
-      // atrás -- esto le agrega contexto de que es una espera larga y normal.
-      function addTyping(texto) {
-        const div = document.createElement("div");
-        div.className = "msg twin";
-        div.id = "typing";
-        div.innerHTML = `
-    <div class="msg-av"></div>
-    <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-    ${texto ? `<div class="typing-note" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${escHtml(texto)}</div>` : ""}`;
-        messagesEl.appendChild(div);
-        scrollBottom();
-      }
-
-      // Elimina el indicador de "escribiendo..." una vez que el gemelo ya tiene su respuesta lista
-      function removeTyping() {
-        const el = document.getElementById("typing");
-        if (el) el.remove();
-      }
-
-      // Agrega una tarjeta de recomendaciones en el chat
-      // Muestra un título, contexto y una lista de tips personalizados sobre cómo hablarle a alguien
-      function addRecomCard(title, context, tips, hora) {
-        const t = hora || nowTime();
-        const tipsHtml = tips
-          .map(
-            (tp) =>
-              `<div class="recom-tip"><div class="recom-tip-dot"></div><div class="recom-tip-text">${tp}</div></div>`,
-          )
-          .join("");
-        const div = document.createElement("div");
-        div.className = "msg twin";
-        div.innerHTML = `
-    <div class="msg-av-spacer"></div>
-    <div class="card-wrap">
-      <div class="recom-card">
-        <div class="recom-header">
-          <div class="recom-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <div><div class="recom-title">${title}</div><div class="recom-context">${context}</div></div>
-        </div>
-        <div class="recom-tips">${tipsHtml}</div>
-      </div>
-    </div>
-    <span class="msg-time">${t}</span>`;
-        messagesEl.appendChild(div);
-        scrollBottom();
-        logChatEntry({ tipo: "recom", title, context, tips, hora: t });
-      }
-
-      // Agrega una tarjeta de feedback con botones clicables
-      // El usuario puede elegir una opción para ajustar el comportamiento del gemelo
-      // Cada tarjeta tiene un ID único basado en el timestamp para poder referenciarlo después
-      function addFeedbackCard(question, options, hora) {
-        const id = "fb_" + Date.now();
-        const t = hora || nowTime();
-        const optsHtml = options
-          .map(
-            (o) =>
-              `<button class="feedback-opt" onclick="chooseFeedback(this,'${id}')">${o}</button>`,
-          )
-          .join("");
-        const div = document.createElement("div");
-        div.className = "msg twin";
-        div.innerHTML = `
-    <div class="msg-av-spacer"></div>
-    <div class="card-wrap">
-      <div class="feedback-card" id="${id}">
-        <div class="feedback-question">"${question}"</div>
-        <div class="feedback-opts">${optsHtml}</div>
-      </div>
-    </div>
-    <span class="msg-time">${t}</span>`;
-        messagesEl.appendChild(div);
-        scrollBottom();
-        logChatEntry({ tipo: "feedback", question, options, hora: t });
-      }
-
-      // Agrega una tarjeta de progreso de afinidad con un match
-      // Muestra el nombre, avatar con iniciales, porcentaje de afinidad y un mensaje de desbloqueo si corresponde
-      function addProgressCard(
-        name,
-        initials,
-        color,
-        event,
-        pct,
-        unlockText,
-        hora,
-      ) {
-        const t = hora || nowTime();
-        const div = document.createElement("div");
-        div.className = "msg twin";
-        const fill = `<div class="progress-bar-fill" style="width:${pct}%"></div>`;
-        // Si hay texto de desbloqueo, muestra una sección extra con ícono de candado
-        const unlock = unlockText
-          ? `<div class="progress-unlock"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>${unlockText}</div>`
-          : "";
-        div.innerHTML = `
-    <div class="msg-av"></div>
-    <div class="card-wrap">
-      <div class="progress-card">
-        <div class="progress-card-header">
-          <div class="progress-person-av" style="background:${color}">${initials}</div>
-          <div class="progress-card-info">
-            <div class="progress-card-name">${name}</div>
-            <div class="progress-card-event">${event}</div>
-          </div>
-          <div class="progress-score-change">↑ ${pct}%</div>
-        </div>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-labels"><span>Afinidad</span><span>${pct}%</span></div>
-          <div class="progress-bar-track">${fill}</div>
-        </div>
-        ${unlock}
-      </div>
-    </div>
-    <span class="msg-time">${t}</span>`;
-        messagesEl.appendChild(div);
-        scrollBottom();
-        logChatEntry({
-          tipo: "progress",
-          name,
-          initials,
-          color,
-          event,
-          pct,
-          unlockText,
-          hora: t,
-        });
-      }
-
-      // Escapa caracteres especiales de HTML para evitar que el texto del usuario se interprete como código
-      // Convierte &, < y > en sus entidades HTML seguras
-      function escHtml(t) {
-        return String(t)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
-
-      // Los callables de Firebase exponen el código del error en err.code
-      // (ej: "functions/failed-precondition", "functions/unavailable") --
-      // antes se mostraba err.message tal cual, que para cualquier falla no
-      // prevista (red, cuota de OpenAI, etc.) el SDK lo reemplaza por el
-      // genérico "INTERNAL" sin ninguna pista de qué pasó. Acá se arma un
-      // mensaje distinto según la causa real en vez de mostrar ese texto
-      // crudo, y solo se usa err.message cuando SÍ es un mensaje pensado
-      // para mostrarse (los que arma nuestro propio backend a propósito).
-      function mensajeErrorGemelo(err) {
-        if (err.code === "functions/failed-precondition") {
-          return "Terminá de personalizar tu gemelo primero. Probá de nuevo en un rato.";
-        }
-        if (err.code === "functions/unavailable") {
-          return `${escHtml(err.message || "Tu gemelo no pudo responder ahora.")} `;
-        }
-        if (err.code === "functions/invalid-argument") {
-          // Nuestro propio backend arma este mensaje a propósito (ver
-          // chatear_con_gemelo en main.py) -- ya avisa de la longitud sin
-          // mencionar tokens, así que se muestra tal cual en vez de caer en
-          // el genérico de abajo.
-          return escHtml(err.message || "Ese mensaje es muy largo. Probá acortarlo.");
-        }
-        return "Tuvimos un problema para responder ahora. Probá de nuevo en un rato.";
-      }
-
-      // Toma el texto del input, lo muestra como mensaje del usuario y dispara la respuesta del gemelo
-      // Espera 300ms, muestra el indicador de escritura, y después de 1.2-1.8s muestra la respuesta
-      // Envía el mensaje del usuario y le pide una respuesta real a la
-      // Cloud Function chatear_con_gemelo -- ya no hay un twinRespond()
-      // local con texto armado a mano: la respuesta viene de OpenAI, usando
-      // la personalidad real del usuario (generar_prompt_gemelo_personal)
-      // y sus matches reales como contexto.
-      // Detecta si el mensaje libre es en realidad un pedido de simular una
-      // situación con un match real (ej: "Haceme un escenario con Luciana",
-      // "Simulá una cita con Franco") -- antes esto cualquier pedido así iba
-      // al chat normal con el gemelo (chatear_con_gemelo), que solo puede
-      // NARRAR una escena inventada (le habla al usuario, no simula nada de
-      // verdad). Si detecta nombre real + palabra de disparo, se corre la
-      // simulación real (simular_situacion) en vez de narrar.
-      function detectarPedidoDeSimulacion(text) {
-        const reales = window.matchesReales || [];
-        if (!reales.length) return null;
-        const normal = text.toLowerCase();
-        if (!/\b(escenario|simul\w*|situaci[oó]n|cita|salida)\b/.test(normal))
-          return null;
-        return (
-          reales.find((m) => normal.includes(m.nombre.toLowerCase())) || null
-        );
-      }
-
-      // Si en un solo mensaje se piden VARIAS simulaciones ("simulá la
-      // primera cita y también una pelea por celos"), correrlas todas de
-      // una sería varios minutos de espera de una sola vez y encima ninguna
-      // se ve reflejada hasta que termine la última. En vez de eso: se
-      // corre solo la primera ahora, y el resto queda pendiente para
-      // preguntarle al usuario con cuál seguir después (ver
-      // pedidosSimulacionPendientes).
-      //
-      // Heurística simple, no un llamado a IA aparte (encarecería CADA
-      // mensaje, no solo los que piden varias). Dos señales, en orden:
-      //
-      // 1. Enumeración con preposición repetida ("...de nuestra primera
-      //    pelea... y de nuestro primer viaje...") -- en español, cuando se
-      //    listan dos pedidos con frases largas, la preposición ("de"/
-      //    "sobre") tiende a repetirse antes de cada uno. Esta es la señal
-      //    MÁS confiable -- "simulación de X y de Y" es casi siempre dos
-      //    pedidos, incluso si la palabra disparadora ("simulación") solo
-      //    aparece una vez al principio (contar menciones de esa palabra,
-      //    como se hacía antes, no alcanzaba para detectar justo este caso
-      //    real: "simulá... de la pelea... y de nuestro viaje" tiene un
-      //    solo "simul*" pero son dos pedidos).
-      // 2. Si no matchea eso, 2+ menciones de palabras disparadoras
-      //    ("simulá X y simulá Y") -- separando por las conjunciones
-      //    típicas entre pedidos.
-      //
-      // Con ninguna de las dos señales, nunca separa nada -- así una frase
-      // normal con un "y" suelto ("simulá cuando discutimos y no llegamos a
-      // un acuerdo") no se corta a la mitad.
-      function separarPedidosDeSimulacion(text) {
-        const disparador = /\b(escenario|simul\w*|situaci[oó]n|cita|salida)\b/gi;
-        if (!disparador.test(text)) return [text];
-
-        const porPreposicion = text.match(
-          /^(.*?\b(?:de|sobre)\s+.+?)\s+y\s+(?:de|sobre)\s+(.+)$/i,
-        );
-        if (porPreposicion) {
-          return [porPreposicion[1].trim(), porPreposicion[2].trim()];
-        }
-
-        const ocurrencias = (text.match(disparador) || []).length;
-        if (ocurrencias < 2) return [text];
-        const partes = text
-          .split(
-            /\s*(?:,?\s*y\s+tambi[eé]n\s+|,?\s*y\s+otra(?:\s+de)?\s+|,\s*y\s+|\s+y\s+|\s+o\s+)\s*/i,
-          )
-          .map((p) => p.trim())
-          .filter(Boolean);
-        return partes.length > 1 ? partes : [text];
-      }
-
-      // Cola de pedidos de simulación de ESTE mismo mensaje que todavía no
-      // se corrieron -- se le pregunta al usuario con cuál seguir en vez de
-      // correrlas todas de una. Se vacía sola apenas se elige uno (ver
-      // continuarConPedidoPendiente) o si el usuario manda otra cosa.
-      let pedidosSimulacionPendientes = [];
-
-      // Corre la simulación real con el match detectado, usando el mensaje
-      // tal cual como "situación" en texto libre (armar_escenario_
-      // personalizado la convierte en un escenario). Mismo resultado que
-      // elegirMatchParaEscenario (picker de "Iniciar escenario"), pero
-      // disparado desde texto libre en vez del picker.
-      function correrSimulacionDesdeChat(otroUid, nombre, situacionTexto) {
-        setTimeout(() => {
-          addTyping(
-            "Simulando una conversación completa con su gemelo -- puede tardar uno o dos minutos.",
-          );
-          if (typeof window._llamarSimularSituacion !== "function") {
-            removeTyping();
-            addTwinMsg(
-              "Todavía se está terminando de cargar la conexión con el servidor -- probá de nuevo en un segundo.",
-            );
-            _bloquearEnvio(false);
-            return;
-          }
-          window
-            ._llamarSimularSituacion(otroUid, situacionTexto)
-            .then((res) => {
-              removeTyping();
-              const pct = Math.round(
-                ((res.score && res.score.compatibilidad_total) || 0) * 100,
-              );
-              const resumen = escHtml(
-                res.resumen || "No hubo un resumen para esta simulación.",
-              );
-              const escenario = escHtml(res.escenario || "");
-              const nombreSafe = escHtml(nombre);
-              addTwinMsg(
-                `Corrí una simulación real con el gemelo de ${nombreSafe}${escenario ? ` (escenario: "${escenario}")` : ""}.<br><br>${resumen}<br><br>Afinidad en esta simulación: <strong>${pct}%</strong>${res.superaUmbral ? " — por encima del umbral 🎉" : ""}<br><br>La conversación completa (todo lo que se dijeron de verdad, no un resumen) la podés ver en el chat con ${nombreSafe}.`,
-              );
-              // Si en el mismo mensaje se habían pedido más simulaciones,
-              // ofrecer seguir con la próxima en vez de correrlas todas de
-              // una -- ver separarPedidosDeSimulacion.
-              if (pedidosSimulacionPendientes.length) {
-                mostrarPedidosPendientes();
-              } else {
-                setQuickReplies([]);
-              }
-            })
-            .catch((err) => {
-              removeTyping();
-              console.error("Error en simular_situacion:", err);
-              addTwinMsg(
-                `No pude correr la simulación: ${mensajeErrorGemelo(err)}`,
-              );
-              setQuickReplies([]);
-            })
-            .finally(() => _bloquearEnvio(false));
-        }, 300);
-      }
-
-      // Le pregunta al usuario, con chips (no texto libre -- ya sabemos
-      // exactamente qué match y qué texto usar para cada una, no hace
-      // falta volver a detectarlo), con cuál de las simulaciones que
-      // quedaron pendientes de este mismo mensaje seguir.
-      function mostrarPedidosPendientes() {
-        const restantes = pedidosSimulacionPendientes.length;
-        addTwinMsg(
-          `Che, pediste ${restantes + 1} simulaciones juntas -- ya corrí la primera. ¿Con cuál seguimos${restantes > 1 ? " ahora" : ""}?`,
-        );
-        const qr = document.getElementById("quickReplies");
-        if (!qr) return;
-        qr.innerHTML = "";
-        pedidosSimulacionPendientes.forEach((p, i) => {
-          const btn = document.createElement("button");
-          btn.className = "qr-chip";
-          const corto =
-            p.texto.length <= 40 ? p.texto : p.texto.slice(0, 37) + "...";
-          btn.textContent = corto;
-          btn.onclick = () => continuarConPedidoPendiente(i);
-          qr.appendChild(btn);
-        });
-        const btnNinguna = document.createElement("button");
-        btnNinguna.className = "qr-chip";
-        btnNinguna.textContent = "Ninguna, gracias";
-        btnNinguna.onclick = () => {
-          pedidosSimulacionPendientes = [];
-          setQuickReplies([]);
-        };
-        qr.appendChild(btnNinguna);
-      }
-
-      // Saca de la cola el pedido elegido y corre esa simulación -- los que
-      // no se eligieron siguen pendientes por si hay más de dos.
-      function continuarConPedidoPendiente(indice) {
-        const elegido = pedidosSimulacionPendientes[indice];
-        if (!elegido) return;
-        pedidosSimulacionPendientes = pedidosSimulacionPendientes.filter(
-          (_, i) => i !== indice,
-        );
-        setQuickReplies([]);
-        addUserMsg(elegido.texto);
-        _bloquearEnvio(true);
-        correrSimulacionDesdeChat(elegido.uid, elegido.nombre, elegido.texto);
-      }
-
-      // Esta pantalla ya NO tiene chat libre de cualquier tema -- por pedido
-      // explícito, para no gastar tokens en preguntas sin acotar. Lo único
-      // que hace el input es detectar un pedido de escenario (nombre real +
-      // palabra disparadora, ver detectarPedidoDeSimulacion) y correr
-      // simular_situacion. Si no reconoce ninguno de los dos, avisa sin
-      // llamar a ninguna IA.
-      function sendMessage() {
-        if (esperandoRespuestaGemelo) return; // el gemelo todavía está respondiendo el mensaje anterior
-        const text = inputEl.value.trim();
-        if (!text) return; // no hace nada si el input está vacío
-        inputEl.value = "";
-        autoResize(inputEl);
-        addUserMsg(text);
-        closePlusMenu();
-
-        const matchPedido = detectarPedidoDeSimulacion(text);
-        if (!matchPedido) {
-          addTwinMsg(
-            "Para simular un escenario, mencioná con quién (el nombre de un match real) y qué situación -- ej: \"Simulá la primera cita con Luciana\". También podés elegir un match desde el botón + de abajo.",
-          );
-          return;
-        }
-
-        _bloquearEnvio(true);
-        // Un mensaje nuevo del usuario reemplaza cualquier cola de pedidos
-        // pendientes del mensaje anterior -- si no eligió ninguno y pidió
-        // otra cosa, no tiene sentido seguir ofreciéndole los viejos.
-        const partes = separarPedidosDeSimulacion(text);
-        pedidosSimulacionPendientes = partes
-          .slice(1)
-          .map((texto) => ({ uid: matchPedido.uid, nombre: matchPedido.nombre, texto }));
-        correrSimulacionDesdeChat(matchPedido.uid, matchPedido.nombre, partes[0]);
-      }
-
-      // Reemplaza la fila de respuestas rápidas por chips con tus matches
-      // reales (window.matchesReales, cargado por el script de Firestore de
-      // más abajo). Elegir uno pide la situación y corre una simulación real
-      // (simular_situacion) contra ese match. Se arma con el DOM
-      // directamente (no innerHTML con texto interpolado) para no tener que
-      // lidiar con escapar nombres reales dentro de un atributo onclick.
-      function abrirPickerEscenario() {
-        const qr = document.getElementById("quickReplies");
-        if (!qr) return;
-        qr.innerHTML = "";
-        const reales = window.matchesReales || [];
-        if (!reales.length) {
-          const span = document.createElement("span");
-          span.className = "qr-chip";
-          span.style.cursor = "default";
-          span.textContent = "Todavía no tenés matches";
-          qr.appendChild(span);
-          return;
-        }
-        reales.slice(0, 6).forEach((m) => {
-          const btn = document.createElement("button");
-          btn.className = "qr-chip";
-          btn.textContent = m.nombre;
-          btn.onclick = () => elegirMatchParaEscenario(m.uid, m.nombre);
-          qr.appendChild(btn);
-        });
-      }
-
-      // Pide qué situación simular (texto libre, ej. "la primera cita") y
-      // corre simular_situacion contra el match elegido -- mismo backend que
-      // si se escribe el pedido directo en el input de texto.
-      function elegirMatchParaEscenario(otroUid, nombre) {
-        if (esperandoRespuestaGemelo) return;
-        const situacion = window.prompt(
-          `¿Qué situación querés simular con ${nombre}? (dejalo vacío para que el gemelo elija una)`,
-          "",
-        );
-        if (situacion === null) return; // canceló el picker
-        setQuickReplies([]); // oculta los nombres del picker apenas se elige uno
-        const situacionTexto = situacion.trim();
-        addUserMsg(
-          situacionTexto
-            ? `Simulá "${situacionTexto}" con ${nombre}`
-            : `Simulá una situación con ${nombre}`,
-        );
-        _bloquearEnvio(true);
-        correrSimulacionDesdeChat(otroUid, nombre, situacionTexto);
-      }
-
-      // Limpia la fila de accesos rápidos (picker de matches / pedidos
-      // pendientes) -- ya no arma chips de texto libre, esta pantalla no
-      // tiene más ese tipo de accesos.
-      function setQuickReplies(opts) {
-        const qr = document.getElementById("quickReplies");
-        qr.innerHTML = "";
-      }
-
-      // Procesa la elección del usuario en una tarjeta de feedback
-      // Marca el botón elegido visualmente y el gemelo confirma que incorporó el ajuste
-      function chooseFeedback(btn, cardId) {
-        const card = document.getElementById(cardId);
-        if (!card) return;
-        card
-          .querySelectorAll(".feedback-opt")
-          .forEach((b) => b.classList.remove("chosen")); // deselecciona todos
-        btn.classList.add("chosen"); // marca el elegido
-        const choice = btn.textContent;
-        setTimeout(() => {
-          addTyping();
-          setTimeout(() => {
-            removeTyping();
-            addTwinMsg(
-              `Anotado: "${choice}". Voy a incorporarlo a partir de ahora en todas mis conversaciones. Si en algún momento querés ajustar algo más, avisame.`,
-            );
-            setQuickReplies([
-              "¿Cómo van mis matches?",
-              "Ayudame a romper el hielo",
-              "Quiero darte más feedback",
-            ]);
-          }, 900);
-        }, 300);
-      }
-
-      // Navega a la pantalla de matches
-      function goToMatches() {
-        window.location.href = "./matches.html";
-      }
-
-      // Le dice al gemelo que continúe interactuando con el match especificado
-      // Muestra typing y confirma que seguirá trabajando en esa conexión
-      // Abre o cierra el menú del botón + (opciones adicionales del chat)
-      function togglePlusMenu() {
-        plusMenu.classList.toggle("hidden");
-      }
-
-      // Cierra el menú del botón +
-      function closePlusMenu() {
-        plusMenu.classList.add("hidden");
-      }
-
-      // Cierra el menú + si el usuario hace click en cualquier lugar fuera de él
-      document.addEventListener("click", (e) => {
-        if (!plusMenu.contains(e.target) && e.target.id !== "plusBtn")
-          closePlusMenu();
-      });
-    </script>
-
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import {
@@ -2003,6 +1139,7 @@
         getFunctions,
         httpsCallable,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
       const app = initializeApp({
         apiKey: "AIzaSyDmjdP3DraX6DkBbW6fffI_gKoRcCp6UY0",
         authDomain: "pebble-78e95.firebaseapp.com",
@@ -2025,48 +1162,413 @@
         db = getFirestore(app);
       }
       const functionsInstance = getFunctions(app);
-      // timeout explícito: el SDK de Firebase espera 70s por default antes
-      // de abortar en el cliente, pero simular_situacion corre una charla
-      // completa entre los dos gemelos (hasta 20 turnos, prompts largos) y
-      // el propio backend tiene timeout_sec=540 -- sin este override, el
-      // cliente se rendía mucho antes de que el backend pudiera terminar,
-      // así que la simulación "nunca" funcionaba aunque el servidor la
-      // hubiera completado bien.
+      // simular_situacion corre una charla completa entre los dos gemelos y
+      // el backend tiene timeout_sec=540: el timeout por defecto del cliente
+      // (70s) cortaba la espera mucho antes de que pudiera terminar.
       const simularSituacionCallable = httpsCallable(
         functionsInstance,
         "simular_situacion",
         { timeout: 520000 },
       );
 
-      // Bridge para el script clásico de más abajo (correrSimulacionDesdeChat):
-      // llama a la Cloud Function real simular_situacion, que corre una
-      // simulación nueva entre tu gemelo y el de "otroUid" (con la situación
-      // en texto libre si se pasa una) y devuelve resumen + score reales.
-      // Es el ÚNICO llamado a IA que queda en esta pantalla -- no hay chat
-      // libre de cualquier tema (ver sendMessage).
-      window._llamarSimularSituacion = async function (otroUid, situacion) {
-        const res = await simularSituacionCallable({
-          otroUid,
-          situacion: situacion || "",
-        });
-        return res.data;
-      };
+      const COLORES = [
+        ["#ff751f", "Naranja"],
+        ["#e8453c", "Rojo"],
+        ["#ffc72c", "Amarillo"],
+        ["#7ac943", "Verde"],
+        ["#4c8df6", "Azul"],
+        ["#8b5cf6", "Violeta"],
+        ["#ff5fa2", "Rosa"],
+        ["#2dd4bf", "Turquesa"],
+        ["#776d68", "Gris"],
+      ];
+      const COLOR_DEFECTO = "#ff751f";
+      const ETAPAS = [
+        "Quién sos",
+        "Cómo vivís y qué te representa",
+        "Personalidad y mundo interior",
+        "Comunicación y vínculos",
+        "Chin-Chin",
+        "Tu tipo y profundidad",
+        "Hablá como vos",
+        "Tu Gemelo Digital",
+      ];
 
-      // El chat con el propio gemelo (mensajes, tarjetas, quick replies) se
-      // guarda como un log ordenado en un solo doc -- se pisa entero en cada
-      // guardado (nunca crece tanto como para que eso sea un problema acá).
-      // Vive en la misma subcolección "chats" que usa chats.html para las
-      // conversaciones con otras personas, con un id fijo reservado ("gemelo_propio")
-      // que nunca va a chocar con un uid real de otra persona.
-      window._db_saveGemeloChat = function (log) {
-        const user = auth.currentUser;
-        if (!user) return;
-        setDoc(doc(db, "usuarios", user.uid, "chats", "gemelo_propio"), {
-          log,
-        }).catch((err) =>
-          console.error("Error guardando chat del gemelo:", err),
-        );
-      };
+      const $ = (id) => document.getElementById(id);
+      const esc = (t) =>
+        String(t)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      // El color de otra persona viene de SU doc: solo se acepta un hex de 6
+      // dígitos antes de meterlo en un style="".
+      const colorSeguro = (v) =>
+        typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : COLOR_DEFECTO;
+
+      let uid = null;
+      let colorActual = COLOR_DEFECTO;
+      let matches = [];
+      let elegidos = [];
+      const noDigo = [];
+      const saludos = [];
+      const temas = [];
+      const coloresDeOtros = {};
+
+      let toastTimer = null;
+      function toast(msg) {
+        const el = $("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 1800);
+      }
+
+      function mensajeError(err) {
+        if (err && err.code === "functions/failed-precondition") {
+          return (err.message && !/^INTERNAL$/i.test(err.message))
+            ? err.message
+            : "Terminá de personalizar tu gemelo primero.";
+        }
+        if (err && err.code === "functions/unavailable") {
+          return err.message || "El gemelo no pudo responder ahora. Probá de nuevo en un rato.";
+        }
+        if (err && err.code === "functions/invalid-argument") {
+          return err.message || "Revisá lo que escribiste e intentá de nuevo.";
+        }
+        return "Tuvimos un problema para correr la simulación. Probá de nuevo en un rato.";
+      }
+
+      /* ── Color del pingüino ── */
+      function pintarPinguino(hex) {
+        colorActual = hex;
+        $("heroPinguino").style.setProperty("--pg", hex);
+        $("navPinguino").style.setProperty("--pg", hex);
+        document.querySelectorAll(".gm-swatch").forEach((b) => {
+          const sel = b.dataset.hex === hex;
+          b.classList.toggle("sel", sel);
+          b.setAttribute("aria-checked", sel ? "true" : "false");
+        });
+      }
+
+      function armarSwatches() {
+        const host = $("swatches");
+        host.innerHTML = "";
+        COLORES.forEach(([hex, nombre]) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "gm-swatch";
+          b.dataset.hex = hex;
+          b.style.background = hex;
+          b.setAttribute("role", "radio");
+          b.setAttribute("aria-label", nombre);
+          b.innerHTML =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>';
+          b.addEventListener("click", async () => {
+            if (hex === colorActual) return;
+            pintarPinguino(hex);
+            try {
+              await setDoc(doc(db, "usuarios", uid), { colorPinguino: hex }, { merge: true });
+              toast("Color guardado");
+            } catch (e) {
+              console.error("Error guardando el color:", e);
+              toast("No se pudo guardar el color");
+            }
+          });
+          host.appendChild(b);
+        });
+      }
+
+      /* ── Editar gemelo ── */
+      function armarEtapas(nota) {
+        const ul = $("etapas");
+        ul.innerHTML = "";
+        ETAPAS.forEach((titulo, i) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<a class="gm-stage" href="./gemelo-setup.html#etapa-${i + 1}">
+            <span class="gm-stage-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>
+            <span class="gm-stage-txt"><span class="gm-stage-n">Etapa ${i + 1}</span><span class="gm-stage-t">${esc(titulo)}</span></span>
+            <svg class="gm-stage-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>`;
+          ul.appendChild(li);
+        });
+        if (nota) {
+          const p = document.createElement("p");
+          p.className = "gm-sub";
+          p.textContent = nota;
+          ul.parentNode.insertBefore(p, ul);
+        }
+      }
+
+      /* ── Chips editables (corregir gemelo y temas del escenario) ── */
+      function crearEditorChips({ host, items, max, largo, placeholder, onChange }) {
+        let inputEl = null;
+
+        function limpiar(s) {
+          return s.replace(/\s+/g, " ").trim().slice(0, largo);
+        }
+
+        function render() {
+          host.innerHTML = "";
+          items.forEach((texto, i) => {
+            const chip = document.createElement("span");
+            chip.className = "gm-chip";
+            chip.innerHTML = `<span class="gm-chip-txt">${esc(texto)}</span>`;
+            const x = document.createElement("button");
+            x.type = "button";
+            x.className = "gm-chip-x";
+            x.setAttribute("aria-label", `Quitar ${texto}`);
+            x.textContent = "×";
+            x.addEventListener("click", () => {
+              items.splice(i, 1);
+              render();
+              onChange && onChange(items);
+            });
+            chip.appendChild(x);
+            host.appendChild(chip);
+          });
+          if (inputEl) {
+            host.appendChild(inputEl);
+          } else if (items.length < max) {
+            const add = document.createElement("button");
+            add.type = "button";
+            add.className = "gm-add";
+            add.setAttribute("aria-label", "Agregar");
+            add.textContent = "+";
+            add.addEventListener("click", abrirInput);
+            host.appendChild(add);
+          }
+        }
+
+        function cerrar(agregar) {
+          if (!inputEl) return;
+          const el = inputEl;
+          inputEl = null;
+          const valor = limpiar(el.value);
+          let cambio = false;
+          if (agregar && valor && items.length < max) {
+            if (!items.some((t) => t.toLowerCase() === valor.toLowerCase())) {
+              items.push(valor);
+              cambio = true;
+            }
+          }
+          render();
+          if (cambio) onChange && onChange(items);
+          return cambio;
+        }
+
+        function abrirInput() {
+          if (inputEl || items.length >= max) return;
+          inputEl = document.createElement("input");
+          inputEl.type = "text";
+          inputEl.className = "gm-add-input";
+          inputEl.maxLength = largo;
+          inputEl.placeholder = placeholder;
+          inputEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (cerrar(true)) abrirInput();
+            } else if (e.key === "Escape") {
+              cerrar(false);
+            }
+          });
+          inputEl.addEventListener("blur", () => cerrar(true));
+          render();
+          inputEl.focus();
+        }
+
+        render();
+        return { render, abrirInput };
+      }
+
+      async function guardarAjustes() {
+        try {
+          await setDoc(
+            doc(db, "usuarios", uid),
+            { gemelo_no_digo: noDigo, gemelo_saludos: saludos },
+            { merge: true },
+          );
+          toast("Guardado");
+        } catch (e) {
+          console.error("Error guardando los ajustes del gemelo:", e);
+          toast("No se pudo guardar");
+        }
+      }
+
+      /* ── Gemelos con los que simular ── */
+      function colorDe(otroUid) {
+        if (!coloresDeOtros[otroUid]) {
+          coloresDeOtros[otroUid] = getDoc(doc(db, "usuarios", otroUid))
+            .then((s) => colorSeguro(s.exists() ? s.data().colorPinguino : null))
+            .catch(() => COLOR_DEFECTO);
+        }
+        return coloresDeOtros[otroUid];
+      }
+
+      function renderGemelos() {
+        const host = $("chipsGemelos");
+        host.innerHTML = "";
+        elegidos.forEach((otroUid) => {
+          const m = matches.find((x) => x.uid === otroUid);
+          if (!m) return;
+          const chip = document.createElement("span");
+          chip.className = "gm-chip";
+          chip.innerHTML = `<span class="pinguino" style="--pg:${COLOR_DEFECTO}" data-uid="${esc(m.uid)}"></span><span class="gm-chip-txt">${esc(m.nombre)}</span>`;
+          colorDe(m.uid).then((c) => {
+            const av = chip.querySelector(".pinguino");
+            if (av) av.style.setProperty("--pg", c);
+          });
+          const x = document.createElement("button");
+          x.type = "button";
+          x.className = "gm-chip-x";
+          x.setAttribute("aria-label", `Quitar a ${m.nombre}`);
+          x.textContent = "×";
+          x.addEventListener("click", () => {
+            elegidos = elegidos.filter((u) => u !== m.uid);
+            renderGemelos();
+          });
+          chip.appendChild(x);
+          host.appendChild(chip);
+        });
+
+        const libres = matches.filter((m) => !elegidos.includes(m.uid));
+        if (!matches.length) {
+          const s = document.createElement("span");
+          s.className = "gm-empty";
+          s.textContent = "Todavía no tenés matches para simular.";
+          host.appendChild(s);
+          return;
+        }
+        if (!libres.length) return;
+        const wrap = document.createElement("span");
+        wrap.className = "gm-pop-wrap";
+        const add = document.createElement("button");
+        add.type = "button";
+        add.className = "gm-add";
+        add.setAttribute("aria-label", "Agregar un gemelo");
+        add.setAttribute("aria-haspopup", "listbox");
+        add.textContent = "+";
+        const pop = document.createElement("div");
+        pop.className = "gm-pop";
+        pop.hidden = true;
+        libres.forEach((m) => {
+          const it = document.createElement("button");
+          it.type = "button";
+          it.className = "gm-pop-item";
+          it.textContent = m.nombre;
+          it.addEventListener("click", () => {
+            elegidos.push(m.uid);
+            renderGemelos();
+          });
+          pop.appendChild(it);
+        });
+        add.addEventListener("click", (e) => {
+          e.stopPropagation();
+          pop.hidden = !pop.hidden;
+        });
+        wrap.appendChild(add);
+        wrap.appendChild(pop);
+        host.appendChild(wrap);
+      }
+      document.addEventListener("click", (e) => {
+        document.querySelectorAll(".gm-pop").forEach((p) => {
+          if (!p.parentNode.contains(e.target)) p.hidden = true;
+        });
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape")
+          document.querySelectorAll(".gm-pop").forEach((p) => (p.hidden = true));
+      });
+
+      /* ── Crear escenario ── */
+      function armarSituacion() {
+        const sinPunto = (s) => s.trim().replace(/[.\s]+$/, "");
+        const partes = [sinPunto($("escTitulo").value), sinPunto($("escDesc").value)].filter(Boolean);
+        let txt = partes.join(". ");
+        if (temas.length) txt += `${txt ? ". " : ""}Temas a tocar: ${temas.join(", ")}.`;
+        return txt.slice(0, 500);
+      }
+
+      function agregarEspera(m) {
+        const card = document.createElement("div");
+        card.className = "gm-res-card";
+        card.innerHTML = `<div class="gm-wait"><span class="gm-spin"></span><span>Simulando una conversación completa con el gemelo de <b>${esc(m.nombre)}</b>. Puede tardar uno o dos minutos.</span></div>`;
+        $("resultados").prepend(card);
+        return card;
+      }
+
+      async function mostrarResultado(card, m, res) {
+        const pct = Math.round(((res.score && res.score.compatibilidad_total) || 0) * 100);
+        const suyo = await colorDe(m.uid);
+        const resumen = res.resumen || "No hubo un resumen para esta simulación.";
+        card.innerHTML = `
+          <div class="gm-res-head">
+            <div class="gm-pair"><span class="pinguino" style="--pg:${colorSeguro(colorActual)}"></span><span class="pinguino" style="--pg:${colorSeguro(suyo)}"></span></div>
+            <div><div class="gm-res-who">Tu gemelo × ${esc(m.nombre)}</div><div class="gm-res-esc">${esc(res.escenario || "")}</div></div>
+            <div class="gm-res-score">${pct}%<small>afinidad</small></div>
+          </div>
+          <span class="gm-res-badge ${res.superaUmbral ? "" : "no"}">${res.superaUmbral ? "Superó el umbral de match" : "No llegó al umbral en esta simulación"}</span>
+          <p class="gm-res-txt">${esc(resumen)}</p>
+          <a class="gm-res-link" href="./chats.html?persona=${encodeURIComponent(m.uid)}&modo=gemelo&sim=1">Ver la conversación completa</a>`;
+      }
+
+      function mostrarError(card, m, err) {
+        console.error("Error en simular_situacion:", err);
+        card.innerHTML = `<div class="gm-res-who">Tu gemelo × ${esc(m.nombre)}</div><p class="gm-res-err">No pude correr la simulación: ${esc(mensajeError(err))}</p>`;
+      }
+
+      let corriendo = false;
+      async function crearSimulacion() {
+        if (corriendo) return;
+        if (!elegidos.length) {
+          toast("Elegí con qué gemelo querés simular");
+          const add = document.querySelector("#chipsGemelos .gm-add");
+          if (add) add.focus();
+          return;
+        }
+        const situacion = armarSituacion();
+        const btn = $("crearSim");
+        corriendo = true;
+        btn.disabled = true;
+        btn.textContent = "Simulando…";
+        for (const otroUid of [...elegidos]) {
+          const m = matches.find((x) => x.uid === otroUid);
+          if (!m) continue;
+          const card = agregarEspera(m);
+          try {
+            const res = (await simularSituacionCallable({ otroUid, situacion })).data;
+            await mostrarResultado(card, m, res);
+          } catch (err) {
+            mostrarError(card, m, err);
+          }
+        }
+        corriendo = false;
+        btn.disabled = false;
+        btn.textContent = "Crear simulación";
+      }
+
+      /* ── Arranque ── */
+      armarSwatches();
+      armarEtapas();
+      const editorNoDigo = crearEditorChips({
+        host: $("chipsNoDigo"), items: noDigo, max: 10, largo: 40,
+        placeholder: "Una palabra o frase", onChange: guardarAjustes,
+      });
+      const editorSaludos = crearEditorChips({
+        host: $("chipsSaludos"), items: saludos, max: 10, largo: 40,
+        placeholder: "Cómo saludás", onChange: guardarAjustes,
+      });
+      const editorTemas = crearEditorChips({
+        host: $("chipsTemas"), items: temas, max: 5, largo: 30,
+        placeholder: "Un tema",
+      });
+      $("agregarTema").addEventListener("click", () => editorTemas.abrirInput());
+      $("escDesc").addEventListener("input", (e) => {
+        $("escCuenta").textContent = e.target.value.length;
+      });
+      $("crearSim").addEventListener("click", crearSimulacion);
+      renderGemelos();
 
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
@@ -2078,9 +1580,7 @@
         // setItem de abajo), así que solo cierra sesión sola si la cuenta
         // estuvo sin usarse todo ese tiempo.
         const _SESSION_MS = 30 * 24 * 60 * 60 * 1000;
-        const _loginTime = parseInt(
-          localStorage.getItem("pebble_login_time") || "0",
-        );
+        const _loginTime = parseInt(localStorage.getItem("pebble_login_time") || "0");
         if (_loginTime && Date.now() - _loginTime > _SESSION_MS) {
           localStorage.removeItem("pebble_login_time");
           await signOut(auth);
@@ -2088,87 +1588,72 @@
           return;
         }
         localStorage.setItem("pebble_login_time", Date.now().toString());
+        uid = user.uid;
 
-        // Mostrar nombre real en el nav -- se prioriza el apodo que la
-        // persona puso en el onboarding ("¿Cómo te gusta que te digan?",
-        // guardado en gemelo/perfil.apodo) sobre el nombre de la cuenta, y
-        // solo se cae al nombre de cuenta si todavía no respondió esa
-        // pregunta (perfil inexistente o campo vacío).
-        const navName = document.getElementById("navTwinName");
-        const nombreCuenta = user.displayName || user.email.split("@")[0];
-        let nombreParaMostrar = nombreCuenta.trim().split(/\s+/)[0];
         try {
-          const perfilSnap = await getDoc(
-            doc(db, "usuarios", user.uid, "gemelo", "perfil"),
-          );
-          const apodo = perfilSnap.exists()
-            ? (perfilSnap.data().apodo || "").trim()
-            : "";
-          if (apodo) nombreParaMostrar = apodo.split(/\s+/)[0];
-        } catch (err) {
-          console.error("Error cargando apodo del gemelo:", err);
-        }
-        if (navName) navName.textContent = `Tu gemelo · ${nombreParaMostrar}`;
+          // Nombre: el apodo del onboarding (gemelo/perfil.apodo) manda
+          // sobre el nombre de la cuenta.
+          const nombreCuenta = user.displayName || (user.email || "Tu gemelo").split("@")[0];
+          let nombre = nombreCuenta.trim().split(/\s+/)[0];
+          try {
+            const perfilSnap = await getDoc(doc(db, "usuarios", uid, "gemelo", "perfil"));
+            const apodo = perfilSnap.exists() ? (perfilSnap.data().apodo || "").trim() : "";
+            if (apodo) nombre = apodo.split(/\s+/)[0];
+          } catch (err) {
+            console.error("Error cargando apodo del gemelo:", err);
+          }
+          $("heroNombre").textContent = nombre;
+          $("navTwinName").textContent = `Tu gemelo · ${nombre}`;
 
-        // Matches reales (conexiones donde supera_umbral es true) -- se usan
-        // para el picker real de "Iniciar escenario" (ver
-        // elegirMatchParaEscenario en el script clásico de más arriba) y para
-        // el contador de "conversaciones abiertas" del header, que antes
-        // era un "12" fijo sin relación con los matches reales del usuario.
-        // Solo necesitamos id + nombre acá, ya guardados en el propio doc de
-        // conexión, así que no hace falta traer el perfil de cada uno.
-        try {
-          const conexionesSnap = await getDocs(
-            query(
-              collection(db, "conexiones"),
-              where("participantes", "array-contains", user.uid),
-            ),
-          );
-          const reales = [];
-          conexionesSnap.forEach((d) => {
-            const data = d.data();
-            if (!data.supera_umbral) return;
-            const otroId =
-              data.usuario_1.uid === user.uid
-                ? data.usuario_2.uid
-                : data.usuario_1.uid;
-            const otroNombre =
-              data.usuario_1.uid === user.uid
-                ? data.usuario_2.nombre
-                : data.usuario_1.nombre;
-            reales.push({ uid: otroId, nombre: otroNombre || "Usuario" });
-          });
-          window.matchesReales = reales;
-          const navStatus = document.getElementById("navTwinStatus");
-          if (navStatus) {
+          let nota = "";
+          try {
+            const snap = await getDoc(doc(db, "usuarios", uid));
+            const d = snap.exists() ? snap.data() : {};
+            pintarPinguino(colorSeguro(d.colorPinguino));
+            noDigo.splice(0, noDigo.length, ...(Array.isArray(d.gemelo_no_digo) ? d.gemelo_no_digo.filter((x) => typeof x === "string") : []));
+            saludos.splice(0, saludos.length, ...(Array.isArray(d.gemelo_saludos) ? d.gemelo_saludos.filter((x) => typeof x === "string") : []));
+            editorNoDigo.render();
+            editorSaludos.render();
+            if (d.gemelo_completado === false) {
+              nota = "Tu gemelo todavía no está completo. Seguí desde la etapa donde quedaste.";
+            }
+          } catch (err) {
+            console.error("Error cargando los datos del gemelo:", err);
+            pintarPinguino(COLOR_DEFECTO);
+          }
+          armarEtapas(nota);
+
+          try {
+            const conexionesSnap = await getDocs(
+              query(collection(db, "conexiones"), where("participantes", "array-contains", uid)),
+            );
+            const reales = [];
+            conexionesSnap.forEach((d) => {
+              const data = d.data();
+              if (!data.supera_umbral) return;
+              const esUno = data.usuario_1.uid === uid;
+              reales.push({
+                uid: esUno ? data.usuario_2.uid : data.usuario_1.uid,
+                nombre: (esUno ? data.usuario_2.nombre : data.usuario_1.nombre) || "Usuario",
+              });
+            });
+            matches = reales;
             const n = reales.length;
-            navStatus.textContent = `Activo · ${n} conversación${n === 1 ? "" : "es"} abierta${n === 1 ? "" : "s"}`;
+            const estado = `Activo · ${n} conversación${n === 1 ? "" : "es"} abierta${n === 1 ? "" : "s"}`;
+            $("navTwinStatus").textContent = estado;
+            $("heroEstado").textContent = estado;
+            renderGemelos();
+          } catch (err) {
+            console.error("Error cargando matches reales:", err);
+            $("navTwinStatus").textContent = "Activo";
+            $("heroEstado").textContent = "Activo";
           }
-        } catch (err) {
-          console.error("Error cargando matches reales:", err);
-          window.matchesReales = [];
-          const navStatus = document.getElementById("navTwinStatus");
-          if (navStatus) navStatus.textContent = "Activo";
-        }
-
-        // Si ya había conversación guardada, se reconstruye encima del
-        // mensaje de bienvenida fijo (que sigue siendo el mismo de siempre).
-        try {
-          const snap = await getDoc(
-            doc(db, "usuarios", user.uid, "chats", "gemelo_propio"),
-          );
-          if (snap.exists() && Array.isArray(snap.data().log)) {
-            chatLog = snap.data().log;
-            replayChatLog(chatLog);
+        } finally {
+          const el = $("loadingOverlay");
+          if (el) {
+            el.classList.add("hide");
+            setTimeout(() => el.remove(), 350);
           }
-        } catch (err) {
-          console.error("Error cargando chat del gemelo:", err);
-        }
-
-        const el = document.getElementById("loadingOverlay");
-        if (el) {
-          el.classList.add("hide");
-          setTimeout(() => el.remove(), 350);
         }
       });
     </script>

@@ -190,18 +190,42 @@ def _obtener_o_generar_perfil(db, uid):
         perfil = construir_perfil_gemelo(doc_setup.to_dict())
         ref.set(perfil)
 
-    _mezclar_pronombres(db, uid, perfil)
+    _mezclar_ajustes_usuario(db, uid, perfil)
     return perfil
 
 
-def _mezclar_pronombres(db, uid, perfil):
-    """pronombres vive en usuarios/{uid}, no en el perfil del gemelo (se
-    edita desde perfil.html, no se pregunta en el onboarding) -- se mezcla
-    acá para que generar_prompt_gemelo lo lea con perfil.get("pronombres")
-    igual que "genero"."""
+def _limpiar_lista_ajustes(valor, maximo=10, largo=40):
+    if not isinstance(valor, list):
+        return []
+    vistos, limpios = set(), []
+    for item in valor:
+        if not isinstance(item, str):
+            continue
+        texto = " ".join(item.split())[:largo]
+        if texto and texto.casefold() not in vistos:
+            vistos.add(texto.casefold())
+            limpios.append(texto)
+        if len(limpios) >= maximo:
+            break
+    return limpios
+
+
+def _mezclar_ajustes_usuario(db, uid, perfil):
+    """Pronombres y "Corregir gemelo" (gemelo_no_digo / gemelo_saludos) viven
+    en usuarios/{uid}, no en el perfil del gemelo -- los edita la persona
+    desde perfil.html y gemelo.html. Se mezclan acá para que
+    generar_prompt_gemelo los lea desde perfil, igual que "genero". Las
+    listas vienen de un campo editable por el cliente, así que se limpian
+    (cantidad, largo, una sola línea) antes de llegar a un prompt."""
     datos_usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
     if datos_usuario.get("pronombres"):
         perfil["pronombres"] = datos_usuario["pronombres"]
+    no_digo = _limpiar_lista_ajustes(datos_usuario.get("gemelo_no_digo"))
+    saludos = _limpiar_lista_ajustes(datos_usuario.get("gemelo_saludos"))
+    if no_digo:
+        perfil["no_digo"] = no_digo
+    if saludos:
+        perfil["saludos"] = saludos
 
 
 def _fecha_ar(offset_dias=0):
@@ -1406,8 +1430,8 @@ def _procesar_parejas_pendientes_logica() -> None:
 
             perfil1_data = doc1.to_dict()
             perfil2_data = doc2.to_dict()
-            _mezclar_pronombres(db, uid1, perfil1_data)
-            _mezclar_pronombres(db, uid2, perfil2_data)
+            _mezclar_ajustes_usuario(db, uid1, perfil1_data)
+            _mezclar_ajustes_usuario(db, uid2, perfil2_data)
 
             # Compatibilidad matemática del onboarding, gratis (sin OpenAI) --
             # mismo cálculo que antes hacía simular_relacion_completa antes de

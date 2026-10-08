@@ -543,10 +543,11 @@
         flex-shrink: 0;
       }
       .pmsg-av-ai {
-        background-image: url("./images/naranja2.png");
+        background-color: var(--pg, #ff751f);
+        background-image: url("./images/pinguino-base.png");
         background-size: cover;
         background-position: center;
-        outline: 2px solid var(--orange);
+        outline: 2px solid var(--pg, #ff751f);
         outline-offset: 1px;
       }
 
@@ -1493,6 +1494,14 @@
       }
       .smsg.me {
         justify-content: flex-end;
+      }
+      .pinguino {
+        background-color: var(--pg, #ff751f);
+        background-image: url("./images/pinguino-base.png");
+        background-size: cover;
+        background-position: center;
+        outline: 2px solid var(--pg, #ff751f);
+        outline-offset: 1px;
       }
       .smsg-av {
         width: 28px;
@@ -2518,7 +2527,7 @@
           div.innerHTML = `<span class="pmsg-time">${msg.time}</span><div class="pbubble">${_bubbleContent(msg)}</div>`;
         } else if (isG) {
           div.innerHTML = `
-      <div class="pmsg-av pmsg-av-ai"></div>
+      <div class="pmsg-av pmsg-av-ai" style="--pg:${colorPinguino(p.pinguino)}"></div>
       <div class="pbubble"><span class="gemelo-tag">Gemelo de ${esc(p.name)}</span>${_bubbleContent(msg)}</div>
       <span class="pmsg-time">${msg.time}</span>`;
         } else {
@@ -2791,7 +2800,7 @@
         div.id = "ptyping";
         div.className = `pmsg them${isG ? " is-gemelo" : ""}`;
         const av = isG
-          ? `<div class="pmsg-av pmsg-av-ai"></div>`
+          ? `<div class="pmsg-av pmsg-av-ai" style="--pg:${colorPinguino(p.pinguino)}"></div>`
           : `<div class="pmsg-av" style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>`;
         div.innerHTML = `${av}<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
         con.appendChild(div);
@@ -3033,11 +3042,11 @@
               html += `<div class="smsg me">
         <span class="smsg-time">${msg.time}</span>
         <div class="sbubble"><span class="smsg-label">Tu gemelo</span>${esc(msg.text)}</div>
-        <div class="smsg-av" style="background-image:url('./images/gris1.png');outline:2px solid rgba(255,160,60,0.45);outline-offset:1px"></div>
+        <div class="smsg-av pinguino" style="--pg:${colorPinguino(window._miPinguino)}"></div>
       </div>`;
             } else {
               html += `<div class="smsg them">
-        <div class="smsg-av" style="background-image:url('./images/naranja2.png');outline:2px solid var(--orange);outline-offset:1px"></div>
+        <div class="smsg-av pinguino" style="--pg:${colorPinguino(p.pinguino)}"></div>
         <div class="sbubble"><span class="smsg-label">Gemelo de ${esc(p.name)}</span>${esc(msg.text)}</div>
         <span class="smsg-time">${msg.time}</span>
       </div>`;
@@ -3067,6 +3076,15 @@
       function scrollBottom() {
         const el = document.getElementById("panelMessages");
         if (el) el.scrollTop = el.scrollHeight;
+      }
+      // Color de fondo del pingüino de cada gemelo (lo elige cada persona en
+      // gemelo.html y vive en usuarios/{uid}.colorPinguino). Viene del doc de
+      // OTRA persona, así que solo se acepta un hex de 6 dígitos antes de
+      // meterlo en un style="" -- cualquier otra cosa cae al naranja.
+      function colorPinguino(valor) {
+        return typeof valor === "string" && /^#[0-9a-fA-F]{6}$/.test(valor)
+          ? valor
+          : "#ff751f";
       }
       // Devuelve la hora actual en formato HH:MM (horario Argentina)
       function nowTime() {
@@ -3139,6 +3157,7 @@
           if (modo === "real" || modo === "gemelo") {
             switchPanelMode(modo);
           }
+          if (params.get("sim") === "1") openSimulation();
           // Sacamos el ?persona=/?modo= de la URL para que un refresh no
           // vuelva a abrir el chat si el usuario ya lo cerró.
           history.replaceState(null, "", location.pathname + location.hash);
@@ -3280,6 +3299,7 @@
       // recargar la página (antes no había forma de enterarse sin volver a
       // entrar a la pantalla).
       function cargarChatsReales(user, mis) {
+        window._miPinguino = mis.colorPinguino;
         return new Promise((resolveInicial) => {
           onSnapshot(
             query(
@@ -3444,6 +3464,7 @@
 
                 people[id] = {
                   name: nombre,
+                  pinguino: c.otro.colorPinguino,
                   color: "linear-gradient(135deg,#FF9700,#FF751F)",
                   photo:
                     c.otro.avatarFoto ||

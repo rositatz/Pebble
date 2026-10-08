@@ -1396,6 +1396,11 @@ temas personales sensibles (inseguridades, ansiedades, vínculos
 pasados) depende del nivel de compatibilidad indicado más abajo, no de
 esta regla.
 
+19. Si hay un bloque AJUSTES_DE_LA_PERSONA, tiene prioridad sobre el
+estilo aprendido: no uses nunca nada de lo que figura en nunca_dice (ni
+variantes cercanas) y, al saludar en tu primer mensaje, usá alguna de las
+formas de saluda_asi.
+
 EVITAR
 no_rellena_silencios
 no_hace_preguntas_por_obligacion
@@ -1463,6 +1468,16 @@ VALORES
 
     reciprocidad = "\n".join(f"{k}={v}" for k, v in _reciprocidad(perfil).items())
     contexto += f"\n\nRECIPROCIDAD\n{reciprocidad}"
+
+    no_digo = perfil.get("no_digo") or []
+    saludos = perfil.get("saludos") or []
+    if no_digo or saludos:
+        ajustes = []
+        if no_digo:
+            ajustes.append("nunca_dice=" + " | ".join(f'"{x}"' for x in no_digo))
+        if saludos:
+            ajustes.append("saluda_asi=" + " | ".join(f'"{x}"' for x in saludos))
+        contexto += "\n\nAJUSTES_DE_LA_PERSONA\n" + "\n".join(ajustes)
 
     interes_conv = _interes_conversacional(perfil)
     if interes_conv:
