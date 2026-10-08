@@ -3330,21 +3330,32 @@
 
               await Promise.all(
                 candidatos.map(async (c) => {
-                  if (_perfilesCache[c.otroId]) {
-                    c.otro = _perfilesCache[c.otroId].otro;
-                    c.simulaciones = _perfilesCache[c.otroId].simulaciones;
+                  // La marca cambia cada vez que se corre una simulación nueva
+                  // (actualizado / ultimo_score de la conexión): con la misma
+                  // marca se reusa lo cacheado; con otra, se vuelven a leer
+                  // las simulaciones.
+                  const marca = JSON.stringify([
+                    c.data.actualizado,
+                    c.data.ultimo_score,
+                  ]);
+                  const previo = _perfilesCache[c.otroId];
+                  if (previo && previo.marca === marca) {
+                    c.otro = previo.otro;
+                    c.simulaciones = previo.simulaciones;
                   } else {
-                    try {
-                      const s = await getDoc(doc(db, "usuarios", c.otroId));
-                      c.otro = s.exists() ? s.data() : {};
-                    } catch (e) {
-                      c.otro = {};
+                    if (previo) {
+                      c.otro = previo.otro;
+                    } else {
+                      try {
+                        const s = await getDoc(doc(db, "usuarios", c.otroId));
+                        c.otro = s.exists() ? s.data() : {};
+                      } catch (e) {
+                        c.otro = {};
+                      }
                     }
+                    let simsOk = true;
                     try {
-                      // TODOS los escenarios simulados con esta persona -- antes
-                      // limit(1) solo traía el último, así que si el match
-                      // corrió varios escenarios preestablecidos se perdían
-                      // todos menos uno.
+                      // TODOS los escenarios simulados con esta persona.
                       const simSnap = await getDocs(
                         query(
                           collection(db, "conexiones", c.parId, "simulaciones"),
@@ -3353,12 +3364,18 @@
                       );
                       c.simulaciones = simSnap.docs.map((d) => d.data());
                     } catch (e) {
-                      c.simulaciones = [];
+                      simsOk = false;
+                      c.simulaciones = previo ? previo.simulaciones : [];
                     }
-                    _perfilesCache[c.otroId] = {
-                      otro: c.otro,
-                      simulaciones: c.simulaciones,
-                    };
+                    // Si la lectura falló no se cachea, para reintentar en el
+                    // próximo ciclo en vez de quedarse sin simulaciones.
+                    if (simsOk) {
+                      _perfilesCache[c.otroId] = {
+                        otro: c.otro,
+                        simulaciones: c.simulaciones,
+                        marca,
+                      };
+                    }
                   }
 
                   // Mi chat privado con el gemelo de esta persona (ver
