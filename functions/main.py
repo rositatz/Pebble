@@ -745,6 +745,8 @@ def simular_situacion(request: https_fn.CallableRequest):
     data = request.data or {}
     uid2 = (data.get("otroUid") or "").strip()
     situacion = (data.get("situacion") or "").strip()
+    titulo_escenario = (data.get("titulo") or "").strip()
+    temas_escenario = _limpiar_lista_ajustes(data.get("temas"), maximo=5, largo=30)
 
     if not uid2:
         raise https_fn.HttpsError(
@@ -796,13 +798,19 @@ def simular_situacion(request: https_fn.CallableRequest):
         )
 
     if situacion:
-        escenario = motor.armar_escenario_personalizado(situacion)
+        escenario = motor.armar_escenario_personalizado(situacion, titulo=titulo_escenario)
+        escenario = motor.enriquecer_escenario_personalizado(
+            escenario, situacion, perfil1, perfil2, temas=temas_escenario
+        )
         turnos_escenario = 5
     else:
         escenario = random.randrange(len(motor.escenarios_db))
         # Ver "turnos" opcional en motor.escenarios_db -- la charla libre
         # de hoy necesita bastante más lugar que un escenario de tema único.
         turnos_escenario = motor.escenarios_db[escenario].get("turnos", 5)
+        if temas_escenario:
+            escenario = dict(motor.escenarios_db[escenario])
+            escenario["temas"] = temas_escenario
 
     try:
         registro = motor.simular_y_registrar(uid1, perfil1, uid2, perfil2, turnos=turnos_escenario, escenario=escenario)

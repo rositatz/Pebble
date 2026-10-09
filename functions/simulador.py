@@ -478,7 +478,7 @@ escenarios_db = [
 ]
 
 
-def armar_escenario_personalizado(texto):
+def armar_escenario_personalizado(texto, titulo=None):
     """El usuario pidió simular algo puntual (ej: "simulá que discutimos por
     plata", "simulá la primera cita") -- se arma un escenario al vuelo con
     ese texto en vez de usar uno de escenarios_db. No hace un llamado extra
@@ -506,7 +506,11 @@ def armar_escenario_personalizado(texto):
     caso, nombrando "planeando/organizando" como la lectura incorrecta a
     evitar explícitamente, no solo "algo futuro"."""
     texto = texto.strip()
-    titulo = texto if len(texto) <= 60 else texto[:57] + "..."
+    # titulo es solo lo que se muestra (separador de la simulación); el
+    # contexto que juegan los gemelos sigue siendo el texto completo.
+    titulo = (titulo or "").strip()[:60] or (
+        texto if len(texto) <= 60 else texto[:57] + "..."
+    )
     return {
         "titulo": titulo,
         "contexto": (
@@ -526,6 +530,130 @@ def armar_escenario_personalizado(texto):
         ),
         "tono": "Natural, como si fuera una conversación real entre dos personas conociéndose.",
     }
+
+
+_ETAPAS_ESCENARIO = {
+    "desconocidos": "todavía no se conocen (primer contacto o primera cita)",
+    "conociendose": "se están conociendo (pocas salidas)",
+    "pareja_reciente": "pareja reciente (meses de relación)",
+    "pareja_estable": "pareja de largo plazo (años juntos, convivencia)",
+    "proyeccion_futura": "proyección a futuro de su vida en pareja",
+}
+
+
+def _analizar_etapa_escenario(texto, perfil1, perfil2):
+    """Una llamada corta que decide en qué etapa de la relación transcurre el
+    escenario pedido (ej: "aniversario de 5 años" no es una primera cita) y
+    cómo hablan ahí. Devuelve un dict validado o None si no se pudo."""
+
+    def quien(p):
+        nombre = p.get("apodo") or p.get("nombre") or "?"
+        return f"{nombre} ({p.get('edad') or 'edad no indicada'} años, {p.get('genero') or 'género no indicado'})"
+
+    prompt = f"""Preparás una simulación entre los gemelos digitales de dos personas de una app de citas. Una de ellas pidió este escenario (puede ser corto o ambiguo):
+
+"{texto}"
+
+Personas: {quien(perfil1)} y {quien(perfil2)}.
+
+Decidí en qué etapa de la relación transcurre la escena y devolvé SOLO un JSON válido, sin texto antes ni después, con estas claves:
+- "etapa": una de "desconocidos", "conociendose", "pareja_reciente", "pareja_estable", "proyeccion_futura".
+- "tiempo_juntos": cuánto llevan juntos o conociéndose en la escena, texto corto (ej: "5 años", "es la primera vez que se ven").
+- "momento": cuándo y dónde transcurre la escena, una oración concreta.
+- "lo_que_ya_saben": qué conocen el uno del otro en ese momento, 1 o 2 oraciones.
+- "como_hablan": cómo se tratan y hablan en esa etapa (confianza, referencias a cosas compartidas, humor interno, cansancio, cariño, etc.), 1 o 2 oraciones.
+- "evitar": lista de 2 a 4 cosas que NO deben pasar porque no corresponden a esa etapa.
+- "primer_mensaje": cómo arranca la escena quien habla primero, una oración.
+
+Cómo decidir:
+- Si el pedido habla de una relación que ya existe (aniversario, años juntos, convivencia, vacaciones de pareja, una pelea de pareja, hijos, "nosotros en X años"), la etapa NO es "desconocidos": se tratan con confianza y historia compartida, no se presentan ni se preguntan cosas básicas.
+- Si el pedido proyecta al futuro (en X años, cuando seamos grandes), la etapa es "proyeccion_futura": describí un día concreto y creíble de ese futuro, con las edades de ambos sumando esos años y una vida coherente con sus perfiles. NO es una primera cita trasladada al futuro.
+- Solo es "desconocidos" si el pedido dice que recién se conocen (primera cita, primer mensaje, etc.).
+- Si es ambiguo, elegí la etapa más razonable según lo que dice.
+
+Ejemplo de respuesta: {{"etapa": "pareja_estable", "tiempo_juntos": "5 años", "momento": "Cena de aniversario en el restaurante donde se pusieron de novios.", "lo_que_ya_saben": "Se conocen a fondo: rutinas, familias, miedos y chistes internos.", "como_hablan": "Con confianza y cariño, recordando cosas vividas y bromeando con referencias compartidas.", "evitar": ["Presentarse o preguntarse a qué se dedican", "Preguntas de primera cita sobre gustos básicos"], "primer_mensaje": "Brinda y recuerda algo de los años que llevan juntos."}}"""
+
+    respuesta = _completar_chat_gemelo([{"role": "user", "content": prompt}], temperature=0.3)
+    contenido = respuesta.choices[0].message.content or ""
+    encontrado = re.search(r"\{.*\}", contenido, re.S)
+    if not encontrado:
+        return None
+    datos = json.loads(encontrado.group(0))
+
+    etapa = datos.get("etapa")
+    if etapa not in _ETAPAS_ESCENARIO:
+        return None
+
+    def texto_corto(clave, largo=300):
+        valor = datos.get(clave)
+        return " ".join(valor.split())[:largo] if isinstance(valor, str) else ""
+
+    evitar = datos.get("evitar")
+    evitar = [" ".join(x.split())[:140] for x in evitar if isinstance(x, str) and x.strip()][:4] if isinstance(evitar, list) else []
+    return {
+        "etapa": etapa,
+        "tiempo_juntos": texto_corto("tiempo_juntos", 80),
+        "momento": texto_corto("momento"),
+        "lo_que_ya_saben": texto_corto("lo_que_ya_saben"),
+        "como_hablan": texto_corto("como_hablan"),
+        "evitar": evitar,
+        "primer_mensaje": texto_corto("primer_mensaje", 200),
+    }
+
+
+def enriquecer_escenario_personalizado(escenario, texto, perfil1, perfil2, temas=None):
+    """Agrega al escenario armado al vuelo la etapa de la relación (ver
+    _analizar_etapa_escenario) y los temas que la persona pidió tocar. Si el
+    análisis falla, el escenario queda como estaba."""
+    enriquecido = dict(escenario)
+    enriquecido["temas"] = [t for t in (temas or []) if isinstance(t, str) and t.strip()]
+    try:
+        info = _analizar_etapa_escenario(texto, perfil1, perfil2)
+    except Exception as e:
+        print(f"enriquecer_escenario_personalizado: no se pudo analizar la etapa: {e}")
+        info = None
+    if info:
+        enriquecido["etapa_info"] = info
+    return enriquecido
+
+
+def _bloque_etapa(info):
+    if not info:
+        return ""
+    evitar = "\n".join(f"      - {x}" for x in info["evitar"])
+    futuro = (
+        "\n    - Es una proyección a futuro: ambos son más grandes y ya están en esa"
+        " escena. Contá cómo está su vida ese día, sin hablar en hipotético"
+        " (\"cuando seamos...\")."
+        if info["etapa"] == "proyeccion_futura" else ""
+    )
+    return f"""
+    ETAPA DE LA RELACIÓN EN ESTA ESCENA (respetala en TODOS los mensajes):
+    - Etapa: {_ETAPAS_ESCENARIO[info["etapa"]]}. Tiempo juntos / de conocerse: {info["tiempo_juntos"] or "según la escena"}.
+    - Momento: {info["momento"]}
+    - Lo que ya saben el uno del otro: {info["lo_que_ya_saben"]}
+    - Cómo hablan entre ustedes: {info["como_hablan"]}
+    - NO hagas en esta escena:
+{evitar}{futuro}
+    - Excepción a las reglas 1 y 16 SOLO para esta simulación: pueden imaginar
+      detalles de la vida compartida o del futuro (rutinas, anécdotas, lugares,
+      personas cercanas) mientras sean plausibles, coherentes con sus perfiles y
+      sin contradecirse entre mensajes. Es una simulación, no un dato real.
+    """
+
+
+def _bloque_temas(temas):
+    if not temas:
+        return ""
+    lista = "\n".join(f"      - {t}" for t in temas)
+    return f"""
+    TEMAS PEDIDOS POR LA PERSONA (obligatorios):
+{lista}
+    Cada tema tiene que aparecer de forma concreta (una referencia, una pregunta
+    o una opinión puntual) antes de que termine la charla. En cada mensaje se
+    te va indicando cuál tocar.
+    """
+
 
 
 def generar_consejo_match(perfil_propio, perfil_match, nombre_match, diferencias=None):
@@ -2001,10 +2129,15 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
     escenario_actual = escenario if isinstance(escenario, dict) else escenarios_db[escenario]
 
+    etapa_info = escenario_actual.get("etapa_info") or {}
+    temas_pedidos = list(escenario_actual.get("temas") or [])
+
     instruccion_compat = instruccion_nivel_compatibilidad(
         perfil1, perfil2, UMBRAL_MATCH,
         nombre1=perfil1.get("nombre", "ALPHA"), nombre2=perfil2.get("nombre", "BETA"),
+        incluir_temas=not (etapa_info or temas_pedidos),
     )
+    instruccion_compat += _bloque_etapa(etapa_info) + _bloque_temas(temas_pedidos)
 
     # Piso de turnos antes de poder cerrar, pero MÁS ALTO cuanto más baja es
     # la compatibilidad -- no es solo una instrucción de prompt (que ya está
@@ -2070,15 +2203,34 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     # turno le toca arrancar la charla. No hace falta una función aparte:
     # es el mismo generar_prompt_gemelo, solo que este primer llamado no
     # tiene mensajes previos a los que responder.
-    instruccion_inicio = (
-        "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
-        " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
-        " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
-        " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
-        " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
-        " natural, como si le escribieras por primera vez a alguien que recién"
-        f" conociste. {random.choice(_ANGULOS_APERTURA)}"
-    )
+    def _instr_tema(evento):
+        if evento >= len(temas_pedidos):
+            return ""
+        return (
+            f"\n\n    TEMA PEDIDO PARA ESTE MENSAJE: tocá \"{temas_pedidos[evento]}\" de forma"
+            " concreta y natural en lo que decís ahora (una referencia, una pregunta"
+            " o una opinión puntual), sin anunciarlo ni cambiar de golpe de conversación."
+        )
+
+    if etapa_info and etapa_info["etapa"] != "desconocidos":
+        instruccion_inicio = (
+            "\n\n    Te toca arrancar VOS la escena de arriba. Este es el primer mensaje"
+            " de la escena, pero NO el primer contacto entre ustedes: respetá la etapa"
+            " de la relación indicada arriba. No te presentes ni preguntes cosas"
+            " básicas que ya saben. Mandá un mensaje corto y natural, como lo diría"
+            f" esta persona en ese momento. Idea para arrancar: {etapa_info['primer_mensaje'] or 'entrá directo en la escena'}."
+        )
+    else:
+        instruccion_inicio = (
+            "\n\n    Te toca arrancar VOS la conversación sobre el escenario de arriba."
+            " IMPORTANTE: este es el PRIMER mensaje de toda la charla -- todavía nadie"
+            " te dijo ni te preguntó nada, así que no respondas como si contestaras algo"
+            " (nunca algo tipo 'sí, estoy bien' o 'gracias' como si te hubieran saludado"
+            " o preguntado antes -- no pasó nada todavía). Mandá un mensaje corto y"
+            " natural, como si le escribieras por primera vez a alguien que recién"
+            f" conociste. {random.choice(_ANGULOS_APERTURA)}"
+        )
+    instruccion_inicio += _instr_tema(0)
 
     response_inicio = _completar_chat_gemelo([
         {"role": "system", "content": prompt_1_fijo},
@@ -2150,7 +2302,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
                 "content":
                     contexto_escenario +
                     prompt_2_contexto +
-                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
+                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "") +
+                    _instr_tema(2 * turno_idx + 1)
             },
 
             *vista_2
@@ -2191,7 +2344,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
                 "content":
                     contexto_escenario +
                     prompt_1_contexto +
-                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "")
+                    (instruccion_cierre_forzado if es_ultimo_turno_posible else "") +
+                    _instr_tema(2 * turno_idx + 2)
             },
 
             *vista_1

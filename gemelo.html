@@ -1485,9 +1485,7 @@
       function armarSituacion() {
         const sinPunto = (s) => s.trim().replace(/[.\s]+$/, "");
         const partes = [sinPunto($("escTitulo").value), sinPunto($("escDesc").value)].filter(Boolean);
-        let txt = partes.join(". ");
-        if (temas.length) txt += `${txt ? ". " : ""}Temas a tocar: ${temas.join(", ")}.`;
-        return txt.slice(0, 500);
+        return partes.join(". ").slice(0, 500);
       }
 
       function agregarEspera(m) {
@@ -1537,7 +1535,7 @@
           if (!m) continue;
           const card = agregarEspera(m);
           try {
-            const res = (await simularSituacionCallable({ otroUid, situacion })).data;
+            const res = (await simularSituacionCallable({ otroUid, situacion, titulo: $("escTitulo").value.trim(), temas: [...temas] })).data;
             await mostrarResultado(card, m, res);
           } catch (err) {
             mostrarError(card, m, err);

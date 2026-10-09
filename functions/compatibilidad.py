@@ -1141,7 +1141,7 @@ def _temas_obligatorios(perfil1, perfil2, nombre1=None, nombre2=None, top_n=3):
     return resultado
 
 
-def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nombre2=None):
+def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nombre2=None, incluir_temas=True):
     promedio_previo, _, _, _, _, _ = calcular_compatibilidad(perfil1, perfil2)
     umbral_alto = min(0.95, umbral + 0.15)
     punto_medio = (umbral + umbral_alto) / 2
@@ -1180,7 +1180,7 @@ def instruccion_nivel_compatibilidad(perfil1, perfil2, umbral, nombre1=None, nom
 
     # 4. Temas Obligatorios
     temas_txt = ""
-    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2, top_n=4)
+    temas = _temas_obligatorios(perfil1, perfil2, nombre1=nombre1, nombre2=nombre2, top_n=4) if incluir_temas else []
     if temas:
         puntos_temas = "\n  ".join(f"* {t}" for t in temas)
         temas_txt = f"\n- TEMAS OBLIGATORIOS (integrar orgánicamente sin anunciar):\n  {puntos_temas}"
