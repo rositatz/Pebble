@@ -639,6 +639,8 @@ def _bloque_etapa(info):
       detalles de la vida compartida o del futuro (rutinas, anécdotas, lugares,
       personas cercanas) mientras sean plausibles, coherentes con sus perfiles y
       sin contradecirse entre mensajes. Es una simulación, no un dato real.
+    - Cerrá la charla cuando se agoten los temas, como terminaría esa charla
+      cotidiana; no hace falta proponer un plan para despedirse.
     """
 
 
@@ -1133,8 +1135,24 @@ def _dividir_mensajes(texto):
     generar_prompt_gemelo) -- devuelve SIEMPRE una lista con al menos un
     elemento. Se llama DESPUÉS de _extraer_cierre (la marca de cierre va
     al final de todo el texto, no le importan los [MSG] del medio)."""
-    partes = [p.strip() for p in texto.split(_MARCA_MULTIMENSAJE)]
+    partes = [p.replace("¿", "").replace("¡", "").strip() for p in texto.split(_MARCA_MULTIMENSAJE)]
     return [p for p in partes if p] or [texto.strip()]
+
+
+def _reescribir_sin_pregunta_final(llamada):
+    """Vuelve a pedir el último mensaje de la charla cuando quedó terminando
+    en pregunta (nadie la va a responder)."""
+    nueva = _completar_chat_gemelo(llamada + [{
+        "role": "system",
+        "content": (
+            "Tu mensaje anterior terminó con una pregunta, pero esta es la última"
+            " intervención de la charla y nadie la va a contestar. Escribí otra"
+            " versión que cierre de forma natural, con una reacción, un comentario"
+            " o una decisión, sin ninguna pregunta ni pedido pendiente."
+        ),
+    }])
+    texto, _ = _extraer_cierre(nueva.choices[0].message.content)
+    return _dividir_mensajes(texto)
 
 
 # Red de seguridad a nivel CÓDIGO (no solo prompt) contra charlas que quedan
@@ -1479,6 +1497,13 @@ respuestas genéricas y preguntas repetitivas.
 de los mensajes; no repitas el mismo patrón seguido.
 
 6. Escribí como chat argentino informal. Usá "vos", nunca "tú".
+Hablá como un argentino promedio de tu edad: voseo (tenés, querés, fijate,
+decime), y expresiones cotidianas rioplatenses cuando salen solas (dale, de
+una, re, tipo, che, bancar, laburo, guita, un garrón, qué sé yo, ni idea).
+No exageres ni las fuerces en cada mensaje. Evitá frases neutras o de manual
+("lo siento", "entiendo cómo te sentís", "me alegra mucho", "qué interesante",
+"por supuesto"): decilo como lo diría alguien de acá ("uh perdón", "qué
+garrón", "me re alegro", "ah mirá", "obvio").
 Mensajes cortos, normalmente 1 oración y ocasionalmente 2.
 Sin párrafos largos, ensayos, metáforas, coaching ni lenguaje terapéutico.
 
@@ -1552,6 +1577,7 @@ con {_MARCA_CIERRE} en una línea separada.
 
 Antes de un cierre natural, alguien debe intentar proponer un plan concreto.
 La otra persona puede aceptarlo, rechazarlo o no quererlo según su personalidad.
+El mensaje de cierre nunca termina con una pregunta ni deja algo pendiente de respuesta.
 """.strip()
 
     # ==========================================================
@@ -2153,6 +2179,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 2
     else:
         min_turnos_efectivo = _MIN_TURNOS_ANTES_DE_CERRAR + 4
+    if isinstance(escenario, dict):
+        min_turnos_efectivo = max(4, len(temas_pedidos))
 
     contexto_escenario = f"""
     ESCENARIO:
@@ -2288,6 +2316,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         " otro que quedaría sin respuesta."
     )
 
+    ultima_llamada, ultimas_partes = None, 0
+
     for turno_idx in range(turnos):
         es_ultimo_turno_posible = turno_idx == turnos - 1
 
@@ -2295,7 +2325,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # PERFIL 2 RESPONDE
         # =================================================
 
-        response_2 = _completar_chat_gemelo([
+        llamada_2 = [
             {"role": "system", "content": prompt_2_fijo},
             {
                 "role": "system",
@@ -2307,7 +2337,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             },
 
             *vista_2
-        ])
+        ]
+        response_2 = _completar_chat_gemelo(llamada_2)
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
         partes_2 = _dividir_mensajes(msg_2)
@@ -2317,6 +2348,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         print(f"{nombre2}: {msg_2}\n")
 
+        ultima_llamada, ultimas_partes = llamada_2, len(partes_2)
         for parte in partes_2:
             historial_chat.append({
 
@@ -2337,7 +2369,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         # PERFIL 1 RESPONDE
         # =================================================
 
-        response_1 = _completar_chat_gemelo([
+        llamada_1 = [
             {"role": "system", "content": prompt_1_fijo},
             {
                 "role": "system",
@@ -2349,7 +2381,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             },
 
             *vista_1
-        ])
+        ]
+        response_1 = _completar_chat_gemelo(llamada_1)
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
         partes_1 = _dividir_mensajes(msg_1)
@@ -2359,6 +2392,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         print(f"{nombre1}: {msg_1}\n")
 
+        ultima_llamada, ultimas_partes = llamada_1, len(partes_1)
         for parte in partes_1:
             historial_chat.append({
 
@@ -2374,6 +2408,16 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             break  # perfil1 sintió que la charla ya cerró -- no seguimos a otra vuelta
         if repetitivo_1:
             break  # se detectó un bucle repitiendo lo mismo -- cortar acá en vez de seguir
+
+    if ultima_llamada and historial_chat[-1]["content"].rstrip().endswith("?"):
+        try:
+            nuevas = _reescribir_sin_pregunta_final(ultima_llamada)
+            if nuevas and not nuevas[-1].rstrip().endswith("?"):
+                base = historial_chat[-1]
+                del historial_chat[-ultimas_partes:]
+                historial_chat.extend(dict(base, content=parte) for parte in nuevas)
+        except Exception as e:
+            print(f"simular_cita: no se pudo reescribir el cierre: {e}")
 
     analisis = analizar_conversacion(historial_chat)
     promedio, similitud, pref_a_b, pref_b_a, score_conversacional, desglose = calcular_compatibilidad(perfil1, perfil2, analisis)

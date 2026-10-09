@@ -802,7 +802,7 @@ def simular_situacion(request: https_fn.CallableRequest):
         escenario = motor.enriquecer_escenario_personalizado(
             escenario, situacion, perfil1, perfil2, temas=temas_escenario
         )
-        turnos_escenario = 5
+        turnos_escenario = 10
     else:
         escenario = random.randrange(len(motor.escenarios_db))
         # Ver "turnos" opcional en motor.escenarios_db -- la charla libre
