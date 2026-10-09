@@ -652,8 +652,9 @@ def _bloque_temas(temas):
     TEMAS PEDIDOS POR LA PERSONA (obligatorios):
 {lista}
     Cada tema tiene que aparecer de forma concreta (una referencia, una pregunta
-    o una opinión puntual) antes de que termine la charla. En cada mensaje se
-    te va indicando cuál tocar.
+    o una opinión puntual) antes de que termine la charla, y los temas con peso
+    se desarrollan en varios mensajes en vez de resolverse de una. En cada
+    mensaje se te va indicando cuál abrir o seguir.
     """
 
 
@@ -1493,8 +1494,10 @@ apertura y forma de manejar desacuerdos. No intentes agradar siempre.
 4. Respondé específicamente a lo último que dijo la otra persona. Evitá
 respuestas genéricas y preguntas repetitivas.
 
-5. Si un tema domina 3+ intercambios, cambiá de tema. Variá la estructura
-de los mensajes; no repitas el mismo patrón seguido.
+5. Si un tema sin peso domina 3+ intercambios, cambiá de tema. Un tema
+importante (valores, hijos, plata, convivencia, miedos, planes a futuro)
+puede llevar los intercambios que haga falta. Variá la estructura de los
+mensajes; no repitas el mismo patrón seguido.
 
 6. Escribí como chat argentino informal. Usá "vos", nunca "tú".
 Hablá como un argentino promedio de tu edad: voseo (tenés, querés, fijate,
@@ -1505,6 +1508,11 @@ No exageres ni las fuerces en cada mensaje. Evitá frases neutras o de manual
 "por supuesto"): decilo como lo diría alguien de acá ("uh perdón", "qué
 garrón", "me re alegro", "ah mirá", "obvio").
 Mensajes cortos, normalmente 1 oración y ocasionalmente 2.
+No cierres una idea en un solo mensaje: según qué tan importante es y cuánta
+profundidad merece, se desarrolla en varios mensajes y varios intercambios.
+Opinión, un detalle, una duda o una vivencia, de a poco y dejando lugar a que
+el otro reaccione, en vez de dar opinión, argumento y conclusión juntos. Lo
+trivial sí se resuelve rápido.
 Sin párrafos largos, ensayos, metáforas, coaching ni lenguaje terapéutico.
 
 7. No uses ¿ ni ¡. Evitá ":" como conector de frases. No abuses de "yo".
@@ -1553,6 +1561,13 @@ esta regla.
 estilo aprendido: no uses nunca nada de lo que figura en nunca_dice (ni
 variantes cercanas) y, al saludar en tu primer mensaje, usá alguna de las
 formas de saluda_asi.
+
+20. Si hay un bloque COMO_ESCRIBE_LA_PERSONA, son mensajes reales que escribió
+esta persona: copiá su FORMA de escribir (largo de los mensajes, mayúsculas,
+puntuación, abreviaturas, modismos, risas, emojis, qué tan directa o
+rodeada es) y reaccioná como reaccionaría ahí. Eso manda sobre el tono
+argentino genérico de la regla 6. No repitas sus frases tal cual ni su
+contenido, que corresponde a otras situaciones.
 
 EVITAR
 no_rellena_silencios
@@ -1625,6 +1640,12 @@ VALORES
 
     no_digo = perfil.get("no_digo") or []
     saludos = perfil.get("saludos") or []
+    muestras_voz = perfil.get("muestras_voz") or []
+    if muestras_voz:
+        contexto += "\n\nCOMO_ESCRIBE_LA_PERSONA\n" + "\n".join(
+            f'- {m["situacion"]}: "{m["texto"]}"' for m in muestras_voz
+        )
+
     if no_digo or saludos:
         ajustes = []
         if no_digo:
@@ -2238,6 +2259,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
             f"\n\n    TEMA PEDIDO PARA ESTE MENSAJE: tocá \"{temas_pedidos[evento]}\" de forma"
             " concreta y natural en lo que decís ahora (una referencia, una pregunta"
             " o una opinión puntual), sin anunciarlo ni cambiar de golpe de conversación."
+            " Abrilo sin cerrarlo: el desarrollo viene en los mensajes siguientes."
         )
 
     if etapa_info and etapa_info["etapa"] != "desconocidos":

@@ -233,6 +233,29 @@ def _limpiar_lista_ajustes(valor, maximo=10, largo=40):
     return limpios
 
 
+_PREGUNTAS_VOZ = [
+    ("estiloIniciar", "Cómo arranca una conversación con alguien que le gusta"),
+    ("estiloInvitar", "Cómo invita a salir a alguien"),
+    ("estiloResp1", 'Le escriben "Me molesta que siempre tardás en responder"'),
+    ("estiloResp2", 'Le escriben "Hoy tuve un día medio bajón la verdad, y vos?"'),
+    ("estiloResp3", 'Le escriben "¿Qué me dirías de salir el viernes a cenar?"'),
+    ("estiloResp4", 'Le escriben "¿Qué planes tenés para el finde?"'),
+    ("estiloResp5", 'Le escriben "¿Cómo estuvo tu semana?"'),
+]
+
+
+def _muestras_voz(etapa7):
+    """Respuestas textuales de la etapa 7 ("Hablá como vos"): son lo único
+    que la persona escribió tal cual lo diría, así que van al prompt como
+    ejemplos de su voz."""
+    muestras = []
+    for campo, situacion in _PREGUNTAS_VOZ:
+        texto = " ".join(str(etapa7.get(campo) or "").split())[:240]
+        if texto:
+            muestras.append({"situacion": situacion, "texto": texto})
+    return muestras
+
+
 def _mezclar_ajustes_usuario(db, uid, perfil):
     """Pronombres y "Corregir gemelo" (gemelo_no_digo / gemelo_saludos) viven
     en usuarios/{uid}, no en el perfil del gemelo -- los edita la persona
@@ -249,6 +272,10 @@ def _mezclar_ajustes_usuario(db, uid, perfil):
         perfil["no_digo"] = no_digo
     if saludos:
         perfil["saludos"] = saludos
+    setup = db.collection("usuarios").document(uid).collection("gemelo_setup").document("data").get()
+    muestras = _muestras_voz((setup.to_dict() or {}).get("etapa7") or {}) if setup.exists else []
+    if muestras:
+        perfil["muestras_voz"] = muestras
 
 
 def _fecha_ar(offset_dias=0):
