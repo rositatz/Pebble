@@ -1140,6 +1140,21 @@ def _dividir_mensajes(texto):
     return [p for p in partes if p] or [texto.strip()]
 
 
+_RE_SUSPENSIVOS = re.compile(r"\s*(?:\.{2,}|…)")
+
+
+def _un_suspensivo(texto, usados):
+    """Deja pasar un solo "..." por charla (usados es un contador mutable
+    compartido entre mensajes); los demás se reemplazan por una coma, o se
+    sacan si estaban al final."""
+    def reemplazo(m):
+        if usados[0] == 0:
+            usados[0] = 1
+            return m.group(0)
+        return "" if not texto[m.end():].strip() else ","
+    return _RE_SUSPENSIVOS.sub(reemplazo, texto)
+
+
 def _reescribir_sin_pregunta_final(llamada):
     """Vuelve a pedir el último mensaje de la charla cuando quedó terminando
     en pregunta (nadie la va a responder)."""
@@ -1517,7 +1532,8 @@ Sin párrafos largos, ensayos, metáforas, coaching ni lenguaje terapéutico.
 
 7. No uses ¿ ni ¡. Evitá ":" como conector de frases. No abuses de "yo".
 Nunca termines el mensaje completo con un punto final (los puntos entre
-oraciones del mismo mensaje sí van).
+oraciones del mismo mensaje sí van). Puntos suspensivos ("...") casi nunca:
+como mucho uno en toda la charla.
 
 8. Saludá solo en el primer mensaje. Si ya existe historial, continuá desde
 donde quedó.
@@ -2287,7 +2303,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         {"role": "system", "content": contexto_escenario + prompt_1_contexto + instruccion_inicio},
     ])
     ultimo_mensaje, _ = _extraer_cierre(response_inicio.choices[0].message.content)
-    partes_inicio = _dividir_mensajes(ultimo_mensaje)
+    suspensivos_usados = [0]
+    partes_inicio = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(ultimo_mensaje)]
 
     print(f"{nombre1}: {ultimo_mensaje}\n")
 
@@ -2363,7 +2380,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         response_2 = _completar_chat_gemelo(llamada_2)
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
-        partes_2 = _dividir_mensajes(msg_2)
+        partes_2 = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(msg_2)]
         repetitivo_2 = any(
             _es_repetitivo(parte, [m["content"] for m in historial_chat]) for parte in partes_2
         )
@@ -2407,7 +2424,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         response_1 = _completar_chat_gemelo(llamada_1)
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
-        partes_1 = _dividir_mensajes(msg_1)
+        partes_1 = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(msg_1)]
         repetitivo_1 = any(
             _es_repetitivo(parte, [m["content"] for m in historial_chat]) for parte in partes_1
         )
