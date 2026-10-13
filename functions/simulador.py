@@ -1136,7 +1136,12 @@ def _dividir_mensajes(texto):
     generar_prompt_gemelo) -- devuelve SIEMPRE una lista con al menos un
     elemento. Se llama DESPUÉS de _extraer_cierre (la marca de cierre va
     al final de todo el texto, no le importan los [MSG] del medio)."""
-    partes = [p.replace("¿", "").replace("¡", "").strip() for p in texto.split(_MARCA_MULTIMENSAJE)]
+    limpio = texto.replace("¿", "").replace("¡", "").replace("\r", "")
+    partes = [
+        linea.strip()
+        for bloque in limpio.split(_MARCA_MULTIMENSAJE)
+        for linea in bloque.split("\n")
+    ]
     return [p for p in partes if p] or [texto.strip()]
 
 
