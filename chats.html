@@ -2618,11 +2618,23 @@
             try {
               const historial = md.msgs
                 .slice(0, -1)
-                .slice(-20)
-                .map((m) => ({
-                  role: m.from === "me" ? "user" : "assistant",
-                  content: m.text,
-                }));
+                .slice(-60)
+                .map((m) => {
+                  const f =
+                    m.fecha && typeof m.fecha.toDate === "function"
+                      ? m.fecha.toDate()
+                      : m.fecha instanceof Date
+                        ? m.fecha
+                        : null;
+                  const dia = f
+                    ? `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`
+                    : undefined;
+                  return {
+                    role: m.from === "me" ? "user" : "assistant",
+                    content: m.text,
+                    dia,
+                  };
+                });
               partes = await window._llamarChatGemeloMatch(
                 persona,
                 text,
