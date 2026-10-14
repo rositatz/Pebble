@@ -1047,16 +1047,22 @@ def _mandar_correo_soporte(asunto, cuerpo):
     clave = _clave_correo()
     if not clave:
         print("_mandar_correo_soporte: falta el secreto PEBBLE_MAIL_PASSWORD, no se puede enviar.")
-        return False
+        return False, "falta la contraseña del correo en el servidor"
     try:
         with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as servidor:
             servidor.starttls()
-            servidor.login(remitente, clave)
+            servidor.login(remitente, clave.strip())
             servidor.send_message(msg)
-        return True
+        return True, ""
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"_mandar_correo_soporte: autenticación rechazada: {e.smtp_code}")
+        return False, "Gmail rechazó la contraseña (tiene que ser una contraseña de aplicación)"
+    except (smtplib.SMTPConnectError, OSError) as e:
+        print(f"_mandar_correo_soporte: sin conexión SMTP: {type(e).__name__}")
+        return False, "no se pudo conectar con el servidor de correo"
     except Exception as e:
-        print(f"_mandar_correo_soporte: error al enviar: {e}")
-        return False
+        print(f"_mandar_correo_soporte: error al enviar: {type(e).__name__}")
+        return False, f"error de envío ({type(e).__name__})"
 
 
 def _avisos_recientes(db, coleccion, uid):
@@ -1144,7 +1150,7 @@ def reportar_usuario(request: https_fn.CallableRequest):
         "bloqueado": bool(data.get("bloquear")),
         "creado": firestore.SERVER_TIMESTAMP,
     })
-    aviso_enviado = _mandar_correo_soporte(
+    aviso_enviado, motivo_fallo = _mandar_correo_soporte(
         f"[Pebble] Reporte: {_MOTIVOS_REPORTE[motivo]}",
         f"Nuevo reporte ({ref.id})\n\n"
         f"Motivo: {_MOTIVOS_REPORTE[motivo]}\n"
@@ -1154,7 +1160,7 @@ def reportar_usuario(request: https_fn.CallableRequest):
         f"Conexión: {par_ref.id}\n"
         f"Lo bloqueó: {'sí' if data.get('bloquear') else 'no'}\n"
     )
-    ref.update({"aviso_enviado": aviso_enviado})
+    ref.update({"aviso_enviado": aviso_enviado, "aviso_error": motivo_fallo})
     if data.get("bloquear"):
         _bloquear_par(par_ref, uid)
     return {"ok": True}
@@ -1182,15 +1188,15 @@ def contactar_soporte(request: https_fn.CallableRequest):
     email = email if "@" in email else (request.auth.token.get("email") or "(sin email)")
     ref = db.collection("contactos_soporte").document()
     ref.set({"uid": uid, "asunto": asunto, "mensaje": mensaje, "creado": firestore.SERVER_TIMESTAMP})
-    enviado = _mandar_correo_soporte(
+    enviado, motivo_fallo = _mandar_correo_soporte(
         f"[Pebble] Soporte: {asunto}",
         f"Mensaje de soporte ({ref.id})\n\nDe: {nombre} <{email}> uid={uid}\n\n{mensaje}\n"
     )
-    ref.update({"correo_enviado": enviado})
+    ref.update({"correo_enviado": enviado, "correo_error": motivo_fallo})
     if not enviado:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.UNAVAILABLE,
-            "No pudimos enviar tu mensaje ahora. Probá de nuevo en un rato."
+            f"No pudimos enviar tu mensaje ahora ({motivo_fallo})."
         )
     return {"ok": True}
 
