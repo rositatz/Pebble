@@ -8,6 +8,8 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import smtplib
+import urllib.request
+import urllib.error
 from email.message import EmailMessage
 from dotenv import load_dotenv
 
@@ -26,6 +28,7 @@ firebase_admin.initialize_app()
 
 LLM_SECRETS = ["OPENAI_API_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
 MAIL_SECRETS = ["PEBBLE_MAIL_PASSWORD"]
+SOPORTE_SECRETS = ["PEBBLE_MAIL_PASSWORD", "RESEND_API_KEY"]
 
 
 def _clave_correo():
@@ -1036,9 +1039,45 @@ _MOTIVOS_REPORTE = {
 _MAX_AVISOS_SOPORTE_POR_DIA = 10
 
 
-def _mandar_correo_soporte(asunto, cuerpo):
+def _mandar_por_resend(asunto, cuerpo, destino, responder_a=None):
+    datos = {
+        "from": os.getenv("RESEND_REMITENTE") or "Pebble <onboarding@resend.dev>",
+        "to": [destino],
+        "subject": asunto,
+        "text": cuerpo,
+    }
+    if responder_a and "@" in responder_a:
+        datos["reply_to"] = responder_a
+    pedido = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(datos).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {os.getenv('RESEND_API_KEY', '').strip()}",
+            "Content-Type": "application/json",
+            "User-Agent": "pebble-functions/1.0",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(pedido, timeout=20) as r:
+            return 200 <= r.status < 300, ""
+    except urllib.error.HTTPError as e:
+        try:
+            detalle = json.loads(e.read().decode("utf-8")).get("message", "")
+        except Exception:
+            detalle = ""
+        print(f"_mandar_por_resend: HTTP {e.code} {detalle}")
+        return False, f"Resend respondió {e.code}: {detalle[:160]}".strip()
+    except Exception as e:
+        print(f"_mandar_por_resend: {type(e).__name__}")
+        return False, f"no se pudo conectar con Resend ({type(e).__name__})"
+
+
+def _mandar_correo_soporte(asunto, cuerpo, responder_a=None):
     remitente = "pebble@pebble.ar"
     destino = os.getenv("SOPORTE_EMAIL") or remitente
+    if (os.getenv("RESEND_API_KEY") or "").strip():
+        return _mandar_por_resend(asunto, cuerpo, destino, responder_a)
     msg = EmailMessage()
     msg["Subject"] = asunto
     msg["From"] = remitente
@@ -1122,7 +1161,7 @@ def bloquear_usuario(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(timeout_sec=60, secrets=MAIL_SECRETS)
+@https_fn.on_call(timeout_sec=60, secrets=SOPORTE_SECRETS)
 def reportar_usuario(request: https_fn.CallableRequest):
     """Guarda el reporte en 'reportes' (solo lo lee el admin) y le manda un
     mail al soporte. Opcionalmente bloquea a la persona en el mismo paso."""
@@ -1171,7 +1210,7 @@ def reportar_usuario(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(timeout_sec=60, secrets=MAIL_SECRETS)
+@https_fn.on_call(timeout_sec=60, secrets=SOPORTE_SECRETS)
 def contactar_soporte(request: https_fn.CallableRequest):
     """'Escribinos a soporte' desde la app: guarda el mensaje y se lo manda
     por mail al soporte, con los datos de la cuenta para poder responder."""
@@ -1195,7 +1234,8 @@ def contactar_soporte(request: https_fn.CallableRequest):
     ref.set({"uid": uid, "asunto": asunto, "mensaje": mensaje, "creado": firestore.SERVER_TIMESTAMP})
     enviado, motivo_fallo = _mandar_correo_soporte(
         f"[Pebble] Soporte: {asunto}",
-        f"Mensaje de soporte ({ref.id})\n\nDe: {nombre} <{email}> uid={uid}\n\n{mensaje}\n"
+        f"Mensaje de soporte ({ref.id})\n\nDe: {nombre} <{email}> uid={uid}\n\n{mensaje}\n",
+        responder_a=email,
     )
     ref.update({"correo_enviado": enviado, "correo_error": motivo_fallo})
     if not enviado:

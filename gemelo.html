@@ -1500,7 +1500,6 @@
       async function mostrarResultado(card, m, res) {
         const pct = Math.round(((res.score && res.score.compatibilidad_total) || 0) * 100);
         const suyo = await colorDe(m.uid);
-        const resumen = res.resumen || "No hubo un resumen para esta simulación.";
         card.innerHTML = `
           <div class="gm-res-head">
             <div class="gm-pair"><span class="pinguino" style="--pg:${colorSeguro(colorActual)}"></span><span class="pinguino" style="--pg:${colorSeguro(suyo)}"></span></div>
@@ -1508,7 +1507,6 @@
             <div class="gm-res-score">${pct}%<small>afinidad</small></div>
           </div>
           <span class="gm-res-badge ${res.superaUmbral ? "" : "no"}">${res.superaUmbral ? "Superó el umbral de match" : "No llegó al umbral en esta simulación"}</span>
-          <p class="gm-res-txt">${esc(resumen)}</p>
           <a class="gm-res-link" href="./chats.html?persona=${encodeURIComponent(m.uid)}&modo=gemelo&sim=1${res.simId ? `&simId=${encodeURIComponent(res.simId)}` : ""}">Ver la conversación completa</a>`;
       }
 
