@@ -705,6 +705,127 @@
         animation: spin 0.7s linear infinite;
         flex-shrink: 0;
       }
+      .gm-tut {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .gm-tut.open {
+        display: flex;
+      }
+      .gm-tut-card {
+        position: relative;
+        background: var(--surf-1);
+        color: var(--text-primary);
+        border-radius: 22px;
+        padding: 26px 22px 20px;
+        width: 100%;
+        max-width: 420px;
+        max-height: 90vh;
+        overflow: auto;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+      }
+      .gm-tut-skip {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+      .gm-tut-step {
+        display: none;
+      }
+      .gm-tut-step.active {
+        display: block;
+      }
+      .gm-tut-ico {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: rgba(255, 117, 31, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+      }
+      .gm-tut-title {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin-bottom: 8px;
+      }
+      .gm-tut-txt {
+        font-size: 0.9rem;
+        line-height: 1.55;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+      }
+      .gm-tut-cmp {
+        display: grid;
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .gm-tut-box {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 0.84rem;
+        line-height: 1.45;
+        color: var(--text-secondary);
+      }
+      .gm-tut-box b {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--text-primary);
+      }
+      .gm-tut-box.si {
+        border-color: var(--orange);
+        background: rgba(255, 117, 31, 0.08);
+      }
+      .gm-tut-list {
+        padding-left: 18px;
+        margin: 0 0 10px;
+        font-size: 0.88rem;
+        line-height: 1.65;
+        color: var(--text-secondary);
+      }
+      .gm-tut-dots {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        margin: 16px 0 14px;
+      }
+      .gm-tut-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.18);
+      }
+      .gm-tut-dot.active {
+        background: var(--orange);
+      }
+      .gm-tut-btn {
+        width: 100%;
+        padding: 13px;
+        border: none;
+        border-radius: 14px;
+        background: var(--surf-dark);
+        color: var(--text-inv);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
       .gm-toast {
         position: fixed;
         left: 50%;
@@ -991,6 +1112,7 @@
         <div class="gm-col" id="escenario">
           <section class="gm-card" aria-label="Crear nuevo escenario">
             <h2 class="gm-card-title">Crear nuevo escenario</h2>
+            <button type="button" class="gm-link-btn" id="verTutorial" style="margin: -6px 0 12px">¿Cómo funciona?</button>
 
             <div class="gm-field">
               <input class="gm-title-input" id="escTitulo" type="text" maxlength="60" placeholder="Primera cita" aria-label="Título del escenario" autocomplete="off" />
@@ -1025,6 +1147,59 @@
         </div>
       </div>
     </main>
+
+    <div class="gm-tut" id="gmTut" role="dialog" aria-modal="true" aria-label="Cómo funcionan las simulaciones">
+      <div class="gm-tut-card">
+        <button type="button" class="gm-tut-skip" id="tutSaltar">Saltar</button>
+
+        <div class="gm-tut-step active" data-paso="1">
+          <div class="gm-tut-ico" aria-hidden="true">🧪</div>
+          <div class="gm-tut-title">Para qué sirve esta pantalla</div>
+          <p class="gm-tut-txt">Acá le pedís a tu gemelo que viva una <b>situación</b> con el gemelo de alguien con quien hiciste match. Los dos gemelos la actúan solos, y vos ves cómo se llevarían y cuánta afinidad hay en ese momento.</p>
+          <p class="gm-tut-txt">También podés editar tu gemelo: cambiar su color y corregir lo que dice y cómo saluda.</p>
+        </div>
+
+        <div class="gm-tut-step" data-paso="2">
+          <div class="gm-tut-ico" aria-hidden="true">💬</div>
+          <div class="gm-tut-title">Simulación o chat: no es lo mismo</div>
+          <div class="gm-tut-cmp">
+            <div class="gm-tut-box"><b>Chat con el gemelo del otro</b>Está en Chats. Hablás <b style="display:inline">vos</b> con su gemelo para conocerlo, preguntarle cosas y practicar.</div>
+            <div class="gm-tut-box si"><b>Simulación (esta pantalla)</b>Hablan <b style="display:inline">los dos gemelos entre ellos</b>, dentro de una situación que vos elegís.</div>
+          </div>
+          <p class="gm-tut-txt">Si lo que querés es charlar o hacerle una pregunta, usá el chat. Las simulaciones son para ver cómo se llevan en una situación.</p>
+        </div>
+
+        <div class="gm-tut-step" data-paso="3">
+          <div class="gm-tut-ico" aria-hidden="true">✍️</div>
+          <div class="gm-tut-title">Cómo pedir una</div>
+          <ol class="gm-tut-list">
+            <li>Elegí con qué gemelo (de tus matches).</li>
+            <li>Ponele un <b>título</b> al escenario, por ejemplo "Primer viaje juntos".</li>
+            <li>Sumá una <b>descripción</b> corta si querés (opcional).</li>
+            <li>Elegí hasta 5 <b>temas a tocar</b>, de <b>2 palabras como máximo</b> cada uno, por ejemplo "Planes a futuro" o "Hijos".</li>
+            <li>Tocá <b>Crear simulación</b>. Puede tardar uno o dos minutos.</li>
+          </ol>
+        </div>
+
+        <div class="gm-tut-step" data-paso="4">
+          <div class="gm-tut-ico" aria-hidden="true">💡</div>
+          <div class="gm-tut-title">Ideas de situaciones</div>
+          <ul class="gm-tut-list">
+            <li>Una cena de aniversario</li>
+            <li>Un viaje juntos</li>
+            <li>Una discusión por plata</li>
+            <li>Conocer a la familia del otro</li>
+            <li>Una mudanza en pareja</li>
+          </ul>
+          <p class="gm-tut-txt">Si dejás todo vacío, tu gemelo elige una situación. Al terminar, "Ver la conversación completa" te lleva a esa simulación. Este tutorial lo podés volver a ver con "¿Cómo funciona?".</p>
+        </div>
+
+        <div class="gm-tut-dots" aria-hidden="true">
+          <span class="gm-tut-dot active"></span><span class="gm-tut-dot"></span><span class="gm-tut-dot"></span><span class="gm-tut-dot"></span>
+        </div>
+        <button type="button" class="gm-tut-btn" id="tutSiguiente">Siguiente</button>
+      </div>
+    </div>
 
     <div class="gm-toast" id="toast" role="status"></div>
 
@@ -1303,11 +1478,13 @@
       }
 
       /* ── Chips editables (corregir gemelo y temas del escenario) ── */
-      function crearEditorChips({ host, items, max, largo, placeholder, onChange }) {
+      function crearEditorChips({ host, items, max, largo, placeholder, onChange, maxPalabras }) {
         let inputEl = null;
 
         function limpiar(s) {
-          return s.replace(/\s+/g, " ").trim().slice(0, largo);
+          let t = s.replace(/\s+/g, " ").trim();
+          if (maxPalabras) t = t.split(" ").slice(0, maxPalabras).join(" ");
+          return t.slice(0, largo);
         }
 
         function render() {
@@ -1366,6 +1543,15 @@
           inputEl.className = "gm-add-input";
           inputEl.maxLength = largo;
           inputEl.placeholder = placeholder;
+          if (maxPalabras) {
+            inputEl.addEventListener("input", () => {
+              const palabras = inputEl.value.trim().split(/\s+/).filter(Boolean);
+              if (palabras.length > maxPalabras) {
+                inputEl.value = palabras.slice(0, maxPalabras).join(" ");
+                toast(`Máximo ${maxPalabras} palabras por tema`);
+              }
+            });
+          }
           inputEl.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -1545,6 +1731,50 @@
         btn.textContent = "Crear simulación";
       }
 
+      /* ── Tutorial de la primera vez ── */
+      const TUT_PASOS = 4;
+      let tutPaso = 1;
+      let tutorialVisto = false;
+
+      function tutActualizar() {
+        document.querySelectorAll("#gmTut .gm-tut-step").forEach((el) => {
+          el.classList.toggle("active", Number(el.dataset.paso) === tutPaso);
+        });
+        document.querySelectorAll("#gmTut .gm-tut-dot").forEach((el, i) => {
+          el.classList.toggle("active", i + 1 === tutPaso);
+        });
+        $("tutSiguiente").textContent = tutPaso === TUT_PASOS ? "Entendido" : "Siguiente";
+      }
+
+      function abrirTutorial() {
+        tutPaso = 1;
+        tutActualizar();
+        $("gmTut").classList.add("open");
+        document.body.style.overflow = "hidden";
+      }
+
+      async function cerrarTutorial() {
+        $("gmTut").classList.remove("open");
+        document.body.style.overflow = "";
+        if (tutorialVisto || !uid) return;
+        tutorialVisto = true;
+        try {
+          await setDoc(doc(db, "usuarios", uid), { gemelo_tutorial_visto: true }, { merge: true });
+        } catch (e) {
+          console.warn("No se pudo guardar que ya vio el tutorial:", e);
+        }
+      }
+
+      $("tutSiguiente").addEventListener("click", () => {
+        if (tutPaso >= TUT_PASOS) cerrarTutorial();
+        else {
+          tutPaso += 1;
+          tutActualizar();
+        }
+      });
+      $("tutSaltar").addEventListener("click", cerrarTutorial);
+      $("verTutorial").addEventListener("click", abrirTutorial);
+
       /* ── Arranque ── */
       armarSwatches();
       armarEtapas();
@@ -1557,8 +1787,8 @@
         placeholder: "Cómo saludás", onChange: guardarAjustes,
       });
       const editorTemas = crearEditorChips({
-        host: $("chipsTemas"), items: temas, max: 5, largo: 30,
-        placeholder: "Un tema",
+        host: $("chipsTemas"), items: temas, max: 5, largo: 30, maxPalabras: 2,
+        placeholder: "Máx. 2 palabras",
       });
       $("agregarTema").addEventListener("click", () => editorTemas.abrirInput());
       $("escDesc").addEventListener("input", (e) => {
@@ -1611,6 +1841,8 @@
             saludos.splice(0, saludos.length, ...(Array.isArray(d.gemelo_saludos) ? d.gemelo_saludos.filter((x) => typeof x === "string") : []));
             editorNoDigo.render();
             editorSaludos.render();
+            tutorialVisto = d.gemelo_tutorial_visto === true;
+            if (!tutorialVisto) setTimeout(abrirTutorial, 400);
             if (d.gemelo_completado === false) {
               nota = "Tu gemelo todavía no está completo. Seguí desde la etapa donde quedaste.";
             }

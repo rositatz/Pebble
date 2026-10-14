@@ -1194,6 +1194,37 @@ def _turno_sin_repeticion(llamada, msg, cierre, partes, previos, usados):
     return msg, cierre, partes, True
 
 
+_RE_ANECDOTA = re.compile(
+    r"\b(?:una vez|el otro d[ií]a|(?:el|este) (?:finde|fin de semana|verano|invierno|año|mes) pasado"
+    r"|hace (?:poco|unos? (?:d[ií]as|meses|años|ratos?))|cuando (?:era|fui|estuve|viv[ií]|estaba|me fui)"
+    r"|me acuerdo (?:de|cuando)|me pas[oó] (?:que|una vez)|una noche (?:que|estábamos))\b",
+    re.IGNORECASE,
+)
+
+_AVISO_ANECDOTA = (
+    "Tu mensaje cuenta una anécdota o un recuerdo concreto que no figura en tu"
+    " perfil, y eso es inventado. Escribí otro mensaje que responda a lo último"
+    " que dijo el otro con tus gustos, opiniones y forma de ser, sin historias"
+    " puntuales ni recuerdos (nada de 'una vez', 'el otro día', 'cuando fui')."
+)
+
+
+def _turno_sin_anecdota(llamada, msg, cierre, partes, usados):
+    """Si el gemelo contó una anécdota inventada, pide una versión nueva una
+    vez; si la nueva tampoco sirve, deja la original (no se corta la charla)."""
+    if not any(_RE_ANECDOTA.search(p) for p in partes):
+        return msg, cierre, partes
+    try:
+        r = _completar_chat_gemelo(llamada + [{"role": "system", "content": _AVISO_ANECDOTA}])
+        msg2, cierre2 = _extraer_cierre(r.choices[0].message.content)
+        partes2 = [_un_suspensivo(p, usados) for p in _dividir_mensajes(msg2)]
+        if partes2 and not any(_RE_ANECDOTA.search(p) for p in partes2):
+            return msg2, cierre2, partes2
+    except Exception as e:
+        print(f"_turno_sin_anecdota: no se pudo regenerar el turno: {e}")
+    return msg, cierre, partes
+
+
 def _reescribir_sin_pregunta_final(llamada):
     """Vuelve a pedir el último mensaje de la charla cuando quedó terminando
     en pregunta (nadie la va a responder)."""
@@ -1670,6 +1701,12 @@ fija el escenario, si lo hay, sí vale.
 "TEMA:", títulos, etiquetas, prefijos o frases como "hablemos de" o "sobre
 el tema de". Entrá a cada tema con una pregunta, un comentario o una
 anécdota concreta, como en una charla real.
+
+25. Nunca cuentes anécdotas, recuerdos ni historias puntuales ("una vez...",
+"el otro día...", "cuando fui a...", "mi grupo de amigos y yo...") que no
+estén en tu perfil: son inventados. Hablá de tus gustos, tu forma de ser y
+tus opiniones en general, y para dar un ejemplo usá solo lo que figura en tu
+perfil. Salvo que el escenario indique una historia en común.
 
 EVITAR
 no_rellena_silencios
@@ -2281,6 +2318,7 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
     etapa_info = escenario_actual.get("etapa_info") or {}
     temas_pedidos = list(escenario_actual.get("temas") or [])
+    permite_historia = bool(etapa_info and etapa_info.get("etapa") != "desconocidos")
 
     instruccion_compat = instruccion_nivel_compatibilidad(
         perfil1, perfil2, UMBRAL_MATCH,
@@ -2472,6 +2510,10 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
         partes_2 = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(msg_2)]
+        if not permite_historia:
+            msg_2, cierre_2, partes_2 = _turno_sin_anecdota(
+                llamada_2, msg_2, cierre_2, partes_2, suspensivos_usados
+            )
         msg_2, cierre_2, partes_2, repetitivo_2 = _turno_sin_repeticion(
             llamada_2, msg_2, cierre_2, partes_2,
             [m["content"] for m in historial_chat], suspensivos_usados,
@@ -2517,6 +2559,10 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
         partes_1 = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(msg_1)]
+        if not permite_historia:
+            msg_1, cierre_1, partes_1 = _turno_sin_anecdota(
+                llamada_1, msg_1, cierre_1, partes_1, suspensivos_usados
+            )
         msg_1, cierre_1, partes_1, repetitivo_1 = _turno_sin_repeticion(
             llamada_1, msg_1, cierre_1, partes_1,
             [m["content"] for m in historial_chat], suspensivos_usados,

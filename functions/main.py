@@ -842,7 +842,10 @@ def simular_situacion(request: https_fn.CallableRequest):
     uid2 = (data.get("otroUid") or "").strip()
     situacion = (data.get("situacion") or "").strip()
     titulo_escenario = (data.get("titulo") or "").strip()
-    temas_escenario = _limpiar_lista_ajustes(data.get("temas"), maximo=5, largo=30)
+    temas_escenario = [
+        " ".join(t.split()[:2])
+        for t in _limpiar_lista_ajustes(data.get("temas"), maximo=5, largo=30)
+    ]
 
     if not uid2:
         raise https_fn.HttpsError(
