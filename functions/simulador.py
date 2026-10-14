@@ -649,10 +649,11 @@ def _bloque_temas(temas):
         return ""
     lista = "\n".join(f"      - {t}" for t in temas)
     return f"""
-    TEMAS PEDIDOS POR LA PERSONA (obligatorios):
+    TEMAS QUE LA PERSONA QUIERE QUE APAREZCAN (obligatorios, pero sin nombrarlos como "tema"):
 {lista}
     Cada tema tiene que aparecer de forma concreta (una referencia, una pregunta
-    o una opinión puntual) antes de que termine la charla, y los temas con peso
+    o una opinión puntual) antes de que termine la charla, sin anunciarlo ni
+    nombrarlo como tema, y los temas con peso
     se desarrollan en varios mensajes en vez de resolverse de una. En cada
     mensaje se te va indicando cuál abrir o seguir.
     """
@@ -1136,7 +1137,8 @@ def _dividir_mensajes(texto):
     generar_prompt_gemelo) -- devuelve SIEMPRE una lista con al menos un
     elemento. Se llama DESPUÉS de _extraer_cierre (la marca de cierre va
     al final de todo el texto, no le importan los [MSG] del medio)."""
-    limpio = texto.replace("¿", "").replace("¡", "").replace("\r", "")
+    limpio = re.sub(r"(?im)^\s*tema\s*:.*$", "", texto)
+    limpio = limpio.replace("¿", "").replace("¡", "").replace("\r", "")
     partes = [
         linea.strip()
         for bloque in limpio.split(_MARCA_MULTIMENSAJE)
@@ -1552,13 +1554,14 @@ puede llevar los intercambios que haga falta. Variá la estructura de los
 mensajes; no repitas el mismo patrón seguido.
 
 6. Escribí como chat argentino informal. Usá "vos", nunca "tú".
-Hablá como un argentino promedio de tu edad: voseo (tenés, querés, fijate,
-decime), y expresiones cotidianas rioplatenses cuando salen solas (dale, de
-una, re, tipo, che, bancar, laburo, guita, un garrón, qué sé yo, ni idea).
-No exageres ni las fuerces en cada mensaje. Evitá frases neutras o de manual
-("lo siento", "entiendo cómo te sentís", "me alegra mucho", "qué interesante",
-"por supuesto"): decilo como lo diría alguien de acá ("uh perdón", "qué
-garrón", "me re alegro", "ah mirá", "obvio").
+Hablá con voseo (tenés, querés, fijate, decime) y un castellano rioplatense
+simple. Las expresiones y modismos solo pueden ser los que de verdad usa una
+persona argentina de TU edad (mirá la edad del perfil) y los que aparecen en
+COMO_ESCRIBE_LA_PERSONA, en AJUSTES_DE_LA_PERSONA o en el estilo aprendido.
+Nada de dichos, refranes ni expresiones de otra época, región o generación
+(por ejemplo "bajo el alero"). Si dudás de una expresión, no la uses: decilo
+con palabras comunes. Evitá también las frases neutras o de manual ("lo
+siento", "entiendo cómo te sentís", "qué interesante", "por supuesto").
 Mensajes cortos, normalmente 1 oración y ocasionalmente 2.
 Normalmente respondés con UN solo mensaje. Lo que pide una respuesta simple
 (un sí o no, un dato, una reacción, aceptar o rechazar algo) se contesta con
@@ -1662,6 +1665,11 @@ si no está en tu perfil ("sí, tengo clase hoy" sin que figure). Si te
 preguntan algo que no sabés de vos, decí que no lo tenés claro o que no sabés,
 o respondé en general, y no inventes un detalle para sonar natural. Lo que
 fija el escenario, si lo hay, sí vale.
+
+24. Nunca nombres ni anuncies de qué vas a hablar. Prohibido escribir "tema",
+"TEMA:", títulos, etiquetas, prefijos o frases como "hablemos de" o "sobre
+el tema de". Entrá a cada tema con una pregunta, un comentario o una
+anécdota concreta, como en una charla real.
 
 EVITAR
 no_rellena_silencios
@@ -2310,6 +2318,8 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
     Tono:
     {escenario_actual["tono"]}
     {instruccion_compat}
+    El título del escenario es solo una etiqueta para vos: no lo repitas ni lo
+    cites en la charla.
     IMPORTANTE sobre cómo jugar este escenario: esto es una SIMULACIÓN de
     la situación pasando ahora mismo, en tiempo real, dentro de esta
     charla -- no es una conversación EN LA QUE HABLAN SOBRE la situación
@@ -2351,10 +2361,12 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
         if evento >= len(temas_pedidos):
             return ""
         return (
-            f"\n\n    TEMA PEDIDO PARA ESTE MENSAJE: tocá \"{temas_pedidos[evento]}\" de forma"
-            " concreta y natural en lo que decís ahora (una referencia, una pregunta"
-            " o una opinión puntual), sin anunciarlo ni cambiar de golpe de conversación."
-            " Abrilo sin cerrarlo: el desarrollo viene en los mensajes siguientes."
+            f"\n\n    INDICACIÓN INTERNA PARA ESTE MENSAJE (no la menciones ni la copies): llevá"
+            f" la charla hacia \"{temas_pedidos[evento]}\" con algo concreto y natural"
+            " (una pregunta, un comentario o una vivencia), como lo haría una persona"
+            " que sigue la conversación. Nunca nombres el tema ni lo anuncies, y no"
+            " escribas la palabra \"tema\". Abrilo sin cerrarlo: el desarrollo viene"
+            " en los mensajes siguientes."
         )
 
     if etapa_info and etapa_info["etapa"] != "desconocidos":
@@ -2618,6 +2630,8 @@ def armar_estado_par_batch(uid1, perfil1, uid2, perfil2, usuario_1, usuario_2, d
     Tono:
     {escenario_actual["tono"]}
     {instruccion_compat}
+    El título del escenario es solo una etiqueta para vos: no lo repitas ni lo
+    cites en la charla.
     IMPORTANTE sobre cómo jugar este escenario: esto es una SIMULACIÓN de
     la situación pasando ahora mismo, en tiempo real, dentro de esta
     charla -- no es una conversación EN LA QUE HABLAN SOBRE la situación
