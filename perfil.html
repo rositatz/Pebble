@@ -3378,41 +3378,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             </div>
             <div class="sheet-row">
               <div class="sheet-row-info">
-                <span class="sheet-row-label">Mensajes nuevos</span>
-                <span class="sheet-row-desc"
-                  >Recibís una notificación cuando alguien te escribe</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="notifMensajes"
-                  checked
-                />
-                <label class="toggle-label" for="notifMensajes"></label>
-              </div>
-            </div>
-            <div class="sheet-row">
-              <div class="sheet-row-info">
-                <span class="sheet-row-label">Actividad de mi gemelo</span>
-                <span class="sheet-row-desc"
-                  >Cuando tu gemelo digital tiene novedades o
-                  conversaciones</span
-                >
-              </div>
-              <div class="toggle-wrap">
-                <input
-                  type="checkbox"
-                  class="toggle-input"
-                  id="notifGemelo"
-                  checked
-                />
-                <label class="toggle-label" for="notifGemelo"></label>
-              </div>
-            </div>
-            <div class="sheet-row">
-              <div class="sheet-row-info">
                 <span class="sheet-row-label">Novedades de Pebble</span>
                 <span class="sheet-row-desc"
                   >Actualizaciones, mejoras y tips de la app</span
@@ -3431,6 +3396,16 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           <button class="sheet-btn-save" onclick="saveNotificaciones()">
             Guardar preferencias
           </button>
+          <button
+            class="sheet-btn-outline"
+            type="button"
+            id="btnProbarMail"
+            style="margin-top: 10px"
+            onclick="probarMail()"
+          >
+            Enviarme un mail de prueba
+          </button>
+          <p id="probarMailEstado" style="font-size: 0.82rem; margin: 8px 0 0; display: none"></p>
         </div>
       </div>
     </div>
@@ -4437,11 +4412,33 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
 
       // Guarda las preferencias de notificaciones del usuario (matches, mensajes, gemelo, novedades)
       // Lee el estado de cada toggle y los persiste en Firestore
+      async function probarMail() {
+        const btn = document.getElementById("btnProbarMail");
+        const estado = document.getElementById("probarMailEstado");
+        btn.disabled = true;
+        btn.textContent = "Enviando...";
+        estado.style.display = "block";
+        estado.style.color = "inherit";
+        estado.textContent = "";
+        try {
+          const res = await window._probarMail();
+          estado.textContent = `Listo, te mandamos un mail a ${res.email}. Si no lo ves, mirá en Spam.`;
+        } catch (e) {
+          console.error("probarMail:", e);
+          estado.style.color = "#c0392b";
+          estado.textContent =
+            e && e.message && !/^internal$/i.test(e.message)
+              ? e.message
+              : "No se pudo mandar el mail. Probá de nuevo.";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Enviarme un mail de prueba";
+        }
+      }
+
       function saveNotificaciones() {
         const data = {
           matches: document.getElementById("notifMatches").checked,
-          mensajes: document.getElementById("notifMensajes").checked,
-          gemelo: document.getElementById("notifGemelo").checked,
           novedades: document.getElementById("notifNovedades").checked,
         };
         if (typeof window._db_saveNotificaciones === "function")
@@ -4669,6 +4666,8 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       );
       window._contactarSoporte = async (asunto, mensaje) =>
         (await contactarSoporteCallable({ asunto, mensaje })).data;
+      const probarMailCallable = httpsCallable(functionsInstance, "probar_mail");
+      window._probarMail = async () => (await probarMailCallable({})).data;
 
       let uid = null;
 
@@ -5195,10 +5194,6 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             const n = d.notificaciones;
             if (n.matches !== undefined)
               document.getElementById("notifMatches").checked = n.matches;
-            if (n.mensajes !== undefined)
-              document.getElementById("notifMensajes").checked = n.mensajes;
-            if (n.gemelo !== undefined)
-              document.getElementById("notifGemelo").checked = n.gemelo;
             if (n.novedades !== undefined)
               document.getElementById("notifNovedades").checked = n.novedades;
           }

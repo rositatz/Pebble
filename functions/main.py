@@ -181,7 +181,7 @@ def _uids_pausados(db):
 def _mandar_correo(correo, titulo, texto, enlace_url):
     if (correo or "").strip().lower() in _CORREOS_DE_PRUEBA:
         print("_mandar_correo: cuenta de prueba, no se envía el correo.")
-        return
+        return False, "cuenta de prueba"
 
     if (os.getenv("RESEND_API_KEY") or "").strip():
         texto_seguro = _escapar_html(texto)
@@ -198,7 +198,7 @@ def _mandar_correo(correo, titulo, texto, enlace_url):
         )
         if not enviado:
             print(f"_mandar_correo: no se pudo enviar ({motivo})")
-        return
+        return enviado, motivo
 
     remitente = "pebble@pebble.ar"
     password = _clave_correo()
@@ -248,7 +248,12 @@ def _quiere_notif(db, uid, campo):
     "gemelo"/"novedades". El evento real (match, mensaje, etc.) se crea
     siempre; esto solo decide si se le avisa a esta persona en particular.
     Ante cualquier duda (error de lectura, nunca guardó preferencias) se
-    avisa igual -- los toggles nacen todos tildados en el sheet."""
+    avisa igual -- los toggles nacen todos tildados en el sheet.
+
+    Solo "matches" y "novedades" se pueden elegir en la app; cualquier otro
+    aviso (mensajes, actividad del gemelo) se crea siempre, sin leer nada."""
+    if campo not in ("matches", "novedades"):
+        return True
     try:
         data = db.collection("usuarios").document(uid).get().to_dict() or {}
         valor = (data.get("notificaciones") or {}).get(campo)
@@ -1246,6 +1251,47 @@ def reportar_usuario(request: https_fn.CallableRequest):
     if data.get("bloquear"):
         _bloquear_par(par_ref, uid)
     return {"ok": True}
+
+
+@https_fn.on_call(timeout_sec=60, secrets=MAIL_SECRETS)
+def probar_mail(request: https_fn.CallableRequest):
+    """Le manda a quien lo pide, y solo a su propio mail, el mismo mail que
+    recibe cuando hace match, para comprobar que los avisos llegan."""
+    if request.auth is None:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.UNAUTHENTICATED, "Hay que estar logueado.")
+    uid = request.auth.uid
+    db = firestore.client()
+    email = (request.auth.token.get("email") or "").strip()
+    if not email:
+        _, email = _datos_basicos(db, uid)
+    if "@" not in email:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
+            "Tu cuenta no tiene un mail asociado."
+        )
+    if _avisos_recientes(db, "pruebas_mail", uid) >= 5:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
+            "Ya mandaste varias pruebas hoy. Probá mañana."
+        )
+    db.collection("pruebas_mail").add({"uid": uid, "creado": firestore.SERVER_TIMESTAMP})
+    resultado = _mandar_correo(
+        correo=email,
+        titulo="¡Nuevo match con Alex! (mail de prueba)",
+        texto=(
+            "Este es un mail de prueba: así te avisamos cuando hacés match. "
+            "¡Buenas noticias! Tu gemelo virtual alcanzó un 82% de afinidad con Alex. "
+            "Ya podés ingresar a Pebble para ver la conversación."
+        ),
+        enlace_url=generar_enlace_app(accion="matches"),
+    )
+    enviado, motivo = resultado if isinstance(resultado, tuple) else (False, "no se pudo enviar")
+    if not enviado:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            f"No pudimos mandar el mail ({motivo})."
+        )
+    return {"ok": True, "email": email}
 
 
 @https_fn.on_call(timeout_sec=60, secrets=SOPORTE_SECRETS)
