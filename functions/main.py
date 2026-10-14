@@ -1,4 +1,5 @@
 import re
+import copy
 import random
 import datetime
 import hashlib
@@ -72,7 +73,7 @@ def _conexiones_match(db):
                 yield d
 
 
-def _score_promedio_simulaciones(par_ref, score_nuevo=None):
+def _score_promedio_simulaciones(par_ref, score_nuevo=None, datos_par=None):
     """Promedia el score de TODAS las simulaciones guardadas para este par
     (la del match original al hacerse match + cualquiera pedida después
     desde el chat con el gemelo) -- así el % que se muestra en
@@ -91,17 +92,35 @@ def _score_promedio_simulaciones(par_ref, score_nuevo=None):
     score_nuevo: si se pasa, se suma al promedio aunque el doc de esa
     simulación todavía no se haya guardado en Firestore (evita depender del
     orden de escritura -- no importa si esto se llama antes o después de
-    agregar el nuevo doc a la subcolección)."""
-    scores = [
-        doc.to_dict().get("score", {}).get("compatibilidad_total")
-        for doc in par_ref.collection("simulaciones").stream()
-    ]
-    scores = [s for s in scores if isinstance(s, (int, float))]
-    if score_nuevo is not None:
-        scores.append(score_nuevo)
-    if not scores:
+    agregar el nuevo doc a la subcolección).
+
+    datos_par: el documento del par ya leído (evita otra lectura). La
+    cantidad y la suma de scores se guardan en el par (sims_n / sims_suma)
+    para no releer todas las simulaciones, con sus conversaciones, cada vez;
+    la primera vez en un par que no los tiene se calculan recorriéndolas."""
+    datos = datos_par if datos_par is not None else (par_ref.get().to_dict() or {})
+    n, suma = datos.get("sims_n"), datos.get("sims_suma")
+    if isinstance(n, int) and isinstance(suma, (int, float)):
+        if score_nuevo is not None:
+            par_ref.set(
+                {"sims_n": firestore.Increment(1), "sims_suma": firestore.Increment(score_nuevo)},
+                merge=True,
+            )
+            n, suma = n + 1, suma + score_nuevo
+    else:
+        scores = [
+            doc.to_dict().get("score", {}).get("compatibilidad_total")
+            for doc in par_ref.collection("simulaciones").stream()
+        ]
+        scores = [x for x in scores if isinstance(x, (int, float))]
+        if score_nuevo is not None:
+            scores.append(score_nuevo)
+        n, suma = len(scores), sum(scores)
+        if n:
+            par_ref.set({"sims_n": n, "sims_suma": suma}, merge=True)
+    if not n:
         return score_nuevo
-    return sum(scores) / len(scores)
+    return suma / n
 
 
 def _crear_notificacion(db, uid, tipo, titulo, cuerpo, otro_uid=None, otro_nombre=None, accion=None):
@@ -221,7 +240,26 @@ def _quiere_notif(db, uid, campo):
         return True
 
 
+_CACHE_PERFILES = {}
+_TTL_PERFIL_SEG = 60
+
+
 def _obtener_o_generar_perfil(db, uid):
+    """Con cache corto en memoria de la instancia: en un chat con el gemelo
+    de otra persona cada mensaje volvía a leer los dos perfiles completos
+    (perfil + usuario + respuestas de la etapa 7)."""
+    en_cache = _CACHE_PERFILES.get(uid)
+    if en_cache and time.time() - en_cache[0] < _TTL_PERFIL_SEG:
+        return copy.deepcopy(en_cache[1])
+    perfil = _leer_o_generar_perfil(db, uid)
+    if perfil is not None:
+        if len(_CACHE_PERFILES) > 200:
+            _CACHE_PERFILES.clear()
+        _CACHE_PERFILES[uid] = (time.time(), copy.deepcopy(perfil))
+    return perfil
+
+
+def _leer_o_generar_perfil(db, uid):
     """Lee usuarios/{uid}/gemelo/perfil -- si todavía no existe pero el
     onboarding ya está completed:true, lo genera ahí mismo en vez de
     devolver None. generar_perfil_gemelo (el trigger de Firestore) hace este
@@ -891,7 +929,9 @@ def simular_situacion(request: https_fn.CallableRequest):
     # la compatibilidad general y no salte de una situación puntual a la
     # otra. Ver _score_promedio_simulaciones.
     score_promedio = _score_promedio_simulaciones(
-        par_ref, score_nuevo=registro["score"]["compatibilidad_total"]
+        par_ref,
+        score_nuevo=registro["score"]["compatibilidad_total"],
+        datos_par=par_doc.to_dict(),
     )
 
     payload = {
