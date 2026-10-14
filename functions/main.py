@@ -25,6 +25,11 @@ set_global_options(max_instances=10)
 firebase_admin.initialize_app()
 
 LLM_SECRETS = ["OPENAI_API_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+MAIL_SECRETS = ["PEBBLE_MAIL_PASSWORD"]
+
+
+def _clave_correo():
+    return os.getenv("PEBBLE_MAIL_PASSWORD") or os.getenv("CONTRASEÑA_PEBBLE")
 
 
 def _es_match(datos):
@@ -156,7 +161,7 @@ def _mandar_correo(correo, titulo, texto, enlace_url):
         return
 
     remitente = "pebble@pebble.ar"
-    password = os.getenv("CONTRASEÑA_PEBBLE")
+    password = _clave_correo()
 
     # 2. Configurar el mensaje
     msg = EmailMessage()
@@ -189,7 +194,7 @@ def _mandar_correo(correo, titulo, texto, enlace_url):
     # 4. Enviar usando el puerto 587 y starttls() que ya comprobaste que funciona
     try:
         # Usamos 'with' para que la conexión se cierre automáticamente al terminar
-        with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as servidor:
             servidor.starttls()
             servidor.login(remitente, password)
             servidor.send_message(msg)
@@ -422,7 +427,7 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
 
 
-@firestore_fn.on_document_written(document="conexiones/{parId}")
+@firestore_fn.on_document_written(document="conexiones/{parId}", secrets=MAIL_SECRETS)
 def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
     """Se dispara en cada escritura de conexiones/{parId} (el doc de chat
     compartido por las dos cuentas -- ver chats.html _db_agregarMensajeReal).
@@ -1039,10 +1044,14 @@ def _mandar_correo_soporte(asunto, cuerpo):
     msg["From"] = remitente
     msg["To"] = destino
     msg.set_content(cuerpo)
+    clave = _clave_correo()
+    if not clave:
+        print("_mandar_correo_soporte: falta el secreto PEBBLE_MAIL_PASSWORD, no se puede enviar.")
+        return False
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as servidor:
             servidor.starttls()
-            servidor.login(remitente, os.getenv("CONTRASEÑA_PEBBLE"))
+            servidor.login(remitente, clave)
             servidor.send_message(msg)
         return True
     except Exception as e:
@@ -1102,7 +1111,7 @@ def bloquear_usuario(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(timeout_sec=60)
+@https_fn.on_call(timeout_sec=60, secrets=MAIL_SECRETS)
 def reportar_usuario(request: https_fn.CallableRequest):
     """Guarda el reporte en 'reportes' (solo lo lee el admin) y le manda un
     mail al soporte. Opcionalmente bloquea a la persona en el mismo paso."""
@@ -1135,7 +1144,7 @@ def reportar_usuario(request: https_fn.CallableRequest):
         "bloqueado": bool(data.get("bloquear")),
         "creado": firestore.SERVER_TIMESTAMP,
     })
-    _mandar_correo_soporte(
+    aviso_enviado = _mandar_correo_soporte(
         f"[Pebble] Reporte: {_MOTIVOS_REPORTE[motivo]}",
         f"Nuevo reporte ({ref.id})\n\n"
         f"Motivo: {_MOTIVOS_REPORTE[motivo]}\n"
@@ -1145,12 +1154,13 @@ def reportar_usuario(request: https_fn.CallableRequest):
         f"Conexión: {par_ref.id}\n"
         f"Lo bloqueó: {'sí' if data.get('bloquear') else 'no'}\n"
     )
+    ref.update({"aviso_enviado": aviso_enviado})
     if data.get("bloquear"):
         _bloquear_par(par_ref, uid)
     return {"ok": True}
 
 
-@https_fn.on_call(timeout_sec=60)
+@https_fn.on_call(timeout_sec=60, secrets=MAIL_SECRETS)
 def contactar_soporte(request: https_fn.CallableRequest):
     """'Escribinos a soporte' desde la app: guarda el mensaje y se lo manda
     por mail al soporte, con los datos de la cuenta para poder responder."""
@@ -1172,10 +1182,16 @@ def contactar_soporte(request: https_fn.CallableRequest):
     email = email if "@" in email else (request.auth.token.get("email") or "(sin email)")
     ref = db.collection("contactos_soporte").document()
     ref.set({"uid": uid, "asunto": asunto, "mensaje": mensaje, "creado": firestore.SERVER_TIMESTAMP})
-    _mandar_correo_soporte(
+    enviado = _mandar_correo_soporte(
         f"[Pebble] Soporte: {asunto}",
         f"Mensaje de soporte ({ref.id})\n\nDe: {nombre} <{email}> uid={uid}\n\n{mensaje}\n"
     )
+    ref.update({"correo_enviado": enviado})
+    if not enviado:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.UNAVAILABLE,
+            "No pudimos enviar tu mensaje ahora. Probá de nuevo en un rato."
+        )
     return {"ok": True}
 
 
@@ -1627,7 +1643,7 @@ def _elegir_lote_diverso(pool, tamano_lote):
 @scheduler_fn.on_schedule(
     schedule="0 3 * * *",
     timezone="America/Argentina/Buenos_Aires",
-    secrets=LLM_SECRETS,
+    secrets=LLM_SECRETS + MAIL_SECRETS,
     timeout_sec=1800,  # 30 min -- el máximo permitido para funciones programadas
     memory=MemoryOption.MB_512,
 )
@@ -2046,7 +2062,7 @@ def _finalizar_par_de_batch(db, estado_par):
 @scheduler_fn.on_schedule(
     schedule="every 2 minutes",
     timezone="America/Argentina/Buenos_Aires",
-    secrets=LLM_SECRETS,
+    secrets=LLM_SECRETS + MAIL_SECRETS,
     timeout_sec=540,
     memory=MemoryOption.MB_512,
 )
@@ -2295,7 +2311,7 @@ MIN_MENSAJES_APRENDIZAJE = 10
 VENTANA_MENSAJES_APRENDIZAJE = 40
 
 
-@scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires")
+@scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires", secrets=MAIL_SECRETS)
 def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
     """Corre una vez por día (separado del batch pesado de las 3am) y genera
     el único tipo de aviso que queda acá:
