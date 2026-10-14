@@ -1646,6 +1646,11 @@
         gap: 10px;
         margin: 30px 0 16px;
       }
+      .sim-scenario-hit .sim-scenario-sep-badge {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #000;
+      }
       .sim-scenario-sep:first-of-type {
         margin-top: 14px;
       }
@@ -3376,7 +3381,7 @@
       /* ── Simulation overlay ── */
       // Abre el overlay que muestra la conversación previa entre los gemelos digitales
       // Construye el HTML de cada mensaje diferenciando "tu gemelo" del "gemelo de la otra persona"
-      function openSimulation() {
+      function openSimulation(simId) {
         if (!curPerson) return;
         const p = people[curPerson];
         // p.simulacion es un array por ESCENARIO (no un solo chat) -- antes
@@ -3398,7 +3403,7 @@
 
         escenarios.forEach((sim, i) => {
           const titulo = sim.escenario || `Escenario ${i + 1}`;
-          html += `<div class="sim-scenario-sep">
+          html += `<div class="sim-scenario-sep" data-sim-id="${esc(sim.id || "")}">
       <div class="sim-scenario-sep-line"></div>
       <span class="sim-scenario-sep-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
@@ -3431,10 +3436,22 @@
 
         inner.innerHTML = html;
         document.getElementById("simOverlay").classList.add("open");
-        // Scroll al inicio
-        document
+        // Scroll al inicio, o directo al escenario pedido (?simId=)
+        const body = document
           .getElementById("simOverlay")
-          .querySelector(".sim-body").scrollTop = 0;
+          .querySelector(".sim-body");
+        body.scrollTop = 0;
+        const sep =
+          typeof simId === "string" && simId
+            ? inner.querySelector(`[data-sim-id="${CSS.escape(simId)}"]`)
+            : null;
+        if (sep) {
+          body.scrollTop = Math.max(
+            sep.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 12,
+            0,
+          );
+          sep.classList.add("sim-scenario-hit");
+        }
       }
 
       // Cierra el overlay de simulación
@@ -3528,7 +3545,7 @@
           if (modo === "real" || modo === "gemelo") {
             switchPanelMode(modo);
           }
-          if (params.get("sim") === "1") openSimulation();
+          if (params.get("sim") === "1") openSimulation(params.get("simId") || "");
           // Sacamos el ?persona=/?modo= de la URL para que un refresh no
           // vuelva a abrir el chat si el usuario ya lo cerró.
           history.replaceState(null, "", location.pathname + location.hash);
@@ -3739,7 +3756,7 @@
                           orderBy("fecha", "asc"),
                         ),
                       );
-                      c.simulaciones = simSnap.docs.map((d) => d.data());
+                      c.simulaciones = simSnap.docs.map((d) => ({ ...d.data(), _id: d.id }));
                     } catch (e) {
                       simsOk = false;
                       c.simulaciones = previo ? previo.simulaciones : [];
@@ -3789,6 +3806,9 @@
                 // persona, no solo el último.
                 const simulacion = (c.simulaciones || [])
                   .filter((sim) => Array.isArray(sim.historial_chat))
+                  .sort((a, b) =>
+                    String(a.fecha || "") < String(b.fecha || "") ? -1 : 1,
+                  )
                   .map((sim) => {
                     const horaSim = sim.fecha
                       ? new Date(sim.fecha).toLocaleTimeString("es-AR", {
@@ -3797,6 +3817,7 @@
                         })
                       : "";
                     return {
+                      id: sim._id || "",
                       escenario: (sim.escenario && sim.escenario.titulo) || "",
                       mensajes: sim.historial_chat.map((msg) => ({
                         // msg.uid es lo confiable (agregado hace poco) -- antes

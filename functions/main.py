@@ -896,12 +896,13 @@ def simular_situacion(request: https_fn.CallableRequest):
         "actualizado": registro["fecha"],
     }
     payload = _con_creado(par_ref, payload)
-    par_ref.collection("simulaciones").add(registro)
+    _, sim_ref = par_ref.collection("simulaciones").add(registro)
     par_ref.set(payload, merge=True)
 
     _guardar_metricas_uso(db, "simulacion")
 
     return {
+        "simId": sim_ref.id,
         "resumen": registro["analisis"].get("resumen_interaccion", ""),
         "score": registro["score"],
         "superaUmbral": registro["supera_umbral"],

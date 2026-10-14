@@ -1509,7 +1509,7 @@
           </div>
           <span class="gm-res-badge ${res.superaUmbral ? "" : "no"}">${res.superaUmbral ? "Superó el umbral de match" : "No llegó al umbral en esta simulación"}</span>
           <p class="gm-res-txt">${esc(resumen)}</p>
-          <a class="gm-res-link" href="./chats.html?persona=${encodeURIComponent(m.uid)}&modo=gemelo&sim=1">Ver la conversación completa</a>`;
+          <a class="gm-res-link" href="./chats.html?persona=${encodeURIComponent(m.uid)}&modo=gemelo&sim=1${res.simId ? `&simId=${encodeURIComponent(res.simId)}` : ""}">Ver la conversación completa</a>`;
       }
 
       function mostrarError(card, m, err) {
