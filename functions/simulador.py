@@ -1160,6 +1160,38 @@ def _un_suspensivo(texto, usados):
     return _RE_SUSPENSIVOS.sub(reemplazo, texto)
 
 
+_AVISO_REPETICION = (
+    "Tu mensaje repitió algo que ya se dijo en la charla, por ejemplo lo que"
+    " acaba de decir el otro. Escribí otro con lo tuyo: respondé a lo último"
+    " que dijo con tus propias palabras, sin copiar ni repetir sus frases."
+)
+
+
+def _turno_sin_repeticion(llamada, msg, cierre, partes, previos, usados):
+    """Si el gemelo copió algo ya dicho (típico: repite el mensaje del otro),
+    pide una versión nueva una vez; si sigue repitiendo, descarta solo las
+    partes repetidas. Devuelve (msg, cierre, partes, sin_salida): sin_salida
+    es True únicamente si no quedó nada propio para mostrar."""
+    def repetidas(ps):
+        return [_es_repetitivo(p, previos) for p in ps]
+
+    marcas = repetidas(partes)
+    if not any(marcas):
+        return msg, cierre, partes, False
+    try:
+        r = _completar_chat_gemelo(llamada + [{"role": "system", "content": _AVISO_REPETICION}])
+        msg2, cierre2 = _extraer_cierre(r.choices[0].message.content)
+        partes2 = [_un_suspensivo(p, usados) for p in _dividir_mensajes(msg2)]
+        if not any(repetidas(partes2)):
+            return msg2, cierre2, partes2, False
+    except Exception as e:
+        print(f"_turno_sin_repeticion: no se pudo regenerar el turno: {e}")
+    propias = [p for p, repetida in zip(partes, marcas) if not repetida]
+    if propias:
+        return msg, cierre, propias, False
+    return msg, cierre, partes, True
+
+
 def _reescribir_sin_pregunta_final(llamada):
     """Vuelve a pedir el último mensaje de la charla cuando quedó terminando
     en pregunta (nadie la va a responder)."""
@@ -2428,8 +2460,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         msg_2, cierre_2 = _extraer_cierre(response_2.choices[0].message.content)
         partes_2 = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(msg_2)]
-        repetitivo_2 = any(
-            _es_repetitivo(parte, [m["content"] for m in historial_chat]) for parte in partes_2
+        msg_2, cierre_2, partes_2, repetitivo_2 = _turno_sin_repeticion(
+            llamada_2, msg_2, cierre_2, partes_2,
+            [m["content"] for m in historial_chat], suspensivos_usados,
         )
 
         print(f"{nombre2}: {msg_2}\n")
@@ -2472,8 +2505,9 @@ def simular_cita(uid1, perfil1, uid2, perfil2, turnos=5, escenario=0, memoria1=N
 
         msg_1, cierre_1 = _extraer_cierre(response_1.choices[0].message.content)
         partes_1 = [_un_suspensivo(p, suspensivos_usados) for p in _dividir_mensajes(msg_1)]
-        repetitivo_1 = any(
-            _es_repetitivo(parte, [m["content"] for m in historial_chat]) for parte in partes_1
+        msg_1, cierre_1, partes_1, repetitivo_1 = _turno_sin_repeticion(
+            llamada_1, msg_1, cierre_1, partes_1,
+            [m["content"] for m in historial_chat], suspensivos_usados,
         )
 
         print(f"{nombre1}: {msg_1}\n")
