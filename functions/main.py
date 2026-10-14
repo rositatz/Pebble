@@ -1277,47 +1277,6 @@ def reportar_usuario(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
-@https_fn.on_call(timeout_sec=60, secrets=MAIL_SECRETS)
-def probar_mail(request: https_fn.CallableRequest):
-    """Le manda a quien lo pide, y solo a su propio mail, el mismo mail que
-    recibe cuando hace match, para comprobar que los avisos llegan."""
-    if request.auth is None:
-        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.UNAUTHENTICATED, "Hay que estar logueado.")
-    uid = request.auth.uid
-    db = firestore.client()
-    email = (request.auth.token.get("email") or "").strip()
-    if not email:
-        _, email = _datos_basicos(db, uid)
-    if "@" not in email:
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.FAILED_PRECONDITION,
-            "Tu cuenta no tiene un mail asociado."
-        )
-    if _avisos_recientes(db, "pruebas_mail", uid) >= 5:
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
-            "Ya mandaste varias pruebas hoy. Probá mañana."
-        )
-    db.collection("pruebas_mail").add({"uid": uid, "creado": firestore.SERVER_TIMESTAMP})
-    resultado = _mandar_correo(
-        correo=email,
-        titulo="¡Nuevo match con Alex! (mail de prueba)",
-        texto=(
-            "Este es un mail de prueba: así te avisamos cuando hacés match. "
-            "¡Buenas noticias! Tu gemelo virtual alcanzó un 82% de afinidad con Alex. "
-            "Ya podés ingresar a Pebble para ver la conversación."
-        ),
-        enlace_url=generar_enlace_app(accion="matches"),
-    )
-    enviado, motivo = resultado if isinstance(resultado, tuple) else (False, "no se pudo enviar")
-    if not enviado:
-        raise https_fn.HttpsError(
-            https_fn.FunctionsErrorCode.UNAVAILABLE,
-            f"No pudimos mandar el mail ({motivo})."
-        )
-    return {"ok": True, "email": email}
-
-
 @https_fn.on_call(timeout_sec=60, secrets=SOPORTE_SECRETS)
 def contactar_soporte(request: https_fn.CallableRequest):
     """'Escribinos a soporte' desde la app: guarda el mensaje y se lo manda
