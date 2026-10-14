@@ -793,8 +793,14 @@
         border-color: var(--orange);
         background: rgba(255, 117, 31, 0.08);
       }
+      ol.gm-tut-list {
+        list-style: decimal;
+      }
+      ul.gm-tut-list {
+        list-style: disc;
+      }
       .gm-tut-list {
-        padding-left: 18px;
+        padding-left: 22px;
         margin: 0 0 10px;
         font-size: 0.88rem;
         line-height: 1.65;
@@ -1176,7 +1182,7 @@
             <li>Elegí con qué gemelo (de tus matches).</li>
             <li>Ponele un <b>título</b> al escenario, por ejemplo "Primer viaje juntos".</li>
             <li>Sumá una <b>descripción</b> corta si querés (opcional).</li>
-            <li>Elegí hasta 5 <b>temas a tocar</b>, de <b>2 palabras como máximo</b> cada uno, por ejemplo "Planes a futuro" o "Hijos".</li>
+            <li>Elegí hasta 5 <b>temas a tocar</b>, de <b>3 palabras como máximo</b> cada uno, por ejemplo "Planes a futuro" o "Hijos".</li>
             <li>Tocá <b>Crear simulación</b>. Puede tardar uno o dos minutos.</li>
           </ol>
         </div>
@@ -1787,8 +1793,8 @@
         placeholder: "Cómo saludás", onChange: guardarAjustes,
       });
       const editorTemas = crearEditorChips({
-        host: $("chipsTemas"), items: temas, max: 5, largo: 30, maxPalabras: 2,
-        placeholder: "Máx. 2 palabras",
+        host: $("chipsTemas"), items: temas, max: 5, largo: 40, maxPalabras: 3,
+        placeholder: "Máx. 3 palabras",
       });
       $("agregarTema").addEventListener("click", () => editorTemas.abrirInput());
       $("escDesc").addEventListener("input", (e) => {
