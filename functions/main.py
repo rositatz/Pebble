@@ -1048,21 +1048,26 @@ def _mandar_correo_soporte(asunto, cuerpo):
     if not clave:
         print("_mandar_correo_soporte: falta el secreto PEBBLE_MAIL_PASSWORD, no se puede enviar.")
         return False, "falta la contraseña del correo en el servidor"
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as servidor:
-            servidor.starttls()
-            servidor.login(remitente, clave.strip())
-            servidor.send_message(msg)
-        return True, ""
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"_mandar_correo_soporte: autenticación rechazada: {e.smtp_code}")
-        return False, "Gmail rechazó la contraseña (tiene que ser una contraseña de aplicación)"
-    except (smtplib.SMTPConnectError, OSError) as e:
-        print(f"_mandar_correo_soporte: sin conexión SMTP: {type(e).__name__}")
-        return False, "no se pudo conectar con el servidor de correo"
-    except Exception as e:
-        print(f"_mandar_correo_soporte: error al enviar: {type(e).__name__}")
-        return False, f"error de envío ({type(e).__name__})"
+    clave = clave.strip()
+    ultimo_fallo = ""
+    for puerto in (465, 587):
+        try:
+            if puerto == 465:
+                servidor = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15)
+            else:
+                servidor = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+                servidor.starttls()
+            with servidor:
+                servidor.login(remitente, clave)
+                servidor.send_message(msg)
+            return True, ""
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"_mandar_correo_soporte: autenticación rechazada: {e.smtp_code}")
+            return False, "Gmail rechazó la contraseña (tiene que ser una contraseña de aplicación)"
+        except Exception as e:
+            ultimo_fallo = f"puerto {puerto}: {type(e).__name__} {getattr(e, 'errno', '') or ''}".strip()
+            print(f"_mandar_correo_soporte: falló el envío ({ultimo_fallo})")
+    return False, f"no se pudo conectar con el servidor de correo ({ultimo_fallo})"
 
 
 def _avisos_recientes(db, coleccion, uid):
@@ -1507,7 +1512,7 @@ LOTE_NOCTURNO = 10
 POOL_CANDIDATAS_NOCTURNO = 300
 
 
-@scheduler_fn.on_schedule(schedule="every 60 minutes", timezone="America/Argentina/Buenos_Aires")
+@scheduler_fn.on_schedule(schedule="0 2 * * *", timezone="America/Argentina/Buenos_Aires")
 def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     """Fase 1 (rápida, sin llamar a OpenAI): recorre todos los usuarios con
     gemelo generado, arma las parejas que todavía no se evaluaron ni están
@@ -1541,6 +1546,11 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
         if uid in pausados:
             continue
         usuarios.append((uid, doc.to_dict()))
+
+    # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
+    # por cada par candidato.
+    ya_conocidos = {d.id for d in db.collection("parejas_pendientes").select([]).stream()}
+    ya_conocidos |= {d.id for d in db.collection("conexiones").select([]).stream()}
 
     nuevas = 0
     # Diagnóstico: por qué un par NO se encola, sin loguear ningún dato
@@ -1580,10 +1590,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
             par_id = motor._par_id(uid1, uid2)
 
-            if db.collection("parejas_pendientes").document(par_id).get().exists:
-                descartes["ya_en_cola_o_conectados"] += 1
-                continue
-            if db.collection("conexiones").document(par_id).get().exists:
+            if par_id in ya_conocidos:
                 descartes["ya_en_cola_o_conectados"] += 1
                 continue
 
@@ -1597,6 +1604,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
                 "estado": "PENDIENTE",
                 "creado": firestore.SERVER_TIMESTAMP,
             })
+            ya_conocidos.add(par_id)
             nuevas += 1
 
     print(
