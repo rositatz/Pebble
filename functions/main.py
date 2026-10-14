@@ -187,14 +187,36 @@ def _mandar_correo(correo, titulo, texto, enlace_url):
         texto_seguro = _escapar_html(texto)
         enlace_seguro = _escapar_html(enlace_url)
         cuerpo_html = (
-            f"<html><body><p>{texto_seguro}</p>"
-            f'<p><a href="{enlace_seguro}" style="padding: 10px 15px; background-color: #ff751f; '
-            f'color: white; text-decoration: none; border-radius: 5px;">Abrir Pebble</a></p>'
-            f"<p><small>Podés elegir qué avisos recibir desde Perfil &gt; Notificaciones en la app.</small></p>"
-            f"</body></html>"
+            '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f4f4f4;">'
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            'style="background:#f4f4f4;padding:24px 12px;"><tr><td align="center">'
+            '<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+            'style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;">'
+            '<tr><td style="padding:28px 28px 8px;font-family:Arial,Helvetica,sans-serif;'
+            'font-size:16px;line-height:1.5;color:#111111;">'
+            f'<p style="margin:0 0 20px;">{texto_seguro}</p>'
+            f'<p style="margin:0 0 24px;"><a href="{enlace_seguro}" style="display:inline-block;'
+            'padding:12px 20px;background:#ff751f;color:#000000;text-decoration:none;'
+            'border-radius:10px;font-weight:bold;">Abrir Pebble</a></p>'
+            '</td></tr>'
+            '<tr><td style="padding:0 28px 28px;">'
+            '<div style="border-top:1px solid #eeeeee;padding-top:18px;">'
+            '<img src="https://pebble.ar/images/email-logo.png" width="180" height="56" alt="PEBBLE" '
+            'style="display:block;border:0;outline:none;">'
+            '<p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;'
+            'color:#777777;">Podés elegir qué avisos recibir desde Perfil &gt; Notificaciones '
+            'en <a href="https://pebble.ar/perfil.html" style="color:#777777;">pebble.ar</a>.</p>'
+            '</div></td></tr></table></td></tr></table></body></html>'
         )
         enviado, motivo = _mandar_por_resend(
-            titulo, f"{texto}\n\nEnlace: {enlace_url}", correo, cuerpo_html=cuerpo_html
+            titulo,
+            f"{texto}\n\nEnlace: {enlace_url}\n\nPebble · pebble.ar",
+            correo,
+            responder_a="pebble@pebble.ar",
+            cuerpo_html=cuerpo_html,
+            encabezados={
+                "List-Unsubscribe": "<mailto:pebble@pebble.ar?subject=Baja%20de%20avisos>, <https://pebble.ar/perfil.html>",
+            },
         )
         if not enviado:
             print(f"_mandar_correo: no se pudo enviar ({motivo})")
@@ -1080,15 +1102,17 @@ _MOTIVOS_REPORTE = {
 _MAX_AVISOS_SOPORTE_POR_DIA = 10
 
 
-def _mandar_por_resend(asunto, cuerpo, destino, responder_a=None, cuerpo_html=None):
+def _mandar_por_resend(asunto, cuerpo, destino, responder_a=None, cuerpo_html=None, encabezados=None):
     datos = {
-        "from": os.getenv("RESEND_REMITENTE") or "Pebble <no-reply@pebble.ar>",
+        "from": os.getenv("RESEND_REMITENTE") or "Pebble <hola@pebble.ar>",
         "to": [destino],
         "subject": asunto,
         "text": cuerpo,
     }
     if cuerpo_html:
         datos["html"] = cuerpo_html
+    if encabezados:
+        datos["headers"] = encabezados
     if responder_a and "@" in responder_a:
         datos["reply_to"] = responder_a
     pedido = urllib.request.Request(
