@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import smtplib
 import urllib.request
 import urllib.error
+from html import escape as _escapar_html
 from email.message import EmailMessage
 from dotenv import load_dotenv
 
@@ -28,8 +29,8 @@ set_global_options(max_instances=10)
 firebase_admin.initialize_app()
 
 LLM_SECRETS = ["OPENAI_API_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
-MAIL_SECRETS = ["PEBBLE_MAIL_PASSWORD"]
-SOPORTE_SECRETS = ["PEBBLE_MAIL_PASSWORD", "RESEND_API_KEY"]
+MAIL_SECRETS = ["RESEND_API_KEY"]
+SOPORTE_SECRETS = MAIL_SECRETS
 
 
 def _clave_correo():
@@ -180,6 +181,23 @@ def _uids_pausados(db):
 def _mandar_correo(correo, titulo, texto, enlace_url):
     if (correo or "").strip().lower() in _CORREOS_DE_PRUEBA:
         print("_mandar_correo: cuenta de prueba, no se envía el correo.")
+        return
+
+    if (os.getenv("RESEND_API_KEY") or "").strip():
+        texto_seguro = _escapar_html(texto)
+        enlace_seguro = _escapar_html(enlace_url)
+        cuerpo_html = (
+            f"<html><body><p>{texto_seguro}</p>"
+            f'<p><a href="{enlace_seguro}" style="padding: 10px 15px; background-color: #ff751f; '
+            f'color: white; text-decoration: none; border-radius: 5px;">Abrir Pebble</a></p>'
+            f"<p><small>Podés elegir qué avisos recibir desde Perfil &gt; Notificaciones en la app.</small></p>"
+            f"</body></html>"
+        )
+        enviado, motivo = _mandar_por_resend(
+            titulo, f"{texto}\n\nEnlace: {enlace_url}", correo, cuerpo_html=cuerpo_html
+        )
+        if not enviado:
+            print(f"_mandar_correo: no se pudo enviar ({motivo})")
         return
 
     remitente = "pebble@pebble.ar"
@@ -468,7 +486,7 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
 
 
-@firestore_fn.on_document_written(document="conexiones/{parId}", secrets=MAIL_SECRETS)
+@firestore_fn.on_document_written(document="conexiones/{parId}")
 def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
     """Se dispara en cada escritura de conexiones/{parId} (el doc de chat
     compartido por las dos cuentas -- ver chats.html _db_agregarMensajeReal).
@@ -504,18 +522,6 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             continue  # mensaje mal formado, no debería pasar
         destinatario = uid2 if remitente == uid1 else uid1
         nombre_remitente = nombre1 if remitente == uid1 else nombre2
-        # 1. Obtener los documentos
-        doc1_snap = db.collection("usuarios").document(uid1).get()
-        doc2_snap = db.collection("usuarios").document(uid2).get()
-
-        # 2. Extraer el diccionario de forma segura
-        dict1 = doc1_snap.to_dict() if doc1_snap.exists else {}
-        dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
-
-        # 3. Obtener el string del correo (probando 'email' o 'correo' por si acaso)
-        correo1 = dict1.get("email") or dict1.get("correo")
-        correo2 = dict2.get("email") or dict2.get("correo")
-        correo_destinatario = correo2 if remitente == uid1 else correo1
         if not _quiere_notif(db, destinatario, "mensajes"):
             continue
         texto = (msg.get("text") or "").strip()
@@ -525,19 +531,6 @@ def notificar_mensaje_nuevo(event: firestore_fn.Event) -> None:
             preview or "Te escribió en Pebble.",
             otro_uid=remitente, otro_nombre=nombre_remitente, accion="chats",
         )
-        if correo_destinatario:
-            # Generamos el enlace para que el botón lo lleve directo al chat con esta persona
-            enlace_chat = generar_enlace_app(accion="chats", otro_uid=remitente)
-            
-            titulo_mail = f"Tienes un nuevo mensaje de {nombre_remitente}"
-            cuerpo_mail = f"{nombre_remitente} te escribió:\n\n\"{preview}\"\n\nEntra a Pebble para responderle."
-            
-            _mandar_correo(
-                correo=correo_destinatario, 
-                titulo=titulo_mail, 
-                texto=cuerpo_mail, 
-                enlace_url=enlace_chat
-            )
 
 
 @https_fn.on_call(secrets=LLM_SECRETS)
@@ -1082,13 +1075,15 @@ _MOTIVOS_REPORTE = {
 _MAX_AVISOS_SOPORTE_POR_DIA = 10
 
 
-def _mandar_por_resend(asunto, cuerpo, destino, responder_a=None):
+def _mandar_por_resend(asunto, cuerpo, destino, responder_a=None, cuerpo_html=None):
     datos = {
-        "from": os.getenv("RESEND_REMITENTE") or "Pebble <onboarding@resend.dev>",
+        "from": os.getenv("RESEND_REMITENTE") or "Pebble <no-reply@pebble.ar>",
         "to": [destino],
         "subject": asunto,
         "text": cuerpo,
     }
+    if cuerpo_html:
+        datos["html"] = cuerpo_html
     if responder_a and "@" in responder_a:
         datos["reply_to"] = responder_a
     pedido = urllib.request.Request(
@@ -2079,8 +2074,8 @@ def _finalizar_par_de_batch(db, estado_par):
     dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
 
     # 3. Obtener el string del correo (probando 'email' o 'correo' por si acaso)
-    correo1 = dict1.get("email") 
-    correo2 = dict2.get("email") 
+    correo1 = None if dict1.get("esCuentaSintetica") else dict1.get("email")
+    correo2 = None if dict2.get("esCuentaSintetica") else dict2.get("email")
 
     if registro["supera_umbral"]:
         pct = round(registro["score"]["compatibilidad_total"] * 100)
@@ -2131,28 +2126,12 @@ def _finalizar_par_de_batch(db, estado_par):
                     f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
                     otro_uid=uid2, otro_nombre=nombre2, accion="chats",
                 )
-                if correo1:
-                    enlace1 = generar_enlace_app(accion="matches", otro_uid=uid2)
-                    _mandar_correo(
-                        correo=correo1,
-                        titulo=f"Vos y {nombre2} tienen algo en común",
-                        texto=f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
-                        enlace_url=enlace1
-                    )
             if _quiere_notif(db, uid2, "matches"):
                 _crear_notificacion(
                     db, uid2, "interes", f"Vos y {nombre1} tienen algo en común",
                     f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
                     otro_uid=uid1, otro_nombre=nombre1, accion="chats",
                 )
-                if correo2:
-                    enlace2 = generar_enlace_app(accion="matches", otro_uid=uid1)
-                    _mandar_correo(
-                        correo=correo2,
-                        titulo=f"Vos y {nombre1} tienen algo en común",
-                        texto=f"A los dos les gusta {interes}. Podría ser una buena forma de arrancar la conversación.",
-                        enlace_url=enlace2
-                    )
     db.collection("parejas_pendientes").document(par_id).update({"estado": "COMPLETADO"})
 
 
@@ -2408,7 +2387,7 @@ MIN_MENSAJES_APRENDIZAJE = 10
 VENTANA_MENSAJES_APRENDIZAJE = 40
 
 
-@scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires", secrets=MAIL_SECRETS)
+@scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Argentina/Buenos_Aires")
 def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
     """Corre una vez por día (separado del batch pesado de las 3am) y genera
     el único tipo de aviso que queda acá:
@@ -2440,10 +2419,6 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
         uid1, uid2 = participantes
         nombre1 = data.get("usuario_1", {}).get("nombre", "Usuario")
         nombre2 = data.get("usuario_2", {}).get("nombre", "Usuario")
-        doc_user1=db.collection("usuarios").document(uid1).get()
-        data_user1=doc_user1.to_dict()
-        doc_user2=db.collection("usuarios").document(uid2).get()
-        data_user2=doc_user2.to_dict()
 
         real = data.get("real") or {}
         msgs = real.get("msgs") or []
@@ -2461,40 +2436,12 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
                         f"La conversación quedó abierta hace {dias_inactivo} días.",
                         otro_uid=uid2, otro_nombre=nombre2, accion="chats",
                     )
-                    correo1 = data_user1.get("email")
-                    if not correo1: # Fallback: buscar en el documento del usuario si no está en la conexión
-                        doc1_snap = db.collection("usuarios").document(uid1).get()
-                        dict1 = doc1_snap.to_dict() if doc1_snap.exists else {}
-                        correo1 = dict1.get("email") or dict1.get("correo")
-                        
-                    if correo1:
-                        enlace1 = generar_enlace_app(accion="chats", otro_uid=uid2)
-                        _mandar_correo(
-                            correo=correo1,
-                            titulo=f"¿Retomás tu charla con {nombre2}?",
-                            texto=f"Hola, tu conversación con {nombre2} quedó en pausa hace {dias_inactivo} días. ¡Entrá a Pebble y fíjate en qué andan!",
-                            enlace_url=enlace1
-                        )
                 if _quiere_notif(db, uid2, "mensajes"):
                     _crear_notificacion(
                         db, uid2, "retomar", f"¿Retomás con {nombre1}?",
                         f"La conversación quedó abierta hace {dias_inactivo} días.",
                         otro_uid=uid1, otro_nombre=nombre1, accion="chats",
                     )
-                    correo2 = data_user2.get("email")
-                    if not correo2:
-                        doc2_snap = db.collection("usuarios").document(uid2).get()
-                        dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
-                        correo2 = dict2.get("email") or dict2.get("correo")
-                        
-                    if correo2:
-                        enlace2 = generar_enlace_app(accion="chats", otro_uid=uid1)
-                        _mandar_correo(
-                            correo=correo2,
-                            titulo=f"¿Retomás tu charla con {nombre1}?",
-                            texto=f"Hola, tu conversación con {nombre1} quedó en pausa hace {dias_inactivo} días. ¡Entrá a Pebble y fíjate en qué andan!",
-                            enlace_url=enlace2
-                        )
                 doc.reference.update({"real.recordatorioRetomarEn": firestore.SERVER_TIMESTAMP})
                 avisos_retomar += 2
 
