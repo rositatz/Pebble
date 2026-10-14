@@ -33,7 +33,11 @@ def _es_match(datos):
     supera_umbral solo dice si el PROMEDIO actual de simulaciones llega al
     umbral: puede bajar después de un match y eso no lo deshace."""
     datos = datos or {}
-    return bool(datos.get("supera_umbral") or datos.get("match_confirmado")) and not datos.get("match_eliminado")
+    return (
+        bool(datos.get("supera_umbral") or datos.get("match_confirmado"))
+        and not datos.get("match_eliminado")
+        and not datos.get("bloqueado")
+    )
 
 
 def _con_creado(par_ref, payload):
@@ -131,7 +135,25 @@ def generar_enlace_app(accion, otro_uid=None):
     else:
         # Por defecto, los mandamos a notificaciones
         return f"{base_url}/notificacion.html"
+_CORREOS_DE_PRUEBA = {
+    "bautista.ferreiro@gmail.com", "milagros.sosa@gmail.com", "inaki.duarte@gmail.com",
+    "tomas.elizalde@gmail.com", "camila.rearte@gmail.com", "zoe.manrique@gmail.com",
+    "renata.isasi@gmail.com", "dante.coria@gmail.com", "nicolas.farias@gmail.com",
+    "abril.quiroga@gmail.com", "emilia.godoy@gmail.com", "agustin.bracco@gmail.com",
+}
+
+
+def _uids_pausados(db):
+    return {
+        doc.id
+        for doc in db.collection("usuarios").where("privacidadAvanzada.pausada", "==", True).stream()
+    }
+
+
 def _mandar_correo(correo, titulo, texto, enlace_url):
+    if (correo or "").strip().lower() in _CORREOS_DE_PRUEBA:
+        print("_mandar_correo: cuenta de prueba, no se envía el correo.")
+        return
 
     remitente = "pebble@pebble.ar"
     password = os.getenv("CONTRASEÑA_PEBBLE")
@@ -998,6 +1020,164 @@ def quitar_match(request: https_fn.CallableRequest):
     return {"ok": True}
 
 
+_MOTIVOS_REPORTE = {
+    "acoso": "Acoso o mensajes ofensivos",
+    "falso": "Perfil falso o spam",
+    "inapropiado": "Contenido inapropiado",
+    "menor": "Parece menor de edad",
+    "otro": "Otro motivo",
+}
+_MAX_AVISOS_SOPORTE_POR_DIA = 10
+
+
+def _mandar_correo_soporte(asunto, cuerpo):
+    remitente = "pebble@pebble.ar"
+    destino = os.getenv("SOPORTE_EMAIL") or remitente
+    msg = EmailMessage()
+    msg["Subject"] = asunto
+    msg["From"] = remitente
+    msg["To"] = destino
+    msg.set_content(cuerpo)
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+            servidor.starttls()
+            servidor.login(remitente, os.getenv("CONTRASEÑA_PEBBLE"))
+            servidor.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"_mandar_correo_soporte: error al enviar: {e}")
+        return False
+
+
+def _avisos_recientes(db, coleccion, uid):
+    desde = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+    recientes = 0
+    for doc in db.collection(coleccion).where("uid", "==", uid).limit(60).stream():
+        creado = doc.to_dict().get("creado")
+        if creado is not None and creado >= desde:
+            recientes += 1
+    return recientes
+
+
+def _datos_basicos(db, uid):
+    datos = db.collection("usuarios").document(uid).get().to_dict() or {}
+    return datos.get("nombre") or datos.get("apodo") or "(sin nombre)", datos.get("email") or "(sin email)"
+
+
+def _bloquear_par(par_ref, uid):
+    par_ref.update({
+        "bloqueado": True,
+        "bloqueado_por": uid,
+        "bloqueado_en": firestore.SERVER_TIMESTAMP,
+        "match_eliminado": True,
+        "eliminado_por": uid,
+        "eliminado_en": firestore.SERVER_TIMESTAMP,
+    })
+
+
+def _par_del_usuario(db, uid, otro_uid, mensaje_si_falta):
+    if not otro_uid or otro_uid == uid:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.INVALID_ARGUMENT, mensaje_si_falta)
+    par_ref = db.collection("conexiones").document(motor._par_id(uid, otro_uid))
+    snap = par_ref.get()
+    if not snap.exists or uid not in (snap.to_dict().get("participantes") or []):
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.NOT_FOUND, "No encontramos a esa persona en tus conexiones.")
+    return par_ref
+
+
+@https_fn.on_call(timeout_sec=60)
+def bloquear_usuario(request: https_fn.CallableRequest):
+    """Bloqueo permanente entre dos personas con una conexión: la conexión
+    queda marcada como bloqueada y eliminada (se oculta en todas las
+    pantallas, no se puede chatear ni simular, y no se vuelve a armar). Las
+    reglas de Firestore también cortan la lectura mutua de perfiles."""
+    if request.auth is None:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.UNAUTHENTICATED, "Hay que estar logueado.")
+    uid = request.auth.uid
+    otro_uid = ((request.data or {}).get("otroUid") or "").strip()
+    db = firestore.client()
+    par_ref = _par_del_usuario(db, uid, otro_uid, "Falta indicar a quién bloquear.")
+    _bloquear_par(par_ref, uid)
+    return {"ok": True}
+
+
+@https_fn.on_call(timeout_sec=60)
+def reportar_usuario(request: https_fn.CallableRequest):
+    """Guarda el reporte en 'reportes' (solo lo lee el admin) y le manda un
+    mail al soporte. Opcionalmente bloquea a la persona en el mismo paso."""
+    if request.auth is None:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.UNAUTHENTICATED, "Hay que estar logueado.")
+    uid = request.auth.uid
+    data = request.data or {}
+    otro_uid = (data.get("otroUid") or "").strip()
+    motivo = (data.get("motivo") or "").strip()
+    detalle = " ".join(str(data.get("detalle") or "").split())[:800]
+    if motivo not in _MOTIVOS_REPORTE:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.INVALID_ARGUMENT, "Elegí un motivo para el reporte.")
+    db = firestore.client()
+    par_ref = _par_del_usuario(db, uid, otro_uid, "Falta indicar a quién reportar.")
+    if _avisos_recientes(db, "reportes", uid) >= _MAX_AVISOS_SOPORTE_POR_DIA:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
+            "Mandaste varios reportes hoy. Escribinos a soporte si necesitás más."
+        )
+
+    nombre_rep, email_rep = _datos_basicos(db, uid)
+    nombre_otro, email_otro = _datos_basicos(db, otro_uid)
+    ref = db.collection("reportes").document()
+    ref.set({
+        "uid": uid,
+        "reportado": otro_uid,
+        "par_id": par_ref.id,
+        "motivo": motivo,
+        "detalle": detalle,
+        "bloqueado": bool(data.get("bloquear")),
+        "creado": firestore.SERVER_TIMESTAMP,
+    })
+    _mandar_correo_soporte(
+        f"[Pebble] Reporte: {_MOTIVOS_REPORTE[motivo]}",
+        f"Nuevo reporte ({ref.id})\n\n"
+        f"Motivo: {_MOTIVOS_REPORTE[motivo]}\n"
+        f"Detalle: {detalle or '(sin detalle)'}\n\n"
+        f"Quién reporta: {nombre_rep} <{email_rep}> uid={uid}\n"
+        f"Reportado: {nombre_otro} <{email_otro}> uid={otro_uid}\n"
+        f"Conexión: {par_ref.id}\n"
+        f"Lo bloqueó: {'sí' if data.get('bloquear') else 'no'}\n"
+    )
+    if data.get("bloquear"):
+        _bloquear_par(par_ref, uid)
+    return {"ok": True}
+
+
+@https_fn.on_call(timeout_sec=60)
+def contactar_soporte(request: https_fn.CallableRequest):
+    """'Escribinos a soporte' desde la app: guarda el mensaje y se lo manda
+    por mail al soporte, con los datos de la cuenta para poder responder."""
+    if request.auth is None:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.UNAUTHENTICATED, "Hay que estar logueado.")
+    uid = request.auth.uid
+    data = request.data or {}
+    asunto = " ".join(str(data.get("asunto") or "").split())[:100] or "Consulta"
+    mensaje = str(data.get("mensaje") or "").strip()[:2000]
+    if len(mensaje) < 5:
+        raise https_fn.HttpsError(https_fn.FunctionsErrorCode.INVALID_ARGUMENT, "Contanos un poco más sobre tu consulta.")
+    db = firestore.client()
+    if _avisos_recientes(db, "contactos_soporte", uid) >= _MAX_AVISOS_SOPORTE_POR_DIA:
+        raise https_fn.HttpsError(
+            https_fn.FunctionsErrorCode.RESOURCE_EXHAUSTED,
+            "Mandaste varios mensajes hoy. Te respondemos a la brevedad."
+        )
+    nombre, email = _datos_basicos(db, uid)
+    email = email if "@" in email else (request.auth.token.get("email") or "(sin email)")
+    ref = db.collection("contactos_soporte").document()
+    ref.set({"uid": uid, "asunto": asunto, "mensaje": mensaje, "creado": firestore.SERVER_TIMESTAMP})
+    _mandar_correo_soporte(
+        f"[Pebble] Soporte: {asunto}",
+        f"Mensaje de soporte ({ref.id})\n\nDe: {nombre} <{email}> uid={uid}\n\n{mensaje}\n"
+    )
+    return {"ok": True}
+
+
 @https_fn.on_call(secrets=LLM_SECRETS, timeout_sec=60, memory=MemoryOption.MB_512)
 def chatear_con_gemelo(request: https_fn.CallableRequest):
     """Chat DIRECTO entre el usuario y su propio gemelo (gemelo.html) -- a
@@ -1328,10 +1508,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
     # Cuentas pausadas (Privacidad avanzada > Pausar mi cuenta) no entran a
     # buscar pareja nueva -- ni como origen ni como candidato para nadie más.
-    pausados = {
-        doc.id
-        for doc in db.collection("usuarios").where("privacidadAvanzada.pausada", "==", True).stream()
-    }
+    pausados = _uids_pausados(db)
 
     usuarios = []
     for doc in db.collection_group("gemelo").stream():
@@ -1506,6 +1683,11 @@ def _procesar_parejas_pendientes_logica() -> None:
         .limit(POOL_CANDIDATAS_NOCTURNO)
         .stream()
     )
+    pausados = _uids_pausados(db)
+    pool = [
+        d for d in pool
+        if not ({d.to_dict()["usuario_1"]["uid"], d.to_dict()["usuario_2"]["uid"]} & pausados)
+    ]
     pendientes = _elegir_lote_diverso(pool, LOTE_NOCTURNO)
 
     resueltos_sin_match, con_error, descartados, encolados = 0, 0, 0, 0
@@ -2534,6 +2716,7 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
 
     for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():
         _borrar_coleccion(doc.reference.collection("simulaciones"))
+        _borrar_coleccion(doc.reference.collection("gemeloPrivado"))
         doc.reference.delete()
 
     # parejas_pendientes no tiene un campo "participantes" (array) como

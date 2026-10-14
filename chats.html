@@ -800,6 +800,188 @@
         stroke-linejoin: round;
       }
 
+      .panel-opts {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .panel-opts-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+      }
+      .panel-opts-btn:hover {
+        background: var(--surf-2);
+      }
+      .panel-opts-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+      .panel-opts-menu {
+        position: absolute;
+        right: 0;
+        top: 42px;
+        min-width: 190px;
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+        padding: 6px;
+        z-index: 50;
+      }
+      .panel-opts-menu[hidden] {
+        display: none;
+      }
+      .panel-opts-menu button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        border: none;
+        background: none;
+        border-radius: 10px;
+        font: inherit;
+        font-size: 0.88rem;
+        color: var(--text-primary);
+        cursor: pointer;
+      }
+      .panel-opts-menu button:hover {
+        background: var(--surf-2);
+      }
+      .panel-opts-menu button.danger {
+        color: #c0392b;
+      }
+      .chat-panel.gemelo-mode .panel-opts-btn {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .chat-panel.gemelo-mode .panel-opts-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .chat-panel.gemelo-mode .panel-opts-menu {
+        background: #1a1a1a;
+        border-color: rgba(255, 117, 31, 0.25);
+      }
+      .chat-panel.gemelo-mode .panel-opts-menu button {
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .chat-panel.gemelo-mode .panel-opts-menu button:hover {
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .chat-panel.gemelo-mode .panel-opts-menu button.danger {
+        color: #ff7a6b;
+      }
+      .dlg-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        z-index: 1000;
+      }
+      .dlg-overlay.open {
+        display: flex;
+      }
+      .dlg {
+        background: var(--surf-1);
+        color: var(--text-primary);
+        border-radius: 20px;
+        padding: 22px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      }
+      .dlg h3 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+      }
+      .dlg p {
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+        margin-bottom: 14px;
+        line-height: 1.5;
+      }
+      .dlg select,
+      .dlg textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font: inherit;
+        font-size: 0.9rem;
+        background: var(--surf-2);
+        color: var(--text-primary);
+        margin-bottom: 10px;
+      }
+      .dlg textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+      .dlg label.chk {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 0.85rem;
+        margin-bottom: 14px;
+      }
+      .dlg-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .dlg-btn {
+        padding: 10px 16px;
+        border-radius: 12px;
+        border: none;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        background: var(--surf-2);
+        color: var(--text-primary);
+      }
+      .dlg-btn.primary {
+        background: var(--surf-dark);
+        color: var(--text-inv);
+      }
+      .dlg-btn.danger {
+        background: #c0392b;
+        color: #fff;
+      }
+      .dlg-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .opt-toast {
+        position: fixed;
+        left: 50%;
+        bottom: 90px;
+        transform: translateX(-50%) translateY(20px);
+        background: var(--surf-dark);
+        color: var(--text-inv);
+        padding: 10px 16px;
+        border-radius: 14px;
+        font-size: 0.85rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s, transform 0.2s;
+        z-index: 1100;
+        max-width: 90vw;
+        text-align: center;
+      }
+      .opt-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
       /* ── Chat panel en modo gemelo: mismo estilo negro que la simulación ── */
       .chat-panel.gemelo-mode {
         background: #0d0d0d;
@@ -847,6 +1029,14 @@
       }
       .chat-panel.gemelo-mode .pmsg.them.is-gemelo .pbubble {
         border-left: 1px solid rgba(255, 117, 31, 0.17);
+      }
+      .chat-panel.gemelo-mode .typing-bubble {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 117, 31, 0.17);
+        border-bottom-left-radius: 4px;
+      }
+      .chat-panel.gemelo-mode .typing-dot {
+        background: rgba(255, 255, 255, 0.4);
       }
       .chat-panel.gemelo-mode .pmsg.me .pbubble {
         background: rgba(255, 117, 31, 0.09);
@@ -2106,6 +2296,26 @@
             Real
           </button>
         </div>
+        <div class="panel-opts">
+          <button
+            class="panel-opts-btn"
+            id="panelOptsBtn"
+            onclick="togglePanelOpts(event)"
+            aria-label="Más opciones"
+            aria-haspopup="true"
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="12" cy="19" r="1.8" />
+            </svg>
+          </button>
+          <div class="panel-opts-menu" id="panelOptsMenu" hidden>
+            <button onclick="panelOpt('borrar')">Borrar este chat</button>
+            <button onclick="panelOpt('reportar')">Reportar</button>
+            <button class="danger" onclick="panelOpt('bloquear')">Bloquear</button>
+          </div>
+        </div>
       </div>
 
       <div class="panel-mode-bar" id="panelModeBar"></div>
@@ -2279,6 +2489,20 @@
       </a>
     </nav>
 
+    <div class="dlg-overlay" id="dlgOverlay" onclick="if (event.target === this) cerrarDialogo()">
+      <div class="dlg" role="dialog" aria-modal="true">
+        <h3 id="dlgTitulo"></h3>
+        <p id="dlgTexto"></p>
+        <div id="dlgCuerpo"></div>
+        <p id="dlgError" style="color: #c0392b; display: none"></p>
+        <div class="dlg-actions">
+          <button class="dlg-btn" type="button" onclick="cerrarDialogo()">Cancelar</button>
+          <button class="dlg-btn primary" type="button" id="dlgOk"></button>
+        </div>
+      </div>
+    </div>
+    <div class="opt-toast" id="optToast"></div>
+
     <script>
       // Se llena con datos reales de Firestore -- ver cargarChatsReales()
       // más abajo. openChat()/refreshListItem()/etc. leen de acá igual que antes.
@@ -2397,6 +2621,141 @@
         document.getElementById("chatPanel").classList.remove("open");
         curPerson = null;
         curMode = null;
+      }
+
+      /* ── Opciones del chat: borrar, reportar, bloquear ── */
+      function togglePanelOpts(e) {
+        e.stopPropagation();
+        const m = document.getElementById("panelOptsMenu");
+        m.hidden = !m.hidden;
+      }
+      document.addEventListener("click", () => {
+        const m = document.getElementById("panelOptsMenu");
+        if (m) m.hidden = true;
+      });
+
+      let _optToastTimer = null;
+      function avisar(texto) {
+        const el = document.getElementById("optToast");
+        el.textContent = texto;
+        el.classList.add("show");
+        clearTimeout(_optToastTimer);
+        _optToastTimer = setTimeout(() => el.classList.remove("show"), 3200);
+      }
+
+      let _dlgConfirmar = null;
+      function abrirDialogo({ titulo, texto, cuerpoHtml, confirmar, tono, alConfirmar }) {
+        document.getElementById("dlgTitulo").textContent = titulo;
+        document.getElementById("dlgTexto").textContent = texto || "";
+        document.getElementById("dlgCuerpo").innerHTML = cuerpoHtml || "";
+        const err = document.getElementById("dlgError");
+        err.style.display = "none";
+        const ok = document.getElementById("dlgOk");
+        ok.textContent = confirmar;
+        ok.className = "dlg-btn " + (tono === "danger" ? "danger" : "primary");
+        ok.disabled = false;
+        _dlgConfirmar = alConfirmar;
+        document.getElementById("dlgOverlay").classList.add("open");
+      }
+      function cerrarDialogo() {
+        document.getElementById("dlgOverlay").classList.remove("open");
+        _dlgConfirmar = null;
+      }
+      document.getElementById("dlgOk").addEventListener("click", async () => {
+        if (!_dlgConfirmar) return;
+        const ok = document.getElementById("dlgOk");
+        const err = document.getElementById("dlgError");
+        ok.disabled = true;
+        err.style.display = "none";
+        try {
+          await _dlgConfirmar();
+          cerrarDialogo();
+        } catch (e) {
+          console.error("Opción del chat:", e);
+          err.textContent =
+            (e && e.message && !/^internal$/i.test(e.message) ? e.message : "") ||
+            "No se pudo completar. Probá de nuevo.";
+          err.style.display = "block";
+          ok.disabled = false;
+        }
+      });
+
+      function panelOpt(accion) {
+        document.getElementById("panelOptsMenu").hidden = true;
+        if (!curPerson) return;
+        const id = curPerson;
+        const p = people[id];
+        const nombre = p.name || "esta persona";
+        const modo = curMode;
+
+        if (accion === "borrar") {
+          abrirDialogo({
+            titulo: "Borrar este chat",
+            texto:
+              modo === "real"
+                ? `Se borra la conversación de tu lado. ${nombre} la sigue viendo.`
+                : `Se borra tu conversación con el gemelo de ${nombre}. Las simulaciones no se tocan.`,
+            confirmar: "Borrar",
+            tono: "danger",
+            alConfirmar: async () => {
+              await window._borrarChat(id, modo);
+              const md = modo === "real" ? p.real : p.gemelo;
+              if (modo === "real") p.real.oculto = (p.real.oculto || 0) + p.real.msgs.length;
+              md.msgs = [];
+              md.unread = 0;
+              md.lastTime = "";
+              renderMessages();
+              refreshListItem(id);
+              avisar("Chat borrado");
+            },
+          });
+        } else if (accion === "reportar") {
+          abrirDialogo({
+            titulo: `Reportar a ${nombre}`,
+            texto: "Nuestro equipo lo revisa. La otra persona no se entera.",
+            cuerpoHtml: `
+              <select id="repMotivo">
+                <option value="">Elegí un motivo</option>
+                <option value="acoso">Acoso o mensajes ofensivos</option>
+                <option value="falso">Perfil falso o spam</option>
+                <option value="inapropiado">Contenido inapropiado</option>
+                <option value="menor">Parece menor de edad</option>
+                <option value="otro">Otro motivo</option>
+              </select>
+              <textarea id="repDetalle" maxlength="800" placeholder="Contanos qué pasó (opcional)"></textarea>
+              <label class="chk"><input type="checkbox" id="repBloquear" checked /> Bloquear también a ${esc(nombre)}</label>`,
+            confirmar: "Enviar reporte",
+            alConfirmar: async () => {
+              const motivo = document.getElementById("repMotivo").value;
+              if (!motivo) throw new Error("Elegí un motivo para el reporte.");
+              const bloquear = document.getElementById("repBloquear").checked;
+              await window._reportarUsuario(
+                id,
+                motivo,
+                document.getElementById("repDetalle").value,
+                bloquear,
+              );
+              avisar("Gracias, recibimos tu reporte");
+              if (bloquear) {
+                closeChat();
+                setTimeout(() => location.reload(), 900);
+              }
+            },
+          });
+        } else if (accion === "bloquear") {
+          abrirDialogo({
+            titulo: `Bloquear a ${nombre}`,
+            texto: `No vas a poder chatear ni ver el perfil de ${nombre}, y ${nombre} tampoco el tuyo. Es permanente.`,
+            confirmar: "Bloquear",
+            tono: "danger",
+            alConfirmar: async () => {
+              await window._bloquearUsuario(id);
+              avisar(`Bloqueaste a ${nombre}`);
+              closeChat();
+              setTimeout(() => location.reload(), 900);
+            },
+          });
+        }
       }
 
       /* ── Panel mode switch ── */
@@ -3269,6 +3628,12 @@
         functionsInstance,
         "chatear_con_gemelo_match",
       );
+      const reportarUsuarioCallable = httpsCallable(functionsInstance, "reportar_usuario");
+      const bloquearUsuarioCallable = httpsCallable(functionsInstance, "bloquear_usuario");
+      window._reportarUsuario = async (otroUid, motivo, detalle, bloquear) =>
+        (await reportarUsuarioCallable({ otroUid, motivo, detalle, bloquear })).data;
+      window._bloquearUsuario = async (otroUid) =>
+        (await bloquearUsuarioCallable({ otroUid })).data;
 
       // Bridge para el script clásico (sendPanelMsg) -- reemplaza el
       // autoReply() enlatado del modo "gemelo": esto llama de verdad al
@@ -3464,7 +3829,12 @@
                 // Firestore, pero este snapshot la reconstruía leyendo un
                 // campo que nadie escribe más, así que volvía vacía.
                 const gemelo = c.gemeloPrivado || {};
-                const realMsgs = Array.isArray(real.msgs) ? real.msgs : [];
+                const realTodos = Array.isArray(real.msgs) ? real.msgs : [];
+                const limpiado =
+                  real.limpiado && typeof real.limpiado === "object"
+                    ? Math.min(real.limpiado[user.uid] || 0, realTodos.length)
+                    : 0;
+                const realMsgs = realTodos.slice(limpiado);
                 const gemeloMsgs = Array.isArray(gemelo.msgs)
                   ? gemelo.msgs
                   : [];
@@ -3480,8 +3850,8 @@
                   real.vistoHasta && typeof real.vistoHasta === "object"
                     ? real.vistoHasta[user.uid] || 0
                     : 0;
-                const realUnread = realMsgs
-                  .slice(vistoHastaReal)
+                const realUnread = realTodos
+                  .slice(Math.max(vistoHastaReal, limpiado))
                   .filter((m) => m.from !== user.uid).length;
                 const gemeloUnread = gemeloMsgs
                   .slice(gemelo.vistoHasta || 0)
@@ -3529,6 +3899,7 @@
                       ? realMsgs[realMsgs.length - 1].time || ""
                       : "",
                     unread: realUnread,
+                    oculto: limpiado,
                     msgs: realMsgs,
                   },
                 };
@@ -3677,7 +4048,7 @@
       window._db_marcarLeido = async (personaId) => {
         if (!uid) return;
         const p = window.people && window.people[personaId];
-        const realHasta = p && p.real ? p.real.msgs.length : 0;
+        const realHasta = p && p.real ? (p.real.oculto || 0) + p.real.msgs.length : 0;
         const gemeloHasta = p && p.gemelo ? p.gemelo.msgs.length : 0;
 
         // El punto de lectura del chat "gemelo" ahora vive en el subdoc
@@ -3727,6 +4098,25 @@
       // Antes las dos vivían en el mismo doc compartido (campo "gemelo"), así
       // que si las dos cuentas de un match chateaban con el gemelo de la
       // otra, cada una podía leer -- y pisar -- la conversación de la otra.
+      window._borrarChat = async (personaId, modo) => {
+        if (!uid) throw new Error("Sin sesión.");
+        const par = parId(uid, personaId);
+        if (modo === "gemelo") {
+          await setDoc(
+            doc(db, "conexiones", par, "gemeloPrivado", uid),
+            { msgs: [], vistoHasta: 0 },
+            { merge: true },
+          );
+          return;
+        }
+        const p = window.people && window.people[personaId];
+        const total = p && p.real ? (p.real.oculto || 0) + p.real.msgs.length : 0;
+        await updateDoc(doc(db, "conexiones", par), {
+          [`real.limpiado.${uid}`]: total,
+          [`real.vistoHasta.${uid}`]: total,
+        });
+      };
+
       window._db_saveChat = async (personaId, mode, msgs) => {
         if (!uid) return;
 

@@ -21,7 +21,10 @@ service cloud.firestore {
       // idea de revelado progresivo que ya tiene perfil.html.
       allow read: if request.auth != null && (
         request.auth.uid == uid ||
-        exists(/databases/$(database)/documents/conexiones/$(parId(uid, request.auth.uid)))
+        (
+          exists(/databases/$(database)/documents/conexiones/$(parId(uid, request.auth.uid))) &&
+          get(/databases/$(database)/documents/conexiones/$(parId(uid, request.auth.uid))).data.get('bloqueado', false) != true
+        )
       );
 
       // Respuestas crudas del onboarding (gemelo-setup.html).
@@ -96,6 +99,7 @@ service cloud.firestore {
       // abajo, ver por qué en ese match.
       allow update: if request.auth != null &&
         request.auth.uid in resource.data.participantes &&
+        resource.data.get('bloqueado', false) != true &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['real', 'gemelo']);
 
       allow delete: if false;

@@ -3543,9 +3543,10 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
                 </svg>
               </button>
               <div class="faq-a">
-                Sí. Dentro de cualquier chat o perfil podés usar el menú de
-                opciones para bloquear o reportar a una persona. La función de
-                bloqueo oculta tu perfil y el de esa persona mutuamente de forma
+                Sí. Dentro de cualquier chat podés tocar los tres puntitos de
+                arriba para reportar o bloquear a una persona. El reporte le
+                llega a nuestro equipo, y la persona no se entera. El bloqueo
+                oculta tu perfil y el de esa persona mutuamente, de forma
                 permanente.
               </div>
             </div>
@@ -3557,22 +3558,46 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
                 </svg>
               </button>
               <div class="faq-a">
-                Podés pedir la eliminación completa de tu cuenta y todos tus
-                datos desde Privacidad avanzada o escribiéndonos a soporte.
-                Eliminamos toda tu información en un plazo de 30 días hábiles.
+                Podés eliminar tu cuenta y todos tus datos desde Privacidad
+                avanzada: se borran al momento y no se pueden recuperar. Si
+                necesitás ayuda, escribinos a soporte.
               </div>
             </div>
           </div>
-          <a
+          <button
             class="sheet-btn-outline"
-            href="mailto:soporte@pebbleapp.co"
+            type="button"
             style="margin-top: 4px"
+            onclick="closeSheet('sheetAyuda'); openSheet('sheetSoporte')"
           >
             Escribinos a soporte
-          </a>
+          </button>
           <p class="sheet-version">
             Pebble v0.9.1 — Beta privada · pebbleapp.co
           </p>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="sheet-overlay"
+      id="sheetSoporteOverlay"
+      onclick="if (event.target === this) closeSheet('sheetSoporte');"
+    >
+      <div class="sheet" id="sheetSoporte">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h3 class="sheet-title">Escribinos a soporte</h3>
+          <button class="sheet-close" onclick="closeSheet('sheetSoporte')" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18">
+              <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <input class="sheet-input" id="soporteAsunto" maxlength="100" placeholder="Asunto" style="margin-bottom: 10px" />
+          <textarea class="form-textarea" id="soporteMensaje" maxlength="2000" placeholder="Contanos en qué te ayudamos" style="min-height: 130px; margin-bottom: 12px"></textarea>
+          <button class="sheet-btn-save" id="soporteEnviar" onclick="enviarSoporte()">Enviar</button>
         </div>
       </div>
     </div>
@@ -4427,18 +4452,52 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       // Guarda la configuración de privacidad avanzada (cuenta pausada) --
       // lee el toggle del sheet y lo persiste en Firestore. El backend
       // (buscar_parejas_pendientes) ya respeta este campo.
-      function savePrivacidadAvanzada() {
+      async function savePrivacidadAvanzada() {
         const data = {
           pausada: document.getElementById("privPausar").checked,
         };
-        if (typeof window._db_savePrivacidadAvanzada === "function")
-          window._db_savePrivacidadAvanzada(data);
+        try {
+          if (typeof window._db_savePrivacidadAvanzada !== "function")
+            throw new Error("sin conexión");
+          await window._db_savePrivacidadAvanzada(data);
+        } catch (e) {
+          console.error("savePrivacidadAvanzada:", e);
+          showToast("No se pudo guardar. Probá de nuevo.");
+          return;
+        }
         closeSheet("sheetPriv");
         showToast("Configuración guardada ✓");
       }
 
       // Pide confirmación (doble, porque es irreversible) antes de borrar la
       // cuenta y todos los datos asociados de verdad.
+      async function enviarSoporte() {
+        const asunto = document.getElementById("soporteAsunto").value.trim();
+        const mensaje = document.getElementById("soporteMensaje").value.trim();
+        if (mensaje.length < 5) {
+          showToast("Contanos un poco más sobre tu consulta.");
+          return;
+        }
+        const btn = document.getElementById("soporteEnviar");
+        btn.disabled = true;
+        try {
+          await window._contactarSoporte(asunto, mensaje);
+          document.getElementById("soporteAsunto").value = "";
+          document.getElementById("soporteMensaje").value = "";
+          closeSheet("sheetSoporte");
+          showToast("Mensaje enviado ✓ Te respondemos por mail");
+        } catch (e) {
+          console.error("enviarSoporte:", e);
+          showToast(
+            e && e.message && !/^internal$/i.test(e.message)
+              ? e.message
+              : "No se pudo enviar. Probá de nuevo.",
+          );
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
       async function confirmarEliminarCuenta() {
         const ok1 = confirm(
           "¿Seguro que querés eliminar tu cuenta? Se borran tu perfil, tu gemelo, tus chats, tus matches y todos tus datos de Pebble para siempre -- esto NO se puede deshacer.",
@@ -4595,6 +4654,12 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         functionsInstance,
         "eliminar_cuenta",
       );
+      const contactarSoporteCallable = httpsCallable(
+        functionsInstance,
+        "contactar_soporte",
+      );
+      window._contactarSoporte = async (asunto, mensaje) =>
+        (await contactarSoporteCallable({ asunto, mensaje })).data;
 
       let uid = null;
 

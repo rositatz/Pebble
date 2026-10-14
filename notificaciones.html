@@ -134,6 +134,86 @@
         background: rgba(255, 117, 31, 0.08);
       }
 
+      /* ── Selección múltiple ── */
+      .notif-check {
+        display: none;
+        flex-shrink: 0;
+        align-self: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid var(--border2, #ccc);
+        align-items: center;
+        justify-content: center;
+        color: transparent;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .notif-check svg {
+        width: 12px;
+        height: 12px;
+      }
+      .sel-mode .notif-check {
+        display: flex;
+      }
+      .sel-mode .notif-card.selected {
+        outline: 2px solid var(--orange);
+      }
+      .sel-mode .notif-card.selected .notif-check {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #fff;
+      }
+      .sel-mode .notif-delete,
+      .sel-mode .notif-cta {
+        display: none;
+      }
+      .sel-bar {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(var(--nav-bot) + 12px);
+        z-index: 150;
+        width: calc(100% - 24px);
+        max-width: 560px;
+        background: var(--surf-dark, #111);
+        color: var(--text-inv, #fff);
+        border-radius: 18px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+      }
+      .sel-bar[hidden] {
+        display: none;
+      }
+      .sel-bar-count {
+        font-size: 0.78rem;
+        opacity: 0.7;
+        padding: 0 6px;
+        white-space: nowrap;
+      }
+      .sel-bar button {
+        flex: 1;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: inherit;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 10px 8px;
+        border-radius: 12px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .sel-bar button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .sel-bar button.peligro {
+        background: #c0392b;
+      }
+
       /* ── Main ── */
       .app-main {
         margin-top: var(--nav-top);
@@ -671,12 +751,20 @@
       </a>
       <button
         class="nav-mark-btn"
-        onclick="markAllRead()"
-        aria-label="Marcar todo como leído"
+        id="navSelBtn"
+        onclick="toggleModoSeleccion()"
+        aria-label="Seleccionar notificaciones"
       >
-        Marcar todo
+        Seleccionar
       </button>
     </nav>
+
+    <div class="sel-bar" id="selBar" hidden>
+      <span class="sel-bar-count" id="selCount">0</span>
+      <button type="button" id="selTodas" onclick="seleccionarTodas()">Seleccionar todo</button>
+      <button type="button" id="selLeidas" onclick="marcarSeleccionadasLeidas()">Marcar leídas</button>
+      <button type="button" id="selBorrar" class="peligro" onclick="borrarSeleccionadas()">Borrar</button>
+    </div>
 
     <!-- Main -->
     <main class="app-main" id="main-content" aria-label="Notificaciones">
@@ -1028,6 +1116,7 @@
     <div class="notif-card${unread ? " unread" : ""}" data-type="${dataType}" data-id="${n.id}"
          role="button" tabindex="0" onclick="abrirNotificacion('${n.id}')"
          onkeydown="if(event.key==='Enter')abrirNotificacion('${n.id}')">
+      <span class="notif-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
       <div class="notif-icon ${icono.cls}" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icono.svg}</svg>
       </div>
@@ -1135,9 +1224,114 @@
       // Marca como leída (local + Firestore) y navega según la acción de la
       // notificación -- si tiene otroUid, va directo a esa conversación/perfil en
       // vez de a la pantalla genérica.
+      let modoSeleccion = false;
+      const seleccionadas = new Set();
+
+      function tarjetasVisibles() {
+        return [...document.querySelectorAll(".notif-card")].filter(
+          (c) => c.style.display !== "none",
+        );
+      }
+
+      function actualizarBarraSeleccion() {
+        document.querySelectorAll(".notif-card").forEach((c) => {
+          c.classList.toggle("selected", seleccionadas.has(c.dataset.id));
+        });
+        const cant = seleccionadas.size;
+        document.getElementById("selCount").textContent =
+          cant === 1 ? "1 elegida" : `${cant} elegidas`;
+        const visibles = tarjetasVisibles();
+        const todas =
+          visibles.length > 0 && visibles.every((c) => seleccionadas.has(c.dataset.id));
+        document.getElementById("selTodas").textContent = todas
+          ? "Quitar selección"
+          : "Seleccionar todo";
+        document.getElementById("selLeidas").disabled = ![...seleccionadas].some(
+          (id) => notifsPorId[id] && !notifsPorId[id].leida,
+        );
+        document.getElementById("selBorrar").disabled = cant === 0;
+      }
+
+      window.toggleModoSeleccion = function () {
+        modoSeleccion = !modoSeleccion;
+        seleccionadas.clear();
+        document.getElementById("main-content").classList.toggle("sel-mode", modoSeleccion);
+        document.getElementById("selBar").hidden = !modoSeleccion;
+        document.getElementById("navSelBtn").textContent = modoSeleccion
+          ? "Cancelar"
+          : "Seleccionar";
+        actualizarBarraSeleccion();
+      };
+
+      window.seleccionarTodas = function () {
+        const visibles = tarjetasVisibles();
+        const todas = visibles.every((c) => seleccionadas.has(c.dataset.id));
+        visibles.forEach((c) =>
+          todas ? seleccionadas.delete(c.dataset.id) : seleccionadas.add(c.dataset.id),
+        );
+        actualizarBarraSeleccion();
+      };
+
+      window.marcarSeleccionadasLeidas = async function () {
+        const ids = [...seleccionadas].filter((id) => notifsPorId[id] && !notifsPorId[id].leida);
+        ids.forEach((id) => {
+          notifsPorId[id].leida = true;
+          const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+          if (card) {
+            card.classList.remove("unread");
+            const dot = card.querySelector(".unread-dot");
+            if (dot) dot.remove();
+          }
+        });
+        window.toggleModoSeleccion();
+        if (!ids.length) return;
+        try {
+          const batch = writeBatch(db);
+          ids.forEach((id) =>
+            batch.update(doc(db, "usuarios", uid, "notificaciones", id), { leida: true }),
+          );
+          await batch.commit();
+        } catch (e) {
+          console.warn("Error marcando las notificaciones elegidas como leídas:", e);
+        }
+      };
+
+      window.borrarSeleccionadas = async function () {
+        const ids = [...seleccionadas];
+        if (!ids.length) return;
+        if (!confirm(ids.length === 1 ? "¿Borrar esta notificación?" : `¿Borrar ${ids.length} notificaciones?`))
+          return;
+        ids.forEach((id) => {
+          delete notifsPorId[id];
+          const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+          if (card) card.remove();
+        });
+        document.querySelectorAll("[data-group]").forEach((g) => {
+          if (!g.querySelector(".notif-card")) g.remove();
+        });
+        if (!Object.keys(notifsPorId).length) {
+          const emptyEl = document.getElementById("notifEmpty");
+          if (emptyEl) emptyEl.style.display = "flex";
+        }
+        window.toggleModoSeleccion();
+        try {
+          const batch = writeBatch(db);
+          ids.forEach((id) => batch.delete(doc(db, "usuarios", uid, "notificaciones", id)));
+          await batch.commit();
+        } catch (e) {
+          console.warn("Error borrando las notificaciones elegidas:", e);
+        }
+      };
+
       window.abrirNotificacion = async function (id) {
         const n = notifsPorId[id];
         if (!n) return;
+        if (modoSeleccion) {
+          if (seleccionadas.has(id)) seleccionadas.delete(id);
+          else seleccionadas.add(id);
+          actualizarBarraSeleccion();
+          return;
+        }
 
         if (!n.leida) {
           n.leida = true;
