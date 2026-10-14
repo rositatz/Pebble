@@ -1237,7 +1237,8 @@
         if (err && err.code === "functions/invalid-argument") {
           return err.message || "Revisá lo que escribiste e intentá de nuevo.";
         }
-        return "Tuvimos un problema para correr la simulación. Probá de nuevo en un rato.";
+        const codigo = err && err.code ? ` (${String(err.code).replace("functions/", "")})` : "";
+        return `Tuvimos un problema para correr la simulación. Probá de nuevo en un rato.${codigo}`;
       }
 
       /* ── Color del pingüino ── */
