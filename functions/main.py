@@ -2819,6 +2819,12 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
         if uid in (u1, u2):
             doc.reference.delete()
 
+    # Mensajes a soporte y reportes que mandó esta persona (los reportes que
+    # otras personas hicieron sobre ella se conservan para moderación).
+    for coleccion in ("contactos_soporte", "pruebas_mail", "reportes"):
+        for doc in db.collection(coleccion).where("uid", "==", uid).stream():
+            doc.reference.delete()
+
     try:
         auth.delete_user(uid)
     except Exception as e:
