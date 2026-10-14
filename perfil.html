@@ -3597,6 +3597,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         <div class="sheet-body">
           <input class="sheet-input" id="soporteAsunto" maxlength="100" placeholder="Asunto" style="margin-bottom: 10px" />
           <textarea class="form-textarea" id="soporteMensaje" maxlength="2000" placeholder="Contanos en qué te ayudamos" style="min-height: 130px; margin-bottom: 12px"></textarea>
+          <p id="soporteError" style="color: #c0392b; font-size: 0.85rem; margin: 0 0 10px; display: none"></p>
           <button class="sheet-btn-save" id="soporteEnviar" onclick="enviarSoporte()">Enviar</button>
         </div>
       </div>
@@ -4474,12 +4475,19 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       async function enviarSoporte() {
         const asunto = document.getElementById("soporteAsunto").value.trim();
         const mensaje = document.getElementById("soporteMensaje").value.trim();
+        const errEl = document.getElementById("soporteError");
+        const mostrarError = (texto) => {
+          errEl.textContent = texto;
+          errEl.style.display = "block";
+        };
+        errEl.style.display = "none";
         if (mensaje.length < 5) {
-          showToast("Contanos un poco más sobre tu consulta.");
+          mostrarError("Contanos un poco más sobre tu consulta.");
           return;
         }
         const btn = document.getElementById("soporteEnviar");
         btn.disabled = true;
+        btn.textContent = "Enviando...";
         try {
           await window._contactarSoporte(asunto, mensaje);
           document.getElementById("soporteAsunto").value = "";
@@ -4488,13 +4496,14 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           showToast("Mensaje enviado ✓ Te respondemos por mail");
         } catch (e) {
           console.error("enviarSoporte:", e);
-          showToast(
+          mostrarError(
             e && e.message && !/^internal$/i.test(e.message)
               ? e.message
-              : "No se pudo enviar. Probá de nuevo.",
+              : `No se pudo enviar. Probá de nuevo.${e && e.code ? ` (${String(e.code).replace("functions/", "")})` : ""}`,
           );
         } finally {
           btn.disabled = false;
+          btn.textContent = "Enviar";
         }
       }
 
