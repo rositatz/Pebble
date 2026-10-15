@@ -490,22 +490,84 @@
         gap: 6px;
         margin-bottom: 18px;
       }
-      .gm-title-select {
+      .gm-dd {
+        position: relative;
+      }
+      .gm-dd-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
         font-family: var(--font-display);
         font-size: 1.15rem;
         font-weight: 800;
         letter-spacing: -0.01em;
+        text-align: left;
         border: 1px solid var(--border2);
         border-radius: var(--r-lg);
-        padding: 14px 12px;
+        padding: 14px 14px;
         background: var(--surf-1);
         color: var(--text-primary);
-        outline: none;
-        width: 100%;
         cursor: pointer;
       }
-      .gm-title-select:focus {
+      .gm-dd-btn:focus-visible,
+      .gm-dd-btn[aria-expanded="true"] {
         border-color: var(--orange);
+        outline: none;
+      }
+      .gm-dd-ph {
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+      .gm-dd-panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 6px);
+        z-index: 40;
+        background: var(--surf-1);
+        border: 1px solid var(--border2);
+        border-radius: var(--r-lg);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+        max-height: min(60vh, 420px);
+        overflow-y: auto;
+      }
+      .gm-dd-panel[hidden] {
+        display: none;
+      }
+      .gm-dd-grupo {
+        position: sticky;
+        top: 0;
+        background: #000;
+        color: var(--orange);
+        font-family: var(--font-display);
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        padding: 9px 14px;
+      }
+      .gm-dd-op {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: none;
+        background: none;
+        font: inherit;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        padding: 12px 14px;
+        cursor: pointer;
+      }
+      .gm-dd-op:hover,
+      .gm-dd-op:focus-visible {
+        background: var(--surf-2);
+        outline: none;
+      }
+      .gm-dd-op.sel {
+        font-weight: 700;
+        color: var(--orange);
       }
       .gm-title-input {
         font-family: var(--font-display);
@@ -1138,37 +1200,14 @@
             <button type="button" class="gm-link-btn" id="verTutorial" style="margin: -6px 0 12px">¿Cómo funciona?</button>
 
             <div class="gm-field">
-              <select class="gm-title-select" id="escTituloSel" aria-label="Situación del escenario">
-                <option value="">Elegí una situación...</option>
-                <optgroup label="Al principio">
-                  <option>Primera cita</option>
-                  <option>Salir a comer</option>
-                  <option>Primer fin de semana juntos</option>
-                  <option>Presentar a los amigos</option>
-                  <option>Una noche que no salió como esperaba</option>
-                </optgroup>
-                <optgroup label="En pareja">
-                  <option>Cena de aniversario</option>
-                  <option>Primer viaje juntos</option>
-                  <option>Planear las vacaciones</option>
-                  <option>Conocer a la familia</option>
-                  <option>Una mañana de convivencia</option>
-                  <option>Un domingo en casa</option>
-                  <option>Un cumpleaños sorpresa</option>
-                  <option>Una mudanza en pareja</option>
-                  <option>Hablar de hacia dónde van</option>
-                  <option>Decidir si tener hijos</option>
-                  <option>3 años de casados</option>
-                </optgroup>
-                <optgroup label="Momentos difíciles">
-                  <option>Una discusión por plata</option>
-                  <option>Una pelea por celos</option>
-                  <option>Un conflicto con la familia</option>
-                  <option>Reencuentro después de una pelea</option>
-                  <option>Una crisis de pareja</option>
-                </optgroup>
-                <option value="__otro">Otra situación (escribirla)</option>
-              </select>
+              <div class="gm-dd" id="escDropdown">
+                <button type="button" class="gm-dd-btn" id="escDdBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Situación del escenario">
+                  <span class="gm-dd-ph" id="escDdTxt">Elegí una situación...</span>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="gm-dd-panel" id="escDdPanel" role="listbox" hidden></div>
+              </div>
+              <input type="hidden" id="escTituloSel" value="" />
               <input class="gm-title-input" id="escTitulo" type="text" maxlength="60" placeholder="Escribí tu situación" aria-label="Título del escenario" autocomplete="off" style="display: none; margin-top: 10px" />
             </div>
 
@@ -1725,6 +1764,78 @@
       });
 
       /* ── Crear escenario ── */
+      const SITUACIONES = [
+        ["Al principio", ["Primera cita", "Salir a comer", "Primer fin de semana juntos", "Presentar a los amigos", "Una noche que no salió como esperaba"]],
+        ["En pareja", ["Cena de aniversario", "Primer viaje juntos", "Planear las vacaciones", "Conocer a la familia", "Una mañana de convivencia", "Un domingo en casa", "Un cumpleaños sorpresa", "Una mudanza en pareja", "Hablar de hacia dónde van", "Decidir si tener hijos", "3 años de casados"]],
+        ["Momentos difíciles", ["Una discusión por plata", "Una pelea por celos", "Un conflicto con la familia", "Reencuentro después de una pelea", "Una crisis de pareja"]],
+      ];
+
+      function armarDesplegableSituaciones() {
+        const panel = $("escDdPanel");
+        const btn = $("escDdBtn");
+        const texto = $("escDdTxt");
+
+        function elegir(valor, etiqueta) {
+          $("escTituloSel").value = valor;
+          texto.textContent = etiqueta;
+          texto.classList.remove("gm-dd-ph");
+          panel.querySelectorAll(".gm-dd-op").forEach((o) => o.classList.toggle("sel", o.dataset.v === valor));
+          cerrar();
+          $("escTituloSel").dispatchEvent(new Event("change"));
+        }
+        function cerrar() {
+          panel.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+        }
+        function agregarOpcion(valor, etiqueta) {
+          const op = document.createElement("button");
+          op.type = "button";
+          op.className = "gm-dd-op";
+          op.setAttribute("role", "option");
+          op.dataset.v = valor;
+          op.textContent = etiqueta;
+          op.addEventListener("click", () => elegir(valor, etiqueta));
+          panel.appendChild(op);
+        }
+
+        const vacio = document.createElement("button");
+        vacio.type = "button";
+        vacio.className = "gm-dd-op";
+        vacio.setAttribute("role", "option");
+        vacio.dataset.v = "";
+        vacio.textContent = "Que mi gemelo elija una situación";
+        vacio.addEventListener("click", () => {
+          elegir("", "Elegí una situación...");
+          texto.classList.add("gm-dd-ph");
+        });
+        panel.appendChild(vacio);
+
+        SITUACIONES.forEach(([grupo, items]) => {
+          const cab = document.createElement("div");
+          cab.className = "gm-dd-grupo";
+          cab.textContent = grupo;
+          panel.appendChild(cab);
+          items.forEach((t) => agregarOpcion(t, t));
+        });
+        const cabOtra = document.createElement("div");
+        cabOtra.className = "gm-dd-grupo";
+        cabOtra.textContent = "Otra";
+        panel.appendChild(cabOtra);
+        agregarOpcion("__otro", "Otra situación (escribirla)");
+
+        btn.addEventListener("click", () => {
+          const abrir = panel.hidden;
+          panel.hidden = !abrir;
+          btn.setAttribute("aria-expanded", String(abrir));
+        });
+        document.addEventListener("click", (e) => {
+          if (!$("escDropdown").contains(e.target)) cerrar();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") cerrar();
+        });
+      }
+
       function tituloActual() {
         const v = $("escTituloSel").value;
         return v === "__otro" ? $("escTitulo").value.trim() : v;
@@ -1867,6 +1978,7 @@
         placeholder: "Máx. 3 palabras",
       });
       $("agregarTema").addEventListener("click", () => editorTemas.abrirInput());
+      armarDesplegableSituaciones();
       $("escTituloSel").addEventListener("change", () => {
         actualizarCamposEscenario();
         if ($("escTituloSel").value === "__otro") $("escTitulo").focus();
