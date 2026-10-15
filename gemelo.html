@@ -2028,7 +2028,7 @@
         }
         $("misSimLista").innerHTML = lista.map((s) => {
           const pct = Math.round((s.score || 0) * 100);
-          const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
+          const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
           const temasHtml = (Array.isArray(s.temas) ? s.temas : []).map((t) => `<span class="gm-sim-tema">${esc(t)}</span>`).join("");
           return `<a class="gm-sim-item" href="./chats.html?persona=${encodeURIComponent(s.con_uid)}&modo=gemelo&sim=1&simId=${encodeURIComponent(s.id)}">
             <div class="gm-sim-top"><div class="gm-sim-titulo">${esc(s.titulo || "Situación")}</div><div class="gm-sim-pct${pct >= 70 ? " ok" : ""}">${pct}%</div></div>
