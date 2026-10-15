@@ -3890,7 +3890,11 @@
                     c.otro.avatarFoto ||
                     (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
                     "",
-                  age: calcAge(c.otro.fechaNac),
+                  age:
+                    calcAge(c.otro.fechaNac) ||
+                    (Number.isInteger(c.otro.edad) && c.otro.edad >= 18
+                      ? c.otro.edad
+                      : null),
                   city: c.otro.ciudad || "",
                   identidad: identidadOtro,
                   afinidad: Math.round((c.data.ultimo_score || 0) * 100),

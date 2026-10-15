@@ -2114,8 +2114,11 @@
               ? c.data.usuario_1.nombre
               : c.data.usuario_2.nombre;
           const nombre = c.otro.nombre || nombreGuardado || "Usuario";
+          const edadPublicada =
+            Number.isInteger(c.otro.edad) && c.otro.edad >= 18 ? c.otro.edad : null;
           const edad =
-            typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null;
+            (typeof calcAge === "function" ? calcAge(c.otro.fechaNac) : null) ||
+            edadPublicada;
           const ciudad = c.otro.ciudad || "";
           const foto =
             c.otro.avatarFoto ||

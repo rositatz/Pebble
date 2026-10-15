@@ -289,6 +289,43 @@ _CACHE_PERFILES = {}
 _TTL_PERFIL_SEG = 60
 
 
+def _completar_edades_publicadas(db, perfiles):
+    """Una sola vez: deja la edad de las cuentas que ya existían en
+    usuarios/{uid}.edad, para que se vea en los matches viejos."""
+    marca = db.collection("config").document("edad_publicada")
+    if marca.get().exists:
+        return
+    for uid, perfil in perfiles:
+        _publicar_edad(db, uid, perfil)
+    marca.set({"hecho": firestore.SERVER_TIMESTAMP, "cuentas": len(perfiles)})
+
+
+def _email_de_cuenta(uid, datos_usuario):
+    """El alta de cuenta no guarda el mail en usuarios/{uid} (solo vive en
+    Firebase Auth), así que si falta ahí se toma de Auth."""
+    datos = datos_usuario or {}
+    correo = datos.get("email") or datos.get("correo")
+    if correo:
+        return correo
+    try:
+        return auth.get_user(uid).email
+    except Exception as e:
+        print(f"_email_de_cuenta: no se pudo obtener el mail de {uid}: {e}")
+        return None
+
+
+def _publicar_edad(db, uid, perfil):
+    """El perfil del gemelo solo lo lee su dueño, y la fecha de nacimiento
+    solo existe si la completó en el perfil: para que la edad se vea en el
+    perfil de un match se deja también en usuarios/{uid}.edad."""
+    edad = (perfil or {}).get("edad")
+    if isinstance(edad, int) and 18 <= edad <= 99:
+        try:
+            db.collection("usuarios").document(uid).set({"edad": edad}, merge=True)
+        except Exception as e:
+            print(f"_publicar_edad: no se pudo guardar la edad de {uid}: {e}")
+
+
 def _obtener_o_generar_perfil(db, uid):
     """Con cache corto en memoria de la instancia: en un chat con el gemelo
     de otra persona cada mensaje volvía a leer los dos perfiles completos
@@ -326,6 +363,7 @@ def _leer_o_generar_perfil(db, uid):
             return None
         perfil = construir_perfil_gemelo(doc_setup.to_dict())
         ref.set(perfil)
+        _publicar_edad(db, uid, perfil)
 
     _mezclar_ajustes_usuario(db, uid, perfil)
     return perfil
@@ -378,6 +416,8 @@ def _mezclar_ajustes_usuario(db, uid, perfil):
     listas vienen de un campo editable por el cliente, así que se limpian
     (cantidad, largo, una sola línea) antes de llegar a un prompt."""
     datos_usuario = db.collection("usuarios").document(uid).get().to_dict() or {}
+    if not datos_usuario.get("edad"):
+        _publicar_edad(db, uid, perfil)
     if datos_usuario.get("pronombres"):
         perfil["pronombres"] = datos_usuario["pronombres"]
     no_digo = _limpiar_lista_ajustes(datos_usuario.get("gemelo_no_digo"))
@@ -511,6 +551,7 @@ def generar_perfil_gemelo(event: firestore_fn.Event) -> None:
 
     db = firestore.client()
     db.collection("usuarios").document(uid).collection("gemelo").document("perfil").set(perfil)
+    _publicar_edad(db, uid, perfil)
 
 
 @firestore_fn.on_document_written(document="conexiones/{parId}")
@@ -641,6 +682,7 @@ def generar_gemelo_ahora(request: https_fn.CallableRequest):
     perfil = _aplicar_estilo_desde_onboarding(perfil, doc_setup.to_dict())
 
     perfil_ref.set(perfil)
+    _publicar_edad(db, uid, perfil)
 
     return {"ok": True}
 
@@ -1188,7 +1230,7 @@ def _avisos_recientes(db, coleccion, uid):
 
 def _datos_basicos(db, uid):
     datos = db.collection("usuarios").document(uid).get().to_dict() or {}
-    return datos.get("nombre") or datos.get("apodo") or "(sin nombre)", datos.get("email") or "(sin email)"
+    return datos.get("nombre") or datos.get("apodo") or "(sin nombre)", _email_de_cuenta(uid, datos) or "(sin email)"
 
 
 def _bloquear_par(par_ref, uid):
@@ -1531,13 +1573,18 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     pausados = _uids_pausados(db)
 
     usuarios = []
+    todos_los_perfiles = []
     for doc in db.collection_group("gemelo").stream():
         if doc.id != "perfil":
             continue
         uid = doc.reference.parent.parent.id
+        perfil_doc = doc.to_dict()
+        todos_los_perfiles.append((uid, perfil_doc))
         if uid in pausados:
             continue
-        usuarios.append((uid, doc.to_dict()))
+        usuarios.append((uid, perfil_doc))
+
+    _completar_edades_publicadas(db, todos_los_perfiles)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
     # por cada par candidato.
@@ -1988,8 +2035,8 @@ def _finalizar_par_de_batch(db, estado_par):
     dict2 = doc2_snap.to_dict() if doc2_snap.exists else {}
 
     # 3. Obtener el string del correo (probando 'email' o 'correo' por si acaso)
-    correo1 = None if dict1.get("esCuentaSintetica") else dict1.get("email")
-    correo2 = None if dict2.get("esCuentaSintetica") else dict2.get("email")
+    correo1 = None if dict1.get("esCuentaSintetica") else _email_de_cuenta(uid1, dict1)
+    correo2 = None if dict2.get("esCuentaSintetica") else _email_de_cuenta(uid2, dict2)
 
     if registro["supera_umbral"]:
         pct = round(registro["score"]["compatibilidad_total"] * 100)
