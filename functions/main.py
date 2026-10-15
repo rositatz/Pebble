@@ -914,6 +914,7 @@ def simular_situacion(request: https_fn.CallableRequest):
     uid2 = (data.get("otroUid") or "").strip()
     situacion = (data.get("situacion") or "").strip()
     titulo_escenario = (data.get("titulo") or "").strip()
+    descripcion_escenario = " ".join(str(data.get("descripcion") or "").split())[:250]
     temas_escenario = [
         " ".join(t.split()[:3])
         for t in _limpiar_lista_ajustes(data.get("temas"), maximo=5, largo=40)
@@ -1021,6 +1022,23 @@ def simular_situacion(request: https_fn.CallableRequest):
     payload = _con_creado(par_ref, payload)
     _, sim_ref = par_ref.collection("simulaciones").add(registro)
     par_ref.set(payload, merge=True)
+
+    # Resumen liviano de lo que pidió esta persona, para listarlo en Mi gemelo
+    # sin leer las conversaciones completas.
+    try:
+        db.collection("usuarios").document(uid1).collection("simulaciones_pedidas").document(sim_ref.id).set({
+            "par_id": par_ref.id,
+            "con_uid": uid2,
+            "con_nombre": (registro.get("usuario_2") or {}).get("nombre", ""),
+            "titulo": registro["escenario"]["titulo"],
+            "descripcion": descripcion_escenario,
+            "temas": temas_escenario,
+            "score": registro["score"]["compatibilidad_total"],
+            "supera_umbral": registro["supera_umbral"],
+            "fecha": registro["fecha"],
+        })
+    except Exception as e:
+        print(f"simular_situacion: no se pudo guardar el resumen de la simulación: {e}")
 
     _guardar_metricas_uso(db, "simulacion")
 
@@ -2792,6 +2810,7 @@ def eliminar_cuenta(request: https_fn.CallableRequest):
     _borrar_coleccion(ref_usuario.collection("gemelo_setup"))
     _borrar_coleccion(ref_usuario.collection("chats"))
     _borrar_coleccion(ref_usuario.collection("notificaciones"))
+    _borrar_coleccion(ref_usuario.collection("simulaciones_pedidas"))
     ref_usuario.delete()
 
     for doc in db.collection("conexiones").where("participantes", "array_contains", uid).stream():

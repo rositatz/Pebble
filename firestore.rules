@@ -42,6 +42,13 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
 
+      // Resumen de las simulaciones que pidió esta persona (lo escribe solo
+      // la Cloud Function simular_situacion) -- se lista en Mi gemelo.
+      match /simulaciones_pedidas/{simId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+
       // Perfil normalizado del gemelo: lo genera SOLO la Cloud Function
       // (generar_perfil_gemelo, vía Admin SDK) a partir del onboarding.
       // El cliente lo puede leer para mostrarlo, pero nunca escribirlo --

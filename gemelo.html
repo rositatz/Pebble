@@ -681,6 +681,97 @@
       }
 
       /* Resultados */
+      .gm-filtros {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+      }
+      .gm-filtro {
+        flex: 0 0 auto;
+        border: 1px solid var(--border2);
+        background: var(--surf-1);
+        color: var(--text-primary);
+        border-radius: 999px;
+        padding: 7px 14px;
+        font: inherit;
+        font-size: 0.82rem;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .gm-filtro.on {
+        background: var(--surf-dark);
+        border-color: var(--surf-dark);
+        color: var(--text-inv);
+      }
+      .gm-sim-item {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: var(--surf-1);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 14px;
+        margin-bottom: 10px;
+        transition: border-color 0.15s;
+      }
+      .gm-sim-item:hover {
+        border-color: var(--orange);
+      }
+      .gm-sim-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .gm-sim-titulo {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+      }
+      .gm-sim-pct {
+        flex-shrink: 0;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: var(--orange);
+      }
+      .gm-sim-pct.ok {
+        color: #2f9e44;
+      }
+      .gm-sim-meta {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        margin: 2px 0 8px;
+      }
+      .gm-sim-desc {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0 0 8px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .gm-sim-temas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .gm-sim-tema {
+        background: var(--surf-2);
+        border: 1px solid var(--border2);
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.74rem;
+      }
+      .gm-vacio {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 4px 0 0;
+      }
       .gm-res {
         display: flex;
         flex-direction: column;
@@ -1239,6 +1330,12 @@
           </section>
 
           <div class="gm-res" id="resultados" aria-live="polite"></div>
+
+          <section class="gm-card" aria-label="Mis simulaciones" id="misSimCard">
+            <h2 class="gm-card-title">Mis simulaciones</h2>
+            <div class="gm-filtros" id="misSimFiltros"></div>
+            <div id="misSimLista"></div>
+          </section>
         </div>
       </div>
     </main>
@@ -1401,6 +1498,8 @@
         getDocs,
         query,
         where,
+        orderBy,
+        limit,
         initializeFirestore,
         persistentLocalCache,
         persistentMultipleTabManager,
@@ -1889,6 +1988,57 @@
       }
 
       let corriendo = false;
+      /* ── Mis simulaciones ── */
+      let misSims = [];
+      let filtroSim = "";
+
+      async function cargarMisSimulaciones() {
+        try {
+          const snap = await getDocs(
+            query(collection(db, "usuarios", uid, "simulaciones_pedidas"), orderBy("fecha", "desc"), limit(50)),
+          );
+          misSims = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        } catch (err) {
+          console.warn("Error cargando las simulaciones pedidas:", err);
+          misSims = [];
+        }
+        renderMisSimulaciones();
+      }
+
+      function renderMisSimulaciones() {
+        const activos = new Set(matches.map((m) => m.uid));
+        const visibles = misSims.filter((s) => activos.has(s.con_uid));
+        const personas = [...new Map(visibles.map((s) => [s.con_uid, s.con_nombre || "Usuario"])).entries()];
+        if (filtroSim && !personas.some(([u]) => u === filtroSim)) filtroSim = "";
+
+        $("misSimFiltros").innerHTML = personas.length > 1
+          ? [["", "Todos"], ...personas].map(([u, n]) => `<button type="button" class="gm-filtro${u === filtroSim ? " on" : ""}" data-uid="${esc(u)}">${esc(n)}</button>`).join("")
+          : "";
+        $("misSimFiltros").querySelectorAll(".gm-filtro").forEach((b) =>
+          b.addEventListener("click", () => {
+            filtroSim = b.dataset.uid;
+            renderMisSimulaciones();
+          }),
+        );
+
+        const lista = visibles.filter((s) => !filtroSim || s.con_uid === filtroSim);
+        if (!lista.length) {
+          $("misSimLista").innerHTML = `<p class="gm-vacio">${visibles.length ? "No hay simulaciones con esa persona." : "Todavía no pediste simulaciones. Las que pidas desde acá van a aparecer en esta lista."}</p>`;
+          return;
+        }
+        $("misSimLista").innerHTML = lista.map((s) => {
+          const pct = Math.round((s.score || 0) * 100);
+          const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) : "";
+          const temasHtml = (Array.isArray(s.temas) ? s.temas : []).map((t) => `<span class="gm-sim-tema">${esc(t)}</span>`).join("");
+          return `<a class="gm-sim-item" href="./chats.html?persona=${encodeURIComponent(s.con_uid)}&modo=gemelo&sim=1&simId=${encodeURIComponent(s.id)}">
+            <div class="gm-sim-top"><div class="gm-sim-titulo">${esc(s.titulo || "Situación")}</div><div class="gm-sim-pct${pct >= 70 ? " ok" : ""}">${pct}%</div></div>
+            <div class="gm-sim-meta">Con ${esc(s.con_nombre || "Usuario")}${fecha ? " · " + fecha : ""}</div>
+            ${s.descripcion ? `<p class="gm-sim-desc">${esc(s.descripcion)}</p>` : ""}
+            ${temasHtml ? `<div class="gm-sim-temas">${temasHtml}</div>` : ""}
+          </a>`;
+        }).join("");
+      }
+
       async function crearSimulacion() {
         if (corriendo) return;
         if (!elegidos.length) {
@@ -1907,7 +2057,7 @@
           if (!m) continue;
           const card = agregarEspera(m);
           try {
-            const res = (await simularSituacionCallable({ otroUid, situacion, titulo: tituloActual(), temas: [...temas] })).data;
+            const res = (await simularSituacionCallable({ otroUid, situacion, titulo: tituloActual(), descripcion: $("escDesc").value.trim(), temas: [...temas] })).data;
             await mostrarResultado(card, m, res);
           } catch (err) {
             mostrarError(card, m, err);
@@ -1916,6 +2066,7 @@
         corriendo = false;
         btn.disabled = false;
         btn.textContent = "Crear simulación";
+        cargarMisSimulaciones();
       }
 
       /* ── Tutorial de la primera vez ── */
@@ -2065,6 +2216,7 @@
             $("navTwinStatus").textContent = estado;
             $("heroEstado").textContent = estado;
             renderGemelos();
+            cargarMisSimulaciones();
           } catch (err) {
             console.error("Error cargando matches reales:", err);
             $("navTwinStatus").textContent = "Activo";
