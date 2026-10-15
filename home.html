@@ -2720,7 +2720,7 @@
               "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
           } else {
             const pctMejor = Math.round((mejorScoreSinMatch || 0) * 100);
-            el.innerHTML = `Ya corrió <strong>${totalSimulaciones} simulaci${totalSimulaciones === 1 ? "ón" : "ones"}</strong>, pero ninguna llegó todavía al 70% necesario para hacer match (mejor intento: <strong>${pctMejor}%</strong>).`;
+            el.innerHTML = `Ya evaluó a <strong>${totalSimulaciones} persona${totalSimulaciones === 1 ? "" : "s"}</strong>, pero ninguna llegó todavía al 70% necesario para hacer match (mayor afinidad: <strong>${pctMejor}%</strong>).`;
           }
           return;
         }
@@ -2741,7 +2741,7 @@
 
         let texto = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
         if (sinMatch > 0) {
-          texto += ` · ${sinMatch} simulaci${sinMatch === 1 ? "ón" : "ones"} sin llegar a match`;
+          texto += ` · evaluó a ${sinMatch} persona${sinMatch === 1 ? "" : "s"} más sin llegar al 70%`;
         }
         el.innerHTML = texto;
       }

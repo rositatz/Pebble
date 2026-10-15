@@ -171,6 +171,16 @@ _CORREOS_DE_PRUEBA = {
 }
 
 
+def _uids_gemelo_incompleto(db):
+    """Cuentas que están rehaciendo o dejaron a medias su gemelo
+    (usuarios/{uid}.gemelo_completado == False): no entran a la búsqueda ni
+    a las simulaciones nocturnas hasta que lo terminen."""
+    return {
+        doc.id
+        for doc in db.collection("usuarios").where("gemelo_completado", "==", False).stream()
+    }
+
+
 def _uids_pausados(db):
     return {
         doc.id
@@ -1537,6 +1547,9 @@ _SIN_UBICACION = 999999
 # cómodo contra el límite de 1800s (30 min) de las funciones programadas,
 # incluso en el caso más caro (pareja "Algo serio", ~9 escenarios).
 LOTE_NOCTURNO = 10
+# Simulaciones de charla por noche: como mucho una por persona, empezando por
+# quienes todavía no recibieron ninguna.
+MAX_SIMULACIONES_POR_NOCHE = 20
 
 # Pool de candidatas de donde se arma cada lote nocturno -- más grande que
 # LOTE_NOCTURNO a propósito, para poder ELEGIR entre varias en vez de
@@ -1570,7 +1583,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
     # Cuentas pausadas (Privacidad avanzada > Pausar mi cuenta) no entran a
     # buscar pareja nueva -- ni como origen ni como candidato para nadie más.
-    pausados = _uids_pausados(db)
+    pausados = _uids_pausados(db) | _uids_gemelo_incompleto(db)
 
     usuarios = []
     todos_los_perfiles = []
@@ -1753,12 +1766,29 @@ def _procesar_parejas_pendientes_logica() -> None:
         .limit(POOL_CANDIDATAS_NOCTURNO)
         .stream()
     )
-    pausados = _uids_pausados(db)
+    pausados = _uids_pausados(db) | _uids_gemelo_incompleto(db)
     pool = [
         d for d in pool
         if not ({d.to_dict()["usuario_1"]["uid"], d.to_dict()["usuario_2"]["uid"]} & pausados)
     ]
-    pendientes = _elegir_lote_diverso(pool, LOTE_NOCTURNO)
+    # Se evalúan todas las parejas del pool (la compatibilidad matemática es
+    # gratis); las que superan el umbral compiten por un lugar de simulación
+    # más abajo.
+    pendientes = pool
+    candidatas_sim = []
+    cache_perfiles = {}
+
+    def cargar_perfil(uid):
+        if uid not in cache_perfiles:
+            snap = db.collection("usuarios").document(uid).collection("gemelo").document("perfil").get()
+            if not snap.exists:
+                cache_perfiles[uid] = None
+            else:
+                crudo = snap.to_dict()
+                mezclado = copy.deepcopy(crudo)
+                _mezclar_ajustes_usuario(db, uid, mezclado)
+                cache_perfiles[uid] = (crudo, mezclado)
+        return cache_perfiles[uid]
 
     resueltos_sin_match, con_error, descartados, encolados = 0, 0, 0, 0
     lote_id = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%Y%m%d_%H%M%S")
@@ -1773,9 +1803,8 @@ def _procesar_parejas_pendientes_logica() -> None:
         uid2 = data["usuario_2"]["uid"]
 
         try:
-            doc1 = db.collection("usuarios").document(uid1).collection("gemelo").document("perfil").get()
-            doc2 = db.collection("usuarios").document(uid2).collection("gemelo").document("perfil").get()
-            if not doc1.exists or not doc2.exists:
+            cargado1, cargado2 = cargar_perfil(uid1), cargar_perfil(uid2)
+            if not cargado1 or not cargado2:
                 raise ValueError("A alguno de los dos ya no le existe el perfil de gemelo.")
 
             # buscar_parejas_pendientes ya filtró por género/orientación,
@@ -1785,7 +1814,7 @@ def _procesar_parejas_pendientes_logica() -> None:
             # mientras el par seguía PENDIENTE, sin este re-chequeo se
             # procesaba igual con los filtros ya vencidos, y podía terminar
             # en un match que ya no correspondía según los datos actuales.
-            perfil1_raw, perfil2_raw = doc1.to_dict(), doc2.to_dict()
+            perfil1_raw, perfil2_raw = cargado1[0], cargado2[0]
             if not compatible_por_genero(perfil1_raw, perfil2_raw):
                 doc.reference.update({"estado": "DESCARTADO", "motivo_descarte": "genero_incompatible"})
                 descartados += 1
@@ -1799,10 +1828,8 @@ def _procesar_parejas_pendientes_logica() -> None:
                 descartados += 1
                 continue
 
-            perfil1_data = doc1.to_dict()
-            perfil2_data = doc2.to_dict()
-            _mezclar_ajustes_usuario(db, uid1, perfil1_data)
-            _mezclar_ajustes_usuario(db, uid2, perfil2_data)
+            perfil1_data = copy.deepcopy(cargado1[1])
+            perfil2_data = copy.deepcopy(cargado2[1])
 
             # Compatibilidad matemática del onboarding, gratis (sin OpenAI) --
             # mismo cálculo que antes hacía simular_relacion_completa antes de
@@ -1852,20 +1879,10 @@ def _procesar_parejas_pendientes_logica() -> None:
             # Supera el umbral: hace falta la simulación real de charla --
             # se arma el estado inicial y se encola para la Batch API en vez
             # de correrla ahora mismo.
-            estado_par = motor.armar_estado_par_batch(
-                uid1, perfil1_data, uid2, perfil2_data,
-                data["usuario_1"], data["usuario_2"], data.get("distancia_km"),
-            )
-            par_id = data["par_id"]
-            if usar_bedrock:
-                pares_sync.append((par_id, estado_par))
-                encolados += 1
-                continue
-            estados_por_par[par_id] = estado_par
-            solicitud = motor.armar_solicitud_batch(par_id, estado_par)
-            if solicitud:
-                solicitudes.append(solicitud)
-            encolados += 1
+            candidatas_sim.append({
+                "data": data, "uid1": uid1, "uid2": uid2,
+                "perfil1": perfil1_data, "perfil2": perfil2_data,
+            })
 
         except Exception as e:
             # traceback completo, no solo str(e) -- un mensaje como
@@ -1874,8 +1891,49 @@ def _procesar_parejas_pendientes_logica() -> None:
             doc.reference.update({"estado": "ERROR", "error": traceback.format_exc()})
             con_error += 1
 
+    # Entre las parejas que superan el umbral se eligen las que se simulan
+    # esta noche: una por persona como máximo, primero las que le dan su
+    # primera simulación a alguien. Las que no entran siguen PENDIENTE y
+    # compiten de nuevo mañana.
+    con_simulacion = set()
+    for conexion in _conexiones_match(db):
+        con_simulacion.update(conexion.to_dict().get("participantes") or [])
+    candidatas_sim.sort(key=lambda c: (
+        -((c["uid1"] not in con_simulacion) + (c["uid2"] not in con_simulacion)),
+        c["data"].get("distancia_km") if c["data"].get("distancia_km") is not None else _SIN_UBICACION,
+    ))
+    usados_hoy = set()
+    for cand in candidatas_sim:
+        if encolados >= MAX_SIMULACIONES_POR_NOCHE:
+            break
+        if cand["uid1"] in usados_hoy or cand["uid2"] in usados_hoy:
+            continue
+        data = cand["data"]
+        try:
+            estado_par = motor.armar_estado_par_batch(
+                cand["uid1"], cand["perfil1"], cand["uid2"], cand["perfil2"],
+                data["usuario_1"], data["usuario_2"], data.get("distancia_km"),
+            )
+            par_id = data["par_id"]
+            if usar_bedrock:
+                pares_sync.append((par_id, estado_par))
+            else:
+                estados_por_par[par_id] = estado_par
+                solicitud = motor.armar_solicitud_batch(par_id, estado_par)
+                if solicitud:
+                    solicitudes.append(solicitud)
+        except Exception:
+            db.collection("parejas_pendientes").document(data["par_id"]).update({
+                "estado": "ERROR", "error": traceback.format_exc(),
+            })
+            con_error += 1
+            continue
+        usados_hoy.update([cand["uid1"], cand["uid2"]])
+        encolados += 1
+
     print(
-        f"procesar_parejas_pendientes: {resueltos_sin_match} resueltos sin match (gratis), "
+        f"procesar_parejas_pendientes: {len(candidatas_sim)} parejas superan el umbral, se simulan {encolados}. "
+        f"{resueltos_sin_match} resueltos sin match (gratis), "
         f"{encolados} encolados para simulación por batch, {con_error} con error, "
         f"{descartados} descartados por cambio de datos."
     )

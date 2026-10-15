@@ -982,6 +982,32 @@
         transform: translateX(-50%) translateY(0);
       }
 
+      .chat-vacio {
+        margin: auto;
+        max-width: 300px;
+        padding: 56px 24px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+      }
+      .chat-vacio-titulo {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+      .chat-vacio p {
+        margin: 0;
+      }
+      .chat-panel.gemelo-mode .chat-vacio {
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .chat-panel.gemelo-mode .chat-vacio-titulo {
+        color: rgba(255, 255, 255, 0.85);
+      }
+
       /* ── Chat panel en modo gemelo: mismo estilo negro que la simulación ── */
       .chat-panel.gemelo-mode {
         background: #0d0d0d;
@@ -2865,6 +2891,18 @@
           }
           addMsgEl(con, msg, p, isG);
         });
+
+        if (!(md.msgs || []).length) {
+          const vacio = document.createElement("div");
+          vacio.className = "chat-vacio";
+          const comunes = (p.sharedInterests || []).slice(0, 2).map(esc);
+          vacio.innerHTML = isG
+            ? `<div class="chat-vacio-titulo">Practicá con el gemelo de ${esc(p.name)}</div>
+               <p>Es una IA que habla como ${esc(p.name)}. Escribile lo que te gustaría decirle y fijate cómo responde.</p>`
+            : `<div class="chat-vacio-titulo">Todavía no hablaron</div>
+               <p>${comunes.length ? `Tienen en común ${comunes.join(" y ")}. Podés arrancar por ahí.` : `Escribile a ${esc(p.name)} para romper el hielo.`}</p>`;
+          con.appendChild(vacio);
+        }
       }
 
       // Contenido de una burbuja: si el mensaje trae foto (solo pasa en modo
@@ -3330,6 +3368,8 @@
           )
           .join("");
 
+        const sinDatos = !p.bio && !interestChips && !photosHtml;
+
         document.getElementById("poInner").innerHTML = `
     <div class="po-hero">
       <div class="po-hero-av" ${p.photo ? `onclick="openLightbox('${p.photo}')"` : ""} style="${p.photo ? `background-image:url('${p.photo}');background-size:cover;background-position:center` : "background:linear-gradient(135deg,#888,#555)"}">${p.photo ? "" : esc((p.name[0] || "?").toUpperCase())}</div>
@@ -3342,6 +3382,7 @@
     ${p.bio ? `<div class="po-section"><div class="po-section-label">Sobre ${esc(p.name)}</div><p class="po-bio">${esc(p.bio)}</p></div>` : ""}
     ${interestChips ? `<div class="po-section"><div class="po-section-label">Intereses <span style="color:var(--orange);text-transform:none;letter-spacing:0">— naranja = compartidos</span></div><div class="po-chips">${interestChips}</div></div>` : ""}
     ${photosHtml ? `<div class="po-section"><div class="po-section-label">Fotos</div><div class="po-photos-grid">${photosHtml}</div></div>` : ""}
+    ${sinDatos ? `<div class="po-section"><p class="po-bio">${esc(p.name)} todavía no completó más información en su perfil.</p></div>` : ""}
   `;
 
         document.getElementById("profileOverlay").classList.add("open");
