@@ -464,6 +464,13 @@ def _con_otro(e1, campo, campo_otro):
     return valor
 
 
+def _lugar(valor):
+    """Dónde estudia / dónde trabaja: texto libre, una sola línea. No se suma
+    a perfil.profesion (lo que lee el gemelo) para no empujarlo a contar el
+    lugar de trabajo, que el prompt le prohíbe compartir."""
+    return " ".join(str(valor or "").split())[:80]
+
+
 def _construir_situacion(e1):
     """Arma un texto natural para el prompt (perfil.profesion) a partir de
     "¿cuál es tu situación actual?" + las preguntas condicionales que
@@ -509,6 +516,8 @@ def _construir_identidad(e1):
         "ciudad": e1.get("ciudad", ""),
         "ubicacion": _construir_ubicacion(e1),
         "profesion": _construir_situacion(e1),
+        "estudia_en": _lugar(e1.get("dondeEstudia")),
+        "trabaja_en": _lugar(e1.get("dondeTrabaja")),
         "area_trabajo": _con_otro(e1, "areaTrabajo", "areaTrabajoOtro"),
         "convivencia": e1.get("convivo", ""),
         "signo": e1.get("signo", ""),

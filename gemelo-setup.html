@@ -1232,6 +1232,19 @@
             ></textarea>
           </div>
 
+          <!-- Solo se muestra si estudia (Estudio / Estudio y trabajo) -- ver
+         actualizarPreguntasSituacion(). -->
+          <div class="q" id="donde-estudia" style="display: none">
+            <div class="ql">¿Dónde estudiás?</div>
+            <textarea
+              class="inp"
+              id="dondeEstudia"
+              placeholder="Universidad, instituto o colegio"
+              rows="1"
+              maxlength="80"
+            ></textarea>
+          </div>
+
           <!-- Solo se muestra si "situacion" implica trabajo (Trabajo / Estudio y
          trabajo / emprendimiento / independiente) -- ver
          actualizarPreguntasSituacion(). -->
@@ -1314,6 +1327,19 @@
               id="areaTrabajoOtro"
               placeholder="Tu área de trabajo"
               rows="1"
+            ></textarea>
+          </div>
+
+          <!-- Solo se muestra si trabaja (Trabajo / Estudio y trabajo /
+         emprendimiento / independiente) -- ver actualizarPreguntasSituacion(). -->
+          <div class="q" id="donde-trabaja" style="display: none">
+            <div class="ql">¿Dónde trabajás?</div>
+            <textarea
+              class="inp"
+              id="dondeTrabaja"
+              placeholder="Empresa, lugar o emprendimiento"
+              rows="1"
+              maxlength="80"
             ></textarea>
           </div>
 
@@ -3527,7 +3553,9 @@
         ].includes(valor);
 
         toggleCondicional("nivel-estudio", estudia, "nivelEstudio");
+        toggleCondicional("donde-estudia", estudia);
         toggleCondicional("area-trabajo", trabaja, "areaTrabajo");
+        toggleCondicional("donde-trabaja", trabaja);
 
         actualizarBarraProgreso();
       };
@@ -3543,13 +3571,18 @@
         if (!wrap) return;
         wrap.style.display = mostrar ? "block" : "none";
         if (!mostrar) {
-          const pillsEl = wrap.querySelector(`.pills[data-field="${field}"]`);
+          const pillsEl = field
+            ? wrap.querySelector(`.pills[data-field="${field}"]`)
+            : null;
           if (pillsEl) {
             pillsEl
               .querySelectorAll(".pill.sel")
               .forEach((p) => p.classList.remove("sel"));
             toggleOtroInput(pillsEl);
           }
+          wrap.querySelectorAll("textarea[id], input[id]").forEach((campo) => {
+            campo.value = "";
+          });
         }
       }
 
