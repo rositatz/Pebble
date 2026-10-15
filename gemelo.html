@@ -490,6 +490,23 @@
         gap: 6px;
         margin-bottom: 18px;
       }
+      .gm-title-select {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        border: 1px solid var(--border2);
+        border-radius: var(--r-lg);
+        padding: 14px 12px;
+        background: var(--surf-1);
+        color: var(--text-primary);
+        outline: none;
+        width: 100%;
+        cursor: pointer;
+      }
+      .gm-title-select:focus {
+        border-color: var(--orange);
+      }
       .gm-title-input {
         font-family: var(--font-display);
         font-size: 1.5rem;
@@ -1121,9 +1138,41 @@
             <button type="button" class="gm-link-btn" id="verTutorial" style="margin: -6px 0 12px">¿Cómo funciona?</button>
 
             <div class="gm-field">
-              <input class="gm-title-input" id="escTitulo" type="text" maxlength="60" placeholder="Primera cita" aria-label="Título del escenario" autocomplete="off" />
+              <select class="gm-title-select" id="escTituloSel" aria-label="Situación del escenario">
+                <option value="">Elegí una situación...</option>
+                <optgroup label="Al principio">
+                  <option>Primera cita</option>
+                  <option>Salir a comer</option>
+                  <option>Primer fin de semana juntos</option>
+                  <option>Presentar a los amigos</option>
+                  <option>Una noche que no salió como esperaba</option>
+                </optgroup>
+                <optgroup label="En pareja">
+                  <option>Cena de aniversario</option>
+                  <option>Primer viaje juntos</option>
+                  <option>Planear las vacaciones</option>
+                  <option>Conocer a la familia</option>
+                  <option>Una mañana de convivencia</option>
+                  <option>Un domingo en casa</option>
+                  <option>Un cumpleaños sorpresa</option>
+                  <option>Una mudanza en pareja</option>
+                  <option>Hablar de hacia dónde van</option>
+                  <option>Decidir si tener hijos</option>
+                  <option>3 años de casados</option>
+                </optgroup>
+                <optgroup label="Momentos difíciles">
+                  <option>Una discusión por plata</option>
+                  <option>Una pelea por celos</option>
+                  <option>Un conflicto con la familia</option>
+                  <option>Reencuentro después de una pelea</option>
+                  <option>Una crisis de pareja</option>
+                </optgroup>
+                <option value="__otro">Otra situación (escribirla)</option>
+              </select>
+              <input class="gm-title-input" id="escTitulo" type="text" maxlength="60" placeholder="Escribí tu situación" aria-label="Título del escenario" autocomplete="off" style="display: none; margin-top: 10px" />
             </div>
 
+            <div id="escExtra" style="display: none">
             <div class="gm-field">
               <div class="gm-group-head" style="margin-bottom: 0">
                 <label class="gm-label" for="escDesc">Descripción</label>
@@ -1139,6 +1188,7 @@
               </div>
               <div class="gm-chips" id="chipsTemas"></div>
             </div>
+            </div>
 
             <div class="gm-field">
               <span class="gm-label">Con el gemelo de..</span>
@@ -1146,7 +1196,7 @@
             </div>
 
             <button type="button" class="gm-cta" id="crearSim">Crear simulación</button>
-            <p class="gm-hint">Si dejás título y descripción vacíos, el gemelo elige una situación. Cada simulación puede tardar uno o dos minutos.</p>
+            <p class="gm-hint">Si no elegís ninguna situación, el gemelo elige una. Cada simulación puede tardar uno o dos minutos.</p>
           </section>
 
           <div class="gm-res" id="resultados" aria-live="polite"></div>
@@ -1180,8 +1230,8 @@
           <div class="gm-tut-title">Cómo pedir una</div>
           <ol class="gm-tut-list">
             <li>Elegí con qué gemelo (de tus matches).</li>
-            <li>Ponele un <b>título</b> al escenario, por ejemplo "Primer viaje juntos".</li>
-            <li>Sumá una <b>descripción</b> corta si querés (opcional).</li>
+            <li>Elegí una <b>situación</b> de la lista, por ejemplo "Primer viaje juntos", o escribí la tuya.</li>
+            <li>Cuando elegís la situación aparece la <b>descripción</b> corta (opcional).</li>
             <li>Elegí hasta 5 <b>temas a tocar</b>, de <b>3 palabras como máximo</b> cada uno, por ejemplo "Planes a futuro" o "Hijos".</li>
             <li>Tocá <b>Crear simulación</b>. Puede tardar uno o dos minutos.</li>
           </ol>
@@ -1675,9 +1725,29 @@
       });
 
       /* ── Crear escenario ── */
+      function tituloActual() {
+        const v = $("escTituloSel").value;
+        return v === "__otro" ? $("escTitulo").value.trim() : v;
+      }
+
+      // La descripción y los temas aparecen recién cuando ya hay una situación.
+      function actualizarCamposEscenario() {
+        const otra = $("escTituloSel").value === "__otro";
+        $("escTitulo").style.display = otra ? "" : "none";
+        const hayTitulo = tituloActual().length >= 3;
+        const visible = $("escExtra").style.display !== "none";
+        if (!hayTitulo && visible) {
+          $("escDesc").value = "";
+          $("escCuenta").textContent = "0";
+          temas.splice(0, temas.length);
+          editorTemas.render();
+        }
+        $("escExtra").style.display = hayTitulo ? "" : "none";
+      }
+
       function armarSituacion() {
         const sinPunto = (s) => s.trim().replace(/[.\s]+$/, "");
-        const partes = [sinPunto($("escTitulo").value), sinPunto($("escDesc").value)].filter(Boolean);
+        const partes = [sinPunto(tituloActual()), sinPunto($("escDesc").value)].filter(Boolean);
         return partes.join(". ").slice(0, 500);
       }
 
@@ -1726,7 +1796,7 @@
           if (!m) continue;
           const card = agregarEspera(m);
           try {
-            const res = (await simularSituacionCallable({ otroUid, situacion, titulo: $("escTitulo").value.trim(), temas: [...temas] })).data;
+            const res = (await simularSituacionCallable({ otroUid, situacion, titulo: tituloActual(), temas: [...temas] })).data;
             await mostrarResultado(card, m, res);
           } catch (err) {
             mostrarError(card, m, err);
@@ -1797,6 +1867,11 @@
         placeholder: "Máx. 3 palabras",
       });
       $("agregarTema").addEventListener("click", () => editorTemas.abrirInput());
+      $("escTituloSel").addEventListener("change", () => {
+        actualizarCamposEscenario();
+        if ($("escTituloSel").value === "__otro") $("escTitulo").focus();
+      });
+      $("escTitulo").addEventListener("input", actualizarCamposEscenario);
       $("escDesc").addEventListener("input", (e) => {
         $("escCuenta").textContent = e.target.value.length;
       });
