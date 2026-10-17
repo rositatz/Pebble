@@ -3797,6 +3797,9 @@
             document.getElementById("lng").value = lng;
             status.textContent = "✓ Ubicación guardada";
             btn.classList.add("sel");
+            // Dispara el autoguardado de la etapa: sin esto, la ubicación solo
+            // quedaba en la etapa 1 si después tocaban otra respuesta.
+            actualizarBarraProgreso();
             // Además de quedar en el onboarding (etapa1.lat/lng -> perfil del
             // gemelo), se guarda directo en usuarios/{uid} para poder usarla desde
             // otras pantallas sin depender de que el gemelo ya esté generado.

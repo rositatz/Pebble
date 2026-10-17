@@ -299,6 +299,65 @@ _CACHE_PERFILES = {}
 _TTL_PERFIL_SEG = 60
 
 
+def _reevaluar_pares_justo_bajo_umbral(db):
+    """Una sola vez, al bajar el corte de match de 70% a 69,5%: las parejas
+    que habían quedado "sin match" con un puntaje entre 69% y 70% se borran
+    para que se armen y se evalúen de nuevo con el corte nuevo. No se tocan
+    las que alguna vez fueron match, las quitadas ni las bloqueadas."""
+    marca = db.collection("config").document("umbral_695")
+    if marca.get().exists:
+        return
+    reseteadas = 0
+    for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
+        datos = doc.to_dict() or {}
+        if datos.get("match_confirmado") or datos.get("match_eliminado") or datos.get("bloqueado"):
+            continue
+        if (datos.get("ultimo_score") or 0) < 0.69:
+            continue
+        for sim in doc.reference.collection("simulaciones").stream():
+            sim.reference.delete()
+        doc.reference.delete()
+        db.collection("parejas_pendientes").document(doc.id).delete()
+        reseteadas += 1
+    marca.set({"hecho": firestore.SERVER_TIMESTAMP, "reseteadas": reseteadas})
+    print(f"_reevaluar_pares_justo_bajo_umbral: {reseteadas} parejas para reevaluar con el corte de 69,5%.")
+
+
+def _auditar_filtros(db, perfiles):
+    """Deja en config/auditoria_filtros las parejas ya armadas que hoy no
+    pasarían los filtros base (género/orientación, edad, hijos), para poder
+    revisarlas: por ejemplo, un match anterior a un cambio de respuestas."""
+    por_uid = {uid: perfil for uid, perfil in perfiles}
+    incumplen = []
+    campos = ["participantes", "supera_umbral", "match_confirmado", "match_eliminado", "ultimo_score"]
+    for doc in db.collection("conexiones").select(campos).stream():
+        d = doc.to_dict() or {}
+        u = d.get("participantes") or []
+        if len(u) != 2 or u[0] not in por_uid or u[1] not in por_uid:
+            continue
+        p1, p2 = por_uid[u[0]], por_uid[u[1]]
+        fallan = [
+            nombre for nombre, f in (
+                ("genero", compatible_por_genero),
+                ("edad", compatible_por_edad),
+                ("hijos", compatible_por_hijos),
+            ) if not f(p1, p2)
+        ]
+        if fallan:
+            incumplen.append({
+                "par_id": doc.id,
+                "filtros": fallan,
+                "match": bool(d.get("supera_umbral") or d.get("match_confirmado")),
+                "eliminado": bool(d.get("match_eliminado")),
+                "score": d.get("ultimo_score"),
+            })
+    db.collection("config").document("auditoria_filtros").set({
+        "actualizado": firestore.SERVER_TIMESTAMP,
+        "total": len(incumplen),
+        "pares": incumplen[:100],
+    })
+
+
 def _completar_edades_publicadas(db, perfiles):
     """Una sola vez: deja la edad de las cuentas que ya existían en
     usuarios/{uid}.edad, para que se vea en los matches viejos."""
@@ -1575,6 +1634,10 @@ LOTE_NOCTURNO = 10
 # Simulaciones de charla por noche: como mucho una por persona, empezando por
 # quienes todavía no recibieron ninguna.
 MAX_SIMULACIONES_POR_NOCHE = 20
+# Matches que una persona puede acumular por las simulaciones nocturnas: más
+# allá de esto se prioriza a quienes tienen menos. Los escenarios que pide la
+# persona no cuentan.
+MAX_MATCHES_POR_PERSONA = 5
 
 # Pool de candidatas de donde se arma cada lote nocturno -- más grande que
 # LOTE_NOCTURNO a propósito, para poder ELEGIR entre varias en vez de
@@ -1623,6 +1686,17 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
         usuarios.append((uid, perfil_doc))
 
     _completar_edades_publicadas(db, todos_los_perfiles)
+    _reevaluar_pares_justo_bajo_umbral(db)
+
+    # La ubicación se guarda también en usuarios/{uid}; si el perfil del gemelo
+    # no la tiene (por ejemplo, la dio después de armarlo), se toma de ahí.
+    ubicaciones = {d.id: (d.to_dict() or {}).get("ubicacion") for d in db.collection("usuarios").select(["ubicacion"]).stream()}
+    for uid_u, perfil_u in todos_los_perfiles:
+        ub = ubicaciones.get(uid_u)
+        if not perfil_u.get("ubicacion") and isinstance(ub, dict) and ub.get("lat") is not None and ub.get("lng") is not None:
+            perfil_u["ubicacion"] = {"lat": ub["lat"], "lng": ub["lng"]}
+
+    _auditar_filtros(db, todos_los_perfiles)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
     # por cada par candidato.
@@ -1920,11 +1994,18 @@ def _procesar_parejas_pendientes_logica() -> None:
     # esta noche: una por persona como máximo, primero las que le dan su
     # primera simulación a alguien. Las que no entran siguen PENDIENTE y
     # compiten de nuevo mañana.
-    con_simulacion = set()
+    matches_por_persona = {}
     for conexion in _conexiones_match(db):
-        con_simulacion.update(conexion.to_dict().get("participantes") or [])
+        for uid_p in (conexion.to_dict().get("participantes") or []):
+            matches_por_persona[uid_p] = matches_por_persona.get(uid_p, 0) + 1
+    candidatas_sim = [
+        c for c in candidatas_sim
+        if matches_por_persona.get(c["uid1"], 0) < MAX_MATCHES_POR_PERSONA
+        and matches_por_persona.get(c["uid2"], 0) < MAX_MATCHES_POR_PERSONA
+    ]
+    # Primero las parejas donde las dos personas tienen menos matches.
     candidatas_sim.sort(key=lambda c: (
-        -((c["uid1"] not in con_simulacion) + (c["uid2"] not in con_simulacion)),
+        matches_por_persona.get(c["uid1"], 0) + matches_por_persona.get(c["uid2"], 0),
         c["data"].get("distancia_km") if c["data"].get("distancia_km") is not None else _SIN_UBICACION,
     ))
     usados_hoy = set()
