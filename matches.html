@@ -1466,6 +1466,14 @@
     </nav>
 
     <script>
+
+      // Porcentaje de afinidad para mostrar: una pareja que NO superó el umbral
+      // nunca se muestra como 70% aunque su puntaje real sea 0.695 (redondeaba
+      // para arriba y parecía un match que no se dio).
+      window.pctAfin = function (valor, supera) {
+        const v = Number(valor) || 0;
+        return supera ? Math.max(70, Math.round(v * 100)) : Math.min(Math.floor(v * 100), 69);
+      };
       // Escapa texto para insertarlo tanto en contenido de texto como dentro
       // de atributos HTML entre comillas (aria-label, etc.) -- nombre/bio/
       // ciudad vienen de Firestore y los escribe libremente cada usuario
@@ -2124,7 +2132,7 @@
             c.otro.avatarFoto ||
             (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
             "";
-          const score = Math.round((c.data.ultimo_score || 0) * 100);
+          const score = pctAfin(c.data.ultimo_score || 0, !!c.data.supera_umbral);
           const isNew = !mis[`match_visto_${c.otroId}`];
           const tags = interesesCompartidos(misIntereses, c.otro.intereses);
           const ejes = construirEjes(c.data.desglose, c.ultimaSim);

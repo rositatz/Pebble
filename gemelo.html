@@ -1564,6 +1564,14 @@
       ];
 
       const $ = (id) => document.getElementById(id);
+
+      // Porcentaje de afinidad para mostrar: una pareja que NO superó el umbral
+      // nunca se muestra como 70% aunque su puntaje real sea 0.695 (redondeaba
+      // para arriba y parecía un match que no se dio).
+      window.pctAfin = function (valor, supera) {
+        const v = Number(valor) || 0;
+        return supera ? Math.max(70, Math.round(v * 100)) : Math.min(Math.floor(v * 100), 69);
+      };
       const esc = (t) =>
         String(t)
           .replace(/&/g, "&amp;")
@@ -1970,7 +1978,7 @@
       }
 
       async function mostrarResultado(card, m, res) {
-        const pct = Math.round(((res.score && res.score.compatibilidad_total) || 0) * 100);
+        const pct = pctAfin((res.score && res.score.compatibilidad_total) || 0, !!res.superaUmbral);
         const suyo = await colorDe(m.uid);
         card.innerHTML = `
           <div class="gm-res-head">
@@ -2027,7 +2035,7 @@
           return;
         }
         $("misSimLista").innerHTML = lista.map((s) => {
-          const pct = Math.round((s.score || 0) * 100);
+          const pct = pctAfin(s.score || 0, !!s.supera_umbral);
           const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
           const temasHtml = (Array.isArray(s.temas) ? s.temas : []).map((t) => `<span class="gm-sim-tema">${esc(t)}</span>`).join("");
           return `<a class="gm-sim-item" href="./chats.html?persona=${encodeURIComponent(s.con_uid)}&modo=gemelo&sim=1&simId=${encodeURIComponent(s.id)}">

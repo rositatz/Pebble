@@ -2378,6 +2378,14 @@
     </div>
 
     <script>
+
+      // Porcentaje de afinidad para mostrar: una pareja que NO superó el umbral
+      // nunca se muestra como 70% aunque su puntaje real sea 0.695 (redondeaba
+      // para arriba y parecía un match que no se dio).
+      window.pctAfin = function (valor, supera) {
+        const v = Number(valor) || 0;
+        return supera ? Math.max(70, Math.round(v * 100)) : Math.min(Math.floor(v * 100), 69);
+      };
       // Funciones de UI (no-módulo, accesibles desde onclick en HTML)
       function showGate() {
         document.getElementById("auth-gate").classList.remove("hidden");
@@ -2719,7 +2727,7 @@
             el.innerHTML =
               "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
           } else {
-            const pctMejor = Math.round((mejorScoreSinMatch || 0) * 100);
+            const pctMejor = pctAfin(mejorScoreSinMatch || 0, false);
             el.innerHTML = `Ya evaluó a <strong>${totalSimulaciones} persona${totalSimulaciones === 1 ? "" : "s"}</strong>, pero ninguna llegó todavía al 70% necesario para hacer match (mayor afinidad: <strong>${pctMejor}%</strong>).`;
           }
           return;
@@ -2737,7 +2745,7 @@
           mejor.data.usuario_1.uid === mejor.otroId
             ? mejor.data.usuario_1.nombre
             : mejor.data.usuario_2.nombre;
-        const pctMejor = Math.round((mejor.data.ultimo_score || 0) * 100);
+        const pctMejor = pctAfin(mejor.data.ultimo_score || 0, !!mejor.data.supera_umbral);
 
         let texto = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
         if (sinMatch > 0) {
@@ -2797,7 +2805,7 @@
             c.otro.avatarFoto ||
             (Array.isArray(c.otro.fotos) && c.otro.fotos.find(Boolean)) ||
             "";
-          const score = Math.round((c.data.ultimo_score || 0) * 100);
+          const score = pctAfin(c.data.ultimo_score || 0, !!c.data.supera_umbral);
           html += `
       <a href="#" class="match-item" onclick="goToMatch('${c.otroId}');return false;" role="listitem" aria-label="${esc(nombre)}, ${score}%">
         <div class="match-av-wrap" id="mav-${c.otroId}">
