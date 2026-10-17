@@ -482,12 +482,15 @@ def _construir_situacion(e1):
     nivel = _con_otro(e1, "nivelEstudio", "nivelEstudioOtro")
     area = _con_otro(e1, "areaTrabajo", "areaTrabajoOtro")
     proyecto = _con_otro(e1, "proyectoAdicional", "proyectoAdicionalOtro")
+    carrera = _lugar(e1.get("carreraEstudio"))
 
     partes = []
     if situacion and situacion != "Prefiero no decirlo":
         partes.append(situacion)
     if nivel:
         partes.append(f"nivel: {nivel}")
+    if carrera:
+        partes.append(f"estudia: {carrera}")
     if area:
         partes.append(f"área: {area}")
     if proyecto and proyecto != "Ninguno":
@@ -516,6 +519,7 @@ def _construir_identidad(e1):
         "ciudad": e1.get("ciudad", ""),
         "ubicacion": _construir_ubicacion(e1),
         "profesion": _construir_situacion(e1),
+        "estudia_carrera": _lugar(e1.get("carreraEstudio")),
         "estudia_en": _lugar(e1.get("dondeEstudia")),
         "trabaja_en": _lugar(e1.get("dondeTrabaja")),
         "area_trabajo": _con_otro(e1, "areaTrabajo", "areaTrabajoOtro"),
