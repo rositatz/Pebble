@@ -2032,7 +2032,7 @@
           const temasHtml = (Array.isArray(s.temas) ? s.temas : []).map((t) => `<span class="gm-sim-tema">${esc(t)}</span>`).join("");
           return `<a class="gm-sim-item" href="./chats.html?persona=${encodeURIComponent(s.con_uid)}&modo=gemelo&sim=1&simId=${encodeURIComponent(s.id)}">
             <div class="gm-sim-top"><div class="gm-sim-titulo">${esc(s.titulo || "Situación")}</div><div class="gm-sim-pct${pct >= 70 ? " ok" : ""}">${pct}%</div></div>
-            <div class="gm-sim-meta">Con ${esc(s.con_nombre || "Usuario")}${fecha ? " · " + fecha : ""}</div>
+            <div class="gm-sim-meta">Con ${esc(s.con_nombre || "Usuario")} · ${s.pedida_por && s.pedida_por !== uid ? `Pedida por ${esc(s.con_nombre || "Usuario")}` : "Pedida por vos"}${fecha ? " · " + fecha : ""}</div>
             ${s.descripcion ? `<p class="gm-sim-desc">${esc(s.descripcion)}</p>` : ""}
             ${temasHtml ? `<div class="gm-sim-temas">${temasHtml}</div>` : ""}
           </a>`;

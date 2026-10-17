@@ -1026,17 +1026,24 @@ def simular_situacion(request: https_fn.CallableRequest):
     # Resumen liviano de lo que pidió esta persona, para listarlo en Mi gemelo
     # sin leer las conversaciones completas.
     try:
-        db.collection("usuarios").document(uid1).collection("simulaciones_pedidas").document(sim_ref.id).set({
+        resumen_comun = {
             "par_id": par_ref.id,
-            "con_uid": uid2,
-            "con_nombre": (registro.get("usuario_2") or {}).get("nombre", ""),
+            "pedida_por": uid1,
             "titulo": registro["escenario"]["titulo"],
             "descripcion": descripcion_escenario,
             "temas": temas_escenario,
             "score": registro["score"]["compatibilidad_total"],
             "supera_umbral": registro["supera_umbral"],
             "fecha": registro["fecha"],
-        })
+        }
+        # Las dos personas del par la ven en su lista, cada una con el nombre de la otra.
+        for dueno, otro, nombre_otro in (
+            (uid1, uid2, (registro.get("usuario_2") or {}).get("nombre", "")),
+            (uid2, uid1, (registro.get("usuario_1") or {}).get("nombre", "")),
+        ):
+            db.collection("usuarios").document(dueno).collection("simulaciones_pedidas").document(sim_ref.id).set({
+                **resumen_comun, "con_uid": otro, "con_nombre": nombre_otro,
+            })
     except Exception as e:
         print(f"simular_situacion: no se pudo guardar el resumen de la simulación: {e}")
 

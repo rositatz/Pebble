@@ -3653,6 +3653,126 @@
    cerca primero, ver simulador.simular_matches_por_cercania). Si el usuario
    no da permiso o el navegador no soporta geolocalización, el gemelo se arma
    igual sin ubicación -- es un dato opcional, no bloquea el onboarding. */
+      /* ─── PASOS PARA ACTIVAR EL PERMISO DE UBICACIÓN ───
+   Cuando el navegador tiene el permiso bloqueado, desde JS no se puede volver a
+   pedir: hay que cambiarlo a mano en la configuración. Los pasos dependen del
+   dispositivo y del navegador, así que se arman según el user agent. */
+      function pasosPermisoUbicacion() {
+        const ua = navigator.userAgent || "";
+        const ios =
+          /iPhone|iPad|iPod/.test(ua) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        const android = /Android/.test(ua);
+        const enApp = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|MicroMessenger|Line\//.test(ua);
+        const firefox = /Firefox|FxiOS/.test(ua);
+        const chrome = /Chrome|CriOS/.test(ua) && !/Edg|OPR|SamsungBrowser/.test(ua);
+        const safari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|Edg|OPR/.test(ua);
+
+        let titulo;
+        let pasos;
+        if (enApp) {
+          titulo = "Estás abriendo Pebble dentro de otra app, y desde ahí no se puede pedir la ubicación.";
+          pasos = [
+            "Tocá los tres puntitos (⋯) o el botón de compartir de esa app.",
+            "Elegí «Abrir en el navegador» (Safari o Chrome).",
+            "Cuando se abra Pebble en el navegador, tocá «Usar mi ubicación» y elegí «Permitir».",
+          ];
+        } else if (ios && safari) {
+          titulo = "En iPhone (Safari):";
+          pasos = [
+            "Abrí los Ajustes del iPhone → Privacidad y seguridad → Localización, y fijate que «Localización» esté activada.",
+            "En esa misma lista, tocá «Sitios web de Safari» y elegí «Al usar la app» (o «Preguntar la próxima vez»).",
+            "Volvé a Safari, abrí pebble.ar y tocá el botón «aA» a la izquierda de la dirección.",
+            "Tocá «Configuración del sitio web» y, en «Ubicación», elegí «Permitir» (o «Preguntar»).",
+            "Recargá la página y tocá «Usar mi ubicación».",
+          ];
+        } else if (ios) {
+          titulo = "En iPhone (Chrome u otro navegador):";
+          pasos = [
+            "Abrí los Ajustes del iPhone.",
+            "Entrá a Privacidad y seguridad → Localización.",
+            "Buscá tu navegador (Chrome, Firefox…) y elegí «Al usar la app».",
+            "Volvé a Pebble, recargá la página y tocá «Usar mi ubicación».",
+          ];
+        } else if (android && chrome) {
+          titulo = "En Android (Chrome):";
+          pasos = [
+            "Arriba, a la izquierda de la dirección, tocá el ícono que hay antes de «pebble.ar» (un candado o dos rayitas con perillas).",
+            "Tocá «Permisos» (o «Configuración del sitio»).",
+            "Tocá «Ubicación» y elegí «Permitir».",
+            "Recargá la página y tocá «Usar mi ubicación».",
+            "Si sigue sin funcionar, revisá que la ubicación del celu esté prendida: deslizá desde arriba y activá «Ubicación».",
+          ];
+        } else if (android) {
+          titulo = "En Android:";
+          pasos = [
+            "Abrí los Ajustes del celu → Aplicaciones → tu navegador → Permisos → Ubicación.",
+            "Elegí «Permitir solo mientras la app está en uso».",
+            "Volvé a Pebble, recargá la página y tocá «Usar mi ubicación».",
+          ];
+        } else if (safari) {
+          titulo = "En Safari (Mac):";
+          pasos = [
+            "Arriba, en el menú de Safari, elegí «Configuración para este sitio web…».",
+            "En «Ubicación», elegí «Permitir».",
+            "Recargá la página y tocá «Usar mi ubicación».",
+            "Si no funciona: Ajustes del Sistema → Privacidad y seguridad → Localización → activá Safari.",
+          ];
+        } else if (firefox) {
+          titulo = "En Firefox:";
+          pasos = [
+            "Arriba, a la izquierda de la dirección, hacé clic en el ícono de permisos (el escudo o el candado).",
+            "Al lado de «Acceder a tu ubicación», hacé clic en la X para sacar el bloqueo.",
+            "Recargá la página y tocá «Usar mi ubicación».",
+          ];
+        } else {
+          titulo = "En Chrome o Edge (computadora):";
+          pasos = [
+            "Arriba, a la izquierda de la dirección «pebble.ar», hacé clic en el ícono que hay antes (un candado o dos rayitas con perillas).",
+            "Hacé clic en «Configuración del sitio» (o «Permisos de este sitio»).",
+            "Buscá «Ubicación» y cambiá «Bloquear» por «Permitir».",
+            "Recargá la página y tocá «Usar mi ubicación».",
+          ];
+        }
+        return (
+          "<b>El permiso de ubicación está bloqueado.</b> " +
+          titulo +
+          '<ol style="margin: 6px 0 0 18px; padding: 0; line-height: 1.5">' +
+          pasos.map((p) => "<li>" + p + "</li>").join("") +
+          "</ol>" +
+          '<span style="display:block; margin-top:6px">Es un dato opcional: podés seguir sin él.</span>'
+        );
+      }
+
+      // Estado de la ubicación al abrir la pantalla: si ya estaba guardada se
+      // muestra como tal, y si el permiso está bloqueado se explican los pasos
+      // sin esperar a que toquen el botón.
+      window.actualizarEstadoUbicacion = async function () {
+        const status = document.getElementById("ubicacionStatus");
+        const btn = document.getElementById("btnUsarUbicacion");
+        if (!status || !btn) return;
+        if (document.getElementById("lat").value && document.getElementById("lng").value) {
+          status.textContent = "✓ Ubicación guardada";
+          btn.classList.add("sel");
+          return;
+        }
+        if (!navigator.permissions || !navigator.geolocation) return;
+        try {
+          const permiso = await navigator.permissions.query({ name: "geolocation" });
+          const aplicar = () => {
+            if (permiso.state === "denied") {
+              status.innerHTML = pasosPermisoUbicacion();
+            } else if (permiso.state === "granted" && !document.getElementById("lat").value) {
+              window.usarMiUbicacion();
+            }
+          };
+          aplicar();
+          permiso.onchange = aplicar;
+        } catch (e) {
+          /* Safari viejo: no tiene permissions.query para geolocalización */
+        }
+      };
+
       window.usarMiUbicacion = function () {
         const status = document.getElementById("ubicacionStatus");
         const btn = document.getElementById("btnUsarUbicacion");
@@ -3690,14 +3810,16 @@
             // decisión y ni siquiera vuelve a mostrar el cartel de permiso en los
             // próximos intentos -- hay que ir a la configuración del sitio a mano.
             if (err.code === err.PERMISSION_DENIED) {
-              status.textContent =
-                'Bloqueaste el permiso de ubicación para este sitio. Para activarlo: tocá el ícono de candado/info junto a la URL → Permisos del sitio → Ubicación → Permitir, y volvé a tocar "Usar mi ubicación". Es un dato opcional, podés seguir sin él.';
+              status.innerHTML = pasosPermisoUbicacion();
+            } else if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+              status.innerHTML =
+                "No pudimos detectar tu ubicación. Revisá que la ubicación del celular esté activada y que tengas señal o wifi, y probá de nuevo tocando «Usar mi ubicación». Es un dato opcional: podés seguir sin él.";
             } else {
               status.textContent =
                 "No pudimos acceder a tu ubicación (" + err.message + ").";
             }
           },
-          { enableHighAccuracy: false, timeout: 10000 },
+          { enableHighAccuracy: false, timeout: 20000, maximumAge: 600000 },
         );
       };
 
@@ -3893,6 +4015,7 @@
         // para "situación actual" -- si no, quedarían ocultas con una respuesta
         // adentro que el usuario ya había dado.
         actualizarPreguntasSituacion();
+        window.actualizarEstadoUbicacion();
 
         actualizarBarraProgreso();
       }
