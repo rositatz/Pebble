@@ -2570,12 +2570,12 @@
 
     <script>
 
-      // Porcentaje de afinidad para mostrar: una pareja que NO superó el umbral
-      // nunca se muestra como 70% aunque su puntaje real sea 0.695 (redondeaba
-      // para arriba y parecía un match que no se dio).
+      // Porcentaje de afinidad para mostrar: siempre redondeado para abajo
+      // (69,9% se ve como 69%), y una pareja que no es match nunca llega a 70.
       window.pctAfin = function (valor, supera) {
         const v = Number(valor) || 0;
-        return supera ? Math.max(70, Math.round(v * 100)) : Math.min(Math.floor(v * 100), 69);
+        const abajo = Math.floor(v * 100 + 1e-6);
+        return supera ? Math.max(70, abajo) : Math.min(abajo, 69);
       };
       // Se llena con datos reales de Firestore -- ver cargarChatsReales()
       // más abajo. openChat()/refreshListItem()/etc. leen de acá igual que antes.

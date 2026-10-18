@@ -1,4 +1,5 @@
 import re
+import math
 import copy
 import random
 import datetime
@@ -297,65 +298,6 @@ def _quiere_notif(db, uid, campo):
 
 _CACHE_PERFILES = {}
 _TTL_PERFIL_SEG = 60
-
-
-def _reevaluar_pares_justo_bajo_umbral(db):
-    """Una sola vez, al bajar el corte de match de 70% a 69,5%: las parejas
-    que habían quedado "sin match" con un puntaje entre 69% y 70% se borran
-    para que se armen y se evalúen de nuevo con el corte nuevo. No se tocan
-    las que alguna vez fueron match, las quitadas ni las bloqueadas."""
-    marca = db.collection("config").document("umbral_695")
-    if marca.get().exists:
-        return
-    reseteadas = 0
-    for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
-        datos = doc.to_dict() or {}
-        if datos.get("match_confirmado") or datos.get("match_eliminado") or datos.get("bloqueado"):
-            continue
-        if (datos.get("ultimo_score") or 0) < 0.69:
-            continue
-        for sim in doc.reference.collection("simulaciones").stream():
-            sim.reference.delete()
-        doc.reference.delete()
-        db.collection("parejas_pendientes").document(doc.id).delete()
-        reseteadas += 1
-    marca.set({"hecho": firestore.SERVER_TIMESTAMP, "reseteadas": reseteadas})
-    print(f"_reevaluar_pares_justo_bajo_umbral: {reseteadas} parejas para reevaluar con el corte de 69,5%.")
-
-
-def _auditar_filtros(db, perfiles):
-    """Deja en config/auditoria_filtros las parejas ya armadas que hoy no
-    pasarían los filtros base (género/orientación, edad, hijos), para poder
-    revisarlas: por ejemplo, un match anterior a un cambio de respuestas."""
-    por_uid = {uid: perfil for uid, perfil in perfiles}
-    incumplen = []
-    campos = ["participantes", "supera_umbral", "match_confirmado", "match_eliminado", "ultimo_score"]
-    for doc in db.collection("conexiones").select(campos).stream():
-        d = doc.to_dict() or {}
-        u = d.get("participantes") or []
-        if len(u) != 2 or u[0] not in por_uid or u[1] not in por_uid:
-            continue
-        p1, p2 = por_uid[u[0]], por_uid[u[1]]
-        fallan = [
-            nombre for nombre, f in (
-                ("genero", compatible_por_genero),
-                ("edad", compatible_por_edad),
-                ("hijos", compatible_por_hijos),
-            ) if not f(p1, p2)
-        ]
-        if fallan:
-            incumplen.append({
-                "par_id": doc.id,
-                "filtros": fallan,
-                "match": bool(d.get("supera_umbral") or d.get("match_confirmado")),
-                "eliminado": bool(d.get("match_eliminado")),
-                "score": d.get("ultimo_score"),
-            })
-    db.collection("config").document("auditoria_filtros").set({
-        "actualizado": firestore.SERVER_TIMESTAMP,
-        "total": len(incumplen),
-        "pares": incumplen[:100],
-    })
 
 
 def _completar_edades_publicadas(db, perfiles):
@@ -1686,7 +1628,6 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
         usuarios.append((uid, perfil_doc))
 
     _completar_edades_publicadas(db, todos_los_perfiles)
-    _reevaluar_pares_justo_bajo_umbral(db)
 
     # La ubicación se guarda también en usuarios/{uid}; si el perfil del gemelo
     # no la tiene (por ejemplo, la dio después de armarlo), se toma de ahí.
@@ -1952,7 +1893,7 @@ def _procesar_parejas_pendientes_logica() -> None:
                     "usuario_1": data["usuario_1"],
                     "usuario_2": data["usuario_2"],
                     "participantes": [uid1, uid2],
-                    "ultimo_score": round(promedio, 2),
+                    "ultimo_score": math.floor(promedio * 100 + 1e-6) / 100,
                     "ultimo_sim": s,
                     "ultimo_pref_a_b": pref_a_b,
                     "ultimo_pref_b_a": pref_b_a,
@@ -2203,7 +2144,7 @@ def _finalizar_par_de_batch(db, estado_par):
     correo2 = None if dict2.get("esCuentaSintetica") else _email_de_cuenta(uid2, dict2)
 
     if registro["supera_umbral"]:
-        pct = round(registro["score"]["compatibilidad_total"] * 100)
+        pct = math.floor(registro["score"]["compatibilidad_total"] * 100 + 1e-6)
         
         # --- MATCH PARA USUARIO 1 ---
         if _quiere_notif(db, uid1, "matches"):

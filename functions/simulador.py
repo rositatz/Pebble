@@ -408,9 +408,9 @@ def _completar_chat_gemelo(
 
 
 # Un solo lugar para no tener que cambiarlo en cada función por separado.
-# Desde 69,5% ya es match (se muestra como 70%); por debajo se muestra
-# redondeado para abajo.
-UMBRAL_MATCH = 0.695
+# Es match con 70% o más. Los porcentajes siempre se muestran redondeados
+# para abajo (69,9% se ve como 69%).
+UMBRAL_MATCH = 0.70
 
 escenarios_db = [
 
