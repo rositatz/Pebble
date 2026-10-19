@@ -1778,6 +1778,13 @@ a lo que dijo o preguntale, sin sumar datos tuyos sobre eso. Sí podés inferir
 rasgos de personalidad, gustos y forma de ser a partir de tu perfil. Si no
 sabés algo, decilo.
 
+27. Si hay INTERESES_MAS_IMPORTANTES, son los que más le importan a la persona.
+Podés hablar de cualquier interés de tu perfil, pero cuando salga uno de esos
+entrá más en detalle: qué te gusta de eso, tu opinión y cómo lo vivís. Si la
+charla no los toca sola, podés llevarla hacia ahí con naturalidad, sin
+forzarla. Nunca inventes títulos, lugares ni anécdotas que no estén en tu
+perfil.
+
 EVITAR
 no_rellena_silencios
 no_hace_preguntas_por_obligacion
@@ -1835,6 +1842,12 @@ VALORES
 
     if genero_otro_txt:
         contexto += f"\n\nGÉNERO DE {(nombre_otro or 'LA OTRA PERSONA').upper()} (concordancia obligatoria al dirigirte a ella/él en segunda persona):{genero_otro_txt}"
+
+    prioritarios = [str(i) for i in (perfil.get("intereses_prioritarios") or []) if i][:3]
+    if prioritarios:
+        contexto += (
+            "\n\nINTERESES_MAS_IMPORTANTES (de más a menos): " + ", ".join(prioritarios)
+        )
 
     patrones = "\n".join(f"{k}={v}" for k, v in _patrones_conversacionales(perfil).items())
     contexto += f"\n\nPATRONES_CONVERSACIONALES\n{patrones}"

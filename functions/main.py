@@ -1046,6 +1046,19 @@ def actualizar_preferencias_matching(request: https_fn.CallableRequest):
             cambios["intereses"] = combinados
             cambios["intereses_onboarding"] = combinados
 
+    if "intereses_prioritarios" in data:
+        crudos = data.get("intereses_prioritarios")
+        if isinstance(crudos, list):
+            vistos, prioritarios = set(), []
+            for i in crudos:
+                i = str(i).strip()[:40]
+                if i and i.casefold() not in vistos:
+                    vistos.add(i.casefold())
+                    prioritarios.append(i)
+                if len(prioritarios) >= 3:
+                    break
+            cambios["intereses_prioritarios"] = prioritarios
+
     if not cambios:
         return {"ok": True}
 

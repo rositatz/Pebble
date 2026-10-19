@@ -794,6 +794,74 @@
         font-size: 0.9rem;
         line-height: 1;
       }
+      .interest-rank {
+        margin-top: 18px;
+      }
+      .interest-rank-sub {
+        font-size: 0.73rem;
+        color: var(--text-muted);
+        margin: 0 0 10px;
+      }
+      .interest-rank-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .interest-rank-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 8px 6px 10px;
+        border: 1.5px solid var(--border2);
+        border-radius: 12px;
+        background: var(--surf-1);
+        font-size: 0.8rem;
+        color: var(--text-primary);
+      }
+      .interest-rank-item.top {
+        border-color: var(--orange);
+      }
+      .interest-rank-num {
+        flex: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        background: var(--surf-2);
+        color: var(--text-secondary);
+      }
+      .interest-rank-item.top .interest-rank-num {
+        background: var(--orange);
+        color: #fff;
+      }
+      .interest-rank-txt {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .interest-rank-btn {
+        flex: none;
+        width: 34px;
+        height: 34px;
+        border: none;
+        border-radius: 8px;
+        background: var(--surf-2);
+        color: var(--text-primary);
+        font-size: 0.75rem;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .interest-rank-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
       .interests-hint {
         font-size: 0.73rem;
         color: var(--text-muted);
@@ -2660,6 +2728,15 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             </div>
           </div>
 
+          <div class="interest-rank" id="interestRank" style="display: none">
+            <span class="interest-cat-label">Orden de importancia</span>
+            <p class="interest-rank-sub">
+              Tu gemelo puede hablar de todo lo que elegiste, pero se explaya
+              más en los primeros 3.
+            </p>
+            <ol class="interest-rank-list" id="interestRankList"></ol>
+          </div>
+
           <p
             style="
               font-size: 0.73rem;
@@ -4210,6 +4287,67 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
 ══════════════════════════════ */
       const MAX_INTERESTS = 10;
 
+      // Orden de importancia de los intereses elegidos (el primero es el que más
+      // le importa). Se guarda en usuarios/{uid}.intereses, que ya es una lista.
+      window._ordenIntereses = [];
+
+      function sincronizarOrdenIntereses(base) {
+        const elegidos = [
+          ...document.querySelectorAll(".interest-chip.selected:not(.add-chip)"),
+        ].map((c) => c.textContent.trim());
+        const previo = base || window._ordenIntereses;
+        window._ordenIntereses = previo
+          .filter((i) => elegidos.includes(i))
+          .concat(elegidos.filter((i) => !previo.includes(i)));
+        renderRankingIntereses();
+      }
+
+      function renderRankingIntereses() {
+        const caja = document.getElementById("interestRank");
+        const lista = document.getElementById("interestRankList");
+        if (!caja || !lista) return;
+        const orden = window._ordenIntereses;
+        caja.style.display = orden.length > 1 ? "" : "none";
+        lista.innerHTML = "";
+        orden.forEach((texto, i) => {
+          const li = document.createElement("li");
+          li.className = "interest-rank-item" + (i < 3 ? " top" : "");
+          const num = document.createElement("span");
+          num.className = "interest-rank-num";
+          num.textContent = String(i + 1);
+          const txt = document.createElement("span");
+          txt.className = "interest-rank-txt";
+          txt.textContent = texto;
+          const subir = document.createElement("button");
+          subir.type = "button";
+          subir.className = "interest-rank-btn";
+          subir.textContent = "▲";
+          subir.setAttribute("aria-label", "Subir " + texto);
+          subir.disabled = i === 0;
+          subir.onclick = () => moverInteres(i, -1);
+          const bajar = document.createElement("button");
+          bajar.type = "button";
+          bajar.className = "interest-rank-btn";
+          bajar.textContent = "▼";
+          bajar.setAttribute("aria-label", "Bajar " + texto);
+          bajar.disabled = i === orden.length - 1;
+          bajar.onclick = () => moverInteres(i, 1);
+          li.append(num, txt, subir, bajar);
+          lista.append(li);
+        });
+      }
+
+      function moverInteres(i, paso) {
+        const orden = window._ordenIntereses;
+        const j = i + paso;
+        if (j < 0 || j >= orden.length) return;
+        [orden[i], orden[j]] = [orden[j], orden[i]];
+        renderRankingIntereses();
+        if (typeof window._db_saveIntereses === "function") {
+          window._db_saveIntereses();
+        }
+      }
+
       // Selecciona o deselecciona un chip de interés
       // Limita a un máximo de 10 intereses seleccionados y guarda en Firestore al cambiar
       function toggleInterest(el) {
@@ -4225,6 +4363,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         el.classList.toggle("selected");
         document.getElementById("interestCount").textContent =
           document.querySelectorAll(".interest-chip.selected").length;
+        sincronizarOrdenIntereses();
         if (typeof window._db_saveIntereses === "function") {
           window._db_saveIntereses();
         }
@@ -4267,6 +4406,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         addBtn.parentNode.insertBefore(chip, addBtn);
         document.getElementById("interestCount").textContent =
           document.querySelectorAll(".interest-chip.selected").length;
+        sincronizarOrdenIntereses();
         if (typeof window._db_saveIntereses === "function") {
           window._db_saveIntereses();
         }
@@ -5186,6 +5326,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
 
             document.getElementById("interestCount").textContent =
               document.querySelectorAll(".interest-chip.selected").length;
+            sincronizarOrdenIntereses(d.intereses);
           }
           // Notificaciones guardadas
           if (d.notificaciones) {
@@ -5275,11 +5416,13 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
       };
       window._db_saveIntereses = async () => {
         if (!uid) return;
-        const intereses = [
-          ...document.querySelectorAll(
-            ".interest-chip.selected:not(.add-chip)",
-          ),
-        ].map((c) => c.textContent.trim());
+        const intereses = Array.isArray(window._ordenIntereses)
+          ? [...window._ordenIntereses]
+          : [
+              ...document.querySelectorAll(
+                ".interest-chip.selected:not(.add-chip)",
+              ),
+            ].map((c) => c.textContent.trim());
         await setDoc(doc(db, "usuarios", uid), { intereses }, { merge: true });
         // usuarios/{uid}.intereses (arriba) es lo que arma las tarjetas del
         // feed, pero el % de compatibilidad real y las simulaciones leen
@@ -5289,7 +5432,10 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         // server-side (mismo mecanismo que ya usa _db_saveInfo para
         // género/orientación/ciudad).
         try {
-          await actualizarPreferenciasMatchingCallable({ intereses });
+          await actualizarPreferenciasMatchingCallable({
+            intereses,
+            intereses_prioritarios: intereses.slice(0, 3),
+          });
         } catch (e) {
           console.error("Error propagando intereses al perfil real:", e);
         }
