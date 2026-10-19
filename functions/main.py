@@ -1698,7 +1698,7 @@ Con {quien_escribe} ya hablaron otros días (hubo mensajes el {fechas_txt}) y ho
     # de línea raro en el medio de una sola burbuja. Ahora se parte de
     # verdad con _dividir_mensajes y se devuelve la lista -- el frontend
     # (chats.html) tiene que agregar cada parte como un mensaje separado.
-    partes = motor._dividir_mensajes(response.choices[0].message.content)
+    partes = motor.partes_sin_hechos_inventados(mensajes, response.choices[0].message.content)
     _guardar_metricas_uso(db, "chat_match")
     return {"partes": partes}
 

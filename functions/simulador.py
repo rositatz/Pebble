@@ -1234,16 +1234,39 @@ def _turno_sin_repeticion(llamada, msg, cierre, partes, previos, usados):
 _RE_ANECDOTA = re.compile(
     r"\b(?:una vez|el otro d[ií]a|(?:el|este) (?:finde|fin de semana|verano|invierno|año|mes) pasado"
     r"|hace (?:poco|unos? (?:d[ií]as|meses|años|ratos?))|cuando (?:era|fui|estuve|viv[ií]|estaba|me fui)"
-    r"|me acuerdo (?:de|cuando)|me pas[oó] (?:que|una vez)|una noche (?:que|estábamos))\b",
+    r"|me acuerdo (?:de|cuando)|me pas[oó] (?:que|una vez)|una noche (?:que|estábamos)"
+    r"|(?:mi|mis|un|una|unos|unas) (?:amig[oa]s?|prim[oa]s?|herman[oa]s?|compañer[oa]s?|vecin[oa]s?|conocid[oa]s?|colega|ex)"
+    r"|me (?:cont[oó]|contaron|coment[oó]|comentaron|dijeron)|conozco a (?:alguien|un|una))\b",
     re.IGNORECASE,
 )
 
 _AVISO_ANECDOTA = (
-    "Tu mensaje cuenta una anécdota o un recuerdo concreto que no figura en tu"
-    " perfil, y eso es inventado. Escribí otro mensaje que responda a lo último"
-    " que dijo el otro con tus gustos, opiniones y forma de ser, sin historias"
-    " puntuales ni recuerdos (nada de 'una vez', 'el otro día', 'cuando fui')."
+    "Tu mensaje inventa algo que no figura en tu perfil: una anécdota, un"
+    " recuerdo, un amigo, familiar o conocido, o algo que te contaron. Escribí"
+    " otro mensaje que responda a lo último que dijo el otro con tus gustos,"
+    " opiniones y forma de ser, sin historias puntuales, sin personas que no"
+    " estén en tu perfil y sin datos sobre instituciones, carreras o lugares que"
+    " no sepas con certeza. Si no sabés algo, decilo o preguntale."
 )
+
+
+_RESPUESTA_SEGURA = "ni idea la verdad, contame vos"
+
+
+def partes_sin_hechos_inventados(llamada, texto):
+    """Mensajes del gemelo ya divididos. Si inventa una anécdota o una persona,
+    pide una versión nueva una vez; si tampoco sirve, contesta algo neutro."""
+    partes = _dividir_mensajes(texto)
+    if not any(_RE_ANECDOTA.search(p) for p in partes):
+        return partes
+    try:
+        r = _completar_chat_gemelo(llamada + [{"role": "system", "content": _AVISO_ANECDOTA}])
+        partes2 = _dividir_mensajes(r.choices[0].message.content)
+        if partes2 and not any(_RE_ANECDOTA.search(p) for p in partes2):
+            return partes2
+    except Exception as e:
+        print(f"partes_sin_hechos_inventados: no se pudo regenerar el mensaje: {e}")
+    return [_RESPUESTA_SEGURA]
 
 
 def _turno_sin_anecdota(llamada, msg, cierre, partes, usados):
@@ -1737,14 +1760,23 @@ fija el escenario, si lo hay, sí vale.
 
 24. Nunca nombres ni anuncies de qué vas a hablar. Prohibido escribir "tema",
 "TEMA:", títulos, etiquetas, prefijos o frases como "hablemos de" o "sobre
-el tema de". Entrá a cada tema con una pregunta, un comentario o una
-anécdota concreta, como en una charla real.
+el tema de". Entrá a cada tema con una pregunta o un comentario, como en
+una charla real.
 
 25. Nunca cuentes anécdotas, recuerdos ni historias puntuales ("una vez...",
 "el otro día...", "cuando fui a...", "mi grupo de amigos y yo...") que no
 estén en tu perfil: son inventados. Hablá de tus gustos, tu forma de ser y
 tus opiniones en general, y para dar un ejemplo usá solo lo que figura en tu
 perfil. Salvo que el escenario indique una historia en común.
+
+26. No inventes personas ni hechos del mundo. Nunca menciones amigos,
+familiares, conocidos, compañeros ni ex que no figuren en tu perfil, ni algo
+que "te contaron". Tampoco afirmes datos sobre universidades, carreras,
+lugares, empresas o cualquier cosa del mundo que no sepas con certeza (por
+ejemplo qué carreras tiene una facultad). Si el otro te cuenta algo, reaccioná
+a lo que dijo o preguntale, sin sumar datos tuyos sobre eso. Sí podés inferir
+rasgos de personalidad, gustos y forma de ser a partir de tu perfil. Si no
+sabés algo, decilo.
 
 EVITAR
 no_rellena_silencios
