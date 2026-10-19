@@ -359,6 +359,20 @@ def _guardar_diagnostico_simulacion(db, datos):
         print(f"_guardar_diagnostico_simulacion: no se pudo guardar: {traceback.format_exc()}")
 
 
+def _reintentar_parejas_con_error_de_cuota(db):
+    """Las parejas que fallaron porque se acabó el saldo del proveedor de IA
+    (no por algo propio de la pareja) vuelven a la cola. Las demás parejas en
+    ERROR no se tocan."""
+    reintentadas = 0
+    for doc in db.collection("parejas_pendientes").where("estado", "==", "ERROR").stream():
+        error = str((doc.to_dict() or {}).get("error") or "")
+        if "insufficient_quota" in error or "credit_balance_exhausted" in error:
+            doc.reference.update({"estado": "PENDIENTE", "error": None})
+            reintentadas += 1
+    if reintentadas:
+        print(f"_reintentar_parejas_con_error_de_cuota: {reintentadas} parejas vuelven a la cola.")
+
+
 def _recalcular_puntajes_de_matches(db):
     """Cuando cambia la fórmula del puntaje, los matches ya armados quedan con
     el número calculado con la fórmula vieja. No se vuelven a simular (se
@@ -1770,6 +1784,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     _auditar_filtros(db, todos_los_perfiles)
     _reevaluar_pares_sin_match(db)
     _recalcular_puntajes_de_matches(db)
+    _reintentar_parejas_con_error_de_cuota(db)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
     # por cada par candidato.

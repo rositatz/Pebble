@@ -23,6 +23,34 @@ def client():
         _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     return _client
 
+def _json_de_texto(texto):
+    texto = (texto or "").strip()
+    try:
+        return json.loads(texto)
+    except ValueError:
+        pass
+    # Bedrock no tiene modo JSON: a veces la respuesta viene entre ``` o con texto alrededor.
+    m = re.search(r"\{.*\}", texto, re.DOTALL)
+    if not m:
+        raise ValueError(f"La respuesta del modelo no trae JSON: {texto[:200]}")
+    return json.loads(m.group(0))
+
+
+def _completar_json(messages):
+    """Llamada al modelo que devuelve un JSON ya parseado. Con
+    LLM_PROVIDER=bedrock usa el mismo proveedor que el chat de los gemelos."""
+    if (os.getenv("LLM_PROVIDER") or "openai").strip().lower() == "bedrock":
+        from simulador import _completar_bedrock
+        response = _completar_bedrock(messages, temperature=0.2, max_tokens=1500)
+    else:
+        response = client().chat.completions.create(
+            model="gpt-5.6-terra",
+            messages=messages,
+            response_format={"type": "json_object"},
+        )
+    return _json_de_texto(response.choices[0].message.content)
+
+
 # El mapeo atraeMas/persEngancha -> objetivo numérico de personalidad vive
 # en gemelo_perfil.MAPA_PREFERENCIAS_PERSONALIDAD (se arma junto con el
 # resto del perfil, no acá).
@@ -51,27 +79,19 @@ def analizar_conversacion(historial_chat):
     {historial_chat}
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Eres un analista de comportamiento social "
-                    "y compatibilidad romántica."
-                )
-            },
-            {
-                "role": "user",
-                "content": prompt_analisis
-            }
-        ],
-        response_format={"type": "json_object"}
-    )
-
-    analisis = json.loads(
-        response.choices[0].message.content
-    )
+    analisis = _completar_json([
+        {
+            "role": "system",
+            "content": (
+                "Eres un analista de comportamiento social "
+                "y compatibilidad romántica."
+            )
+        },
+        {
+            "role": "user",
+            "content": prompt_analisis
+        }
+    ])
 
     return analisis
 def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
@@ -125,19 +145,13 @@ def extraer_aprendizaje_chats(mensajes, intereses_actuales=None):
     {texto_mensajes}
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[
-            {
-                "role": "system",
-                "content": "Analizás estilo de escritura a partir de mensajes reales. Nunca inventás datos que no estén en el texto."
-            },
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
-
-    resultado = json.loads(response.choices[0].message.content)
+    resultado = _completar_json([
+        {
+            "role": "system",
+            "content": "Analizás estilo de escritura a partir de mensajes reales. Nunca inventás datos que no estén en el texto."
+        },
+        {"role": "user", "content": prompt}
+    ])
     return {
         "estilo": (resultado.get("estilo") or "").strip(),
         "ejemplos_textuales": [str(e).strip() for e in (resultado.get("ejemplos_textuales") or []) if str(e).strip()],
@@ -185,19 +199,13 @@ def extraer_correcciones_gemelo(mensajes_a_gemelo):
     {texto_mensajes}
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[
-            {
-                "role": "system",
-                "content": "Detectás instrucciones explícitas que alguien le dio a su asistente de IA. Nunca inventás una que no esté dicha tal cual."
-            },
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
-
-    resultado = json.loads(response.choices[0].message.content)
+    resultado = _completar_json([
+        {
+            "role": "system",
+            "content": "Detectás instrucciones explícitas que alguien le dio a su asistente de IA. Nunca inventás una que no esté dicha tal cual."
+        },
+        {"role": "user", "content": prompt}
+    ])
     return [str(c).strip() for c in (resultado.get("correcciones") or []) if str(c).strip()]
 
 
@@ -247,19 +255,13 @@ def extraer_matices_personales(mensajes_a_gemelo):
     {texto_mensajes}
     """
 
-    response = client().chat.completions.create(
-        model="gpt-5.6-terra",
-        messages=[
-            {
-                "role": "system",
-                "content": "Detectás aclaraciones fácticas que alguien dio sobre sí misma/o. Nunca inventás ni exagerás una que no esté dicha tal cual."
-            },
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
-
-    resultado = json.loads(response.choices[0].message.content)
+    resultado = _completar_json([
+        {
+            "role": "system",
+            "content": "Detectás aclaraciones fácticas que alguien dio sobre sí misma/o. Nunca inventás ni exagerás una que no esté dicha tal cual."
+        },
+        {"role": "user", "content": prompt}
+    ])
     return [str(m).strip() for m in (resultado.get("matices") or []) if str(m).strip()]
 
 
