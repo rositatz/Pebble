@@ -2380,11 +2380,11 @@
     <script>
 
       // Porcentaje de afinidad para mostrar: siempre redondeado para abajo
-      // (69,9% se ve como 69%), y una pareja que no es match nunca llega a 70.
+      // (64,9% se ve como 64%), y una pareja que no es match nunca llega a 65.
       window.pctAfin = function (valor, supera) {
         const v = Number(valor) || 0;
         const abajo = Math.floor(v * 100 + 1e-6);
-        return supera ? Math.max(70, abajo) : Math.min(abajo, 69);
+        return supera ? Math.max(65, abajo) : Math.min(abajo, 64);
       };
       // Funciones de UI (no-módulo, accesibles desde onclick en HTML)
       function showGate() {
@@ -2728,7 +2728,7 @@
               "Todavía no tuvo conversaciones -- en cuanto tengas matches, tu gemelo empieza a hablar con los de ellos.";
           } else {
             const pctMejor = pctAfin(mejorScoreSinMatch || 0, false);
-            el.innerHTML = `Ya evaluó a <strong>${totalSimulaciones} persona${totalSimulaciones === 1 ? "" : "s"}</strong>, pero ninguna llegó todavía al 70% necesario para hacer match (mayor afinidad: <strong>${pctMejor}%</strong>).`;
+            el.innerHTML = `Ya evaluó a <strong>${totalSimulaciones} persona${totalSimulaciones === 1 ? "" : "s"}</strong>, pero ninguna llegó todavía al 65% necesario para hacer match (mayor afinidad: <strong>${pctMejor}%</strong>).`;
           }
           return;
         }
@@ -2749,7 +2749,7 @@
 
         let texto = `Tuvo <strong>${conversacionesHoy} conversación${conversacionesHoy === 1 ? "" : "es"}</strong> hoy · Mayor afinidad con ${esc(nombreMejor || "Usuario")}: <strong>${pctMejor}%</strong>`;
         if (sinMatch > 0) {
-          texto += ` · evaluó a ${sinMatch} persona${sinMatch === 1 ? "" : "s"} más sin llegar al 70%`;
+          texto += ` · evaluó a ${sinMatch} persona${sinMatch === 1 ? "" : "s"} más sin llegar al 65%`;
         }
         el.innerHTML = texto;
       }

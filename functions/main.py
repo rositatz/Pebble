@@ -300,6 +300,73 @@ _CACHE_PERFILES = {}
 _TTL_PERFIL_SEG = 60
 
 
+def _reevaluar_pares_al_bajar_umbral(db):
+    """Si el corte de match bajó desde la última vez, las parejas que habían
+    quedado "sin match" con un puntaje igual o mayor al corte nuevo se borran
+    para que se armen y se evalúen de nuevo. No se tocan las que alguna vez
+    fueron match, las quitadas ni las bloqueadas. El último corte usado queda
+    en config/umbral_evaluado (si no existe, se toma 70%, el que había)."""
+    marca = db.collection("config").document("umbral_evaluado")
+    snap = marca.get()
+    anterior = (snap.to_dict() or {}).get("valor") if snap.exists else 0.70
+    if anterior is None:
+        anterior = 0.70
+    actual = motor.UMBRAL_MATCH
+    if actual >= anterior - 1e-9:
+        if not snap.exists or anterior != actual:
+            marca.set({"valor": actual, "actualizado": firestore.SERVER_TIMESTAMP})
+        return
+    reseteadas = 0
+    for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
+        datos = doc.to_dict() or {}
+        if datos.get("match_confirmado") or datos.get("match_eliminado") or datos.get("bloqueado"):
+            continue
+        if not motor.alcanza_umbral(datos.get("ultimo_score") or 0, actual):
+            continue
+        for sim in doc.reference.collection("simulaciones").stream():
+            sim.reference.delete()
+        doc.reference.delete()
+        db.collection("parejas_pendientes").document(doc.id).delete()
+        reseteadas += 1
+    marca.set({"valor": actual, "reseteadas": reseteadas, "actualizado": firestore.SERVER_TIMESTAMP})
+    print(f"_reevaluar_pares_al_bajar_umbral: {reseteadas} parejas para reevaluar con el corte de {round(actual * 100, 1)}%.")
+
+
+def _auditar_filtros(db, perfiles):
+    """Deja en config/auditoria_filtros las parejas ya armadas que hoy no
+    pasarían los filtros base (género/orientación, edad, hijos), para poder
+    revisarlas: por ejemplo, un match anterior a un cambio de respuestas."""
+    por_uid = {uid: perfil for uid, perfil in perfiles}
+    incumplen = []
+    campos = ["participantes", "supera_umbral", "match_confirmado", "match_eliminado", "ultimo_score"]
+    for doc in db.collection("conexiones").select(campos).stream():
+        d = doc.to_dict() or {}
+        u = d.get("participantes") or []
+        if len(u) != 2 or u[0] not in por_uid or u[1] not in por_uid:
+            continue
+        p1, p2 = por_uid[u[0]], por_uid[u[1]]
+        fallan = [
+            nombre for nombre, f in (
+                ("genero", compatible_por_genero),
+                ("edad", compatible_por_edad),
+                ("hijos", compatible_por_hijos),
+            ) if not f(p1, p2)
+        ]
+        if fallan:
+            incumplen.append({
+                "par_id": doc.id,
+                "filtros": fallan,
+                "match": bool(d.get("supera_umbral") or d.get("match_confirmado")),
+                "eliminado": bool(d.get("match_eliminado")),
+                "score": d.get("ultimo_score"),
+            })
+    db.collection("config").document("auditoria_filtros").set({
+        "actualizado": firestore.SERVER_TIMESTAMP,
+        "total": len(incumplen),
+        "pares": incumplen[:100],
+    })
+
+
 def _completar_edades_publicadas(db, perfiles):
     """Una sola vez: deja la edad de las cuentas que ya existían en
     usuarios/{uid}.edad, para que se vea en los matches viejos."""
@@ -1016,7 +1083,7 @@ def simular_situacion(request: https_fn.CallableRequest):
         "usuario_2": registro["usuario_2"],
         "participantes": [uid1, uid2],
         "ultimo_score": score_promedio,
-        "supera_umbral": score_promedio >= motor.UMBRAL_MATCH,
+        "supera_umbral": motor.alcanza_umbral(score_promedio),
         "match_confirmado": True,
         "actualizado": registro["fecha"],
     }
@@ -1589,7 +1656,7 @@ MAX_MATCHES_POR_PERSONA = 5
 POOL_CANDIDATAS_NOCTURNO = 300
 
 
-@scheduler_fn.on_schedule(schedule="0 2 * * *", timezone="America/Argentina/Buenos_Aires")
+@scheduler_fn.on_schedule(schedule="0 2 * * *", timezone="America/Argentina/Buenos_Aires", timeout_sec=540)
 def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     """Fase 1 (rápida, sin llamar a OpenAI): recorre todos los usuarios con
     gemelo generado, arma las parejas que todavía no se evaluaron ni están
@@ -1638,6 +1705,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             perfil_u["ubicacion"] = {"lat": ub["lat"], "lng": ub["lng"]}
 
     _auditar_filtros(db, todos_los_perfiles)
+    _reevaluar_pares_al_bajar_umbral(db)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
     # por cada par candidato.
@@ -1875,7 +1943,7 @@ def _procesar_parejas_pendientes_logica() -> None:
             # mismo cálculo que antes hacía simular_relacion_completa antes de
             # decidir si corría o no la simulación.
             promedio, s, pref_a_b, pref_b_a, score_conversacional, desglose = motor.calcular_compatibilidad(perfil1_data, perfil2_data)
-            supera = promedio >= motor.UMBRAL_MATCH
+            supera = motor.alcanza_umbral(promedio)
 
             diferencias = {
                 uid1: motor._diferencias_personalidad(

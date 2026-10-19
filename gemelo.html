@@ -1566,11 +1566,11 @@
       const $ = (id) => document.getElementById(id);
 
       // Porcentaje de afinidad para mostrar: siempre redondeado para abajo
-      // (69,9% se ve como 69%), y una pareja que no es match nunca llega a 70.
+      // (64,9% se ve como 64%), y una pareja que no es match nunca llega a 65.
       window.pctAfin = function (valor, supera) {
         const v = Number(valor) || 0;
         const abajo = Math.floor(v * 100 + 1e-6);
-        return supera ? Math.max(70, abajo) : Math.min(abajo, 69);
+        return supera ? Math.max(65, abajo) : Math.min(abajo, 64);
       };
       const esc = (t) =>
         String(t)
@@ -2039,7 +2039,7 @@
           const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
           const temasHtml = (Array.isArray(s.temas) ? s.temas : []).map((t) => `<span class="gm-sim-tema">${esc(t)}</span>`).join("");
           return `<a class="gm-sim-item" href="./chats.html?persona=${encodeURIComponent(s.con_uid)}&modo=gemelo&sim=1&simId=${encodeURIComponent(s.id)}">
-            <div class="gm-sim-top"><div class="gm-sim-titulo">${esc(s.titulo || "Situación")}</div><div class="gm-sim-pct${pct >= 70 ? " ok" : ""}">${pct}%</div></div>
+            <div class="gm-sim-top"><div class="gm-sim-titulo">${esc(s.titulo || "Situación")}</div><div class="gm-sim-pct${pct >= 65 ? " ok" : ""}">${pct}%</div></div>
             <div class="gm-sim-meta">Con ${esc(s.con_nombre || "Usuario")} · ${s.pedida_por && s.pedida_por !== uid ? `Pedida por ${esc(s.con_nombre || "Usuario")}` : "Pedida por vos"}${fecha ? " · " + fecha : ""}</div>
             ${s.descripcion ? `<p class="gm-sim-desc">${esc(s.descripcion)}</p>` : ""}
             ${temasHtml ? `<div class="gm-sim-temas">${temasHtml}</div>` : ""}

@@ -408,9 +408,15 @@ def _completar_chat_gemelo(
 
 
 # Un solo lugar para no tener que cambiarlo en cada función por separado.
-# Es match con 70% o más. Los porcentajes siempre se muestran redondeados
-# para abajo (69,9% se ve como 69%).
-UMBRAL_MATCH = 0.70
+# Es match con 65% o más. Los porcentajes siempre se muestran redondeados
+# para abajo (64,9% se ve como 64%).
+UMBRAL_MATCH = 0.65
+
+
+def alcanza_umbral(valor, umbral=UMBRAL_MATCH):
+    # La tolerancia evita que un 65% exacto quede afuera por error de float.
+    return valor >= umbral - 1e-8
+
 
 escenarios_db = [
 
@@ -2923,7 +2929,7 @@ def registro_simulacion(uid1, perfil1, uid2, perfil2, escenario, historial_chat,
         "analisis": analisis,
         "score": score,
         "umbral_usado": umbral,
-        "supera_umbral": score["compatibilidad_total"] >= umbral,
+        "supera_umbral": alcanza_umbral(score["compatibilidad_total"], umbral),
         # Frases concretas de fricción real de personalidad/valores (ver
         # compatibilidad._diferencias_personalidad) -- matches.html las
         # muestra tal cual para explicar POR QUÉ el score es el que es, en
@@ -2984,7 +2990,7 @@ def simular_relacion_completa(uid1, perfil1, uid2, perfil2, turnos=5, umbral=UMB
     Firestore."""
 
     promedio, s, pref_a_b, pref_b_a, score_conversacional, desglose = calcular_compatibilidad(perfil1, perfil2)
-    supera = promedio >= umbral
+    supera = alcanza_umbral(promedio, umbral)
 
     simulaciones = []
     if supera:

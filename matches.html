@@ -1468,11 +1468,11 @@
     <script>
 
       // Porcentaje de afinidad para mostrar: siempre redondeado para abajo
-      // (69,9% se ve como 69%), y una pareja que no es match nunca llega a 70.
+      // (64,9% se ve como 64%), y una pareja que no es match nunca llega a 65.
       window.pctAfin = function (valor, supera) {
         const v = Number(valor) || 0;
         const abajo = Math.floor(v * 100 + 1e-6);
-        return supera ? Math.max(70, abajo) : Math.min(abajo, 69);
+        return supera ? Math.max(65, abajo) : Math.min(abajo, 64);
       };
       // Escapa texto para insertarlo tanto en contenido de texto como dentro
       // de atributos HTML entre comillas (aria-label, etc.) -- nombre/bio/
