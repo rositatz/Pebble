@@ -339,6 +339,20 @@ def _reevaluar_pares_sin_match(db):
     print(f"_reevaluar_pares_sin_match: {reseteadas} parejas para reevaluar (corte {round(actual * 100, 1)}%, fórmula {formula}).")
 
 
+def _guardar_diagnostico_simulacion(db, datos):
+    """Resumen de la última corrida de procesar_parejas_pendientes, para leerlo
+    desde la consola de Firestore en config/diagnostico_simulacion."""
+    try:
+        resumen = {"actualizado": firestore.SERVER_TIMESTAMP, **datos}
+        resumen["parejas_por_estado"] = {}
+        for d in db.collection("parejas_pendientes").select(["estado"]).stream():
+            estado = (d.to_dict() or {}).get("estado") or "?"
+            resumen["parejas_por_estado"][estado] = resumen["parejas_por_estado"].get(estado, 0) + 1
+        db.collection("config").document("diagnostico_simulacion").set(resumen)
+    except Exception:
+        print(f"_guardar_diagnostico_simulacion: no se pudo guardar: {traceback.format_exc()}")
+
+
 def _recalcular_puntajes_de_matches(db):
     """Cuando cambia la fórmula del puntaje, los matches ya armados quedan con
     el número calculado con la fórmula vieja. No se vuelven a simular (se
@@ -1919,10 +1933,12 @@ def _procesar_parejas_pendientes_logica() -> None:
         .stream()
     )
     pausados = _uids_pausados(db) | _uids_gemelo_incompleto(db)
+    en_pool = len(pool)
     pool = [
         d for d in pool
         if not ({d.to_dict()["usuario_1"]["uid"], d.to_dict()["usuario_2"]["uid"]} & pausados)
     ]
+    excluidas_por_cuenta_pausada = en_pool - len(pool)
     # Se evalúan todas las parejas del pool (la compatibilidad matemática es
     # gratis); las que superan el umbral compiten por un lugar de simulación
     # más abajo.
@@ -1943,6 +1959,8 @@ def _procesar_parejas_pendientes_logica() -> None:
         return cache_perfiles[uid]
 
     resueltos_sin_match, con_error, descartados, encolados = 0, 0, 0, 0
+    puntajes_previos = []
+    errores_vistos = []
     lote_id = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%Y%m%d_%H%M%S")
     lote_ref = db.collection("lotes_batch").document(lote_id)
     solicitudes = []
@@ -1988,6 +2006,7 @@ def _procesar_parejas_pendientes_logica() -> None:
             # decidir si corría o no la simulación.
             promedio, s, pref_a_b, pref_b_a, score_conversacional, desglose = motor.calcular_compatibilidad(perfil1_data, perfil2_data)
             supera = motor.alcanza_umbral(promedio)
+            puntajes_previos.append({"par_id": data["par_id"], "previo": round(promedio * 100, 1)})
 
             diferencias = {
                 uid1: motor._diferencias_personalidad(
@@ -2042,6 +2061,7 @@ def _procesar_parejas_pendientes_logica() -> None:
             # dice en qué línea/función pasó, y sin eso hay que adivinar.
             doc.reference.update({"estado": "ERROR", "error": traceback.format_exc()})
             con_error += 1
+            errores_vistos.append(traceback.format_exc()[-300:])
 
     # Entre las parejas que superan el umbral se eligen las que se simulan
     # esta noche: una por persona como máximo, primero las que le dan su
@@ -2051,6 +2071,7 @@ def _procesar_parejas_pendientes_logica() -> None:
     for conexion in _conexiones_match(db):
         for uid_p in (conexion.to_dict().get("participantes") or []):
             matches_por_persona[uid_p] = matches_por_persona.get(uid_p, 0) + 1
+    superan_el_umbral = len(candidatas_sim)
     candidatas_sim = [
         c for c in candidatas_sim
         if matches_por_persona.get(c["uid1"], 0) < MAX_MATCHES_POR_PERSONA
@@ -2089,6 +2110,21 @@ def _procesar_parejas_pendientes_logica() -> None:
             continue
         usados_hoy.update([cand["uid1"], cand["uid2"]])
         encolados += 1
+
+    _guardar_diagnostico_simulacion(db, {
+        "en_cola_pendientes": en_pool,
+        "excluidas_por_cuenta_pausada_o_incompleta": excluidas_por_cuenta_pausada,
+        "evaluadas": len(puntajes_previos),
+        "superan_el_umbral": superan_el_umbral,
+        "quedan_afuera_por_tope_de_matches": superan_el_umbral - len(candidatas_sim),
+        "se_simulan_esta_corrida": encolados,
+        "resueltas_sin_match": resueltos_sin_match,
+        "descartadas_por_cambio_de_datos": descartados,
+        "con_error": con_error,
+        "umbral": motor.UMBRAL_MATCH,
+        "mejores_puntajes_previos": sorted(puntajes_previos, key=lambda x: -x["previo"])[:15],
+        "errores": errores_vistos[:3],
+    })
 
     print(
         f"procesar_parejas_pendientes: {len(candidatas_sim)} parejas superan el umbral, se simulan {encolados}. "
