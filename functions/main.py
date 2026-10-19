@@ -359,6 +359,33 @@ def _guardar_diagnostico_simulacion(db, datos):
         print(f"_guardar_diagnostico_simulacion: no se pudo guardar: {traceback.format_exc()}")
 
 
+VERSION_TEXTO_DIFERENCIAS = 2
+
+
+def _regenerar_diferencias_de_matches(db, perfiles):
+    """Cuando cambia cómo se redactan las diferencias de personalidad de cada
+    pareja (compatibilidad._diferencias_personalidad), las ya guardadas siguen
+    con el texto viejo: se vuelven a armar una sola vez por versión."""
+    marca = db.collection("config").document("umbral_evaluado")
+    if (marca.get().to_dict() or {}).get("diferencias_version") == VERSION_TEXTO_DIFERENCIAS:
+        return
+    por_uid = {uid: perfil for uid, perfil in perfiles}
+    regeneradas = 0
+    for doc in db.collection("conexiones").select(["usuario_1", "usuario_2"]).stream():
+        datos = doc.to_dict() or {}
+        u1, u2 = datos.get("usuario_1") or {}, datos.get("usuario_2") or {}
+        p1, p2 = por_uid.get(u1.get("uid")), por_uid.get(u2.get("uid"))
+        if not p1 or not p2:
+            continue
+        doc.reference.update({"diferencias_personalidad": {
+            u1["uid"]: motor._diferencias_personalidad(p2, p1, u1.get("nombre") or "Usuario", top_n=3, minimo=3),
+            u2["uid"]: motor._diferencias_personalidad(p1, p2, u2.get("nombre") or "Usuario", top_n=3, minimo=3),
+        }})
+        regeneradas += 1
+    marca.set({"diferencias_version": VERSION_TEXTO_DIFERENCIAS}, merge=True)
+    print(f"_regenerar_diferencias_de_matches: {regeneradas} parejas con el texto de diferencias actualizado.")
+
+
 def _reintentar_parejas_con_error_de_cuota(db):
     """Las parejas que fallaron porque se acabó el saldo del proveedor de IA
     (no por algo propio de la pareja) vuelven a la cola. Las demás parejas en
@@ -1784,6 +1811,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
     _auditar_filtros(db, todos_los_perfiles)
     _reevaluar_pares_sin_match(db)
     _recalcular_puntajes_de_matches(db)
+    _regenerar_diferencias_de_matches(db, todos_los_perfiles)
     _reintentar_parejas_con_error_de_cuota(db)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas

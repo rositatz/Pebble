@@ -881,16 +881,30 @@ _DIFERENCIA_RASGO = {
     # viene calculado sobre el valor de introversión, así que frasearlo
     # como "más/menos sociable" invertía el sentido (más introvertido/a =
     # MENOS sociable, no más).
-    "introversion": "es bastante {alto} introvertido/a que vos",
-    "empatia": "le da bastante {alto} peso que a vos a cómo se siente el otro emocionalmente",
-    "sarcasmo": "es bastante {alto} sarcástico/a o irónico/a en su humor que vos",
-    "apertura_mental": "es bastante {alto} abierto/a a ideas o planes nuevos que vos",
-    "ambicion": "le importa bastante {alto} que a vos crecer/lograr cosas a nivel profesional",
-    "sensibilidad_emocional": "es bastante {alto} sensible que vos a nivel emocional -- le afectan {alto} las cosas del día a día",
-    "necesidad_afecto": "necesita bastante {alto} validación/cercanía afectiva que vos",
-    "independencia": "valora bastante {alto} su independencia que vos",
-    "tolerancia_conflicto": "tolera bastante {alto} el conflicto/discutir que vos",
+    "introversion": "es {grado} {alto} introvertido/a que vos",
+    "empatia": "le da {grado} {alto} peso que a vos a cómo se siente el otro emocionalmente",
+    "sarcasmo": "es {grado} {alto} sarcástico/a o irónico/a en su humor que vos",
+    "apertura_mental": "es {grado} {alto} abierto/a a ideas o planes nuevos que vos",
+    "ambicion": "le importa {grado} {alto} que a vos crecer/lograr cosas a nivel profesional",
+    "sensibilidad_emocional": "es {grado} {alto} sensible que vos a nivel emocional, le afectan {alto} las cosas del día a día",
+    "necesidad_afecto": "necesita {grado} {alto} validación/cercanía afectiva que vos",
+    "independencia": "valora {grado} {alto} su independencia que vos",
+    "tolerancia_conflicto": "tolera {grado} {alto} el conflicto/discutir que vos",
 }
+
+
+def _grado_diferencia(diferencia):
+    """Qué tan grande es la diferencia entre los dos, para que la frase diga
+    "un poco más" o "muchísimo más" según lo que realmente difieren."""
+    if diferencia < 0.15:
+        return "un poco"
+    if diferencia < 0.30:
+        return "algo"
+    if diferencia < 0.40:
+        return "bastante"
+    if diferencia < 0.55:
+        return "mucho"
+    return "muchísimo"
 
 
 # Frase por eje de VALORES describiendo la diferencia -- familia/aventura/
@@ -899,9 +913,9 @@ _DIFERENCIA_RASGO = {
 # personalidad para que _directiva pueda usarlo en el prompt) así que NO se
 # repite acá para no duplicar la misma frase de fricción dos veces.
 _DIFERENCIA_VALOR = {
-    "familia": "le da bastante {alto} peso a formar/priorizar una familia que vos",
-    "aventura": "es bastante {alto} de tirarse a planes nuevos o arriesgados que vos",
-    "estabilidad": "necesita bastante {alto} estabilidad y rutina en su vida que vos",
+    "familia": "le da {grado} {alto} peso a formar/priorizar una familia que vos",
+    "aventura": "es {grado} {alto} de tirarse a planes nuevos o arriesgados que vos",
+    "estabilidad": "necesita {grado} {alto} estabilidad y rutina en su vida que vos",
 }
 
 
@@ -961,7 +975,10 @@ def _diferencias_personalidad(perfil1, perfil2, nombre2, umbral_diferencia=0.3, 
             if diferencia <= 0.02:
                 continue
             alto = "más" if v2 > v1 else "menos"
-            texto = _resolver_genero(plantilla.format(alto=alto), perfil2.get("genero", ""))
+            texto = _resolver_genero(
+                plantilla.format(grado=_grado_diferencia(diferencia), alto=alto),
+                perfil2.get("genero", ""),
+            )
             todas.append((diferencia, f"{nombre2} {texto}."))
 
     todas.sort(key=lambda x: -x[0])
