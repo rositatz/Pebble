@@ -1144,6 +1144,30 @@ def _extraer_cierre(texto):
 _MARCA_MULTIMENSAJE = "[MSG]"
 
 
+_LETRA = "A-Za-zÁÉÍÓÚÜÑáéíóúüñ"
+_RE_DOS_PUNTOS = re.compile(r"(?:(?<!\d):|:(?!\d))(?![)(/\\*]|[DPpOo](?![^\W\d_]))")
+_RE_BULLET = re.compile(r"(?m)^\s*[-•]\s+")
+_RE_GUION_LARGO = re.compile(r"\s*[—–]\s*|\s+-\s+")
+_RE_GUION_EN_PALABRA = re.compile(rf"(?<=[{_LETRA}])-(?=[{_LETRA}])")
+
+
+def _limpiar_puntuacion(texto):
+    """Saca lo que casi nadie tipea en un chat: ¿ ¡ ; : y los guiones. Los dos
+    puntos de una hora (10:30), los emoticones (:) :D) y los links se respetan."""
+    t = texto.replace("¿", "").replace("¡", "")
+    t = _RE_BULLET.sub("", t)
+    t = _RE_GUION_LARGO.sub(", ", t)
+    t = _RE_GUION_EN_PALABRA.sub(" ", t)
+    t = t.replace(";", ",")
+    t = _RE_DOS_PUNTOS.sub(",", t)
+    t = re.sub(r",(?:\s*,)+", ",", t)
+    t = re.sub(r"[ \t]+,", ",", t)
+    t = re.sub(r",[ \t]*(?=[?!.…])", "", t)
+    t = re.sub(r"(?m),[ \t]*$", "", t)
+    t = re.sub(r"(?m)^[ \t]*,[ \t]*", "", t)
+    return re.sub(r"[ \t]{2,}", " ", t)
+
+
 def _dividir_mensajes(texto):
     """Parte un mensaje en varios si el modelo usó _MARCA_MULTIMENSAJE
     para separarlos (ver regla de mensajes múltiples en
@@ -1151,7 +1175,7 @@ def _dividir_mensajes(texto):
     elemento. Se llama DESPUÉS de _extraer_cierre (la marca de cierre va
     al final de todo el texto, no le importan los [MSG] del medio)."""
     limpio = re.sub(r"(?im)^\s*tema\s*:.*$", "", texto)
-    limpio = limpio.replace("¿", "").replace("¡", "").replace("\r", "")
+    limpio = _limpiar_puntuacion(limpio.replace("\r", ""))
     partes = [
         linea.strip()
         for bloque in limpio.split(_MARCA_MULTIMENSAJE)
@@ -1617,7 +1641,8 @@ en una ráfaga de mensajes tuyos), de a poco y dejando lugar a que el otro
 reaccione. Lo trivial se resuelve rápido.
 Sin párrafos largos, ensayos, metáforas, coaching ni lenguaje terapéutico.
 
-7. No uses ¿ ni ¡. Evitá ":" como conector de frases. No abuses de "yo".
+7. No uses ¿ ni ¡, ni los signos : ; - — (nadie los tipea en un chat).
+Separá las ideas con coma, punto o un salto de línea. No abuses de "yo".
 Nunca termines el mensaje completo con un punto final (los puntos entre
 oraciones del mismo mensaje sí van). Puntos suspensivos ("...") casi nunca:
 como mucho uno en toda la charla.
@@ -2072,8 +2097,9 @@ def generar_prompt_gemelo_personal(perfil, matches_resumen=None, total_simulacio
        como texto suelto. Si querés remarcar algo, usá **así** (doble
        asterisco a cada lado), nunca HTML. Para separar ideas o puntos de
        una lista, usá saltos de línea simples, no ninguna etiqueta.
-    8b. NUNCA uses los signos de apertura ¡ ni ¿ -- casi ninguna persona real
-       los tipea en un chat informal, solo el de cierre (! y ?).
+    8b. NUNCA uses los signos de apertura ¡ ni ¿, ni los signos : ; - — -- casi
+       ninguna persona real los tipea en un chat informal. Solo el signo de
+       cierre (! y ?). Separá las ideas con coma, punto o un salto de línea.
     9. Emojis: NO uses ninguno por default. Si en "Cómo escribe/se
        relaciona en la práctica" (arriba, dentro de "SOBRE VOS") hay un
        dato real sobre qué emojis usa esta persona, usá esos mismos con

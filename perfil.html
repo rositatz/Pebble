@@ -2217,15 +2217,15 @@
             </div>
             <div class="field-row">
               <span class="field-label">Edad</span>
-              <span class="field-value" id="vEdad">23 años</span>
+              <span class="field-value" id="vEdad">—</span>
             </div>
             <div class="field-row">
               <span class="field-label">Ciudad</span>
-              <span class="field-value" id="vCiudad">Buenos Aires</span>
+              <span class="field-value" id="vCiudad">—</span>
             </div>
             <div class="field-row">
               <span class="field-label">Género</span>
-              <span class="field-value" id="vGenero">Mujer</span>
+              <span class="field-value" id="vGenero">—</span>
             </div>
             <div class="field-row">
               <span class="field-label">Pronombres</span>
@@ -2233,11 +2233,11 @@
             </div>
             <div class="field-row">
               <span class="field-label">Orientación</span>
-              <span class="field-value" id="vOrientacion">Bisexual</span>
+              <span class="field-value" id="vOrientacion">—</span>
             </div>
             <div class="field-row">
               <span class="field-label">Rango de edad</span>
-              <span class="field-value" id="vRangoEdad">18 – 35 años</span>
+              <span class="field-value" id="vRangoEdad">—</span>
             </div>
           </div>
 
@@ -2260,7 +2260,7 @@
                   class="form-input"
                   id="eFechaNac"
                   type="date"
-                  value="2001-09-15"
+                  value=""
                 />
               </div>
             </div>
@@ -2316,6 +2316,7 @@
               <div class="form-group">
                 <label class="form-label">Género</label>
                 <select class="form-select" id="eGenero">
+                  <option value="" selected disabled>Elegí una opción</option>
                   <option>Mujer</option>
                   <option>Hombre</option>
                   <option>No binario</option>
@@ -2325,8 +2326,8 @@
               <div class="form-group">
                 <label class="form-label">Pronombres (opcional)</label>
                 <select class="form-select" id="ePronombres">
-                  <option value="">Prefiero no decir</option>
-                  <option value="Ella/her" selected>Ella/her</option>
+                  <option value="" selected>Prefiero no decir</option>
+                  <option value="Ella/her">Ella/her</option>
                   <option value="Él/him">Él/him</option>
                   <option value="Elle/them">Elle/them</option>
                   <option value="Ella/él">Ella/él</option>
@@ -2338,8 +2339,9 @@
               <div class="form-group">
                 <label class="form-label">Orientación (opcional)</label>
                 <select class="form-select" id="eOrientacion">
+                  <option value="" selected disabled>Elegí una opción</option>
                   <option>Heterosexual</option>
-                  <option selected>Bisexual</option>
+                  <option>Bisexual</option>
                   <option>Gay / Lesbiana</option>
                   <option>Pansexual</option>
                   <option>Asexual</option>
@@ -4151,8 +4153,9 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
         document.getElementById("vGenero").textContent = genero || "—";
         document.getElementById("vPronombres").textContent = pronomb || "—";
         document.getElementById("vOrientacion").textContent = orient || "—";
-        document.getElementById("vRangoEdad").textContent =
-          `${rMin} – ${rMax} años`;
+        document.getElementById("vRangoEdad").textContent = window._rangoDefinido
+          ? `${rMin} – ${rMax} años`
+          : "—";
 
         // Update hero
         document.getElementById("heroName").textContent = nombre || "—";
@@ -4163,17 +4166,16 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
 
         // Guardar en Firestore
         if (typeof window._db_saveInfo === "function") {
-          window._db_saveInfo({
-            nombre,
-            fechaNac,
-            pais,
-            ciudad,
-            genero,
-            pronombres: pronomb,
-            orientacion: orient,
-            rangoEdadMin: parseInt(rMin, 10),
-            rangoEdadMax: parseInt(rMax, 10),
-          });
+          // Género, orientación y rango solo se mandan si hay un valor real:
+          // así guardar otro dato no pisa lo que ya estaba con uno de muestra.
+          const datos = { nombre, fechaNac, pais, ciudad, pronombres: pronomb };
+          if (genero) datos.genero = genero;
+          if (orient) datos.orientacion = orient;
+          if (window._rangoDefinido) {
+            datos.rangoEdadMin = parseInt(rMin, 10);
+            datos.rangoEdadMax = parseInt(rMax, 10);
+          }
+          window._db_saveInfo(datos);
         }
         cancelEdit("info");
         showToast("Información guardada");
@@ -4555,6 +4557,11 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           lblMax.textContent = hi;
         }
 
+        const marcarDefinido = () => {
+          window._rangoDefinido = true;
+        };
+        min.addEventListener("input", marcarDefinido);
+        max.addEventListener("input", marcarDefinido);
         min.addEventListener("input", update);
         max.addEventListener("input", update);
         update();
@@ -4956,6 +4963,27 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           // como respaldo de "Información básica" más abajo.
           const perfilGemelo = await cargarGemeloDigitalCard(uid, d);
 
+          // Respuestas crudas del onboarding: se guardan en cada cambio, aunque
+          // todavía no exista gemelo/perfil (se arma al terminar). Sirven de
+          // respaldo para no mostrar vacío algo que la persona ya contestó.
+          let onb = {};
+          try {
+            const snapOnb = await getDoc(
+              doc(db, "usuarios", uid, "gemelo_setup", "data"),
+            );
+            onb = (snapOnb.exists() && snapOnb.data().etapa1) || {};
+          } catch (e) {}
+          const conOtro = (valor, otro) =>
+            valor === "Otro" ? (otro || "").trim() || "Otro" : valor;
+          const onbGenero = conOtro(onb.generoIdentidad, onb.generoIdentidadOtro);
+          const onbOrientacion = conOtro(onb.orientacion, onb.orientacionOtro);
+          const onbMin = parseInt(onb.edadMinBusco, 10);
+          const onbMax = parseInt(onb.edadMaxBusco, 10);
+          const onbEdad = parseInt(onb.edad, 10);
+          const edadCargada =
+            (perfilGemelo && perfilGemelo.edad) ||
+            (Number.isFinite(onbEdad) ? onbEdad : null);
+
           // Nombre (si fue editado por el usuario)
           if (d.nombre) aplicarNombre(d.nombre);
 
@@ -5007,13 +5035,11 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             aplicarCiudadCargada(d.ciudad, d.pais);
           }
 
-          if (perfilGemelo && perfilGemelo.genero) {
-            document.getElementById("vGenero").textContent =
-              perfilGemelo.genero;
-            document.getElementById("eGenero").value = perfilGemelo.genero;
-          } else if (d.genero !== undefined) {
-            document.getElementById("vGenero").textContent = d.genero || "—";
-            document.getElementById("eGenero").value = d.genero;
+          const generoCargado =
+            (perfilGemelo && perfilGemelo.genero) || d.genero || onbGenero;
+          if (generoCargado) {
+            document.getElementById("vGenero").textContent = generoCargado;
+            document.getElementById("eGenero").value = generoCargado;
           }
 
           if (d.pronombres !== undefined) {
@@ -5023,15 +5049,14 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           }
           // Pronombres no se pregunta en el onboarding -- no hay de dónde sacar un respaldo.
 
-          if (perfilGemelo && perfilGemelo.orientacion) {
+          const orientacionCargada =
+            (perfilGemelo && perfilGemelo.orientacion) ||
+            d.orientacion ||
+            onbOrientacion;
+          if (orientacionCargada) {
             document.getElementById("vOrientacion").textContent =
-              perfilGemelo.orientacion;
-            document.getElementById("eOrientacion").value =
-              perfilGemelo.orientacion;
-          } else if (d.orientacion !== undefined) {
-            document.getElementById("vOrientacion").textContent =
-              d.orientacion || "—";
-            document.getElementById("eOrientacion").value = d.orientacion;
+              orientacionCargada;
+            document.getElementById("eOrientacion").value = orientacionCargada;
           }
 
           // Rango de edad preferido
@@ -5063,15 +5088,24 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             rMinEl.dispatchEvent(new Event("input")); // reposiciona el slider y actualiza sus labels
             document.getElementById("vRangoEdad").textContent =
               `${d.rangoEdadMin} – ${d.rangoEdadMax} años`;
+          } else if (Number.isFinite(onbMin) || Number.isFinite(onbMax)) {
+            const rMinEl = document.getElementById("rangeMin");
+            const rMaxEl = document.getElementById("rangeMax");
+            const rMin = Number.isFinite(onbMin) ? onbMin : Number(rMinEl.min);
+            const rMax = Number.isFinite(onbMax) ? onbMax : Number(rMaxEl.max);
+            rMinEl.value = rMin;
+            rMaxEl.value = rMax;
+            rMinEl.dispatchEvent(new Event("input"));
+            document.getElementById("vRangoEdad").textContent =
+              `${rMin} – ${rMax} años`;
           }
 
           // Edad -- normalmente sale de fechaNac (fecha de nacimiento), pero el
           // onboarding pregunta la edad como número directo, no una fecha, así
           // que no hay forma de convertir una en la otra -- se muestra el número
           // del onboarding tal cual si no hay fecha de nacimiento cargada.
-          if (!d.fechaNac && perfilGemelo && perfilGemelo.edad) {
-            document.getElementById("vEdad").textContent =
-              `${perfilGemelo.edad} años`;
+          if (!d.fechaNac && edadCargada) {
+            document.getElementById("vEdad").textContent = `${edadCargada} años`;
           }
 
           // Bio ("Sobre mí") -- a propósito INDEPENDIENTE del resumen del
@@ -5098,8 +5132,8 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
             (perfilGemelo && perfilGemelo.ciudad) || d.ciudad || "";
           const edadMeta = d.fechaNac
             ? `${calcAge(d.fechaNac)} años`
-            : perfilGemelo && perfilGemelo.edad
-              ? `${perfilGemelo.edad} años`
+            : edadCargada
+              ? `${edadCargada} años`
               : "";
           const metaParts = [];
           if (ciudadMeta) metaParts.push(ciudadMeta);
