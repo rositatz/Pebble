@@ -7,6 +7,7 @@ import os
 import json
 import random
 import re
+import unicodedata
 
 from gemelo_perfil import construir_perfil_gemelo
 
@@ -663,6 +664,52 @@ def compatibilidad_valores(perfil1, perfil2):
 # Score de charla que no mueve el puntaje final.
 SCORE_CONVERSACIONAL_NORMAL = 0.55
 
+# Sin ningún interés en común el puntaje no puede llegar al corte de match
+# (simulador.UMBRAL_MATCH): si el corte cambia, este tope tiene que quedar
+# apenas por debajo.
+TOPE_SIN_INTERESES_EN_COMUN = 0.64
+
+_PALABRAS_SUELTAS = {"para", "como", "sobre", "tipo", "algo", "muy", "mas"}
+
+
+def _palabras_interes(texto):
+    t = unicodedata.normalize("NFD", str(texto).casefold())
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn")
+    return [p for p in re.findall(r"[a-z0-9]+", t) if p not in _PALABRAS_SUELTAS]
+
+
+def intereses_en_comun(perfil1, perfil2):
+    """Cuántos intereses de perfil1 tienen algo en común con los de perfil2
+    (mismo interés, o comparten una palabra de 4 letras o más, sin importar
+    tildes ni mayúsculas: "Rock" y "Rock nacional"). None si a alguno de los
+    dos le faltan los intereses: sin dato no se descarta nada."""
+    l1 = perfil1.get("intereses_onboarding") or perfil1.get("intereses") or []
+    l2 = perfil2.get("intereses_onboarding") or perfil2.get("intereses") or []
+    if not l1 or not l2:
+        return None
+    palabras2 = [_palabras_interes(i) for i in l2]
+    cantidad = 0
+    for i in l1:
+        p1 = _palabras_interes(i)
+        largas1 = {p for p in p1 if len(p) >= 4}
+        if any(p1 == p2 or largas1 & {p for p in p2 if len(p) >= 4} for p2 in palabras2):
+            cantidad += 1
+    return cantidad
+
+
+def _penalizacion_creencias(perfil1, perfil2):
+    """Unos 3 puntos menos cuando a uno le importa mucho compartir postura
+    política o religiosa y al otro no le importa nada. Con lo que se pregunta
+    hoy no se puede saber si las posturas son opuestas, solo cuánto les
+    importa."""
+    c1 = perfil1.get("creencias") or {}
+    c2 = perfil2.get("creencias") or {}
+    for campo, sin_importancia in (("politicaImportancia", "No me importa"), ("religionImportancia", "Nada importante")):
+        a, b = (c1.get(campo) or "").strip(), (c2.get(campo) or "").strip()
+        if {a, b} == {"Muy importante", sin_importancia}:
+            return 0.03
+    return 0.0
+
 
 def puntaje_total(S, pref_a_b, pref_b_a, score_conversacional=None):
     total = 0.30 * S + 0.35 * pref_a_b + 0.35 * pref_b_a
@@ -799,10 +846,10 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
     score_comunicacion = compatibilidad_comunicacion(perfil1, perfil2)
 
     pesos_s = {
-        "psicologico": 0.16,
+        "psicologico": 0.20,
         "valores": 0.35,
-        "intereses": 0.09,
-        "creencias": 0.25,
+        "intereses": 0.20,
+        "creencias": 0.10,
         "comunicacion": 0.15
     }
 
@@ -850,6 +897,9 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
     # --------------------------------
 
     total = puntaje_total(S, pref_a_b, pref_b_a, score_conversacional)
+    total = max(0.0, total - _penalizacion_creencias(perfil1, perfil2))
+    if intereses_en_comun(perfil1, perfil2) == 0:
+        total = min(total, TOPE_SIN_INTERESES_EN_COMUN)
 
     # Desglose por eje -- antes solo se devolvía S (el promedio ya
     # combinado), así que no había forma de mostrarle al usuario POR QUÉ

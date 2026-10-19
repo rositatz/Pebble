@@ -415,7 +415,7 @@ UMBRAL_MATCH = 0.65
 
 # Subirlo cuando cambia la fórmula del puntaje: buscar_parejas_pendientes
 # vuelve a evaluar las parejas ya simuladas que quedaron sin match.
-VERSION_FORMULA_SCORE = 2
+VERSION_FORMULA_SCORE = 3
 
 
 def alcanza_umbral(valor, umbral=UMBRAL_MATCH):

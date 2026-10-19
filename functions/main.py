@@ -304,7 +304,7 @@ def _reevaluar_pares_sin_match(db):
     """Vuelve a evaluar parejas que habían quedado "sin match" cuando cambió
     algo que define el match: se borran (con su simulación) y se encolan de
     nuevo. Se dispara si bajó el corte (las que ya llegaban al corte nuevo) o
-    si cambió la fórmula del puntaje (las que ya se habían simulado). No se
+    si cambió la fórmula del puntaje (todas las que no son match). No se
     tocan las que alguna vez fueron match, las quitadas ni las bloqueadas.
     Lo último usado queda en config/umbral_evaluado (si no existe, se toma
     70% y fórmula 1, que era lo que había)."""
@@ -327,8 +327,7 @@ def _reevaluar_pares_sin_match(db):
         if datos.get("match_confirmado") or datos.get("match_eliminado") or datos.get("bloqueado"):
             continue
         llega_al_corte = bajo_el_corte and motor.alcanza_umbral(datos.get("ultimo_score") or 0, actual)
-        simulada = cambio_la_formula and datos.get("ultimo_conv") is not None
-        if not (llega_al_corte or simulada):
+        if not (llega_al_corte or cambio_la_formula):
             continue
         for sim in doc.reference.collection("simulaciones").stream():
             sim.reference.delete()
