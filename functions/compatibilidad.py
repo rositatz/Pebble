@@ -658,6 +658,10 @@ def compatibilidad_valores(perfil1, perfil2):
         score += compatibilidad
 
     return score / len(atributos)
+# Score de charla que no mueve el puntaje final.
+SCORE_CONVERSACIONAL_NORMAL = 0.55
+
+
 def compatibilidad_conversacional(analisis):
 
     pesos = {
@@ -832,33 +836,22 @@ def calcular_compatibilidad(perfil1, perfil2, analisis=None):
     # 5. SCORE FINAL
     # --------------------------------
 
+    alpha = 0.30
+    beta = 0.35
+    gamma = 0.35
+
+    total = (
+        alpha * S +
+        beta * pref_a_b +
+        gamma * pref_b_a
+    )
+
     if score_conversacional is not None:
-
-        # Ejemplo
-        alpha = 0.20
-        beta = 0.35
-        gamma = 0.35
-        delta = 0.10
-
-
-        total = (
-            alpha * S +
-            beta * pref_a_b +
-            gamma * pref_b_a +
-            delta * score_conversacional
-        )
-
-    else:
-
-        alpha = 0.30
-        beta = 0.35
-        gamma = 0.35
-
-        total = (
-            alpha * S +
-            beta * pref_a_b +
-            gamma * pref_b_a
-        )
+        # La charla ajusta el puntaje previo contra una charla "normal", no
+        # contra S: comparada con S casi siempre restaba, porque el score de
+        # charla rara vez llega al nivel de la afinidad del onboarding.
+        total += 0.10 * (score_conversacional - SCORE_CONVERSACIONAL_NORMAL)
+        total = max(0.0, min(total, 1.0))
 
     # Desglose por eje -- antes solo se devolvía S (el promedio ya
     # combinado), así que no había forma de mostrarle al usuario POR QUÉ

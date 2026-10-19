@@ -300,36 +300,43 @@ _CACHE_PERFILES = {}
 _TTL_PERFIL_SEG = 60
 
 
-def _reevaluar_pares_al_bajar_umbral(db):
-    """Si el corte de match bajó desde la última vez, las parejas que habían
-    quedado "sin match" con un puntaje igual o mayor al corte nuevo se borran
-    para que se armen y se evalúen de nuevo. No se tocan las que alguna vez
-    fueron match, las quitadas ni las bloqueadas. El último corte usado queda
-    en config/umbral_evaluado (si no existe, se toma 70%, el que había)."""
+def _reevaluar_pares_sin_match(db):
+    """Vuelve a evaluar parejas que habían quedado "sin match" cuando cambió
+    algo que define el match: se borran (con su simulación) y se encolan de
+    nuevo. Se dispara si bajó el corte (las que ya llegaban al corte nuevo) o
+    si cambió la fórmula del puntaje (las que ya se habían simulado). No se
+    tocan las que alguna vez fueron match, las quitadas ni las bloqueadas.
+    Lo último usado queda en config/umbral_evaluado (si no existe, se toma
+    70% y fórmula 1, que era lo que había)."""
     marca = db.collection("config").document("umbral_evaluado")
     snap = marca.get()
-    anterior = (snap.to_dict() or {}).get("valor") if snap.exists else 0.70
-    if anterior is None:
-        anterior = 0.70
+    previo = (snap.to_dict() or {}) if snap.exists else {}
+    umbral_previo = previo.get("valor") if previo.get("valor") is not None else 0.70
+    formula_previa = previo.get("formula") if previo.get("formula") is not None else 1
     actual = motor.UMBRAL_MATCH
-    if actual >= anterior - 1e-9:
-        if not snap.exists or anterior != actual:
-            marca.set({"valor": actual, "actualizado": firestore.SERVER_TIMESTAMP})
+    formula = motor.VERSION_FORMULA_SCORE
+    bajo_el_corte = actual < umbral_previo - 1e-9
+    cambio_la_formula = formula != formula_previa
+    if not bajo_el_corte and not cambio_la_formula:
+        if not snap.exists:
+            marca.set({"valor": actual, "formula": formula, "actualizado": firestore.SERVER_TIMESTAMP})
         return
     reseteadas = 0
     for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
         datos = doc.to_dict() or {}
         if datos.get("match_confirmado") or datos.get("match_eliminado") or datos.get("bloqueado"):
             continue
-        if not motor.alcanza_umbral(datos.get("ultimo_score") or 0, actual):
+        llega_al_corte = bajo_el_corte and motor.alcanza_umbral(datos.get("ultimo_score") or 0, actual)
+        simulada = cambio_la_formula and datos.get("ultimo_conv") is not None
+        if not (llega_al_corte or simulada):
             continue
         for sim in doc.reference.collection("simulaciones").stream():
             sim.reference.delete()
         doc.reference.delete()
         db.collection("parejas_pendientes").document(doc.id).delete()
         reseteadas += 1
-    marca.set({"valor": actual, "reseteadas": reseteadas, "actualizado": firestore.SERVER_TIMESTAMP})
-    print(f"_reevaluar_pares_al_bajar_umbral: {reseteadas} parejas para reevaluar con el corte de {round(actual * 100, 1)}%.")
+    marca.set({"valor": actual, "formula": formula, "reseteadas": reseteadas, "actualizado": firestore.SERVER_TIMESTAMP})
+    print(f"_reevaluar_pares_sin_match: {reseteadas} parejas para reevaluar (corte {round(actual * 100, 1)}%, fórmula {formula}).")
 
 
 def _auditar_filtros(db, perfiles):
@@ -1705,7 +1712,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             perfil_u["ubicacion"] = {"lat": ub["lat"], "lng": ub["lng"]}
 
     _auditar_filtros(db, todos_los_perfiles)
-    _reevaluar_pares_al_bajar_umbral(db)
+    _reevaluar_pares_sin_match(db)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
     # por cada par candidato.
