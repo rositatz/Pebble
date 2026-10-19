@@ -339,6 +339,42 @@ def _reevaluar_pares_sin_match(db):
     print(f"_reevaluar_pares_sin_match: {reseteadas} parejas para reevaluar (corte {round(actual * 100, 1)}%, fórmula {formula}).")
 
 
+def _recalcular_puntajes_de_matches(db):
+    """Cuando cambia la fórmula del puntaje, los matches ya armados quedan con
+    el número calculado con la fórmula vieja. No se vuelven a simular (se
+    perderían el match y su historial): se recalcula el puntaje de cada
+    simulación guardada con sus mismos datos y se vuelve a promediar. Sigue
+    siendo match aunque el promedio nuevo quede bajo el corte."""
+    marca = db.collection("config").document("umbral_evaluado")
+    if (marca.get().to_dict() or {}).get("puntajes_recalculados") == motor.VERSION_FORMULA_SCORE:
+        return
+    recalculados = 0
+    for doc in _conexiones_match(db):
+        totales = []
+        for sim in doc.reference.collection("simulaciones").select(["score"]).stream():
+            sc = (sim.to_dict() or {}).get("score") or {}
+            S, pa, pb = sc.get("similitud"), sc.get("pref_a_b"), sc.get("pref_b_a")
+            if not all(isinstance(x, (int, float)) for x in (S, pa, pb)):
+                continue
+            conv = sc.get("score_conversacional")
+            nuevo = motor.puntaje_total(S, pa, pb, conv if isinstance(conv, (int, float)) else None)
+            sim.reference.update({"score.compatibilidad_total": nuevo})
+            totales.append(nuevo)
+        if not totales:
+            continue
+        promedio = sum(totales) / len(totales)
+        doc.reference.update({
+            "ultimo_score": promedio,
+            "sims_n": len(totales),
+            "sims_suma": sum(totales),
+            "supera_umbral": motor.alcanza_umbral(promedio),
+            "match_confirmado": True,
+        })
+        recalculados += 1
+    marca.set({"puntajes_recalculados": motor.VERSION_FORMULA_SCORE}, merge=True)
+    print(f"_recalcular_puntajes_de_matches: {recalculados} matches con el puntaje recalculado (fórmula {motor.VERSION_FORMULA_SCORE}).")
+
+
 def _auditar_filtros(db, perfiles):
     """Deja en config/auditoria_filtros las parejas ya armadas que hoy no
     pasarían los filtros base (género/orientación, edad, hijos), para poder
@@ -1713,6 +1749,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
 
     _auditar_filtros(db, todos_los_perfiles)
     _reevaluar_pares_sin_match(db)
+    _recalcular_puntajes_de_matches(db)
 
     # Un solo recorrido (solo ids, sin traer los campos) en vez de dos lecturas
     # por cada par candidato.

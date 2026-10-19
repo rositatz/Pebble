@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 
 from gemelo_perfil import construir_perfil_gemelo
-from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad, _diferencias_personalidad
+from compatibilidad import analizar_conversacion, actualizar_memoria, calcular_compatibilidad, instruccion_nivel_compatibilidad, puntaje_total, _diferencias_personalidad
 
 # El cliente de OpenAI se crea recién al usarlo (ver _client()), no al importar
 # el módulo: así se puede armar/comparar perfiles y correr los tests sin tener
