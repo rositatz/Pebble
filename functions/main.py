@@ -345,9 +345,15 @@ def _guardar_diagnostico_simulacion(db, datos):
     try:
         resumen = {"actualizado": firestore.SERVER_TIMESTAMP, **datos}
         resumen["parejas_por_estado"] = {}
-        for d in db.collection("parejas_pendientes").select(["estado"]).stream():
-            estado = (d.to_dict() or {}).get("estado") or "?"
+        errores_guardados = []
+        for d in db.collection("parejas_pendientes").select(["estado", "error"]).stream():
+            datos_par = d.to_dict() or {}
+            estado = datos_par.get("estado") or "?"
             resumen["parejas_por_estado"][estado] = resumen["parejas_por_estado"].get(estado, 0) + 1
+            cola = str(datos_par.get("error") or "")[-400:]
+            if estado == "ERROR" and cola and cola not in errores_guardados and len(errores_guardados) < 3:
+                errores_guardados.append(cola)
+        resumen["errores_guardados_en_parejas"] = errores_guardados
         db.collection("config").document("diagnostico_simulacion").set(resumen)
     except Exception:
         print(f"_guardar_diagnostico_simulacion: no se pudo guardar: {traceback.format_exc()}")
