@@ -1770,9 +1770,11 @@ _SIN_UBICACION = 999999
 # cómodo contra el límite de 1800s (30 min) de las funciones programadas,
 # incluso en el caso más caro (pareja "Algo serio", ~9 escenarios).
 LOTE_NOCTURNO = 10
-# Simulaciones de charla por noche: como mucho una por persona, empezando por
-# quienes todavía no recibieron ninguna.
-MAX_SIMULACIONES_POR_NOCHE = 20
+# Simulaciones de charla por noche: como mucho una por persona (con 76 cuentas
+# caben hasta 38). Cada una necesita el tiempo de MAX_SEGUNDOS_SIMULACION_NOCTURNA
+# repartido entre WORKERS_SIMULACION_NOCTURNA hilos: si algunas quedan sin
+# terminar ("pendientes por tiempo" en el log), bajar este número.
+MAX_SIMULACIONES_POR_NOCHE = 40
 # Matches que una persona puede acumular por las simulaciones nocturnas: más
 # allá de esto se prioriza a quienes tienen menos. Los escenarios que pide la
 # persona no cuentan.
@@ -1783,7 +1785,7 @@ MAX_MATCHES_POR_PERSONA = 5
 # quedarse con las 10 primeras por cercanía sin más criterio. Es una lectura
 # barata (Firestore, no OpenAI), así que no pesa en el costo real de la
 # corrida -- lo caro sigue limitado por LOTE_NOCTURNO.
-POOL_CANDIDATAS_NOCTURNO = 300
+POOL_CANDIDATAS_NOCTURNO = 600
 
 
 @scheduler_fn.on_schedule(schedule="0 2 * * *", timezone="America/Argentina/Buenos_Aires", timeout_sec=540)
@@ -2246,7 +2248,7 @@ def _procesar_parejas_pendientes_logica() -> None:
 
 
 MAX_SEGUNDOS_SIMULACION_NOCTURNA = 1500
-WORKERS_SIMULACION_NOCTURNA = 3
+WORKERS_SIMULACION_NOCTURNA = 6
 
 
 def _simular_par_sincrono(db, par_id, estado_par, vence):
