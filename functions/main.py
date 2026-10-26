@@ -338,6 +338,20 @@ def _reevaluar_pares_sin_match(db):
     print(f"_reevaluar_pares_sin_match: {reseteadas} parejas para reevaluar (corte {round(actual * 100, 1)}%, fórmula {formula}).")
 
 
+def _modo_de_seleccion_de_hoy(db):
+    """Alterna por día cómo se eligen las parejas a simular: "aleatorio" un día
+    y "prioridad" (primero quienes tienen menos matches) al siguiente. Todas las
+    corridas de un mismo día usan el mismo modo; la primera vez es "aleatorio"."""
+    ref = db.collection("config").document("modo_seleccion")
+    hoy = _fecha_ar()
+    datos = ref.get().to_dict() or {}
+    if datos.get("fecha") == hoy and datos.get("modo") in ("aleatorio", "prioridad"):
+        return datos["modo"]
+    modo = "prioridad" if datos.get("modo") == "aleatorio" else "aleatorio"
+    ref.set({"fecha": hoy, "modo": modo})
+    return modo
+
+
 def _guardar_diagnostico_simulacion(db, datos):
     """Resumen de la última corrida de procesar_parejas_pendientes, para leerlo
     desde la consola de Firestore en config/diagnostico_simulacion."""
@@ -2125,9 +2139,9 @@ def _procesar_parejas_pendientes_logica() -> None:
             errores_vistos.append(traceback.format_exc()[-300:])
 
     # Entre las parejas que superan el umbral se eligen las que se simulan
-    # esta noche: una por persona como máximo, primero las que le dan su
-    # primera simulación a alguien. Las que no entran siguen PENDIENTE y
-    # compiten de nuevo mañana.
+    # esta noche: una por persona como máximo. Un día se eligen al azar y el
+    # siguiente primero las de quienes tienen menos matches. Las que no entran
+    # siguen PENDIENTE y compiten de nuevo mañana.
     matches_por_persona = {}
     for conexion in _conexiones_match(db):
         for uid_p in (conexion.to_dict().get("participantes") or []):
@@ -2138,11 +2152,15 @@ def _procesar_parejas_pendientes_logica() -> None:
         if matches_por_persona.get(c["uid1"], 0) < MAX_MATCHES_POR_PERSONA
         and matches_por_persona.get(c["uid2"], 0) < MAX_MATCHES_POR_PERSONA
     ]
-    # Primero las parejas donde las dos personas tienen menos matches.
-    candidatas_sim.sort(key=lambda c: (
-        matches_por_persona.get(c["uid1"], 0) + matches_por_persona.get(c["uid2"], 0),
-        c["data"].get("distancia_km") if c["data"].get("distancia_km") is not None else _SIN_UBICACION,
-    ))
+    modo_seleccion = _modo_de_seleccion_de_hoy(db)
+    if modo_seleccion == "aleatorio":
+        random.shuffle(candidatas_sim)
+    else:
+        # Primero las parejas donde las dos personas tienen menos matches.
+        candidatas_sim.sort(key=lambda c: (
+            matches_por_persona.get(c["uid1"], 0) + matches_por_persona.get(c["uid2"], 0),
+            c["data"].get("distancia_km") if c["data"].get("distancia_km") is not None else _SIN_UBICACION,
+        ))
     usados_hoy = set()
     for cand in candidatas_sim:
         if encolados >= MAX_SIMULACIONES_POR_NOCHE:
@@ -2179,6 +2197,7 @@ def _procesar_parejas_pendientes_logica() -> None:
         "superan_el_umbral": superan_el_umbral,
         "quedan_afuera_por_tope_de_matches": superan_el_umbral - len(candidatas_sim),
         "se_simulan_esta_corrida": encolados,
+        "modo_de_seleccion": modo_seleccion,
         "resueltas_sin_match": resueltos_sin_match,
         "descartadas_por_cambio_de_datos": descartados,
         "con_error": con_error,
