@@ -2102,6 +2102,13 @@ def _procesar_parejas_pendientes_logica() -> None:
         uid2 = data["usuario_2"]["uid"]
 
         try:
+            # Una pareja que ya es match no se vuelve a evaluar: un resultado
+            # nuevo le pisaría el puntaje y las marcas.
+            previa = db.collection("conexiones").document(data["par_id"]).get()
+            datos_previos = previa.to_dict() or {}
+            if previa.exists and (datos_previos.get("match_confirmado") or datos_previos.get("supera_umbral")):
+                doc.reference.update({"estado": "COMPLETADO"})
+                continue
             cargado1, cargado2 = cargar_perfil(uid1), cargar_perfil(uid2)
             if not cargado1 or not cargado2:
                 raise ValueError("A alguno de los dos ya no le existe el perfil de gemelo.")
@@ -2409,6 +2416,11 @@ def _finalizar_par_de_batch(db, estado_par):
         "actualizado": firestore.SERVER_TIMESTAMP,
     }
     payload = _con_creado(par_ref, payload)
+    previa = par_ref.get().to_dict() or {}
+    if previa.get("supera_umbral") or previa.get("match_confirmado"):
+        # Si ya era match, una simulación con puntaje más bajo no se lo saca.
+        payload["supera_umbral"] = True
+        payload["match_confirmado"] = True
     par_ref.set(payload, merge=True)
     par_ref.collection("simulaciones").add(registro)
 
