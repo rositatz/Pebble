@@ -455,6 +455,51 @@ def _recalcular_puntajes_de_matches(db):
     print(f"_recalcular_puntajes_de_matches: {recalculados} matches con el puntaje recalculado (fórmula {motor.VERSION_FORMULA_SCORE}).")
 
 
+def _resumen_bloqueos(db):
+    """Deja en config/resumen_bloqueos las conexiones bloqueadas o quitadas (quién
+    y a quién, con fecha) y los reportes, para verlos sin armar filtros en la
+    consola de Firestore."""
+    campos = [
+        "usuario_1", "usuario_2", "bloqueado", "bloqueado_por", "bloqueado_en",
+        "match_eliminado", "eliminado_por", "eliminado_en",
+    ]
+    filas = []
+    for doc in db.collection("conexiones").select(campos).stream():
+        d = doc.to_dict() or {}
+        if not (d.get("bloqueado") or d.get("match_eliminado")):
+            continue
+        bloqueo = bool(d.get("bloqueado"))
+        quien = d.get("bloqueado_por") if bloqueo else d.get("eliminado_por")
+        nombres = {(d.get(c) or {}).get("uid"): (d.get(c) or {}).get("nombre") for c in ("usuario_1", "usuario_2")}
+        filas.append({
+            "par_id": doc.id,
+            "tipo": "bloqueo" if bloqueo else "match quitado",
+            "por": nombres.get(quien) or quien,
+            "por_uid": quien,
+            "a": next((n for u, n in nombres.items() if u != quien), None),
+            "cuando": d.get("bloqueado_en") if bloqueo else d.get("eliminado_en"),
+        })
+    filas.sort(key=lambda f: str(f.get("cuando") or ""), reverse=True)
+
+    reportes = []
+    for doc in db.collection("reportes").select(["uid", "reportado", "motivo", "bloqueado", "creado"]).stream():
+        d = doc.to_dict() or {}
+        reportes.append({
+            "uid": d.get("uid"), "reportado": d.get("reportado"), "motivo": d.get("motivo"),
+            "bloqueado": bool(d.get("bloqueado")), "creado": d.get("creado"),
+        })
+    reportes.sort(key=lambda r: str(r.get("creado") or ""), reverse=True)
+
+    db.collection("config").document("resumen_bloqueos").set({
+        "actualizado": firestore.SERVER_TIMESTAMP,
+        "bloqueos": sum(1 for f in filas if f["tipo"] == "bloqueo"),
+        "matches_quitados": sum(1 for f in filas if f["tipo"] == "match quitado"),
+        "reportes_total": len(reportes),
+        "conexiones": filas[:100],
+        "reportes": reportes[:50],
+    })
+
+
 def _auditar_filtros(db, perfiles):
     """Deja en config/auditoria_filtros las parejas ya armadas que hoy no
     pasarían los filtros base (género/orientación, edad, hijos), para poder
@@ -1843,6 +1888,7 @@ def buscar_parejas_pendientes(event: scheduler_fn.ScheduledEvent) -> None:
             perfil_u["ubicacion"] = {"lat": ub["lat"], "lng": ub["lng"]}
 
     _auditar_filtros(db, todos_los_perfiles)
+    _resumen_bloqueos(db)
     _reevaluar_pares_sin_match(db)
     _recalcular_puntajes_de_matches(db)
     _regenerar_diferencias_de_matches(db, todos_los_perfiles)
