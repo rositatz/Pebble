@@ -4169,7 +4169,9 @@
             console.error("Error regenerando gemelo/perfil al salir:", e);
           }
         }
-        if (uid) {
+        // Si ya había terminado el onboarding, editar y salir no lo vuelve a dejar
+        // como incompleto: sacaba a la cuenta de la búsqueda de matches.
+        if (uid && !stageData.completed) {
           try {
             await updateDoc(doc(db, "usuarios", uid), {
               gemelo_completado: false,

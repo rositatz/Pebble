@@ -173,13 +173,19 @@ _CORREOS_DE_PRUEBA = {
 
 
 def _uids_gemelo_incompleto(db):
-    """Cuentas que están rehaciendo o dejaron a medias su gemelo
-    (usuarios/{uid}.gemelo_completado == False): no entran a la búsqueda ni
-    a las simulaciones nocturnas hasta que lo terminen."""
-    return {
-        doc.id
-        for doc in db.collection("usuarios").where("gemelo_completado", "==", False).stream()
-    }
+    """Cuentas que dejaron a medias su gemelo (usuarios/{uid}.gemelo_completado
+    == False): no entran a la búsqueda ni a las simulaciones nocturnas hasta
+    que lo terminen. Quien ya terminó el onboarding alguna vez
+    (gemelo_setup/data.completed) no cuenta como incompleta, aunque haya salido
+    de una edición con "Seguir después": se le corrige el marcador."""
+    incompletos = set()
+    for doc in db.collection("usuarios").where("gemelo_completado", "==", False).stream():
+        setup = doc.reference.collection("gemelo_setup").document("data").get()
+        if setup.exists and (setup.to_dict() or {}).get("completed"):
+            doc.reference.update({"gemelo_completado": True})
+            continue
+        incompletos.add(doc.id)
+    return incompletos
 
 
 def _uids_pausados(db):
