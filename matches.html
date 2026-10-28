@@ -2147,7 +2147,11 @@
             c.ultimaSim && Array.isArray(c.ultimaSim.historial_chat)
               ? c.ultimaSim.historial_chat
               : [];
-          const identidadTxt = [c.otro.genero, c.otro.orientacion]
+          const identidadTxt = [
+            c.otro.genero,
+            c.otro.ocultarOrientacion ? "" : c.otro.orientacion,
+            c.otro.parejaAbierta ? "Pareja abierta" : "",
+          ]
             .filter(Boolean)
             .join(" · ");
 

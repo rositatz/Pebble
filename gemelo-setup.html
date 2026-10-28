@@ -1107,6 +1107,9 @@
               <button class="pill" onclick="selPill(this)">
                 Con amigos/as
               </button>
+              <button class="pill" onclick="selPill(this)">
+                Con mi pareja abierta
+              </button>
             </div>
           </div>
           <div class="q">
@@ -4047,6 +4050,15 @@
             { ["etapa" + n]: data },
             { merge: true },
           );
+          // El perfil del gemelo es privado: lo que ven los matches tiene que
+          // estar en usuarios/{uid}.
+          if (n === 1) {
+            await setDoc(
+              doc(db, "usuarios", uid),
+              { parejaAbierta: data.convivo === "Con mi pareja abierta" },
+              { merge: true },
+            );
+          }
         } catch (e) {
           console.error(e);
         }

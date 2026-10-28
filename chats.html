@@ -3980,7 +3980,11 @@
                   .slice(gemelo.vistoHasta || 0)
                   .filter((m) => m.from === "them").length;
 
-                const identidadOtro = [c.otro.genero, c.otro.orientacion]
+                const identidadOtro = [
+                  c.otro.genero,
+                  c.otro.ocultarOrientacion ? "" : c.otro.orientacion,
+                  c.otro.parejaAbierta ? "Pareja abierta" : "",
+                ]
                   .filter(Boolean)
                   .join(" · ");
 

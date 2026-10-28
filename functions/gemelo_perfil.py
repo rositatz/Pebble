@@ -81,7 +81,7 @@ REGLAS_NUMERICAS = [
     ("etapa1", "convivo", "Solo/a", {"personalidad.independencia": 0.10, "personalidad.introversion": 0.05}),
     ("etapa1", "convivo", "Con mi familia", {"valores.familia": 0.10}),
     ("etapa1", "convivo", "Con mi(s) hermano/a(s)", {"valores.familia": 0.08}),
-    ("etapa1", "convivo", "Con mi pareja", {"personalidad.necesidad_afecto": 0.05}),
+    ("etapa1", "convivo", "Con mi pareja abierta", {"personalidad.independencia": 0.05}),
     ("etapa1", "gustaOcup", "Sí, mucho", {"valores.ambicion": 0.15}),
     ("etapa1", "gustaOcup", "Bastante", {"valores.ambicion": 0.08}),
     ("etapa1", "gustaOcup", "No realmente", {"valores.ambicion": -0.10}),

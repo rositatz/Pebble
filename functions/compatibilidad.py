@@ -352,11 +352,10 @@ def compatible_por_genero(perfil1, perfil2):
     return ok_1_acepta_2 and ok_2_acepta_1
 
 
-# Años de margen sobre el rango de edad que cada uno pidió -- "busco 25-30"
-# no descarta a alguien de 32. Nunca baja el piso legal (ver EDAD_MINIMA en
-# _edad_en_rango): con busco 18-25, el margen no hace que alguien de 16
-# pueda entrar.
-TOLERANCIA_EDAD = 3
+# Años de margen sobre el rango de edad que cada uno pidió. En 0 el rango es
+# exacto: "busco 25-30" descarta a alguien de 31. Nunca baja el piso legal
+# (ver EDAD_MINIMA en _edad_en_rango).
+TOLERANCIA_EDAD = 0
 
 EDAD_MINIMA = 18
 
