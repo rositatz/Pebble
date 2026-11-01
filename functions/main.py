@@ -306,10 +306,34 @@ _CACHE_PERFILES = {}
 _TTL_PERFIL_SEG = 60
 
 
+def _reencolar_par(db, doc):
+    """Deja una pareja sin match para que se evalúe de nuevo, sin borrar su
+    conexión: así sigue contando como evaluada (y con su historial) hasta que
+    el resultado nuevo la actualice."""
+    ref = db.collection("parejas_pendientes").document(doc.id)
+    if ref.get().exists:
+        ref.update({
+            "estado": "PENDIENTE",
+            "error": firestore.DELETE_FIELD,
+            "motivo_descarte": firestore.DELETE_FIELD,
+        })
+        return
+    datos = doc.to_dict() or {}
+    distancia = datos.get("distancia_km")
+    ref.set({
+        "par_id": doc.id,
+        "usuario_1": datos.get("usuario_1"),
+        "usuario_2": datos.get("usuario_2"),
+        "distancia_km": distancia if distancia is not None else _SIN_UBICACION,
+        "estado": "PENDIENTE",
+        "creado": firestore.SERVER_TIMESTAMP,
+    })
+
+
 def _reevaluar_pares_sin_match(db):
     """Vuelve a evaluar parejas que habían quedado "sin match" cuando cambió
-    algo que define el match: se borran (con su simulación) y se encolan de
-    nuevo. Se dispara si bajó el corte (las que ya llegaban al corte nuevo) o
+    algo que define el match: se encolan de nuevo, sin borrar su conexión.
+    Se dispara si bajó el corte (las que ya llegaban al corte nuevo) o
     si cambió la fórmula del puntaje (todas las que no son match). No se
     tocan las que alguna vez fueron match, las quitadas ni las bloqueadas.
     Lo último usado queda en config/umbral_evaluado (si no existe, se toma
@@ -335,10 +359,7 @@ def _reevaluar_pares_sin_match(db):
         llega_al_corte = bajo_el_corte and motor.alcanza_umbral(datos.get("ultimo_score") or 0, actual)
         if not (llega_al_corte or cambio_la_formula):
             continue
-        for sim in doc.reference.collection("simulaciones").stream():
-            sim.reference.delete()
-        doc.reference.delete()
-        db.collection("parejas_pendientes").document(doc.id).delete()
+        _reencolar_par(db, doc)
         reseteadas += 1
     marca.set({"valor": actual, "formula": formula, "reseteadas": reseteadas, "actualizado": firestore.SERVER_TIMESTAMP})
     print(f"_reevaluar_pares_sin_match: {reseteadas} parejas para reevaluar (corte {round(actual * 100, 1)}%, fórmula {formula}).")
@@ -2699,34 +2720,21 @@ def _continuar_lote_batch_nocturno_logica() -> None:
 
 @scheduler_fn.on_schedule(schedule="0 1 1 * *", timezone="America/Argentina/Buenos_Aires")
 def resetear_no_compatibles_mensual(event: scheduler_fn.ScheduledEvent) -> None:
-    """Corre una sola vez, el día 1 de cada mes calendario (no 30 días desde
-    que se simuló cada par -- todos se revisan juntos el mismo día). Hoy,
-    una vez que dos personas se simulan, buscar_parejas_pendientes nunca las
-    vuelve a tocar (ve que ya existe conexiones/{par_id} y las descarta para
-    siempre) -- bien para ahorrar en OpenAI, pero significa que alguien
-    marcado "no compatible" se queda así para siempre aunque después edite
-    su gemelo. Esto le da una segunda oportunidad mensual sin volver a
-    simular todas las noches: borra la conexión (y su subcolección de
-    simulaciones, para no dejar basura huérfana) y la entrada en
-    parejas_pendientes de cada par SIN match, así vuelven a verse como
-    "nunca evaluados" -- buscar_parejas_pendientes los va a re-encolar en su
-    próxima corrida (cada hora) y procesar_parejas_pendientes los simula de
-    nuevo esta misma noche (corre a la 1am, antes de las 3am). Los pares que
-    SÍ hicieron match (supera_umbral == true) no se tocan -- ya desbloquearon
-    una conexión real, no hace falta re-evaluarlos."""
+    """Corre una sola vez, el día 1 de cada mes calendario. Les da una segunda
+    oportunidad a las parejas sin match: se encolan de nuevo (PENDIENTE) para
+    que procesar_parejas_pendientes las evalúe otra vez, sin borrar su conexión,
+    así el gemelo no pierde la cuenta de con cuántas personas ya habló. Los
+    pares que SÍ hicieron match, los quitados y los bloqueados no se tocan."""
     db = firestore.client()
-    reseteados = 0
+    reencolados = 0
     for doc in db.collection("conexiones").where("supera_umbral", "==", False).stream():
-        if doc.to_dict().get("match_confirmado") or doc.to_dict().get("match_eliminado"):
+        datos = doc.to_dict() or {}
+        if datos.get("match_confirmado") or datos.get("match_eliminado") or datos.get("bloqueado"):
             continue
-        par_id = doc.id
-        for sim_doc in doc.reference.collection("simulaciones").stream():
-            sim_doc.reference.delete()
-        doc.reference.delete()
-        db.collection("parejas_pendientes").document(par_id).delete()
-        reseteados += 1
+        _reencolar_par(db, doc)
+        reencolados += 1
 
-    print(f"resetear_no_compatibles_mensual: {reseteados} pares no-compatibles reseteados para reevaluar este mes.")
+    print(f"resetear_no_compatibles_mensual: {reencolados} pares sin match se vuelven a evaluar este mes.")
 
 
 # Mismo umbral que usa matches.html para hacer desaparecer un match nuevo
