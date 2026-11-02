@@ -1805,6 +1805,15 @@
                 placeholder="Mínimo 8 caracteres"
                 autocomplete="new-password"
               />
+              <span
+                style="
+                  font-family: var(--font-body);
+                  font-size: 0.72rem;
+                  color: var(--text-secondary);
+                "
+                >Mínimo 8 caracteres, con mayúscula, minúscula, número y
+                símbolo.</span
+              >
             </div>
             <button type="button" class="auth-btn" onclick="doSignup()">
               Crear cuenta
@@ -3137,6 +3146,16 @@
         window.location.href = "./gemelo-setup.html";
       };
 
+      function requisitosPassword(p) {
+        const faltan = [];
+        if (p.length < 8) faltan.push("al menos 8 caracteres");
+        if (!/[a-z]/.test(p)) faltan.push("una minúscula");
+        if (!/[A-Z]/.test(p)) faltan.push("una mayúscula");
+        if (!/[0-9]/.test(p)) faltan.push("un número");
+        if (!/[^A-Za-z0-9]/.test(p)) faltan.push("un símbolo");
+        return faltan;
+      }
+
       window.doSignup = async function () {
         const nombre = document.getElementById("su-name").value.trim();
         const email = document.getElementById("su-email").value.trim();
@@ -3147,8 +3166,9 @@
           showAuthError("Completá todos los campos.");
           return;
         }
-        if (pass.length < 8) {
-          showAuthError("La contraseña debe tener al menos 8 caracteres.");
+        const faltantes = requisitosPassword(pass);
+        if (faltantes.length) {
+          showAuthError("La contraseña necesita " + faltantes.join(", ") + ".");
           return;
         }
         setBtnLoading(btn, true);
@@ -3239,8 +3259,7 @@
         return (
           {
             "auth/email-already-in-use": "Ya existe una cuenta con ese email.",
-            "auth/weak-password":
-              "La contraseña debe tener al menos 6 caracteres.",
+            "auth/weak-password": "Elegí una contraseña más segura.",
             "auth/invalid-email": "El email no es válido.",
           }[code] || "Ocurrió un error al crear la cuenta."
         );

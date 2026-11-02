@@ -3371,7 +3371,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
                 class="sheet-input"
                 id="passNueva"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 autocomplete="new-password"
                 oninput="updatePassStrength(this.value)"
               />
@@ -3391,7 +3391,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
               <div class="pass-strength-fill" id="passStrengthFill"></div>
             </div>
             <p class="sheet-hint">
-              Usá letras, números y símbolos para más seguridad
+              Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo
             </p>
           </div>
           <div>
@@ -4474,7 +4474,7 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
 
       // Valida y ejecuta el cambio de contraseña del usuario
       // Verifica que los campos estén completos, que las contraseñas nuevas coincidan
-      // y que la contraseña tenga al menos 6 caracteres antes de llamar a Firebase
+      // y que la contraseña cumpla los requisitos de seguridad antes de llamar a Firebase
       async function cambiarPassword() {
         const actual = document.getElementById("passActual").value;
         const nueva = document.getElementById("passNueva").value;
@@ -4491,8 +4491,14 @@ Me gusta la música en vivo, los viajes con mochila y los libros que te cambian 
           errEl.textContent = "Las contraseñas nuevas no coinciden.";
           return;
         }
-        if (nueva.length < 6) {
-          errEl.textContent = "La contraseña debe tener al menos 6 caracteres.";
+        const faltantes = [];
+        if (nueva.length < 8) faltantes.push("al menos 8 caracteres");
+        if (!/[a-z]/.test(nueva)) faltantes.push("una minúscula");
+        if (!/[A-Z]/.test(nueva)) faltantes.push("una mayúscula");
+        if (!/[0-9]/.test(nueva)) faltantes.push("un número");
+        if (!/[^A-Za-z0-9]/.test(nueva)) faltantes.push("un símbolo");
+        if (faltantes.length) {
+          errEl.textContent = "La contraseña necesita " + faltantes.join(", ") + ".";
           return;
         }
 
