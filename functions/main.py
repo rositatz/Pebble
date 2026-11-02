@@ -2818,14 +2818,18 @@ def generar_recordatorios_diarios(event: scheduler_fn.ScheduledEvent) -> None:
     )
 
 
-@scheduler_fn.on_schedule(schedule="0 5 * * *", timezone="America/Argentina/Buenos_Aires")
+@scheduler_fn.on_schedule(schedule="55 23 * * *", timezone="America/Argentina/Buenos_Aires")
 def calcular_retencion_diaria(event: scheduler_fn.ScheduledEvent) -> None:
     """Retención día 1 / día 7 para inversores: de los usuarios que se
     registraron hace exactamente 1 (o 7) días, cuántos tuvieron actividad
     hoy (usuarios/{uid}.ultima_actividad_fecha, que actualiza el cliente
     como mucho una vez por día -- ver home.html). Se recalcula entero cada
     corrida (no es un contador incremental como el resto de
-    metricas_diarias), así que usa set con valores planos, no Increment."""
+    metricas_diarias), así que usa set con valores planos, no Increment.
+
+    Corre a las 23:55 (hora AR) a propósito: ultima_actividad_fecha solo guarda
+    el último día con actividad, así que hay que contarla antes de que termine
+    el día."""
 
     db = firestore.client()
     hoy = _fecha_ar()
@@ -3241,7 +3245,9 @@ def limpiar_flags_viejas(request: https_fn.CallableRequest):
 # ─────────────────────────────────────────────────────────────────────────
 @https_fn.on_call(timeout_sec=120, memory=MemoryOption.MB_512)
 def diagnostico_matches(request: https_fn.CallableRequest):
-    if request.auth is None:
+    correo = ((request.auth.token or {}).get("email") or "").lower() if request.auth else ""
+    admins = {c.strip().lower() for c in os.getenv("ADMIN_EMAILS", "").split(",") if c.strip()}
+    if not correo or correo not in admins:
         raise https_fn.HttpsError(
             https_fn.FunctionsErrorCode.PERMISSION_DENIED,
             "No autorizado."
